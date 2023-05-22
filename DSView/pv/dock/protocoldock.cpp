@@ -439,6 +439,7 @@ void ProtocolDock::del_all_protocol()
         }
 
         _protocol_lay_items.clear();
+        this->update();
         protocol_updated();
     }
 }

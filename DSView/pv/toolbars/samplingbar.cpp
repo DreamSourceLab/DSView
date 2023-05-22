@@ -133,9 +133,9 @@ namespace pv
             connect(&_run_stop_button, SIGNAL(clicked()), this, SLOT(on_run_stop()), Qt::DirectConnection);
             connect(&_instant_button, SIGNAL(clicked()), this, SLOT(on_instant_stop()));
             connect(&_sample_count, SIGNAL(currentIndexChanged(int)), this, SLOT(on_samplecount_sel(int)));
-            connect(_action_single, SIGNAL(triggered()), this, SLOT(on_mode()));
-            connect(_action_repeat, SIGNAL(triggered()), this, SLOT(on_mode()));
-            connect(_action_loop, SIGNAL(triggered()), this, SLOT(on_mode()));
+            connect(_action_single, SIGNAL(triggered()), this, SLOT(on_collect_mode()));
+            connect(_action_repeat, SIGNAL(triggered()), this, SLOT(on_collect_mode()));
+            connect(_action_loop, SIGNAL(triggered()), this, SLOT(on_collect_mode()));
             connect(&_sample_rate, SIGNAL(currentIndexChanged(int)), this, SLOT(on_samplerate_sel(int)));
         }
 
@@ -1092,14 +1092,19 @@ namespace pv
             update();
         }
 
-        void SamplingBar::on_mode()
+        void SamplingBar::on_collect_mode()
         {
             QString iconPath = GetIconPath();
             QAction *act = qobject_cast<QAction *>(sender());
 
             if (act == _action_single)
-            { 
+            {  
                 _session->set_operation_mode(OPT_SINGLE);
+
+                if (_device_agent->is_demo()){
+                    _device_agent->set_config_string(SR_CONF_PATTERN_MODE, "protocol");
+                    _session->broadcast_msg(DSV_MSG_DEMO_OPERATION_MODE_CHNAGED);
+                }
             }
             else if (act == _action_repeat)
             { 
@@ -1118,12 +1123,23 @@ namespace pv
                     {
                         _session->set_repeat_intvl(interval_dlg.get_interval());
                         _session->set_operation_mode(OPT_REPEAT);
+                       
                     }
-                }             
+                }
+
+                if (_device_agent->is_demo()){
+                    _device_agent->set_config_string(SR_CONF_PATTERN_MODE, "random");
+                    _session->broadcast_msg(DSV_MSG_DEMO_OPERATION_MODE_CHNAGED);
+                }          
             }
             else if (act == _action_loop)
-            { 
+            {  
                 _session->set_operation_mode(OPT_LOOP);
+
+                if (_device_agent->is_demo()){
+                    _device_agent->set_config_string(SR_CONF_PATTERN_MODE, "random");
+                    _session->broadcast_msg(DSV_MSG_DEMO_OPERATION_MODE_CHNAGED);
+                }
             }
 
             update_mode_icon();
@@ -1222,7 +1238,7 @@ namespace pv
                     }
                 }
                 
-                if (_device_agent->have_instance()){
+                if (mode == LOGIC && _device_agent->is_file() == false){
                     if (_device_agent->is_stream_mode() || _device_agent->is_demo())
                         _action_loop->setVisible(true);
                 }                
@@ -1261,7 +1277,6 @@ namespace pv
                     g_variant_unref(gvar);
 
                     bool is_rand = rand_mode == "random";
-                    _action_loop->setVisible(is_rand);
                     
                     if (!is_rand && mode == LOGIC){
                         _sample_rate.setEnabled(false);

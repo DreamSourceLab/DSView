@@ -122,7 +122,7 @@ namespace pv
             void update_mode_icon();
 
         private slots:
-            void on_mode();
+            void on_collect_mode();
             void on_run_stop();
             void on_instant_stop();
             void on_device_selected();

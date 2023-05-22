@@ -105,6 +105,8 @@ public:
 
     bool get_config_value_int16(int key, int &value);
 
+    bool get_config_value_string(int key, QString &value);
+
     /**
 	 * @brief Gets the sample limit from the driver.
 	 *
@@ -182,6 +184,10 @@ public:
     bool is_stream_mode();
 
     bool check_firmware_version();
+
+    QString get_demo_operation_mode();
+
+    bool set_config_string(int key, const char *value);
 
 private:
     void config_changed();

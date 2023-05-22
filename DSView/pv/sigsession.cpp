@@ -2296,4 +2296,10 @@ namespace pv
         set_cur_samplelimits(_device_agent.get_sample_limit());
     }
 
+    void SigSession::clear_view_data()
+    {
+        _view_data->clear();
+        data_updated();
+    }
+
 } // namespace pv

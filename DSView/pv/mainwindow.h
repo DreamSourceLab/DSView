@@ -221,7 +221,7 @@ private:
     bool            _is_auto_switch_device;
     high_resolution_clock::time_point _last_key_press_time;
     bool            _is_save_confirm_msg;
-    std::string         _pattern_mode;
+    QString         _pattern_mode;
     QWidget         *_frame;
     DsTimer         _delay_prop_msg_timer;
     QString         _strMsg;

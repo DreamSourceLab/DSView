@@ -1945,12 +1945,10 @@ namespace pv
             break;  
 
         case DSV_MSG_END_DEVICE_OPTIONS: 
-            if(_device_agent->is_demo() &&_device_agent->get_work_mode() == LOGIC){
-                GVariant *gvar = _device_agent->get_config(NULL,NULL,SR_CONF_PATTERN_MODE);
-                if(gvar != NULL)
+            if(_device_agent->is_demo() &&_device_agent->get_work_mode() == LOGIC){                
+                QString pattern_mode;
+                if(_device_agent->get_config_value_string(SR_CONF_PATTERN_MODE, pattern_mode))
                 {
-                    std::string pattern_mode = g_variant_get_string(gvar,NULL);
-                    g_variant_unref(gvar);
                     if(pattern_mode != _pattern_mode)
                     {
                         _pattern_mode = pattern_mode;
@@ -1965,6 +1963,7 @@ namespace pv
                          
                         if(_pattern_mode != "random")
                         {
+                            _session->set_operation_mode(OPT_SINGLE);
                             StoreSession ss(_session);
                             QJsonArray deArray = get_decoder_json_from_file(_device_agent->path());
                             ss.load_decoders(_protocol_widget, deArray);
@@ -1974,7 +1973,25 @@ namespace pv
                 }
             }
             calc_min_height();            
-            break;                                 
+            break;       
+
+        case DSV_MSG_DEMO_OPERATION_MODE_CHNAGED:
+            if(_device_agent->is_demo() &&_device_agent->get_work_mode() == LOGIC){
+                _protocol_widget->del_all_protocol();
+                _session->clear_view_data();
+                QString pattern_mode;
+
+                if(_device_agent->get_config_value_string(SR_CONF_PATTERN_MODE, pattern_mode)){
+                    if(pattern_mode != "random"){
+                        _device_agent->update();
+                        _session->set_operation_mode(OPT_SINGLE);
+                        StoreSession ss(_session);
+                        QJsonArray deArray = get_decoder_json_from_file(_device_agent->path());
+                        ss.load_decoders(_protocol_widget, deArray);
+                    }
+                }
+            }
+            break;                          
         }
     }
 

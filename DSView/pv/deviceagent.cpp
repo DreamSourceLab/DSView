@@ -351,7 +351,7 @@ GSList *DeviceAgent::get_channels()
 
  bool DeviceAgent::get_config_value_int16(int key, int &value)
  {  
-    GVariant* gvar = this->get_config(NULL, NULL, key);
+    GVariant* gvar = get_config(NULL, NULL, key);
     
     if (gvar != NULL) {
         value = g_variant_get_int16(gvar);
@@ -362,8 +362,24 @@ GSList *DeviceAgent::get_channels()
     return false;
  }
 
+ bool DeviceAgent::get_config_value_string(int key, QString &value)
+ {
+    GVariant* gvar = get_config(NULL, NULL, key);
+    
+    if (gvar != NULL) {
+        const gchar *s = g_variant_get_string(gvar, NULL);
+        value = QString(s);
+        g_variant_unref(gvar);
+        return true;
+    }
+
+    return false;
+ }
+
  int DeviceAgent::get_operation_mode()
  {
+    assert(_dev_handle);
+
     int mode_val = 0;
     if (get_config_value_int16(SR_CONF_OPERATION_MODE, mode_val)){                  
         return mode_val;
@@ -372,17 +388,51 @@ GSList *DeviceAgent::get_channels()
  }
 
  bool DeviceAgent::is_stream_mode()
- {
+ { 
     return get_operation_mode() == LO_OP_STREAM;
  }
 
  bool DeviceAgent::check_firmware_version()
  {
+    assert(_dev_handle);
+
     int st = -1;
     if (ds_get_actived_device_init_status(&st) == SR_OK){
         if (st == SR_ST_INCOMPATIBLE){
             return false;
         }
+    }
+    return true;
+ }
+
+ QString DeviceAgent::get_demo_operation_mode()
+ {
+    assert(_dev_handle);
+
+    if (is_demo() == false){
+        assert(false);
+    }        
+    
+    QString pattern_mode;
+    if(get_config_value_string(SR_CONF_PATTERN_MODE, pattern_mode) == false)
+    {
+        assert(false);
+    }
+    return pattern_mode;
+ }
+
+ bool DeviceAgent::set_config_string(int key, const char *value)
+ {
+    assert(value);
+    assert(_dev_handle);
+
+    GVariant *gvar = g_variant_new_string(value);
+    int ret = ds_set_actived_device_config(NULL, NULL, key, gvar);
+    if (ret != SR_OK)
+    {
+        if (ret != SR_ERR_NA)
+            dsv_err("%s%d", "ERROR: DeviceAgent::set_config_string, Failed to set value of config id:", key);
+        return false;
     }
     return true;
  }
