@@ -867,18 +867,10 @@ static int config_set(int id, GVariant *data, struct sr_dev_inst *sdi,
     {
     case SR_CONF_SAMPLERATE:
         vdev->samplerate = g_variant_get_uint64(data);
-        if(sdi->mode == LOGIC && sample_generator >PATTERN_RANDOM)
-        {
-            samplerates_file[0] = vdev->samplerate;
-        }
         sr_dbg("Setting samplerate to %llu.", vdev->samplerate);
         break;
     case SR_CONF_LIMIT_SAMPLES:
         vdev->total_samples = g_variant_get_uint64(data);
-        if(sdi->mode == LOGIC && sample_generator >PATTERN_RANDOM)
-        {
-            samplecounts_file[0] = vdev->total_samples;
-        }
         sr_dbg("Setting limit samples to %llu.", vdev->total_samples);
         break;
     case SR_CONF_LIMIT_MSEC:
@@ -889,9 +881,13 @@ static int config_set(int id, GVariant *data, struct sr_dev_inst *sdi,
         {
             case LOGIC:
                 if(SR_OK == reset_dsl_path(sdi,sdi->mode ,PATTERN_DEFAULT))
+                {
                     sample_generator = PATTERN_DEFAULT;
+                }
                 else
+                {
                     sample_generator = PATTERN_RANDOM;
+                }
                 break;
             case DSO:
                 reset_dsl_path(sdi,sdi->mode ,PATTERN_RANDOM);
@@ -913,7 +909,6 @@ static int config_set(int id, GVariant *data, struct sr_dev_inst *sdi,
         {
             sample_generator = PATTERN_RANDOM;
         }
-
         sr_dbg("%s: setting pattern to %d",
             __func__, sample_generator);
         break;
@@ -960,11 +955,14 @@ static int config_set(int id, GVariant *data, struct sr_dev_inst *sdi,
         }
         else{
             if(ch->coupling == 0)
+            {
                 ch->hw_offset = 178;
+            }
             else
+            {
                 ch->hw_offset = 128;
+            }
         }
-
         break;
     case SR_CONF_PROBE_HW_OFFSET:
         ch->hw_offset = g_variant_get_uint16(data);
@@ -986,12 +984,18 @@ static int config_set(int id, GVariant *data, struct sr_dev_inst *sdi,
                 ch->coupling = g_variant_get_byte(data);
                 ch->hw_offset = ch->offset;
             }
-            else{
+            else
+            {
                 ch->coupling = g_variant_get_byte(data);
                 if(ch->coupling == 0)
+                {
                     ch->hw_offset = 178;
+                }
                 else
+                {
                     ch->hw_offset = 128;
+                }
+                    
             }
         }
         break;
@@ -2410,261 +2414,248 @@ static int load_virtual_device_session(struct sr_dev_inst *sdi)
     unz_file_info64 fileInfo;
 
     struct sr_channel *probe;
-    int ret, devcnt, i, j;
-    uint16_t probenum;
+    int devcnt, i, j;
     uint64_t tmp_u64, total_probes, enabled_probes;
-    uint16_t p;
-    int64_t tmp_64;
-    char **sections, **keys, *metafile, *val;
-    char probename[SR_MAX_PROBENAME_LEN + 1];
+    char **sections, **keys, *metafile, *val,*probe_name;
     int mode = LOGIC;
     int channel_type = SR_CHANNEL_LOGIC;
-    double tmp_double;
     int version = 1;
+
+    struct session_vdev * vdev = sdi->priv;
 
     assert(sdi);
     if (sample_generator != PATTERN_RANDOM)
     {
         assert(sdi->path);
     }
-
-    if (sdi->mode == LOGIC && sample_generator == PATTERN_RANDOM)
+        
+    switch (sdi->mode)
     {
-        sdi->driver->config_set(SR_CONF_SAMPLERATE,
-                                g_variant_new_uint64(SR_MHZ(1)), sdi, NULL, NULL);
-        sdi->driver->config_set(SR_CONF_LIMIT_SAMPLES,
-                                g_variant_new_uint64(SR_MHZ(1)), sdi, NULL, NULL);
-        sr_dev_probes_free(sdi);
-        sdi->driver->config_set(SR_CONF_CAPTURE_NUM_PROBES,
-                                g_variant_new_uint64(16), sdi, NULL, NULL);
-        sdi->driver->config_set(SR_CONF_NUM_BLOCKS,
-                                g_variant_new_uint64(6), sdi, NULL, NULL);
-
-        char* probe_val;
-        for (int i = 0; i < 16; i++)
-        {
-            probe_val = probe_names[i];
-            if (!(probe = sr_channel_new(i, SR_CHANNEL_LOGIC, TRUE, probe_val)))
+    case LOGIC:
+        if(sample_generator != PATTERN_RANDOM){
+            archive = unzOpen64(sdi->path);
+            if (NULL == archive)
             {
-                sr_err("%s: create channel failed", __func__);
-                sr_dev_inst_free(sdi);
+                sr_err("%s: Load zip file error.", __func__);
+                return SR_ERR;
+            }
+            if (unzLocateFile(archive, "header", 0) != UNZ_OK)
+            {
+                unzClose(archive);
+                sr_err("%s: unzLocateFile error.", __func__);
+                return SR_ERR;
+            }
+            if (unzGetCurrentFileInfo64(archive, &fileInfo, szFilePath,
+                                        sizeof(szFilePath), NULL, 0, NULL, 0) != UNZ_OK)
+            {
+                unzClose(archive);
+                sr_err("%s: unzGetCurrentFileInfo64 error.", __func__);
+                return SR_ERR;
+            }
+            if (unzOpenCurrentFile(archive) != UNZ_OK)
+            {
+                sr_err("%s: Cant't open zip inner file.", __func__);
+                unzClose(archive);
                 return SR_ERR;
             }
 
-            sdi->channels = g_slist_append(sdi->channels, probe);
-        }
-
-        ch_mode = DEMO_LOGIC125x16;
-        logic_index = LOGIC125x16;
-        logic_adjust_samplerate(sdi->priv);
-    }
-    else if(sdi->mode == DSO)
-    {
-        sdi->driver->config_set(SR_CONF_SAMPLERATE,
-                                g_variant_new_uint64(SR_MHZ(100)), sdi, NULL, NULL);
-        sdi->driver->config_set(SR_CONF_LIMIT_SAMPLES,
-                                g_variant_new_uint64(SR_KHZ(10)), sdi, NULL, NULL);
-        sr_dev_probes_free(sdi);
-        sdi->driver->config_set(SR_CONF_CAPTURE_NUM_PROBES,
-                                g_variant_new_uint64(2), sdi, NULL, NULL);
-        sdi->driver->config_set(SR_CONF_NUM_BLOCKS,
-                                g_variant_new_uint64(1), sdi, NULL, NULL);
-        char* probe_val;
-        for (int i = 0; i < 2; i++)
-        {
-            probe_val = probe_names[i];
-            if (!(probe = sr_channel_new(i, SR_CHANNEL_DSO, TRUE, probe_val)))
+            if (!(metafile = g_try_malloc(fileInfo.uncompressed_size)))
             {
-                sr_err("%s: create channel failed", __func__);
-                sr_dev_inst_free(sdi);
+                sr_err("%s: metafile malloc failed", __func__);
+                return SR_ERR_MALLOC;
+            }
+
+            unzReadCurrentFile(archive, metafile, fileInfo.uncompressed_size);
+            unzCloseCurrentFile(archive);
+
+            if (unzClose(archive) != UNZ_OK)
+            {
+                sr_err("%s: Close zip archive error.", __func__);
                 return SR_ERR;
             }
-            probe->enabled = TRUE;
-            probe->coupling = 1;
-            probe->vdiv = 1000;
-            probe->vfactor = 1000;
-            probe->hw_offset = 128;
-            probe->offset = 128;
-            probe->trig_value = 0.5;
-            sdi->channels = g_slist_append(sdi->channels, probe);
-        }
-        adjust_samplerate(sdi);
-    }
-    else if(sdi->mode == ANALOG)
-    {
-        sdi->driver->config_set(SR_CONF_SAMPLERATE,
-                                g_variant_new_uint64(SR_MHZ(1)), sdi, NULL, NULL);
-        sdi->driver->config_set(SR_CONF_LIMIT_SAMPLES,
-                                g_variant_new_uint64(SR_MHZ(1)), sdi, NULL, NULL);
-        sr_dev_probes_free(sdi);
-        sdi->driver->config_set(SR_CONF_CAPTURE_NUM_PROBES,
-                                g_variant_new_uint64(2), sdi, NULL, NULL);
-        sdi->driver->config_set(SR_CONF_NUM_BLOCKS,
-                                g_variant_new_uint64(1), sdi, NULL, NULL);
-        char* probe_val;
-        for (int i = 0; i < 2; i++)
-        {
-            probe_val = probe_names[i];
-            if (!(probe = sr_channel_new(i, SR_CHANNEL_ANALOG, TRUE, probe_val)))
+            archive = NULL;
+
+            kf = g_key_file_new();
+            if (!g_key_file_load_from_data(kf, metafile, fileInfo.uncompressed_size, 0, NULL))
             {
-                sr_err("%s: create channel failed", __func__);
-                sr_dev_inst_free(sdi);
+                sr_err("Failed to parse metadata.");
                 return SR_ERR;
             }
 
-            probe->enabled = TRUE;
-            probe->bits = 8;
-            probe->vdiv = 1000;
-            probe->hw_offset = 128;
-            probe->offset = 128;
-            probe->coupling = 1;
-            probe->vfactor = 1;
-            probe->trig_value = 128;
-            probe->map_default = TRUE;
-            probe->map_unit = "V";
-            probe->map_min =  -(probe->vdiv * probe->vfactor * DS_CONF_DSO_VDIVS / 2000.0);
-            probe->map_max = probe->vdiv * probe->vfactor * DS_CONF_DSO_VDIVS / 2000.0;
+            devcnt = 0;
+            sections = g_key_file_get_groups(kf, NULL);
 
-            sdi->channels = g_slist_append(sdi->channels, probe);
-        }
-        adjust_samplerate(sdi);
-    }
-    else
-    {
-        archive = unzOpen64(sdi->path);
-        if (NULL == archive)
-        {
-            sr_err("%s: Load zip file error.", __func__);
-            return SR_ERR;
-        }
-        if (unzLocateFile(archive, "header", 0) != UNZ_OK)
-        {
-            unzClose(archive);
-            sr_err("%s: unzLocateFile error.", __func__);
-            return SR_ERR;
-        }
-        if (unzGetCurrentFileInfo64(archive, &fileInfo, szFilePath,
-                                    sizeof(szFilePath), NULL, 0, NULL, 0) != UNZ_OK)
-        {
-            unzClose(archive);
-            sr_err("%s: unzGetCurrentFileInfo64 error.", __func__);
-            return SR_ERR;
-        }
-        if (unzOpenCurrentFile(archive) != UNZ_OK)
-        {
-            sr_err("%s: Cant't open zip inner file.", __func__);
-            unzClose(archive);
-            return SR_ERR;
-        }
-
-        if (!(metafile = g_try_malloc(fileInfo.uncompressed_size)))
-        {
-            sr_err("%s: metafile malloc failed", __func__);
-            return SR_ERR_MALLOC;
-        }
-
-        unzReadCurrentFile(archive, metafile, fileInfo.uncompressed_size);
-        unzCloseCurrentFile(archive);
-
-        if (unzClose(archive) != UNZ_OK)
-        {
-            sr_err("%s: Close zip archive error.", __func__);
-            return SR_ERR;
-        }
-        archive = NULL;
-
-        kf = g_key_file_new();
-        if (!g_key_file_load_from_data(kf, metafile, fileInfo.uncompressed_size, 0, NULL))
-        {
-            sr_err("Failed to parse metadata.");
-            return SR_ERR;
-        }
-
-        devcnt = 0;
-        sections = g_key_file_get_groups(kf, NULL);
-
-        for (i = 0; sections[i]; i++)
-        {
-            if (!strcmp(sections[i], "version"))
+            for (i = 0; sections[i]; i++)
             {
-                keys = g_key_file_get_keys(kf, sections[i], NULL, NULL);
-                for (j = 0; keys[j]; j++)
+                if (!strcmp(sections[i], "version"))
                 {
-                    val = g_key_file_get_string(kf, sections[i], keys[j], NULL);
-                    if (!strcmp(keys[j], "version"))
+                    keys = g_key_file_get_keys(kf, sections[i], NULL, NULL);
+                    for (j = 0; keys[j]; j++)
                     {
-                        version = strtoull(val, NULL, 10);
-                        sr_info("The 'header' file format version:%d", version);
-                    }
-                }
-            }
-
-            if (!strncmp(sections[i], "header", 6))
-            {
-                enabled_probes = total_probes = 0;
-                keys = g_key_file_get_keys(kf, sections[i], NULL, NULL);
-
-                for (j = 0; keys[j]; j++)
-                {
-                    val = g_key_file_get_string(kf, sections[i], keys[j], NULL);
-
-                    if (!strcmp(keys[j], "device mode"))
-                    {
-                        mode = strtoull(val, NULL, 10);
-                    }
-                    else if (!strcmp(keys[j], "samplerate"))
-                    {
-                        sr_parse_sizestring(val, &tmp_u64);
-                        sdi->driver->config_set(SR_CONF_SAMPLERATE,
-                                                g_variant_new_uint64(tmp_u64), sdi, NULL, NULL);
-                    }
-                    else if (!strcmp(keys[j], "total samples"))
-                    {
-                        tmp_u64 = strtoull(val, NULL, 10);
-                        sdi->driver->config_set(SR_CONF_LIMIT_SAMPLES,
-                                                g_variant_new_uint64(tmp_u64), sdi, NULL, NULL);
-
-                    }
-                    else if (!strcmp(keys[j], "total blocks"))
-                    {
-                        tmp_u64 = strtoull(val, NULL, 10);
-                        sdi->driver->config_set(SR_CONF_NUM_BLOCKS,
-                                                g_variant_new_uint64(tmp_u64), sdi, NULL, NULL);
-                    }
-                    else if (!strcmp(keys[j], "total probes"))
-                    {
-                        sr_dev_probes_free(sdi);
-                        total_probes = strtoull(val, NULL, 10);
-                        sdi->driver->config_set(SR_CONF_CAPTURE_NUM_PROBES,
-                                                g_variant_new_uint64(total_probes), sdi, NULL, NULL);
-                    }
-                    else if (!strncmp(keys[j], "probe", 5))
-                    {
-                        enabled_probes++;
-                        tmp_u64 = strtoul(keys[j] + 5, NULL, 10);
-                        channel_type = (mode == DSO) ? SR_CHANNEL_DSO : (mode == ANALOG) ? SR_CHANNEL_ANALOG
-                                                                                         : SR_CHANNEL_LOGIC;
-                        if (!(probe = sr_channel_new(tmp_u64, channel_type, TRUE, val)))
+                        val = g_key_file_get_string(kf, sections[i], keys[j], NULL);
+                        if (!strcmp(keys[j], "version"))
                         {
-                            sr_err("%s: create channel failed", __func__);
-                            sr_dev_inst_free(sdi);
-                            return SR_ERR;
+                            version = strtoull(val, NULL, 10);
+                            sr_info("The 'header' file format version:%d", version);
                         }
-
-                        sdi->channels = g_slist_append(sdi->channels, probe);
                     }
                 }
-                adjust_samplerate(sdi);
-                g_strfreev(keys);
+
+                if (!strncmp(sections[i], "header", 6))
+                {
+                    enabled_probes = total_probes = 0;
+                    keys = g_key_file_get_keys(kf, sections[i], NULL, NULL);
+
+                    for (j = 0; keys[j]; j++)
+                    {
+                        val = g_key_file_get_string(kf, sections[i], keys[j], NULL);
+
+                        if (!strcmp(keys[j], "device mode"))
+                        {
+                            mode = strtoull(val, NULL, 10);
+                        }
+                        else if (!strcmp(keys[j], "samplerate"))
+                        {
+                            sr_parse_sizestring(val, &tmp_u64);
+                            vdev->samplerate = tmp_u64;
+                            if(sdi->mode == LOGIC && sample_generator >PATTERN_RANDOM)
+                            {
+                                samplerates_file[0] = vdev->samplerate;
+                            }
+                        }
+                        else if (!strcmp(keys[j], "total samples"))
+                        {
+                            tmp_u64 = strtoull(val, NULL, 10);
+                            vdev->total_samples = tmp_u64;
+                            if(sdi->mode == LOGIC && sample_generator >PATTERN_RANDOM)
+                            {
+                                samplecounts_file[0] = vdev->total_samples;
+                            }
+                        }
+                        else if (!strcmp(keys[j], "total blocks"))
+                        {
+                            tmp_u64 = strtoull(val, NULL, 10);
+                            vdev->num_blocks = tmp_u64;
+                        }
+                        else if (!strcmp(keys[j], "total probes"))
+                        {
+                            sr_dev_probes_free(sdi);
+                            total_probes = strtoull(val, NULL, 10);
+                            vdev->num_probes = total_probes;
+                        }
+                        else if (!strncmp(keys[j], "probe", 5))
+                        {
+                            enabled_probes++;
+                            tmp_u64 = strtoul(keys[j] + 5, NULL, 10);
+                            channel_type = (mode == DSO) ? SR_CHANNEL_DSO : (mode == ANALOG) ? SR_CHANNEL_ANALOG
+                                                                                            : SR_CHANNEL_LOGIC;
+                            if (!(probe = sr_channel_new(tmp_u64, channel_type, TRUE, val)))
+                            {
+                                sr_err("%s: create channel failed", __func__);
+                                sr_dev_inst_free(sdi);
+                                return SR_ERR;
+                            }
+
+                            sdi->channels = g_slist_append(sdi->channels, probe);
+                        }
+                    }
+                    adjust_samplerate(sdi);
+                    g_strfreev(keys);
+                }
+                devcnt++;
             }
-            devcnt++;
+
+            g_strfreev(sections);
+            g_key_file_free(kf);
+            g_safe_free(metafile);
         }
+        else
+        {
+            vdev->samplerate = LOGIC_DEFAULT_SAMPLERATE;
+            vdev->total_samples = LOGIC_DEFAULT_TOTAL_SAMPLES;
+            vdev->num_probes = LOGIC_DEFAULT_NUM_PROBE;
+            sr_dev_probes_free(sdi);
 
-        g_strfreev(sections);
-        g_key_file_free(kf);
-        g_safe_free(metafile);
+            for (int i = 0; i < LOGIC_DEFAULT_NUM_PROBE; i++)
+            {
+                probe_name = probe_names[i];
+                if (!(probe = sr_channel_new(i, SR_CHANNEL_LOGIC, TRUE, probe_name)))
+                {
+                    sr_err("%s: create channel failed", __func__);
+                    sr_dev_inst_free(sdi);
+                    return SR_ERR;
+                }
+                sdi->channels = g_slist_append(sdi->channels, probe);
+            }
+            //updata
+            ch_mode = DEMO_LOGIC125x16;
+            logic_index = LOGIC125x16;
+            logic_adjust_samplerate(sdi->priv);
+        }
+        break;
+    case DSO:
+        vdev->samplerate = DSO_DEFAULT_SAMPLERATE;
+        vdev->total_samples = DSO_DEFAULT_TOTAL_SAMPLES;
+        vdev->num_probes = DSO_DEFAULT_NUM_PROBE;
+        vdev->num_blocks = DSO_DEFAULT_NUM_BLOCK;
+        sr_dev_probes_free(sdi);
+
+        for (int i = 0; i < DSO_DEFAULT_NUM_PROBE; i++)
+        {
+            probe_name = probe_names[i];
+            if (!(probe = sr_channel_new(i, SR_CHANNEL_DSO, TRUE, probe_name)))
+            {
+                sr_err("%s: create channel failed", __func__);
+                sr_dev_inst_free(sdi);
+                return SR_ERR;
+            }
+            probe->enabled = DSO_DEFAULT_ENABLE;
+            probe->coupling = DSO_DEFAULT_COUPLING;
+            probe->vdiv = DSO_DEFAULT_VIDV;
+            probe->vfactor = DSO_DEFAULT_VFACOTR;
+            probe->hw_offset = DSO_DEFAULT_HW_OFFSET;
+            probe->offset = DSO_DEFAULT_OFFSET;
+            probe->trig_value = DSO_DEFAULT_TRIG_VAL;
+            sdi->channels = g_slist_append(sdi->channels, probe);
+        }
+        adjust_samplerate(sdi);
+        break;
+    case ANALOG:
+        vdev->samplerate = ANALOG_DEFAULT_SAMPLERATE;
+        vdev->total_samples = ANALOG_DEFAULT_TOTAL_SAMPLES;
+        vdev->num_probes = ANALOG_DEFAULT_NUM_PROBE;
+        vdev->num_blocks = ANALOG_DEFAULT_NUM_BLOCK;
+        sr_dev_probes_free(sdi);
+        
+        for (int i = 0; i < ANALOG_DEFAULT_NUM_PROBE; i++)
+        {
+            probe_name = probe_names[i];
+            if (!(probe = sr_channel_new(i, SR_CHANNEL_ANALOG, TRUE, probe_name)))
+            {
+                sr_err("%s: create channel failed", __func__);
+                sr_dev_inst_free(sdi);
+                return SR_ERR;
+            }
+            probe->bits = ANALOG_DEFAULT_BIT;
+            probe->enabled = ANALOG_DEFAULT_ENABLE;
+            probe->coupling = ANALOG_DEFAULT_COUPLING;
+            probe->vdiv = ANALOG_DEFAULT_VIDV;
+            probe->vfactor = ANALOG_DEFAULT_VFACOTR;
+            probe->hw_offset = ANALOG_DEFAULT_HW_OFFSET;
+            probe->offset = ANALOG_DEFAULT_OFFSET;
+            probe->trig_value = ANALOG_DEFAULT_TRIG_VAL;
+            probe->map_default = ANALOG_DEFAULT_MAP_DEFAULT;
+            probe->map_unit = ANALOG_DEFAULT_MAP_UNIT;
+            probe->map_min =  ANALOG_DEFAULT_MAP_MIN;
+            probe->map_max = ANALOG_DEFAULT_MAP_MAX;
+
+            sdi->channels = g_slist_append(sdi->channels, probe);
+        }
+        adjust_samplerate(sdi);
+        break;
+    default:
+        break;
     }
-
     return SR_OK;
 }
 
