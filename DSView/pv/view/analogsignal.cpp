@@ -56,41 +56,30 @@ AnalogSignal::AnalogSignal(data::AnalogSnapshot *data, sr_channel *probe) :
     _colour = SignalColours[probe->index % countof(SignalColours)];
 
     _signal_type = ANALOG_SIGNAL;
-
-    GVariant *gvar;
+    uint32_t ui32;
+     
     // channel bits
-    gvar = session->get_device()->get_config(NULL, NULL, SR_CONF_UNIT_BITS);
-    if (gvar != NULL) {
-        _bits = g_variant_get_byte(gvar);
-        g_variant_unref(gvar);
-    }
-    else {
+    bool ret  = session->get_device()->get_config_byte(SR_CONF_UNIT_BITS, _bits);
+    if (!ret) { 
         _bits = DefaultBits;
         dsv_warn("%s%d", "Warning: config_get SR_CONF_UNIT_BITS failed, set to %d(default).", DefaultBits);
     }
 
-    gvar = session->get_device()->get_config(NULL, NULL, SR_CONF_REF_MIN);
-    if (gvar != NULL) {
-        _ref_min = g_variant_get_uint32(gvar);
-        g_variant_unref(gvar);
-    } else {
+    ret = session->get_device()->get_config_uint32(SR_CONF_REF_MIN, ui32);
+    if (ret)
+        _ref_min = (double)ui32;
+    else
         _ref_min = 1;
-    }
-    gvar = session->get_device()->get_config(NULL, NULL, SR_CONF_REF_MAX);
-    if (gvar != NULL) {
-        _ref_max = g_variant_get_uint32(gvar);
-        g_variant_unref(gvar);
-    } else {
+
+    ret = session->get_device()->get_config_uint32(SR_CONF_REF_MAX, ui32);
+    if (ret)
+        _ref_max = (double)ui32;
+    else
         _ref_max = ((1 << _bits) - 1);
-    }
 
     // -- vpos
-    gvar = session->get_device()->get_config(_probe, NULL, SR_CONF_PROBE_OFFSET);
-    if (gvar != NULL) {
-        _zero_offset = g_variant_get_uint16(gvar);
-        g_variant_unref(gvar);
-    }
-    else { 
+    ret = session->get_device()->get_config_uint16( SR_CONF_PROBE_OFFSET, _zero_offset, _probe, NULL);
+    if (!ret) {
         dsv_err("%s", "ERROR: config_get SR_CONF_PROBE_OFFSET failed.");
     }
 }
@@ -126,11 +115,7 @@ AnalogSignal::~AnalogSignal()
 int AnalogSignal::get_hw_offset()
 {
     int hw_offset = 0;
-    GVariant *gvar = session->get_device()->get_config(_probe, NULL, SR_CONF_PROBE_HW_OFFSET);
-    if (gvar != NULL) {
-        hw_offset = g_variant_get_uint16(gvar);
-        g_variant_unref(gvar);
-    }
+    session->get_device()->get_config_uint16(SR_CONF_PROBE_HW_OFFSET, hw_offset, _probe, NULL);
     return hw_offset;
 }
 
@@ -139,24 +124,24 @@ int AnalogSignal::commit_settings()
     int ret;
 
     // -- enable
-    ret = session->get_device()->set_config(_probe, NULL, SR_CONF_PROBE_EN,
-                                g_variant_new_boolean(enabled()));
+    ret = session->get_device()->set_config_bool(SR_CONF_PROBE_EN,
+                                enabled(), _probe);
 
     // -- vdiv
-    ret = session->get_device()->set_config(_probe, NULL, SR_CONF_PROBE_VDIV,
-                                g_variant_new_uint64(_probe->vdiv));
+    ret = session->get_device()->set_config_uint64(SR_CONF_PROBE_VDIV,
+                                _probe->vdiv, _probe, NULL);
 
     // -- coupling
-    ret = session->get_device()->set_config(_probe, NULL, SR_CONF_PROBE_COUPLING,
-                                g_variant_new_byte(_probe->coupling));
+    ret = session->get_device()->set_config_byte(SR_CONF_PROBE_COUPLING,
+                                _probe->coupling, _probe, NULL);
 
     // -- offset
-    ret = session->get_device()->set_config(_probe, NULL, SR_CONF_PROBE_OFFSET,
-                                g_variant_new_uint16(_probe->offset));
+    ret = session->get_device()->set_config_uint16(SR_CONF_PROBE_OFFSET,
+                                _probe->offset, _probe, NULL);
 
     // -- trig_value
-    session->get_device()->set_config(_probe, NULL, SR_CONF_TRIGGER_VALUE,
-                          g_variant_new_byte(_probe->trig_value));
+    session->get_device()->set_config_byte(SR_CONF_TRIGGER_VALUE,
+                          _probe->trig_value, _probe, NULL);
 
     return ret;
 }
@@ -243,77 +228,51 @@ QPointF AnalogSignal::get_point(uint64_t index, float &value)
 uint64_t AnalogSignal::get_vdiv()
 {
     uint64_t vdiv = 0;
-    GVariant* gvar = session->get_device()->get_config(_probe, NULL, SR_CONF_PROBE_VDIV);
-    if (gvar != NULL) {
-        vdiv = g_variant_get_uint64(gvar);
-        g_variant_unref(gvar);
-    }
+    session->get_device()->get_config_uint64(SR_CONF_PROBE_VDIV, vdiv, _probe, NULL);
     return vdiv;
 }
 
 uint8_t AnalogSignal::get_acCoupling()
 {
-    uint64_t coupling = 0;
-    GVariant* gvar = session->get_device()->get_config(_probe, NULL, SR_CONF_PROBE_COUPLING);
-    if (gvar != NULL) {
-        coupling = g_variant_get_byte(gvar);
-        g_variant_unref(gvar);
-    }
+    int coupling = 0;
+    session->get_device()->get_config_byte(SR_CONF_PROBE_COUPLING, coupling, _probe, NULL);
     return coupling;
 }
 
 bool AnalogSignal::get_mapDefault()
 {
     bool isDefault = true;
-    GVariant* gvar = session->get_device()->get_config(_probe, NULL, SR_CONF_PROBE_MAP_DEFAULT);
-    if (gvar != NULL) {
-        isDefault = g_variant_get_boolean(gvar);
-        g_variant_unref(gvar);
-    }
+    session->get_device()->get_config_bool(SR_CONF_PROBE_MAP_DEFAULT, isDefault, _probe, NULL);
     return isDefault;
 }
 
 QString AnalogSignal::get_mapUnit()
 {
     QString unit;
-    GVariant* gvar = session->get_device()->get_config(_probe, NULL, SR_CONF_PROBE_MAP_UNIT);
-    if (gvar != NULL) {
-        unit = g_variant_get_string(gvar, NULL);
-        g_variant_unref(gvar);
-    }
+    session->get_device()->get_config_string(SR_CONF_PROBE_MAP_UNIT, unit, _probe, NULL);
     return unit;
 }
 
 double AnalogSignal::get_mapMin()
 {
     double min = -1;
-    GVariant* gvar = session->get_device()->get_config(_probe, NULL, SR_CONF_PROBE_MAP_MIN);
-    if (gvar != NULL) {
-        min = g_variant_get_double(gvar);
-        g_variant_unref(gvar);
-    }
+    session->get_device()->get_config_double(SR_CONF_PROBE_MAP_MIN, min, _probe, NULL);
     return min;
 }
 
 double AnalogSignal::get_mapMax()
 {
     double max = 1;
-    GVariant* gvar = session->get_device()->get_config(_probe, NULL, SR_CONF_PROBE_MAP_MAX);
-    if (gvar != NULL) {
-        max = g_variant_get_double(gvar);
-        g_variant_unref(gvar);
-    }
+    session->get_device()->get_config_double(SR_CONF_PROBE_MAP_MAX, max, _probe, NULL);
     return max;
 }
 
 uint64_t AnalogSignal::get_factor()
 {
-    GVariant* gvar;
     uint64_t factor;
-    gvar = session->get_device()->get_config(_probe, NULL, SR_CONF_PROBE_FACTOR);
-    if (gvar != NULL) {
-        factor = g_variant_get_uint64(gvar);
-        g_variant_unref(gvar);
+    bool ret;
+    ret = session->get_device()->get_config_uint64(SR_CONF_PROBE_FACTOR,factor,_probe, NULL);
+    if (ret) {
         return factor;
     } 
     else { 
@@ -364,8 +323,8 @@ void AnalogSignal::set_zero_ratio(double ratio)
         return;
 
     _zero_offset = ratio2value(ratio);
-    session->get_device()->set_config(_probe, NULL, SR_CONF_PROBE_OFFSET,
-                          g_variant_new_uint16(_zero_offset));
+    session->get_device()->set_config_uint16(SR_CONF_PROBE_OFFSET,
+                          _zero_offset, _probe, NULL);
 }
 
 double AnalogSignal::get_zero_ratio()

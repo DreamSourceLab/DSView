@@ -454,7 +454,6 @@ void StoreSession::save_proc(data::Snapshot *snapshot)
 bool StoreSession::meta_gen(data::Snapshot *snapshot, std::string &str)
 {
     GSList *l;
-    GVariant *gvar; 
     struct sr_channel *probe;
     int probecnt;
     char *s;
@@ -497,42 +496,33 @@ bool StoreSession::meta_gen(data::Snapshot *snapshot, std::string &str)
 
     sprintf(meta, "samplerate = %s\n", s); str += meta;
 
+    uint64_t tmp_u64;
+    int tmp_u8;
+    uint32_t tmp_u32;
+
     if (mode == DSO) {
-        gvar = _session->get_device()->get_config(NULL, NULL, SR_CONF_TIMEBASE);
-        if (gvar != NULL) {
-            uint64_t tmp_u64 = g_variant_get_uint64(gvar);
+        if (_session->get_device()->get_config_uint64(SR_CONF_TIMEBASE, tmp_u64)) {
             sprintf(meta, "hDiv = %" PRIu64 "\n", tmp_u64); str += meta;
-            g_variant_unref(gvar);
         }
-        gvar = _session->get_device()->get_config(NULL, NULL, SR_CONF_MAX_TIMEBASE);
-        if (gvar != NULL) {
-            uint64_t tmp_u64 = g_variant_get_uint64(gvar);
+
+        if (_session->get_device()->get_config_uint64(SR_CONF_MAX_TIMEBASE, tmp_u64)) {
             sprintf(meta, "hDiv max = %" PRIu64 "\n", tmp_u64); str += meta;
-            g_variant_unref(gvar);
         }
-        gvar = _session->get_device()->get_config(NULL, NULL, SR_CONF_MIN_TIMEBASE);
-        if (gvar != NULL) {
-            uint64_t tmp_u64 = g_variant_get_uint64(gvar);
+
+        if (_session->get_device()->get_config_uint64(SR_CONF_MIN_TIMEBASE, tmp_u64)) {
             sprintf(meta, "hDiv min = %" PRIu64 "\n", tmp_u64); str += meta;
-            g_variant_unref(gvar);
         }
-        gvar = _session->get_device()->get_config(NULL, NULL, SR_CONF_UNIT_BITS);
-        if (gvar != NULL) {
-            uint8_t tmp_u8 = g_variant_get_byte(gvar);
+ 
+        if (_session->get_device()->get_config_byte(SR_CONF_UNIT_BITS, tmp_u8)) {
             sprintf(meta, "bits = %d\n", tmp_u8); str += meta;
-            g_variant_unref(gvar);
         }
-        gvar = _session->get_device()->get_config(NULL, NULL, SR_CONF_REF_MIN);
-        if (gvar != NULL) {
-            uint32_t tmp_u32 = g_variant_get_uint32(gvar);
+ 
+        if (_session->get_device()->get_config_uint32(SR_CONF_REF_MIN, tmp_u32)) {
             sprintf(meta, "ref min = %d\n", tmp_u32); str += meta;
-            g_variant_unref(gvar);
         }
-        gvar = _session->get_device()->get_config(NULL, NULL, SR_CONF_REF_MAX);
-        if (gvar != NULL) {
-            uint32_t tmp_u32 = g_variant_get_uint32(gvar);
+
+        if (_session->get_device()->get_config_uint32(SR_CONF_REF_MAX, tmp_u32)) {
             sprintf(meta, "ref max = %d\n", tmp_u32); str += meta;
-            g_variant_unref(gvar);
         }
     }
     else if (mode == LOGIC) {
@@ -544,17 +534,13 @@ bool StoreSession::meta_gen(data::Snapshot *snapshot, std::string &str)
             uint8_t tmp_u8 = analog_snapshot->get_unit_bytes();
             sprintf(meta, "bits = %d\n", tmp_u8*8); str += meta;
         }
-        gvar = _session->get_device()->get_config(NULL, NULL, SR_CONF_REF_MIN);
-        if (gvar != NULL) {
-            uint32_t tmp_u32 = g_variant_get_uint32(gvar);
+
+        if (_session->get_device()->get_config_uint32(SR_CONF_REF_MIN, tmp_u32)) {
             sprintf(meta, "ref min = %d\n", tmp_u32); str += meta;
-            g_variant_unref(gvar);
         }
-        gvar = _session->get_device()->get_config(NULL, NULL, SR_CONF_REF_MAX);
-        if (gvar != NULL) {
-            uint32_t tmp_u32 = g_variant_get_uint32(gvar);
+
+        if (_session->get_device()->get_config_uint32(SR_CONF_REF_MAX, tmp_u32)) {
             sprintf(meta, "ref max = %d\n", tmp_u32); str += meta;
-            g_variant_unref(gvar);
         }
     }
     sprintf(meta, "trigger pos = %" PRIu64 "\n", _session->get_trigger_pos()); str += meta;
@@ -807,14 +793,11 @@ void StoreSession::export_proc(data::Snapshot *snapshot)
     meta.config = g_slist_append(meta.config, src);
 
     GVariant *gvar;
-    uint8_t bits=0;
-    gvar = _session->get_device()->get_config(NULL, NULL, SR_CONF_UNIT_BITS);
-    if (gvar != NULL) {
-        bits = g_variant_get_byte(gvar);
-        g_variant_unref(gvar);
-    }
-    gvar = _session->get_device()->get_config(NULL, NULL, SR_CONF_REF_MIN);
+    int bits=0;
 
+    _session->get_device()->get_config_byte(SR_CONF_UNIT_BITS, bits);
+
+    gvar = _session->get_device()->get_config(SR_CONF_REF_MIN);
     if (gvar != NULL) {
         src = _session->get_device()->new_config(SR_CONF_REF_MIN, gvar);
         g_variant_unref(gvar);
@@ -824,8 +807,8 @@ void StoreSession::export_proc(data::Snapshot *snapshot)
     }
 
     meta.config = g_slist_append(meta.config, src);
-    gvar = _session->get_device()->get_config(NULL, NULL, SR_CONF_REF_MAX);
 
+    gvar = _session->get_device()->get_config(SR_CONF_REF_MAX);
     if (gvar != NULL) {
         src = _session->get_device()->new_config(SR_CONF_REF_MAX, gvar);
         g_variant_unref(gvar);

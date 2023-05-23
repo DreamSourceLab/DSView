@@ -668,7 +668,7 @@ namespace pv
         for (unsigned int i = 0; i < num_opts; i++)
         {
             const struct sr_config_info *const info = _device_agent->get_config_info(options[i]);
-            gvar = _device_agent->get_config(NULL, NULL, info->key);
+            gvar = _device_agent->get_config(info->key);
             if (gvar != NULL)
             {
                 if (info->datatype == SR_T_BOOL)
@@ -870,7 +870,7 @@ namespace pv
                     continue;
                 }
 
-                bool bFlag = _device_agent->set_config(NULL, NULL, info->key, gvar);
+                bool bFlag = _device_agent->set_config(info->key, gvar);
                 if (!bFlag){
                     dsv_err("Set device config option failed, id:%d, code:%d", info->key, id);
                 }   
@@ -1450,19 +1450,12 @@ namespace pv
         if (_device_agent->is_hardware())
         {
             int usb_speed = LIBUSB_SPEED_HIGH;
-            GVariant *gvar = _device_agent->get_config(NULL, NULL, SR_CONF_USB_SPEED);
-            if (gvar != NULL)
-            {
-                usb_speed = g_variant_get_int32(gvar);
-                g_variant_unref(gvar);
-            }
+            _device_agent->get_config_int32(SR_CONF_USB_SPEED, usb_speed);
 
-            gvar = _device_agent->get_config(NULL, NULL, SR_CONF_USB30_SUPPORT);
-            if (gvar != NULL)
-            {
-                bool usb30_support = g_variant_get_boolean(gvar);
-                g_variant_unref(gvar);
+            bool usb30_support = false;
 
+            if (_device_agent->get_config_bool(SR_CONF_USB30_SUPPORT, usb30_support))
+            {
                 dsv_info("The device's USB module version: %d.0", usb30_support ? 3 : 2);
 
                 int cable_ver = 1;
@@ -1542,12 +1535,10 @@ namespace pv
         if (device_agent->is_file() && device_agent->is_new_device())
         {
             if (device_agent->get_work_mode() == LOGIC)
-            {
-                GVariant *gvar = device_agent->get_config(NULL, NULL, SR_CONF_FILE_VERSION);
-                if (gvar != NULL)
+            {   
+                int version = -1; 
+                if (device_agent->get_config_int16(SR_CONF_FILE_VERSION, version))
                 {
-                    int16_t version = g_variant_get_int16(gvar);
-                    g_variant_unref(gvar);
                     if (version == 1)
                     {
                         QString strMsg(L_S(STR_PAGE_DLG, S_ID(IDS_DLG_CHECK_SESSION_FILE_VERSION_ERROR), 
@@ -1763,14 +1754,9 @@ namespace pv
             {
                 if(_device_agent->get_work_mode() == LOGIC)
                 {
-                    GVariant *gvar = _device_agent->get_config(NULL,NULL,SR_CONF_PATTERN_MODE);
-                    if(gvar != NULL)
-                    {
-                        _pattern_mode = g_variant_get_string(gvar,NULL);
-                        g_variant_unref(gvar);
-                    }
-
+                    _pattern_mode = _device_agent->get_demo_operation_mode();
                     _protocol_widget->del_all_protocol();
+
                     if(_device_agent->get_work_mode() == LOGIC)
                     {
                         _view->auto_set_max_scale();
@@ -1819,12 +1805,7 @@ namespace pv
 
             if(_device_agent->is_demo())
             {
-                GVariant *gvar = _device_agent->get_config(NULL,NULL,SR_CONF_PATTERN_MODE);
-                if(gvar != NULL)
-                {
-                    _pattern_mode = g_variant_get_string(gvar,NULL);
-                    g_variant_unref(gvar);
-                }
+                _pattern_mode = _device_agent->get_demo_operation_mode();
                 _protocol_widget->del_all_protocol();
 
                 if(_device_agent->get_work_mode() == LOGIC)
@@ -1935,42 +1916,35 @@ namespace pv
 
         case DSV_MSG_BEGIN_DEVICE_OPTIONS: 
             if(_device_agent->is_demo()){
-                GVariant *gvar = _device_agent->get_config(NULL,NULL,SR_CONF_PATTERN_MODE);
-                if(gvar != NULL)
-                {
-                    _pattern_mode = g_variant_get_string(gvar,NULL);
-                    g_variant_unref(gvar);
-                }
+                _pattern_mode = _device_agent->get_demo_operation_mode();
             }
             break;  
 
         case DSV_MSG_END_DEVICE_OPTIONS: 
             if(_device_agent->is_demo() &&_device_agent->get_work_mode() == LOGIC){                
-                QString pattern_mode;
-                if(_device_agent->get_config_value_string(SR_CONF_PATTERN_MODE, pattern_mode))
+                QString pattern_mode = _device_agent->get_demo_operation_mode();       
+                
+                if(pattern_mode != _pattern_mode)
                 {
-                    if(pattern_mode != _pattern_mode)
+                    _pattern_mode = pattern_mode;
+                    _device_agent->set_config_bool(SR_CONF_DEMO_INIT, true);
+                    _device_agent->update();
+
+                    _session->init_signals();
+                    update_toolbar_view_status();
+                    _sampling_bar->update_sample_rate_list();
+
+                    _protocol_widget->del_all_protocol();
+                        
+                    if(_pattern_mode != "random")
                     {
-                        _pattern_mode = pattern_mode;
-                        _device_agent->set_config(NULL,NULL,SR_CONF_DEMO_INIT,g_variant_new_boolean(TRUE));
-                        _device_agent->update();
-
-                        _session->init_signals();
-                        update_toolbar_view_status();
-                        _sampling_bar->update_sample_rate_list();
-
-                        _protocol_widget->del_all_protocol();
-                         
-                        if(_pattern_mode != "random")
-                        {
-                            _session->set_operation_mode(OPT_SINGLE);
-                            StoreSession ss(_session);
-                            QJsonArray deArray = get_decoder_json_from_file(_device_agent->path());
-                            ss.load_decoders(_protocol_widget, deArray);
-                            _session->start_capture(false);
-                        }
+                        _session->set_operation_mode(OPT_SINGLE);
+                        StoreSession ss(_session);
+                        QJsonArray deArray = get_decoder_json_from_file(_device_agent->path());
+                        ss.load_decoders(_protocol_widget, deArray);
+                        _session->start_capture(false);
                     }
-                }
+                }                
             }
             calc_min_height();            
             break;       
@@ -1979,17 +1953,15 @@ namespace pv
             if(_device_agent->is_demo() &&_device_agent->get_work_mode() == LOGIC){
                 _protocol_widget->del_all_protocol();
                 _session->clear_view_data();
-                QString pattern_mode;
-
-                if(_device_agent->get_config_value_string(SR_CONF_PATTERN_MODE, pattern_mode)){
-                    if(pattern_mode != "random"){
-                        _device_agent->update();
-                        _session->set_operation_mode(OPT_SINGLE);
-                        StoreSession ss(_session);
-                        QJsonArray deArray = get_decoder_json_from_file(_device_agent->path());
-                        ss.load_decoders(_protocol_widget, deArray);
-                    }
-                }
+                QString pattern_mode = _device_agent->get_demo_operation_mode();
+                
+                if(pattern_mode != "random"){
+                    _device_agent->update();
+                    _session->set_operation_mode(OPT_SINGLE);
+                    StoreSession ss(_session);
+                    QJsonArray deArray = get_decoder_json_from_file(_device_agent->path());
+                    ss.load_decoders(_protocol_widget, deArray);
+                } 
             }
             break;                          
         }

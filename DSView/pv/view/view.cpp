@@ -437,21 +437,20 @@ void View::set_trig_time()
 void View::receive_end()
 {
     if (_device_agent->get_work_mode() == LOGIC) {
-        GVariant *gvar = _device_agent->get_config(NULL, NULL, SR_CONF_RLE);
-        if (gvar != NULL) {
-            bool rle = g_variant_get_boolean(gvar);
-            g_variant_unref(gvar);
-            if (rle) {
-                gvar = _device_agent->get_config(NULL, NULL, SR_CONF_ACTUAL_SAMPLES);
-                if (gvar != NULL) {
-                    uint64_t actual_samples = g_variant_get_uint64(gvar);
-                    g_variant_unref(gvar);
-                    if (actual_samples != _session->cur_samplelimits()) {
-                        _viewbottom->set_rle_depth(actual_samples);
-                    }
+        bool rle = false;
+        uint64_t actual_samples;
+        bool ret;
+
+        ret = _device_agent->get_config_bool(SR_CONF_RLE, rle);
+      
+        if (ret && rle) {
+            ret = _device_agent->get_config_uint64(SR_CONF_ACTUAL_SAMPLES, actual_samples);
+            if (ret) {
+                if (actual_samples != _session->cur_samplelimits()) {
+                    _viewbottom->set_rle_depth(actual_samples);
                 }
             }
-        }
+        }       
     }
     _time_viewport->unshow_wait_trigger();
 }
@@ -647,12 +646,14 @@ void View::signals_changed()
         } 
 
         if (_device_agent->get_work_mode() == LOGIC) {
-            GVariant* gvar = _device_agent->get_config(NULL, NULL, SR_CONF_MAX_HEIGHT_VALUE);
+            int v;
+            bool ret;
 
-            if (gvar != NULL) {
-                max_height = (g_variant_get_byte(gvar) + 1) * MaxHeightUnit;
-                g_variant_unref(gvar);
+            ret = _device_agent->get_config_byte(SR_CONF_MAX_HEIGHT_VALUE, v);
+            if (ret) {
+                max_height = (v + 1) * MaxHeightUnit;
             }
+
             if (height < 2*actualMargin) {
                 actualMargin /= 2;
                 _signalHeight = max(1.0, (_time_viewport->height()
@@ -1209,15 +1210,13 @@ int View::get_cursor_index_by_key(uint64_t key)
 void View::check_calibration()
 {
      if (_device_agent->get_work_mode() == DSO){
-            GVariant* gvar = _device_agent->get_config(NULL, NULL, SR_CONF_CALI);
-            if (gvar != NULL) {
-                bool cali = g_variant_get_boolean(gvar);
-                g_variant_unref(gvar);
-                if (cali) {
-                    show_calibration();
-                }
-            }
-        }
+        bool cali = false;
+        _device_agent->get_config_bool(SR_CONF_CALI, cali);
+            
+        if (cali) {
+            show_calibration();
+        }           
+    }
 }
 
 void View::set_scale(double scale)

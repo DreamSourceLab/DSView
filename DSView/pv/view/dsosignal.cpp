@@ -96,10 +96,12 @@ DsoSignal::DsoSignal(data::DsoSnapshot *data,
             GVariant *gvar;
             GVariantIter iter;
             g_variant_iter_init(&iter, gvar_list_vdivs);
+
             while(NULL != (gvar = g_variant_iter_next_value(&iter))) {
                 vValue.push_back(g_variant_get_uint64(gvar));
                 g_variant_unref(gvar);
             }
+            
             g_variant_unref(gvar_list_vdivs);
             g_variant_unref(gvar_list);
         }
@@ -138,14 +140,11 @@ void DsoSignal::set_enable(bool enable)
     }
 
     _en_lock = true;
-    GVariant* gvar;
     bool cur_enable;
-    gvar = session->get_device()->get_config(_probe, NULL, SR_CONF_PROBE_EN);
-    if (gvar != NULL) {
-        cur_enable = g_variant_get_boolean(gvar);
-        g_variant_unref(gvar);
-    } 
-    else { 
+    bool ret;
+    ret = session->get_device()->get_config_bool(SR_CONF_PROBE_EN, cur_enable, _probe, NULL);
+
+    if (!ret) { 
         dsv_err("%s", "ERROR: config_get SR_CONF_PROBE_EN failed.");
         _en_lock = false;
         return;
@@ -166,8 +165,8 @@ void DsoSignal::set_enable(bool enable)
         QCoreApplication::processEvents();
 
     set_vDialActive(false);
-    session->get_device()->set_config(_probe, NULL, SR_CONF_PROBE_EN,
-                          g_variant_new_boolean(enable));
+    session->get_device()->set_config_bool( SR_CONF_PROBE_EN,
+                          enable, _probe, NULL);
 
     _view->update_hori_res();
     
@@ -200,15 +199,15 @@ bool DsoSignal::go_vDialPre(bool manul)
         const double pre_vdiv = _vDial->get_value();
         _vDial->set_sel(_vDial->get_sel() - 1);
 
-        session->get_device()->set_config(_probe, NULL, SR_CONF_PROBE_VDIV,
-                              g_variant_new_uint64(_vDial->get_value()));
+        session->get_device()->set_config_uint64(SR_CONF_PROBE_VDIV,
+                              _vDial->get_value(), _probe, NULL);
 
         if (session->is_stopped_status()) {
             session->set_stop_scale(session->stop_scale() * (pre_vdiv/_vDial->get_value()));
             set_scale(get_view_rect().height());
         }
-        session->get_device()->set_config(_probe, NULL, SR_CONF_PROBE_OFFSET,
-                              g_variant_new_uint16(_zero_offset));
+        session->get_device()->set_config_uint16(SR_CONF_PROBE_OFFSET,
+                              _zero_offset, _probe, NULL);
 
         _view->vDial_updated();
         _view->set_update(_viewport, true);
@@ -235,15 +234,15 @@ bool DsoSignal::go_vDialNext(bool manul)
         const double pre_vdiv = _vDial->get_value();
         _vDial->set_sel(_vDial->get_sel() + 1);
 
-        session->get_device()->set_config(_probe, NULL, SR_CONF_PROBE_VDIV,
-                              g_variant_new_uint64(_vDial->get_value()));
+        session->get_device()->set_config_uint64(SR_CONF_PROBE_VDIV,
+                              _vDial->get_value(), _probe, NULL);
 
         if (session->is_stopped_status()) {
             session->set_stop_scale(session->stop_scale() * (pre_vdiv/_vDial->get_value()));
             set_scale(get_view_rect().height());
         }
-        session->get_device()->set_config(_probe, NULL, SR_CONF_PROBE_OFFSET,
-                              g_variant_new_uint16(_zero_offset));
+        session->get_device()->set_config_uint16(SR_CONF_PROBE_OFFSET,
+                              _zero_offset, _probe, NULL);
 
         _view->vDial_updated();
         _view->set_update(_viewport, true);
@@ -259,13 +258,14 @@ bool DsoSignal::go_vDialNext(bool manul)
 
 bool DsoSignal::load_settings()
 {
-    GVariant* gvar; 
+    int v;
+    uint32_t ui32;
+    bool ret;
 
     // dso channel bits
-    gvar = session->get_device()->get_config(NULL, NULL, SR_CONF_UNIT_BITS);
-    if (gvar != NULL) {
-        _bits = g_variant_get_byte(gvar);
-        g_variant_unref(gvar);
+    ret = session->get_device()->get_config_byte(SR_CONF_UNIT_BITS, v);
+    if (ret) {
+        _bits = (uint8_t)v;
     } 
     else {
         _bits = DefaultBits; 
@@ -275,39 +275,29 @@ bool DsoSignal::load_settings()
             return false;
     }
 
-    gvar = session->get_device()->get_config(NULL, NULL, SR_CONF_REF_MIN);
-    if (gvar != NULL) {
-        _ref_min = g_variant_get_uint32(gvar);
-        g_variant_unref(gvar);
-    } else {
+    ret = session->get_device()->get_config_uint32(SR_CONF_REF_MIN, ui32);
+    if (ret) 
+        _ref_min = (double)ui32;
+    else
         _ref_min = 1;
-    }
-    gvar = session->get_device()->get_config(NULL, NULL, SR_CONF_REF_MAX);
-    if (gvar != NULL) {
-        _ref_max = g_variant_get_uint32(gvar);
-        g_variant_unref(gvar);
-    } else {
+    
+    ret = session->get_device()->get_config_uint32(SR_CONF_REF_MAX, ui32);
+    if (ret)
+        _ref_max = (double)ui32;
+    else
         _ref_max = ((1 << _bits) - 1);
-    }
 
     // -- vdiv
     uint64_t vdiv;
     uint64_t vfactor;
-    gvar = session->get_device()->get_config(_probe, NULL, SR_CONF_PROBE_VDIV);
-    if (gvar != NULL) {
-        vdiv = g_variant_get_uint64(gvar);
-        g_variant_unref(gvar);
-    } 
-    else { 
+    ret = session->get_device()->get_config_uint64(SR_CONF_PROBE_VDIV, vdiv, _probe, NULL);
+    if (!ret) {
         dsv_err("%s", "ERROR: config_get SR_CONF_PROBE_VDIV failed.");
         return false;
     }
-    gvar = session->get_device()->get_config(_probe, NULL, SR_CONF_PROBE_FACTOR);
-    if (gvar != NULL) {
-        vfactor = g_variant_get_uint64(gvar);
-        g_variant_unref(gvar);
-    } 
-    else { 
+
+    ret = session->get_device()->get_config_uint64(SR_CONF_PROBE_FACTOR, vfactor, _probe, NULL);
+    if (!ret) {
         dsv_err("%s", "ERROR: config_get SR_CONF_PROBE_FACTOR failed.");
         return false;
     }
@@ -316,10 +306,9 @@ bool DsoSignal::load_settings()
     _vDial->set_factor(vfactor);
 
     // -- coupling
-    gvar = session->get_device()->get_config(_probe, NULL, SR_CONF_PROBE_COUPLING);
-    if (gvar != NULL) {
-        _acCoupling = g_variant_get_byte(gvar);
-        g_variant_unref(gvar);
+    ret = session->get_device()->get_config_byte(SR_CONF_PROBE_COUPLING, v, _probe, NULL);
+    if (ret) {
+        _acCoupling = uint8_t(v);
     }
     else { 
         dsv_err("%s", "ERROR: config_get SR_CONF_PROBE_COUPLING failed.");
@@ -327,22 +316,16 @@ bool DsoSignal::load_settings()
     }
  
     // -- vpos
-    gvar = session->get_device()->get_config(_probe, NULL, SR_CONF_PROBE_OFFSET);
-    if (gvar != NULL) {
-        _zero_offset = g_variant_get_uint16(gvar);
-        g_variant_unref(gvar);
-    } 
-    else { 
+    ret = session->get_device()->get_config_uint16(SR_CONF_PROBE_OFFSET, _zero_offset, _probe, NULL);
+    if (!ret) {
         dsv_err("%s", "ERROR: config_get SR_CONF_PROBE_OFFSET failed.");
         return false;
     }
 
     // -- trig_value
-    gvar = session->get_device()->get_config(_probe, NULL, SR_CONF_TRIGGER_VALUE);
-    if (gvar != NULL) {
-        _trig_value = g_variant_get_byte(gvar);
+    ret = session->get_device()->get_config_byte(SR_CONF_TRIGGER_VALUE, _trig_value, _probe, NULL);
+    if (ret) { 
         _trig_delta = get_trig_vrate() - get_zero_ratio();
-        g_variant_unref(gvar);
     }
     else {
         dsv_err("%s", "ERROR: config_get SR_CONF_TRIGGER_VALUE failed.");
@@ -363,26 +346,26 @@ int DsoSignal::commit_settings()
     int ret;
 
     // -- enable
-    ret = session->get_device()->set_config(_probe, NULL, SR_CONF_PROBE_EN,
-                                g_variant_new_boolean(enabled()));
+    ret = session->get_device()->set_config_bool(SR_CONF_PROBE_EN,
+                                enabled(), _probe, NULL);
 
     // -- vdiv
-    ret = session->get_device()->set_config(_probe, NULL, SR_CONF_PROBE_VDIV,
-                                g_variant_new_uint64(_vDial->get_value()));
-    ret = session->get_device()->set_config(_probe, NULL, SR_CONF_PROBE_FACTOR,
-                                g_variant_new_uint64(_vDial->get_factor()));
+    ret = session->get_device()->set_config_uint64(SR_CONF_PROBE_VDIV,
+                                _vDial->get_value(), _probe, NULL);
+    ret = session->get_device()->set_config_uint64(SR_CONF_PROBE_FACTOR,
+                                _vDial->get_factor(), _probe, NULL);
 
     // -- coupling
-    ret = session->get_device()->set_config(_probe, NULL, SR_CONF_PROBE_COUPLING,
-                                g_variant_new_byte(_acCoupling));
+    ret = session->get_device()->set_config_byte(SR_CONF_PROBE_COUPLING,
+                                _acCoupling, _probe, NULL);
 
     // -- offset
-    ret = session->get_device()->set_config(_probe, NULL, SR_CONF_PROBE_OFFSET,
-                                g_variant_new_uint16(_zero_offset));
+    ret = session->get_device()->set_config_uint16(SR_CONF_PROBE_OFFSET,
+                                _zero_offset, _probe, NULL);
 
     // -- trig_value
-    session->get_device()->set_config(_probe, NULL, SR_CONF_TRIGGER_VALUE,
-                          g_variant_new_byte(_trig_value));
+    session->get_device()->set_config_byte(SR_CONF_TRIGGER_VALUE,
+                          _trig_value, _probe, NULL);
 
     return ret;
 }
@@ -401,8 +384,8 @@ void DsoSignal::set_acCoupling(uint8_t coupling)
 {
     if (enabled()) {
         _acCoupling = coupling; 
-        session->get_device()->set_config(_probe, NULL, SR_CONF_PROBE_COUPLING,
-                              g_variant_new_byte(_acCoupling));
+        session->get_device()->set_config_byte(SR_CONF_PROBE_COUPLING,
+                              _acCoupling, _probe, NULL);
     }
 }
 
@@ -463,8 +446,8 @@ void DsoSignal::set_trig_ratio(double ratio, bool delta_change)
  
     if (delta_change)
         _trig_delta = get_trig_vrate() - get_zero_ratio();
-    session->get_device()->set_config(_probe, NULL, SR_CONF_TRIGGER_VALUE,
-                          g_variant_new_byte(_trig_value));
+    session->get_device()->set_config_byte(SR_CONF_TRIGGER_VALUE,
+                          _trig_value, _probe, NULL);
 }
 
 int DsoSignal::get_zero_vpos()
@@ -479,13 +462,8 @@ double DsoSignal::get_zero_ratio()
 
 int DsoSignal::get_hw_offset()
 {
-    int hw_offset = 0; 
-
-    GVariant *gvar = session->get_device()->get_config(_probe, NULL, SR_CONF_PROBE_HW_OFFSET);
-    if (gvar != NULL) {
-        hw_offset = g_variant_get_uint16(gvar);
-        g_variant_unref(gvar);
-    }
+    int hw_offset = 0;
+    session->get_device()->get_config_uint16(SR_CONF_PROBE_HW_OFFSET, hw_offset, _probe, NULL);
     return hw_offset;
 }
 
@@ -500,28 +478,25 @@ void DsoSignal::set_zero_vpos(int pos)
 void DsoSignal::set_zero_ratio(double ratio)
 {
     _zero_offset = ratio2value(ratio); 
-    session->get_device()->set_config(_probe, NULL, SR_CONF_PROBE_OFFSET,
-                          g_variant_new_uint16(_zero_offset));
+    session->get_device()->set_config_uint16(SR_CONF_PROBE_OFFSET,
+                          _zero_offset, _probe, NULL);
 }
 
 void DsoSignal::set_factor(uint64_t factor)
 {
     if (enabled()) {
-        GVariant* gvar;
         uint64_t prefactor = 0; 
+        bool ret;
 
-        gvar = session->get_device()->get_config(_probe, NULL, SR_CONF_PROBE_FACTOR);
-        if (gvar != NULL) {
-            prefactor = g_variant_get_uint64(gvar);
-            g_variant_unref(gvar);
-        } 
-        else { 
+        ret = session->get_device()->get_config_uint64(SR_CONF_PROBE_FACTOR, prefactor, _probe, NULL);
+        if (!ret) { 
             dsv_err("%s", "ERROR: config_get SR_CONF_PROBE_FACTOR failed.");
             return;
         }
+
         if (prefactor != factor) {
-            session->get_device()->set_config(_probe, NULL, SR_CONF_PROBE_FACTOR,
-                                  g_variant_new_uint64(factor));
+            session->get_device()->set_config_uint64(SR_CONF_PROBE_FACTOR,
+                                  factor, _probe, NULL);
             _vDial->set_factor(factor);
             _view->set_update(_viewport, true);
             _view->update();
@@ -530,14 +505,11 @@ void DsoSignal::set_factor(uint64_t factor)
 }
 
 uint64_t DsoSignal::get_factor()
-{
-    GVariant* gvar;
+{ 
     uint64_t factor; 
 
-    gvar = session->get_device()->get_config(_probe, NULL, SR_CONF_PROBE_FACTOR);
-    if (gvar != NULL) {
-        factor = g_variant_get_uint64(gvar);
-        g_variant_unref(gvar);
+    bool ret = session->get_device()->get_config_uint64(SR_CONF_PROBE_FACTOR, factor, _probe, NULL);
+    if (ret) {
         return factor;
     } 
     else { 
@@ -690,10 +662,12 @@ void DsoSignal::paint_prepare()
     if (session->trigd()) {
         if (get_index() == session->trigd_ch()) {
             uint8_t slope = DSO_TRIGGER_RISING;
-            GVariant *gvar = session->get_device()->get_config(NULL, NULL, SR_CONF_TRIGGER_SLOPE);
-            if (gvar != NULL) {
-                slope = g_variant_get_byte(gvar);
-                g_variant_unref(gvar);
+            int v;
+            bool ret;
+
+            ret = session->get_device()->get_config_byte(SR_CONF_TRIGGER_SLOPE, v);
+            if (ret) {
+                slope = (uint8_t)v;
             }
 
             int64_t trig_index = _view->get_trig_cursor()->index();
@@ -1142,14 +1116,11 @@ void DsoSignal::paint_type_options(QPainter &p, int right, const QPoint pt, QCol
     }
 
     // paint the probe factor selector
-    GVariant* gvar;
     uint64_t factor;
-    gvar = session->get_device()->get_config(_probe, NULL, SR_CONF_PROBE_FACTOR);
-    if (gvar != NULL) {
-        factor = g_variant_get_uint64(gvar);
-        g_variant_unref(gvar);
-    }
-    else { 
+    bool ret;
+
+    ret = session->get_device()->get_config_uint64(SR_CONF_PROBE_FACTOR, factor, _probe, NULL);
+    if (!ret) {
         dsv_err("%s", "ERROR: config_get SR_CONF_PROBE_FACTOR failed.");
         return;
     }
@@ -1362,11 +1333,8 @@ void DsoSignal::auto_set()
         if (_mValid && !session->get_data_auto_lock()) {
             if (_autoH) {
                 bool roll = false;
-                GVariant *gvar = session->get_device()->get_config(NULL, NULL, SR_CONF_ROLL);
-                if (gvar != NULL) {
-                    roll = g_variant_get_boolean(gvar);
-                    g_variant_unref(gvar);
-                }
+                session->get_device()->get_config_bool(SR_CONF_ROLL, roll);
+
                 const double hori_res = _view->get_hori_res();
                 if (_level_valid && ((!roll && _pcount < 3) || _period > 4*hori_res)) {
                     _view->zoom(-1);

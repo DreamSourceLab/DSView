@@ -70,56 +70,6 @@ void DeviceAgent::update()
     return _di;
  }
 
-GVariant* DeviceAgent::get_config(const sr_channel *ch, const sr_channel_group *group, int key)
-{
-    assert(_dev_handle); 
-    GVariant *data = NULL;
-    
-    int ret = ds_get_actived_device_config(ch, group, key, &data);
-    if (ret != SR_OK)
-    {
-        if (ret != SR_ERR_NA)
-            dsv_err("%s%d", "ERROR: Failed to get value of config id:", key);
-    }
-    return data;
-}
-
-bool DeviceAgent::set_config(sr_channel *ch, sr_channel_group *group, int key, GVariant *data)
-{
-    assert(_dev_handle);
-
-    int ret = ds_set_actived_device_config(ch, group, key, data);
-    if (ret != SR_OK)
-    {
-        if (ret != SR_ERR_NA)
-            dsv_err("%s%d", "ERROR: Failed to set value of config id:", key);
-        return false;
-    }
-
-    config_changed();
-    return true;
-}
-
-GVariant* DeviceAgent::get_config_list(const sr_channel_group *group, int key)
-{
-    assert(_dev_handle);
-
-    GVariant *data = NULL;
-
-    int ret = ds_get_actived_device_config_list(group, key, &data);
-    if (ret != SR_OK){
-        if (ret != SR_ERR_NA)
-            dsv_detail("%s%d", "WARNING: Failed to get config list, key:", key); 
-        
-        if (data != NULL){
-            dsv_warn("%s%d", "WARNING: Failed to get config list, but data is not null. key:", key); 
-        }
-        data = NULL;
-    }
-
-    return data;
-}
-
 bool DeviceAgent::enable_probe(const sr_channel *probe, bool enable)
 {
     assert(_dev_handle);
@@ -349,39 +299,12 @@ GSList *DeviceAgent::get_channels()
     return false;
  }
 
- bool DeviceAgent::get_config_value_int16(int key, int &value)
- {  
-    GVariant* gvar = get_config(NULL, NULL, key);
-    
-    if (gvar != NULL) {
-        value = g_variant_get_int16(gvar);
-        g_variant_unref(gvar);
-        return true;
-    }
-
-    return false;
- }
-
- bool DeviceAgent::get_config_value_string(int key, QString &value)
- {
-    GVariant* gvar = get_config(NULL, NULL, key);
-    
-    if (gvar != NULL) {
-        const gchar *s = g_variant_get_string(gvar, NULL);
-        value = QString(s);
-        g_variant_unref(gvar);
-        return true;
-    }
-
-    return false;
- }
-
  int DeviceAgent::get_operation_mode()
  {
     assert(_dev_handle);
 
     int mode_val = 0;
-    if (get_config_value_int16(SR_CONF_OPERATION_MODE, mode_val)){                  
+    if (get_config_int16(SR_CONF_OPERATION_MODE, mode_val)){                  
         return mode_val;
     }
     return -1;
@@ -414,20 +337,125 @@ GSList *DeviceAgent::get_channels()
     }        
     
     QString pattern_mode;
-    if(get_config_value_string(SR_CONF_PATTERN_MODE, pattern_mode) == false)
+    if(get_config_string(SR_CONF_PATTERN_MODE, pattern_mode) == false)
     {
         assert(false);
     }
     return pattern_mode;
  }
 
- bool DeviceAgent::set_config_string(int key, const char *value)
+GVariant* DeviceAgent::get_config_list(const sr_channel_group *group, int key)
+{
+    assert(_dev_handle);
+
+    GVariant *data = NULL;
+
+    int ret = ds_get_actived_device_config_list(group, key, &data);
+    if (ret != SR_OK){
+        if (ret != SR_ERR_NA)
+            dsv_detail("%s%d", "WARNING: Failed to get config list, key:", key); 
+        
+        if (data != NULL){
+            dsv_warn("%s%d", "WARNING: Failed to get config list, but data is not null. key:", key); 
+        }
+        data = NULL;
+    }
+
+    return data;
+}
+
+GVariant* DeviceAgent::get_config(int key, const sr_channel *ch, const sr_channel_group *cg)
+{
+    assert(_dev_handle); 
+    GVariant *data = NULL;
+    
+    int ret = ds_get_actived_device_config(ch, cg, key, &data);
+    if (ret != SR_OK)
+    {
+        if (ret != SR_ERR_NA)
+            dsv_err("%s%d", "ERROR:DeviceAgent::get_config, Failed to get value of config id:", key);
+    }
+    return data;
+}
+
+bool DeviceAgent::have_config(int key, const sr_channel *ch, const sr_channel_group *cg)
+{
+    GVariant *gvar = get_config(key, ch, cg);
+
+    if (gvar != NULL){
+        g_variant_unref(gvar);
+        return true;
+    }
+    return false;
+}
+
+bool DeviceAgent::set_config(int key, GVariant *data, const sr_channel *ch, const sr_channel_group *cg)
+ {
+    assert(_dev_handle);
+
+    int ret = ds_set_actived_device_config(ch, cg, key, data);
+    if (ret != SR_OK)
+    {
+        if (ret != SR_ERR_NA)
+            dsv_err("%s%d", "ERROR:DeviceAgent::set_config, Failed to set value of config id:", key);
+        return false;
+    }
+
+    config_changed();
+    return true;
+ }
+
+ bool DeviceAgent::get_config_int32(int key, int &value, const sr_channel *ch, const sr_channel_group *cg)
+ {  
+    GVariant* gvar = get_config(key, ch, cg);
+    
+    if (gvar != NULL) {
+        value = g_variant_get_int32(gvar);
+        g_variant_unref(gvar);
+        return true;
+    }
+
+    return false;
+ }
+
+ bool DeviceAgent::set_config_int32(int key, int value, const sr_channel *ch, const sr_channel_group *cg)
+ {
+    assert(_dev_handle);
+
+    GVariant *gvar = g_variant_new_int32(value);
+    int ret = ds_set_actived_device_config(ch, cg, key, gvar);
+
+    if (ret != SR_OK)
+    {
+        if (ret != SR_ERR_NA)
+            dsv_err("%s%d", "ERROR: DeviceAgent::set_config_int32, Failed to set value of config id:", key);
+        return false;
+    }
+    return true;
+ }
+
+ bool DeviceAgent::get_config_string(int key, QString &value, const sr_channel *ch, const sr_channel_group *cg)
+ {
+    GVariant* gvar = get_config(key, ch, cg);
+    
+    if (gvar != NULL) {
+        const gchar *s = g_variant_get_string(gvar, NULL);
+        value = QString(s);
+        g_variant_unref(gvar);
+        return true;
+    }
+
+    return false;
+ }
+
+ bool DeviceAgent::set_config_string(int key, const char *value, const sr_channel *ch, const sr_channel_group *cg)
  {
     assert(value);
     assert(_dev_handle);
 
     GVariant *gvar = g_variant_new_string(value);
-    int ret = ds_set_actived_device_config(NULL, NULL, key, gvar);
+    int ret = ds_set_actived_device_config(ch, cg, key, gvar);
+
     if (ret != SR_OK)
     {
         if (ret != SR_ERR_NA)
@@ -436,6 +464,210 @@ GSList *DeviceAgent::get_channels()
     }
     return true;
  }
+
+bool DeviceAgent::get_config_bool(int key, bool &value, const sr_channel *ch, const sr_channel_group *cg)
+{
+    GVariant* gvar = get_config(key, ch, cg);
+    
+    if (gvar != NULL) {
+        gboolean v = g_variant_get_boolean(gvar);
+        value = v > 0;
+        g_variant_unref(gvar);
+        return true;
+    }
+
+    return false;
+}
+
+bool DeviceAgent::set_config_bool(int key, bool value, const sr_channel *ch, const sr_channel_group *cg)
+{
+    assert(_dev_handle);
+
+    GVariant *gvar = g_variant_new_boolean(value);
+    int ret = ds_set_actived_device_config(ch, cg, key, gvar);
+
+    if (ret != SR_OK)
+    {
+        if (ret != SR_ERR_NA)
+            dsv_err("%s%d", "ERROR: DeviceAgent::set_config_bool, Failed to set value of config id:", key);
+        return false;
+    }
+    return true;
+}
+
+bool DeviceAgent::get_config_uint64(int key, uint64_t &value, const sr_channel *ch, const sr_channel_group *cg)
+{
+    GVariant* gvar = get_config(key, ch, cg);
+    
+    if (gvar != NULL) {
+        value = g_variant_get_uint64(gvar);
+        g_variant_unref(gvar);
+        return true;
+    }
+
+    return false;
+}
+
+bool DeviceAgent::set_config_uint64(int key, uint64_t value, const sr_channel *ch, const sr_channel_group *cg)
+{
+    assert(_dev_handle);
+
+    GVariant *gvar = g_variant_new_uint64(value);
+    int ret = ds_set_actived_device_config(ch, cg, key, gvar);
+
+    if (ret != SR_OK)
+    {
+        if (ret != SR_ERR_NA)
+            dsv_err("%s%d", "ERROR: DeviceAgent::set_config_uint64, Failed to set value of config id:", key);
+        return false;
+    }
+    return true;
+}
+
+bool DeviceAgent::get_config_uint16(int key, int &value, const sr_channel *ch, const sr_channel_group *cg)
+{
+    GVariant* gvar = get_config(key, ch, cg);
+    
+    if (gvar != NULL) {
+        value = g_variant_get_uint16(gvar);
+        g_variant_unref(gvar);
+        return true;
+    }
+
+    return false;
+}
+
+bool DeviceAgent::set_config_uint16(int key, int value, const sr_channel *ch, const sr_channel_group *cg)
+{
+    assert(_dev_handle);
+
+    GVariant *gvar = g_variant_new_uint16(value);
+    int ret = ds_set_actived_device_config(ch, cg, key, gvar);
+
+    if (ret != SR_OK)
+    {
+        if (ret != SR_ERR_NA)
+            dsv_err("%s%d", "ERROR: DeviceAgent::set_config_uint16, Failed to set value of config id:", key);
+        return false;
+    }
+    return true;
+}
+
+bool DeviceAgent::get_config_uint32(int key, uint32_t &value, const sr_channel *ch, const sr_channel_group *cg)
+{
+    GVariant* gvar = get_config(key, ch, cg);
+    
+    if (gvar != NULL) {
+        value = g_variant_get_uint32(gvar);
+        g_variant_unref(gvar);
+        return true;
+    }
+
+    return false;
+}
+
+bool DeviceAgent::set_config_uint32(int key, uint32_t value, const sr_channel *ch, const sr_channel_group *cg)
+{
+    assert(_dev_handle);
+
+    GVariant *gvar = g_variant_new_uint32(value);
+    int ret = ds_set_actived_device_config(ch, cg, key, gvar);
+
+    if (ret != SR_OK)
+    {
+        if (ret != SR_ERR_NA)
+            dsv_err("%s%d", "ERROR: DeviceAgent::set_config_uint32, Failed to set value of config id:", key);
+        return false;
+    }
+    return true;
+}
+
+bool DeviceAgent::get_config_int16(int key, int &value, const sr_channel *ch, const sr_channel_group *cg)
+{
+    GVariant* gvar = get_config(key, ch, cg);
+    
+    if (gvar != NULL) {
+        value = g_variant_get_int16(gvar);
+        g_variant_unref(gvar);
+        return true;
+    }
+
+    return false;
+}
+
+bool DeviceAgent::set_config_int16(int key, int value, const sr_channel *ch, const sr_channel_group *cg)
+{
+    assert(_dev_handle);
+
+    GVariant *gvar = g_variant_new_int16(value);
+    int ret = ds_set_actived_device_config(ch, cg, key, gvar);
+
+    if (ret != SR_OK)
+    {
+        if (ret != SR_ERR_NA)
+            dsv_err("%s%d", "ERROR: DeviceAgent::set_config_int16, Failed to set value of config id:", key);
+        return false;
+    }
+    return true;
+}
+
+bool DeviceAgent::get_config_byte(int key, int &value, const sr_channel *ch, const sr_channel_group *cg)
+{
+    GVariant* gvar = get_config(key, ch, cg);
+    
+    if (gvar != NULL) {
+        value = g_variant_get_byte(gvar);
+        g_variant_unref(gvar);
+        return true;
+    }
+
+    return false;
+}
+
+bool DeviceAgent::set_config_byte(int key, int value, const sr_channel *ch, const sr_channel_group *cg)
+{
+    assert(_dev_handle);
+
+    GVariant *gvar = g_variant_new_byte((uint8_t)value);
+    int ret = ds_set_actived_device_config(ch, cg, key, gvar);
+
+    if (ret != SR_OK)
+    {
+        if (ret != SR_ERR_NA)
+            dsv_err("%s%d", "ERROR: DeviceAgent::set_config_byte, Failed to set value of config id:", key);
+        return false;
+    }
+    return true;
+}
+
+bool DeviceAgent::get_config_double(int key, double &value, const sr_channel *ch, const sr_channel_group *cg)
+{
+    GVariant* gvar = get_config(key, ch, cg);
+    
+    if (gvar != NULL) {
+        value = g_variant_get_double(gvar);
+        g_variant_unref(gvar);
+        return true;
+    }
+
+    return false;
+}
+
+bool DeviceAgent::set_config_double(int key, double value, const sr_channel *ch, const sr_channel_group *cg)
+{
+    assert(_dev_handle);
+
+    GVariant *gvar = g_variant_new_double(value);
+    int ret = ds_set_actived_device_config(ch, cg, key, gvar);
+
+    if (ret != SR_OK)
+    {
+        if (ret != SR_ERR_NA)
+            dsv_err("%s%d", "ERROR: DeviceAgent::set_config_double, Failed to set value of config id:", key);
+        return false;
+    }
+    return true;
+}
 
 //---------------device config end -----------/
 

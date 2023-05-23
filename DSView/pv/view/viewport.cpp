@@ -377,21 +377,15 @@ void Viewport::paintSignals(QPainter &p, QColor fore, QColor back)
         if (_view.session().get_device()->get_work_mode() == DSO
             && _view.session().is_running_status()) 
         {
-            uint8_t type;
+            int type;
             bool roll = false;
             QString type_str="";
+            bool ret = false;
 
-            GVariant *gvar = _view.session().get_device()->get_config(NULL, NULL, SR_CONF_ROLL);
-            if (gvar != NULL) {
-                roll = g_variant_get_boolean(gvar);
-                g_variant_unref(gvar);
-            }
+            _view.session().get_device()->get_config_bool(SR_CONF_ROLL, roll);
 
-            gvar = _view.session().get_device()->get_config(NULL, NULL, SR_CONF_TRIGGER_SOURCE);
-            if (gvar != NULL) {
-                type = g_variant_get_byte(gvar);
-                g_variant_unref(gvar);
-
+            ret = _view.session().get_device()->get_config_byte(SR_CONF_TRIGGER_SOURCE, type);
+            if (ret) {
                 bool bDot = false;
 
                 if (type == DSO_TRIGGER_AUTO && roll) {

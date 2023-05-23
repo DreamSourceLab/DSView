@@ -230,9 +230,8 @@ void DsoTriggerDock::auto_trig(int index)
 void DsoTriggerDock::pos_changed(int pos)
 {
     int ret;
-    ret = _session->get_device()->set_config(NULL, NULL,
-                                            SR_CONF_HORIZ_TRIGGERPOS,
-                                            g_variant_new_byte((uint8_t)pos));
+    ret = _session->get_device()->set_config_byte(
+                                            SR_CONF_HORIZ_TRIGGERPOS,pos);
     if (!ret) {        
         if (_session->get_device()->is_hardware()){
             QString strMsg(L_S(STR_PAGE_MSG, S_ID(IDS_MSG_CHANGE_HOR_TRI_POS_FAIL), 
@@ -258,9 +257,8 @@ void DsoTriggerDock::hold_changed(int hold)
         _holdoff_slider->setRange(0, 999);
 
     holdoff = _holdoff_slider->value() * _holdoff_comboBox->currentData().toDouble() / 10;
-    ret = _session->get_device()->set_config(NULL, NULL,
-                                            SR_CONF_TRIGGER_HOLDOFF,
-                                            g_variant_new_uint64(holdoff));
+    ret = _session->get_device()->set_config_uint64(
+                                            SR_CONF_TRIGGER_HOLDOFF,holdoff);
 
     if (!ret) {
         QString strMsg(L_S(STR_PAGE_MSG, S_ID(IDS_MSG_CHANGE_TRI_HOLDOFF_TIME_FAIL),
@@ -272,9 +270,7 @@ void DsoTriggerDock::hold_changed(int hold)
 void DsoTriggerDock::margin_changed(int margin)
 {
     int ret;
-    ret = _session->get_device()->set_config(NULL, NULL,
-                                            SR_CONF_TRIGGER_MARGIN,
-                                            g_variant_new_byte(margin));
+    ret = _session->get_device()->set_config_byte(SR_CONF_TRIGGER_MARGIN, margin);
     if (!ret) {
         QString strMsg(L_S(STR_PAGE_MSG, S_ID(IDS_MSG_CHANGE_SENSITIVITY_FAIL), 
                                       "Change trigger value sensitivity failed!"));
@@ -299,9 +295,7 @@ void DsoTriggerDock::source_changed()
 
     dsv_info("Set DSO trig type:%d", id);
 
-    ret = _session->get_device()->set_config(NULL, NULL,
-                                            SR_CONF_TRIGGER_SOURCE,
-                                            g_variant_new_byte(id));
+    ret = _session->get_device()->set_config_byte(SR_CONF_TRIGGER_SOURCE, id);
     if (!ret) {
         QString strMsg(L_S(STR_PAGE_MSG, S_ID(IDS_MSG_CHANGE_SOURCE_FAIL), 
                                       "Change trigger source failed!"));
@@ -317,9 +311,7 @@ void DsoTriggerDock::check_setting()
         _ch0a1_radioButton->setChecked(false);
         _ch0o1_radioButton->setChecked(false);
 
-        _session->get_device()->set_config(NULL, NULL,
-                                            SR_CONF_TRIGGER_SOURCE,
-                                            g_variant_new_byte(DSO_TRIGGER_AUTO));
+        _session->get_device()->set_config_byte(SR_CONF_TRIGGER_SOURCE, int(DSO_TRIGGER_AUTO));
     }
 }
 
@@ -350,9 +342,9 @@ void DsoTriggerDock::channel_changed(int ch)
     (void)ch;
     int ret;
 
-    ret = _session->get_device()->set_config(NULL, NULL,
+    ret = _session->get_device()->set_config_byte(
                                             SR_CONF_TRIGGER_CHANNEL,
-                                            g_variant_new_byte(_channel_comboBox->currentData().toInt()));
+                                            int(_channel_comboBox->currentData().toInt()));
     if (!ret) {
         QString strMsg(L_S(STR_PAGE_MSG, S_ID(IDS_MSG_CHANGE_CHANNEL_FAIL), 
                                       "Change trigger channel failed!"));
@@ -365,9 +357,9 @@ void DsoTriggerDock::type_changed()
     int id = _type_group->checkedId();
     int ret;
 
-    ret = _session->get_device()->set_config(NULL, NULL,
+    ret = _session->get_device()->set_config_byte(
                                             SR_CONF_TRIGGER_SLOPE,
-                                            g_variant_new_byte(id));
+                                            id);
     if (!ret) {
         QString strMsg(L_S(STR_PAGE_MSG, S_ID(IDS_MSG_CHANGE_TYPE_FAIL), 
                                       "Change trigger type failed!"));
@@ -385,6 +377,7 @@ void DsoTriggerDock::device_change()
 void DsoTriggerDock::update_view()
 {
     bool bDisable = _session->get_device()->is_file();
+    bool ret;
 
     for(QAbstractButton * btn :  _source_group->buttons()){
         btn->setDisabled(bDisable);
@@ -407,20 +400,17 @@ void DsoTriggerDock::update_view()
         return;
     }
 
-    // TRIGGERPOS
-    GVariant* gvar = _session->get_device()->get_config(NULL, NULL,
-                                            SR_CONF_HORIZ_TRIGGERPOS);
-    if (gvar != NULL) {
-        uint16_t pos = g_variant_get_byte(gvar);
-        g_variant_unref(gvar);
+    int pos;
+    int src;
+    int slope;
+
+    // TRIGGERPOS 
+    if (_session->get_device()->get_config_byte(
+                                            SR_CONF_HORIZ_TRIGGERPOS, pos)) {
         _position_slider->setValue(pos);
     }
 
-    gvar = _session->get_device()->get_config(NULL, NULL,
-                                                SR_CONF_TRIGGER_SOURCE);
-    if (gvar != NULL) {
-        uint8_t src = g_variant_get_byte(gvar);
-        g_variant_unref(gvar);
+    if (_session->get_device()->get_config_byte(SR_CONF_TRIGGER_SOURCE, src)) {
         _source_group->button(src)->setChecked(true);
     }
 
@@ -434,11 +424,9 @@ void DsoTriggerDock::update_view()
             _channel_comboBox->addItem(dsoSig->get_name(), QVariant::fromValue(dsoSig->get_index()));
         }
     }
-    gvar = _session->get_device()->get_config(NULL, NULL,
-                                                SR_CONF_TRIGGER_CHANNEL);
-    if (gvar != NULL) {
-        uint8_t src = g_variant_get_byte(gvar);
-        g_variant_unref(gvar);
+    ret = _session->get_device()->get_config_byte(
+                                                SR_CONF_TRIGGER_CHANNEL, src);
+    if (ret) { 
         for (int i = 0; i < _channel_comboBox->count(); i++) {
             if (src == _channel_comboBox->itemData(i).toInt()) {
                 _channel_comboBox->setCurrentIndex(i);
@@ -448,22 +436,19 @@ void DsoTriggerDock::update_view()
     }
     connect(_channel_comboBox, SIGNAL(currentIndexChanged(int)), this, SLOT(channel_changed(int)));
 
-    gvar = _session->get_device()->get_config(NULL, NULL,
-                                                SR_CONF_TRIGGER_SLOPE);
-    if (gvar != NULL) {
-        uint8_t slope = g_variant_get_byte(gvar);
-        g_variant_unref(gvar);
+    ret = _session->get_device()->get_config_byte(
+                                                SR_CONF_TRIGGER_SLOPE, slope);
+    if (ret) {
         _type_group->button(slope)->setChecked(true);
     }
 
     disconnect(_holdoff_slider, SIGNAL(valueChanged(int)), this, SLOT(hold_changed(int)));
     disconnect(_holdoff_comboBox, SIGNAL(currentIndexChanged(int)), this, SLOT(hold_changed(int)));
-    gvar = _session->get_device()->get_config(NULL, NULL,
-                                                SR_CONF_TRIGGER_HOLDOFF);
-    if (gvar != NULL) {
-        uint64_t holdoff = g_variant_get_uint64(gvar);
-        g_variant_unref(gvar);
-        
+
+    uint64_t holdoff;
+    ret = _session->get_device()->get_config_uint64(
+                                                SR_CONF_TRIGGER_HOLDOFF, holdoff);
+    if (ret) {        
         auto v = holdoff * 10.0;
 
         for (int i=0; i<_holdoff_comboBox->count(); i++)
@@ -487,11 +472,11 @@ void DsoTriggerDock::update_view()
     connect(_holdoff_comboBox, SIGNAL(currentIndexChanged(int)), this, SLOT(hold_changed(int)));
 
     disconnect(_margin_slider, SIGNAL(valueChanged(int)), this, SLOT(margin_changed(int)));
-    gvar = _session->get_device()->get_config(NULL, NULL,
-                                                SR_CONF_TRIGGER_MARGIN);
-    if (gvar != NULL) {
-        uint8_t margin = g_variant_get_byte(gvar);
-        g_variant_unref(gvar);
+    
+    int  margin;
+    ret = _session->get_device()->get_config_byte(
+                                                SR_CONF_TRIGGER_MARGIN, margin);
+    if (ret) {
         _margin_slider->setValue(margin);
     }
     connect(_margin_slider, SIGNAL(valueChanged(int)), this, SLOT(margin_changed(int)));

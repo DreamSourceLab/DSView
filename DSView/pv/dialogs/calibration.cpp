@@ -151,22 +151,11 @@ void Calibration::update_device_info()
         assert(probe);
 
         uint64_t vgain = 0, vgain_default = 0;
-        uint16_t vgain_range = 0;
-        GVariant* gvar = _device_agent->get_config(probe, NULL, SR_CONF_PROBE_VGAIN);
-        if (gvar != NULL) {
-            vgain = g_variant_get_uint64(gvar);
-            g_variant_unref(gvar);
-        }
-        gvar = _device_agent->get_config(probe, NULL, SR_CONF_PROBE_VGAIN_DEFAULT);
-        if (gvar != NULL) {
-            vgain_default = g_variant_get_uint64(gvar);
-            g_variant_unref(gvar);
-        }
-        gvar = _device_agent->get_config(probe, NULL, SR_CONF_PROBE_VGAIN_RANGE);
-        if (gvar != NULL) {
-            vgain_range = g_variant_get_uint16(gvar);
-            g_variant_unref(gvar);
-        }
+        int vgain_range = 0;
+        
+        _device_agent->get_config_uint64(SR_CONF_PROBE_VGAIN, vgain, probe, NULL);
+        _device_agent->get_config_uint64(SR_CONF_PROBE_VGAIN_DEFAULT, vgain_default, probe, NULL);   
+        _device_agent->get_config_uint16(SR_CONF_PROBE_VGAIN_RANGE, vgain_range, probe, NULL);
 
         QSlider *gain_slider = new QSlider(Qt::Horizontal, this);
         gain_slider->setRange(-vgain_range/2, vgain_range/2);
@@ -180,16 +169,15 @@ void Calibration::update_device_info()
 
         uint64_t voff = 0;
         uint16_t voff_range = 0;
-        gvar = _device_agent->get_config(probe, NULL, SR_CONF_PROBE_PREOFF);
-        if (gvar != NULL) {
-            voff = g_variant_get_uint16(gvar);
-            g_variant_unref(gvar);
+        int v;
+ 
+        if (_device_agent->get_config_uint16(SR_CONF_PROBE_PREOFF, v, probe, NULL)) {
+            voff = (uint64_t)v;
         }
-        gvar = _device_agent->get_config(probe, NULL, SR_CONF_PROBE_PREOFF_MARGIN);
-        if (gvar != NULL) {
-            voff_range = g_variant_get_uint16(gvar);
-            g_variant_unref(gvar);
+        if (_device_agent->get_config_uint16(SR_CONF_PROBE_PREOFF_MARGIN, v, probe, NULL)) {
+            voff_range = (uint16_t)v;
         }
+
         QSlider *off_slider = new QSlider(Qt::Horizontal, this);
         off_slider->setRange(0, voff_range);
         off_slider->setValue(voff);
@@ -201,18 +189,12 @@ void Calibration::update_device_info()
         _label_list.push_back(off_label);
 
         bool comb_comp_en = false;
-        gvar = _device_agent->get_config(NULL, NULL, SR_CONF_PROBE_COMB_COMP_EN);
-        if (gvar != NULL) {
-            comb_comp_en = g_variant_get_boolean(gvar);
-            g_variant_unref(gvar);
-        }
+        _device_agent->get_config_bool(SR_CONF_PROBE_COMB_COMP_EN, comb_comp_en);
+
         if (comb_comp_en) {
-            int16_t comb_comp = 0;
-            gvar = _device_agent->get_config(probe, NULL, SR_CONF_PROBE_COMB_COMP);
-            if (gvar != NULL) {
-                comb_comp = g_variant_get_int16(gvar);
-                g_variant_unref(gvar);
-            }
+            int comb_comp = 0;
+           _device_agent->get_config_int16(SR_CONF_PROBE_COMB_COMP, comb_comp, probe, NULL);
+
             QSlider *comp_slider = new QSlider(Qt::Horizontal, this);
             comp_slider->setRange(-127, 127);
             comp_slider->setValue(comb_comp);
@@ -235,14 +217,14 @@ void Calibration::update_device_info()
 void Calibration::accept()
 {
     using namespace Qt;
-    _device_agent->set_config(NULL, NULL, SR_CONF_CALI, g_variant_new_boolean(false));
+    _device_agent->set_config_bool(SR_CONF_CALI, false);
     QDialog::accept();
 }
 
 void Calibration::reject()
 {
     using namespace Qt;
-    _device_agent->set_config(NULL, NULL, SR_CONF_CALI, g_variant_new_boolean(false));
+    _device_agent->set_config_bool(SR_CONF_CALI, false);
     QDialog::reject();
 }
 
@@ -255,21 +237,17 @@ void Calibration::set_value(int value)
         assert(probe);
         if (sc->objectName() == VGAIN+probe->index) {
             uint64_t vgain_default;
-            GVariant* gvar = _device_agent->get_config(probe, NULL, SR_CONF_PROBE_VGAIN_DEFAULT);
-            if (gvar != NULL) {
-                vgain_default = g_variant_get_uint64(gvar);
-                g_variant_unref(gvar);
-                _device_agent->set_config(probe, NULL, SR_CONF_PROBE_VGAIN,
-                                      g_variant_new_uint64(value+vgain_default));
+            if (_device_agent->get_config_uint64(SR_CONF_PROBE_VGAIN_DEFAULT, vgain_default, probe))
+            {
+                _device_agent->set_config_uint64(SR_CONF_PROBE_VGAIN, value+vgain_default, probe);          
             }
             break;
-        } else if (sc->objectName() == VOFF+probe->index) {
-            _device_agent->set_config(probe, NULL, SR_CONF_PROBE_PREOFF,
-                                  g_variant_new_uint16(value));
+        }
+        else if (sc->objectName() == VOFF+probe->index) {
+           _device_agent->set_config_uint16(SR_CONF_PROBE_PREOFF, value, probe); 
             break;
         } else if (sc->objectName() == VCOMB+probe->index) {
-            _device_agent->set_config(probe, NULL, SR_CONF_PROBE_COMB_COMP,
-                                  g_variant_new_int16(value));
+            _device_agent->set_config_int16(SR_CONF_PROBE_COMB_COMP, value, probe);
             break;
         }
     }
@@ -279,12 +257,11 @@ void Calibration::on_save()
 {
     this->hide();
     QFuture<void> future;
+
     future = QtConcurrent::run([&]{
-        //QTime dieTime = QTime::currentTime().addSecs(1);
-        _device_agent->set_config(NULL, NULL, SR_CONF_ZERO_SET,
-                              g_variant_new_boolean(true));
-        //while( QTime::currentTime() < dieTime );
+        _device_agent->set_config_bool( SR_CONF_ZERO_SET, true);
     });
+
     Qt::WindowFlags flags = Qt::CustomizeWindowHint;
     QProgressDialog dlg(L_S(STR_PAGE_DLG, S_ID(IDS_DLG_SAVE_CALIBRATION_RESULTS), 
                         "Save calibration results... It can take a while."),
@@ -307,13 +284,12 @@ void Calibration::on_abort()
 {
     this->hide();
     QFuture<void> future;
-    future = QtConcurrent::run([&]{
-        //QTime dieTime = QTime::currentTime().addSecs(1);
-        _device_agent->set_config(NULL, NULL, SR_CONF_ZERO_LOAD,
-                              g_variant_new_boolean(true));
+
+    future = QtConcurrent::run([&]{ 
+        _device_agent->set_config_bool(SR_CONF_ZERO_LOAD, true);
         reload_value();
-        //while( QTime::currentTime() < dieTime );
     });
+
     Qt::WindowFlags flags = Qt::CustomizeWindowHint;
     QProgressDialog dlg(L_S(STR_PAGE_DLG, S_ID(IDS_DLG_RELOAD_CALIBRATION_RESULTS), 
                         "Reload last calibration results... It can take a while."),
@@ -338,35 +314,16 @@ void Calibration::reload_value()
         assert(probe);
 
         uint64_t vgain = 0, vgain_default = 0;
-        uint16_t vgain_range = 0;
-        GVariant* gvar = _device_agent->get_config(probe, NULL, SR_CONF_PROBE_VGAIN);
-        if (gvar != NULL) {
-            vgain = g_variant_get_uint64(gvar);
-            g_variant_unref(gvar);
-        }
-        gvar = _device_agent->get_config(probe, NULL, SR_CONF_PROBE_VGAIN_DEFAULT);
-        if (gvar != NULL) {
-            vgain_default = g_variant_get_uint64(gvar);
-            g_variant_unref(gvar);
-        }
-        gvar = _device_agent->get_config(probe, NULL, SR_CONF_PROBE_VGAIN_RANGE);
-        if (gvar != NULL) {
-            vgain_range = g_variant_get_uint16(gvar);
-            g_variant_unref(gvar);
-        }
+        int vgain_range = 0;
+        _device_agent->get_config_uint64(SR_CONF_PROBE_VGAIN, vgain, probe, NULL);
+        _device_agent->get_config_uint64(SR_CONF_PROBE_VGAIN_DEFAULT, vgain_default, probe, NULL);   
+        _device_agent->get_config_uint16(SR_CONF_PROBE_VGAIN_RANGE, vgain_range, probe, NULL);
 
-        uint64_t voff = 0;
-        uint16_t voff_range = 0;
-        gvar = _device_agent->get_config(probe, NULL, SR_CONF_PROBE_PREOFF);
-        if (gvar != NULL) {
-            voff = g_variant_get_uint16(gvar);
-            g_variant_unref(gvar);
-        }
-        gvar = _device_agent->get_config(probe, NULL, SR_CONF_PROBE_PREOFF_MARGIN);
-        if (gvar != NULL) {
-            voff_range = g_variant_get_uint16(gvar);
-            g_variant_unref(gvar);
-        }
+        int voff = 0;
+        int voff_range = 0;
+
+        _device_agent->get_config_uint16(SR_CONF_PROBE_PREOFF, voff, probe, NULL);
+        _device_agent->get_config_uint16(SR_CONF_PROBE_PREOFF_MARGIN, voff_range, probe, NULL);
 
         for(std::list<QSlider*>::iterator i = _slider_list.begin();
             i != _slider_list.end(); i++) {
@@ -387,8 +344,7 @@ void Calibration::on_reset()
         "All calibration settings will become the defualt values!"));
 
     if (MsgBox::Confirm(strMsg)) {
-        _device_agent->set_config(NULL, NULL, SR_CONF_ZERO_DEFAULT,
-                              g_variant_new_boolean(true));
+        _device_agent->set_config_bool(SR_CONF_ZERO_DEFAULT, true);
         reload_value();
     }
 }

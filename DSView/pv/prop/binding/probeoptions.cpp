@@ -109,14 +109,14 @@ GVariant* ProbeOptions::config_getter(const struct sr_channel *probe, int key)
 { 
     SigSession *session = AppControl::Instance()->GetSession();
     DeviceAgent *_device_agent = session->get_device();
-    return _device_agent->get_config(probe, NULL, key);
+    return _device_agent->get_config(key, probe, NULL);
 }
 
 void ProbeOptions::config_setter(struct sr_channel *probe, int key, GVariant* value)
 {
     SigSession *session = AppControl::Instance()->GetSession();
     DeviceAgent *_device_agent = session->get_device();
-    _device_agent->set_config(probe, NULL, key, value);
+    _device_agent->set_config(key, value, probe, NULL);
 }
 
 void ProbeOptions::bind_bool(const QString &name, const QString label, int key)

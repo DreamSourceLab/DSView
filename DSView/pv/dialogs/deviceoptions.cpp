@@ -144,11 +144,7 @@ DeviceOptions::DeviceOptions(QWidget *parent) :
     auto button_box = new QDialogButtonBox(QDialogButtonBox::Ok, Qt::Horizontal, this);
 	this->layout()->addWidget(button_box); 
    
-    GVariant* gvar = _device_agent->get_config(NULL, NULL, SR_CONF_OPERATION_MODE);
-    if (gvar != NULL) {
-        _opt_mode = g_variant_get_int16(gvar);
-        g_variant_unref(gvar);
-    }
+    _device_agent->get_config_int16(SR_CONF_OPERATION_MODE, _opt_mode);
 
     try_resize_scroll();
   
@@ -282,12 +278,9 @@ void DeviceOptions::logic_probes(QVBoxLayout &layout)
             struct sr_list_item *plist = (struct sr_list_item*)g_variant_get_uint64(gvar_opts);
             g_variant_unref(gvar_opts);
 
-            GVariant* mode_var = _device_agent->get_config(NULL, NULL, SR_CONF_CHANNEL_MODE);
-            assert(mode_var);
+            int ch_mode = 0;
+            _device_agent->get_config_int16(SR_CONF_CHANNEL_MODE, ch_mode);
             _channel_mode_indexs.clear();
-
-            int ch_mode = g_variant_get_int16(mode_var);
-            g_variant_unref(mode_var);
 
             while (plist != NULL && plist->id >= 0)
             {
@@ -312,11 +305,7 @@ void DeviceOptions::logic_probes(QVBoxLayout &layout)
         }
     }
 
-    GVariant *gvar =  _device_agent->get_config(NULL, NULL, SR_CONF_VLD_CH_NUM);
-    if (gvar != NULL) {
-        vld_ch_num = g_variant_get_int16(gvar);
-        g_variant_unref(gvar);
-    }
+    _device_agent->get_config_int16(SR_CONF_VLD_CH_NUM, vld_ch_num);
 
     // channels
     QHBoxLayout *line_lay = NULL;
@@ -401,12 +390,10 @@ void DeviceOptions::enable_max_probes() {
             cur_ch_num++;
     }
 
-    GVariant* gvar =  _device_agent->get_config(NULL, NULL, SR_CONF_VLD_CH_NUM);
-    if (gvar == NULL)
-        return;
+    int vld_ch_num;
 
-    int vld_ch_num = g_variant_get_int16(gvar);
-    g_variant_unref(gvar); 
+    if (_device_agent->get_config_int16(SR_CONF_VLD_CH_NUM, vld_ch_num) == false)
+        return;
 
     while(cur_ch_num < vld_ch_num  && cur_ch_num < (int)_probes_checkBox_list.size()) {
         auto box = _probes_checkBox_list[cur_ch_num];
@@ -418,12 +405,10 @@ void DeviceOptions::enable_max_probes() {
 }
 
 void DeviceOptions::enable_all_probes()
-{
-    GVariant* gvar = _device_agent->get_config(NULL, NULL, SR_CONF_STREAM);
-    if (gvar != NULL) {
-        bool stream_mode = g_variant_get_boolean(gvar);
-        g_variant_unref(gvar);
+{   
+    bool stream_mode; 
 
+    if (_device_agent->get_config_bool(SR_CONF_STREAM, stream_mode)) {
         if (stream_mode) {
             enable_max_probes();
             return;
@@ -448,10 +433,10 @@ void DeviceOptions::zero_adj()
     bool bRet = MsgBox::Confirm(strMsg);
 
     if (bRet) {
-        _device_agent->set_config(NULL, NULL, SR_CONF_ZERO, g_variant_new_boolean(true));
+        _device_agent->set_config_bool(SR_CONF_ZERO, true);
     } 
     else {
-        _device_agent->set_config(NULL, NULL, SR_CONF_ZERO, g_variant_new_boolean(false));
+        _device_agent->set_config_bool(SR_CONF_ZERO, false);
     }
 }
 
@@ -459,7 +444,7 @@ void DeviceOptions::on_calibration()
 {
     using namespace Qt;
     QDialog::accept();
-    _device_agent->set_config(NULL, NULL, SR_CONF_CALI, g_variant_new_boolean(true));
+    _device_agent->set_config_bool(SR_CONF_CALI, true);
 }
 
 void DeviceOptions::mode_check_timeout()
@@ -469,11 +454,8 @@ void DeviceOptions::mode_check_timeout()
 
     bool test;
     int mode;
-    GVariant* gvar = _device_agent->get_config(NULL, NULL, SR_CONF_OPERATION_MODE);
-    if (gvar != NULL) {
-        mode = g_variant_get_int16(gvar);
-        g_variant_unref(gvar);
 
+    if (_device_agent->get_config_int16(SR_CONF_OPERATION_MODE, mode)) {
         if (mode != _opt_mode) { 
             _opt_mode = mode; 
             build_dynamic_panel();
@@ -481,11 +463,7 @@ void DeviceOptions::mode_check_timeout()
         }
     }
 
-    gvar = _device_agent->get_config(NULL, NULL, SR_CONF_TEST);
-    if (gvar != NULL) {
-        test = g_variant_get_boolean(gvar);
-        g_variant_unref(gvar);
-
+    if (_device_agent->get_config_bool(SR_CONF_TEST, test)) {
         if (test) { 
             for (auto box : _probes_checkBox_list) {
                 box->setCheckState(Qt::Checked);
@@ -509,9 +487,7 @@ void DeviceOptions::channel_check()
         }
     }
     assert(mode_index >= 0);
-
-    GVariant* gvar = g_variant_new_int16(mode_index);
-    _device_agent->set_config(NULL, NULL, SR_CONF_CHANNEL_MODE, gvar);
+    _device_agent->set_config_int16(SR_CONF_CHANNEL_MODE, mode_index);
   
     build_dynamic_panel();
     try_resize_scroll();
@@ -526,8 +502,7 @@ void DeviceOptions::analog_channel_check()
             sr_channel *const probe = (sr_channel*)l->data;
             
             if (sc->property("index").toInt() == probe->index){
-               _device_agent->set_config(probe, NULL, SR_CONF_PROBE_MAP_DEFAULT,
-                                     g_variant_new_boolean(sc->isChecked()));
+               _device_agent->set_config_bool(SR_CONF_PROBE_MAP_DEFAULT, sc->isChecked(), probe);
             }
         }
     }
@@ -548,12 +523,9 @@ void DeviceOptions::channel_checkbox_clicked(QCheckBox *sc)
         if (sc == NULL || !sc->isChecked())
             return;
 
-        GVariant* gvar = _device_agent->get_config(NULL, NULL, SR_CONF_STREAM);
-        if (gvar == NULL)
+        bool stream_mode;
+        if (_device_agent->get_config_bool(SR_CONF_STREAM, stream_mode) == false)
             return;
-
-        bool stream_mode = g_variant_get_boolean(gvar);
-        g_variant_unref(gvar);
 
         if (!stream_mode)
             return;
@@ -564,12 +536,10 @@ void DeviceOptions::channel_checkbox_clicked(QCheckBox *sc)
                 cur_ch_num++;
         }
 
-        gvar =  _device_agent->get_config(NULL, NULL, SR_CONF_VLD_CH_NUM);
-        if (gvar == NULL)
+        int vld_ch_num;
+        if (_device_agent->get_config_int16(SR_CONF_VLD_CH_NUM, vld_ch_num) == false)
             return;
 
-        int vld_ch_num = g_variant_get_int16(gvar);
-        g_variant_unref(gvar);
         if (cur_ch_num > vld_ch_num) {
             QString msg_str(L_S(STR_PAGE_MSG, S_ID(IDS_MSG_MAX_CHANNEL_COUNT_WARNING), "max count of channels!"));
             msg_str = msg_str.replace("{0}", QString::number(vld_ch_num) );
@@ -598,13 +568,8 @@ void DeviceOptions::channel_checkbox_clicked(QCheckBox *sc)
 
             if (ck_index != -1)
             {
-                GVariant* gvar = _device_agent->get_config(_dso_channel_list[ck_index], 
-                            NULL, SR_CONF_PROBE_MAP_DEFAULT);
-
-                if (gvar != NULL) {
-                    map_default = g_variant_get_boolean(gvar);
-                    g_variant_unref(gvar);
-                }
+                _device_agent->get_config_bool(SR_CONF_PROBE_MAP_DEFAULT,
+                                map_default, _dso_channel_list[ck_index], NULL);
             }
 
             while(i--)
@@ -684,11 +649,7 @@ void DeviceOptions::analog_probes(QGridLayout &layout)
                 if (probe_checkBox->isChecked() && p->name().contains("Map")) {
                     bool map_default = true;
 
-                    GVariant* gvar = _device_agent->get_config(probe, NULL, SR_CONF_PROBE_MAP_DEFAULT);
-                    if (gvar != NULL) {
-                        map_default = g_variant_get_boolean(gvar);
-                        g_variant_unref(gvar);
-                    }
+                    _device_agent->get_config_bool(SR_CONF_PROBE_MAP_DEFAULT, map_default, probe, NULL);
 
                     if (map_default)
                         pow->setEnabled(false);
@@ -735,11 +696,9 @@ QString DeviceOptions::dynamic_widget(QLayout *lay)
         return L_S(STR_PAGE_DLG, S_ID(IDS_DLG_CHANNEL), "Channel");
     } 
     else if (mode == DSO) {
-        GVariant* gvar = _device_agent->get_config(NULL, NULL, SR_CONF_HAVE_ZERO);
-        if (gvar != NULL) {
-            bool have_zero = g_variant_get_boolean(gvar);
-            g_variant_unref(gvar);
-
+        bool have_zero;
+      
+        if (_device_agent->get_config_bool(SR_CONF_HAVE_ZERO, have_zero)) {
             QGridLayout *grid = dynamic_cast<QGridLayout*>(lay);
             assert(grid);
 

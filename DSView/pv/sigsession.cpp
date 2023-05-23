@@ -402,7 +402,7 @@ namespace pv
     void SigSession::capture_init()
     {
         // update instant setting
-        _device_agent.set_config(NULL, NULL, SR_CONF_INSTANT, g_variant_new_boolean(_is_instant));
+        _device_agent.set_config_bool(SR_CONF_INSTANT, _is_instant);
         _callback->update_capture();
 
         set_cur_snap_samplerate(_device_agent.get_sample_rate());
@@ -521,21 +521,15 @@ namespace pv
 
             if (is_loop_mode() && _device_agent.is_demo())
             {
-                GVariant *gvar = _device_agent.get_config(NULL,NULL,SR_CONF_PATTERN_MODE);
-                if(gvar != NULL)
-                {
-                    QString rand_mode = g_variant_get_string(gvar,NULL);
-                    g_variant_unref(gvar);
-
-                    if (rand_mode != "random"){
-                        set_operation_mode(OPT_SINGLE);
-                    }
+                QString opt_mode = _device_agent.get_demo_operation_mode();
+                if (opt_mode != "random"){
+                    set_operation_mode(OPT_SINGLE);
                 }
             }
 
             if (_device_agent.is_hardware() || _device_agent.is_demo()){
-                GVariant *val = g_variant_new_boolean(is_loop_mode() && _is_stream_mode);
-                _device_agent.set_config(NULL, NULL, SR_CONF_LOOP_MODE, val);
+                bool bv = is_loop_mode() && _is_stream_mode;
+                _device_agent.set_config_bool(SR_CONF_LOOP_MODE, bv);
             }
         }
        
@@ -692,13 +686,8 @@ namespace pv
 
         bool wait_upload = false;
         if (is_single_mode() && _device_agent.get_work_mode() == LOGIC)
-        {
-            GVariant *gvar = _device_agent.get_config(NULL, NULL, SR_CONF_WAIT_UPLOAD);
-            if (gvar != NULL)
-            {
-                wait_upload = g_variant_get_boolean(gvar);
-                g_variant_unref(gvar);
-            }
+        { 
+           _device_agent.get_config_bool(SR_CONF_WAIT_UPLOAD, wait_upload);
         }
 
         if (!wait_upload)
@@ -1632,10 +1621,9 @@ namespace pv
 
     void SigSession::nodata_timeout()
     {
-        GVariant *gvar = _device_agent.get_config(NULL, NULL, SR_CONF_TRIGGER_SOURCE);
-        if (gvar == NULL)
-            return;
-        if (g_variant_get_byte(gvar) != DSO_TRIGGER_AUTO)
+        int flag;
+        _device_agent.get_config_byte(SR_CONF_TRIGGER_SOURCE, flag);
+        if (flag != DSO_TRIGGER_AUTO)
         {
             _callback->show_wait_trigger();
         }
@@ -2148,9 +2136,8 @@ namespace pv
         int cur_mode = _device_agent.get_work_mode();
 
         if (cur_mode != mode)
-        {  
-            GVariant *val = g_variant_new_int16(mode);
-            _device_agent.set_config(NULL, NULL, SR_CONF_DEVICE_MODE, val);
+        {
+            _device_agent.set_config_int16(SR_CONF_DEVICE_MODE, mode);
 
             if (cur_mode == LOGIC){
                 clear_all_decode_task2();

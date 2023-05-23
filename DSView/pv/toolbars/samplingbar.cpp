@@ -165,13 +165,8 @@ namespace pv
                 else
                 {
                     int usb_speed = LIBUSB_SPEED_HIGH;
-                    GVariant *gvar = _device_agent->get_config(NULL, NULL, SR_CONF_USB_SPEED);
+                    _device_agent->get_config_int32(SR_CONF_USB_SPEED, usb_speed);
 
-                    if (gvar != NULL)
-                    {
-                        usb_speed = g_variant_get_int32(gvar);
-                        g_variant_unref(gvar);
-                    }
                     if (usb_speed == LIBUSB_SPEED_HIGH)
                         _device_type.setText("USB 2.0");
                     else if (usb_speed == LIBUSB_SPEED_SUPER)
@@ -231,13 +226,8 @@ namespace pv
                 else
                 {
                     int usb_speed = LIBUSB_SPEED_HIGH;
-                    GVariant *gvar = _device_agent->get_config(NULL, NULL, SR_CONF_USB_SPEED);
+                    _device_agent->get_config_int32(SR_CONF_USB_SPEED, usb_speed);
 
-                    if (gvar != NULL)
-                    {
-                        usb_speed = g_variant_get_int32(gvar);
-                        g_variant_unref(gvar);
-                    }
                     if (usb_speed == LIBUSB_SPEED_SUPER)
                         _device_type.setIcon(QIcon(":/icons/usb3.svg"));
                     else
@@ -289,27 +279,25 @@ namespace pv
                 update_sample_rate_list();
 
                 int mode = _device_agent->get_work_mode();
-                GVariant *gvar;
+                bool zero = false;
+                bool test;
+                bool ret;
 
                 if (mode == DSO)
-                {
-                    gvar = _device_agent->get_config(NULL, NULL, SR_CONF_ZERO);
-                    if (gvar != NULL)
+                {   
+                    
+                    _device_agent->get_config_bool(SR_CONF_ZERO, zero);
+                   
+                    if (zero)
                     {
-                        bool zero = g_variant_get_boolean(gvar);
-                        g_variant_unref(gvar);
-                        if (zero)
-                        {
-                            zero_adj();
-                            return;
-                        }
+                        zero_adj();
+                        return;
                     }
                 }
-                gvar = _device_agent->get_config(NULL, NULL, SR_CONF_TEST);
-                if (gvar != NULL)
+
+                ret = _device_agent->get_config_bool(SR_CONF_TEST, test);
+                if (ret)
                 {
-                    bool test = g_variant_get_boolean(gvar);
-                    g_variant_unref(gvar);
                     if (test)
                     {
                         update_sample_rate_selector_value();
@@ -513,20 +501,8 @@ namespace pv
             assert(!_updating_sample_count);
             _updating_sample_count = true;
 
-            GVariant *gvar = _device_agent->get_config(NULL, NULL, SR_CONF_STREAM);
-            if (gvar != NULL)
-            {
-                stream_mode = g_variant_get_boolean(gvar);
-                g_variant_unref(gvar);
-            }
-
-            gvar = _device_agent->get_config(NULL, NULL, SR_CONF_HW_DEPTH);
-            if (gvar != NULL)
-            {
-                hw_depth = g_variant_get_uint64(gvar);
-                g_variant_unref(gvar);
-            }
-
+            _device_agent->get_config_bool(SR_CONF_STREAM, stream_mode);
+            _device_agent->get_config_uint64(SR_CONF_HW_DEPTH, hw_depth);
             int mode = _device_agent->get_work_mode();
 
             if (mode == LOGIC)
@@ -548,29 +524,14 @@ namespace pv
 
             if (mode == LOGIC)
             {
-                gvar = _device_agent->get_config(NULL, NULL, SR_CONF_RLE_SUPPORT);
-                if (gvar != NULL)
-                {
-                    rle_support = g_variant_get_boolean(gvar);
-                    g_variant_unref(gvar);
-                }
+                _device_agent->get_config_bool(SR_CONF_RLE_SUPPORT, rle_support);
                 if (rle_support)
                     rle_depth = min(hw_depth * SR_KB(1), sw_depth);
             }
             else if (mode == DSO)
             {
-                gvar = _device_agent->get_config(NULL, NULL, SR_CONF_MAX_TIMEBASE);
-                if (gvar != NULL)
-                {
-                    max_timebase = g_variant_get_uint64(gvar);
-                    g_variant_unref(gvar);
-                }
-                gvar = _device_agent->get_config(NULL, NULL, SR_CONF_MIN_TIMEBASE);
-                if (gvar != NULL)
-                {
-                    min_timebase = g_variant_get_uint64(gvar);
-                    g_variant_unref(gvar);
-                }
+                _device_agent->get_config_uint64(SR_CONF_MAX_TIMEBASE, max_timebase);
+                _device_agent->get_config_uint64(SR_CONF_MIN_TIMEBASE, min_timebase);
             }
 
             if (0 != _sample_count.count())
@@ -673,14 +634,13 @@ namespace pv
 
             GVariant *gvar;
             double duration;
+            uint64_t v;
 
             if (_device_agent->get_work_mode() == DSO)
-            {
-                gvar = _device_agent->get_config(NULL, NULL, SR_CONF_TIMEBASE);
-                if (gvar != NULL)
+            { 
+                if (_device_agent->get_config_uint64(SR_CONF_TIMEBASE, v))
                 {
-                    duration = g_variant_get_uint64(gvar);
-                    g_variant_unref(gvar);
+                    duration = (double)v; 
                 }
                 else
                 {
@@ -689,12 +649,10 @@ namespace pv
                 }
             }
             else
-            {
-                gvar = _device_agent->get_config(NULL, NULL, SR_CONF_LIMIT_SAMPLES);
-                if (gvar != NULL)
+            { 
+                if (_device_agent->get_config_uint64(SR_CONF_LIMIT_SAMPLES, v))
                 {
-                    duration = g_variant_get_uint64(gvar);
-                    g_variant_unref(gvar);
+                    duration = (double)v; 
                 }
                 else
                 {
@@ -774,14 +732,8 @@ namespace pv
             const uint64_t sample_limit = _device_agent->get_sample_limit();
             GVariant *gvar;
             uint64_t max_sample_rate;
-            gvar = _device_agent->get_config(NULL, NULL, SR_CONF_MAX_DSO_SAMPLERATE);
 
-            if (gvar != NULL)
-            {
-                max_sample_rate = g_variant_get_uint64(gvar);
-                g_variant_unref(gvar);
-            }
-            else
+            if (_device_agent->get_config_uint64(SR_CONF_MAX_DSO_SAMPLERATE, max_sample_rate) == false)
             {
                 dsv_err("%s", "ERROR: config_get SR_CONF_MAX_DSO_SAMPLERATE failed.");
                 return -1;
@@ -793,8 +745,7 @@ namespace pv
                                                         (_session->get_ch_num(SR_CHANNEL_DSO) ? _session->get_ch_num(SR_CHANNEL_DSO) : 1)));
             set_sample_rate(sample_rate);
 
-            _device_agent->set_config(NULL, NULL, SR_CONF_TIMEBASE,
-                                      g_variant_new_uint64(hori_res));
+            _device_agent->set_config_uint64( SR_CONF_TIMEBASE, hori_res);
 
             return hori_res;
         }
@@ -802,15 +753,9 @@ namespace pv
         void SamplingBar::commit_settings()
         {
             bool test = false;
-
             if (_device_agent->have_instance())
             {
-                GVariant *gvar = _device_agent->get_config(NULL, NULL, SR_CONF_TEST);
-                if (gvar != NULL)
-                {
-                    test = g_variant_get_boolean(gvar);
-                    g_variant_unref(gvar);
-                }
+                _device_agent->get_config_bool(SR_CONF_TEST, test);
             }
 
             if (test)
@@ -830,9 +775,9 @@ namespace pv
                 if (_device_agent->have_instance())
                 {
                     if (sample_rate != _device_agent->get_sample_rate())
-                        _device_agent->set_config(NULL, NULL,
+                        _device_agent->set_config_uint64(
                                                   SR_CONF_SAMPLERATE,
-                                                  g_variant_new_uint64(sample_rate));
+                                                  sample_rate);
 
                     if (_device_agent->get_work_mode() != DSO)
                     {
@@ -841,14 +786,14 @@ namespace pv
                                                        SAMPLES_ALIGN) &
                                                       ~SAMPLES_ALIGN;
                         if (sample_count != _device_agent->get_sample_limit())
-                            _device_agent->set_config(NULL, NULL,
+                            _device_agent->set_config_uint64(
                                                       SR_CONF_LIMIT_SAMPLES,
-                                                      g_variant_new_uint64(sample_count));
+                                                      sample_count);
 
                         bool rle_mode = _sample_count.currentText().contains(RLEString);
-                        _device_agent->set_config(NULL, NULL,
+                        _device_agent->set_config_bool(
                                                   SR_CONF_RLE,
-                                                  g_variant_new_boolean(rle_mode));
+                                                  rle_mode);
                     }
                 }
             }
@@ -881,29 +826,25 @@ namespace pv
 
             if (_device_agent->get_work_mode() == DSO)
             {
-                GVariant *gvar = _device_agent->get_config(NULL, NULL, SR_CONF_ZERO);
-                if (gvar != NULL)
-                {
-                    bool zero = g_variant_get_boolean(gvar);
-                    g_variant_unref(gvar);
+                bool zero;
 
-                    if (zero)
+                bool ret = _device_agent->get_config_bool(SR_CONF_ZERO, zero);
+                if (ret && zero)
+                {   
+                    QString str1(L_S(STR_PAGE_MSG, S_ID(IDS_MSG_AUTO_CALIB), "Auto Calibration"));
+                    QString str2(L_S(STR_PAGE_MSG, S_ID(IDS_MSG_ADJUST_SAVE), "Please adjust zero skew and save the result"));
+                    bool bRet = MsgBox::Confirm(str1, str2);
+
+                    if (bRet)
                     {
-                        QString str1(L_S(STR_PAGE_MSG, S_ID(IDS_MSG_AUTO_CALIB), "Auto Calibration"));
-                        QString str2(L_S(STR_PAGE_MSG, S_ID(IDS_MSG_ADJUST_SAVE), "Please adjust zero skew and save the result"));
-                        bool bRet = MsgBox::Confirm(str1, str2);
-
-                        if (bRet)
-                        {
-                            zero_adj();
-                        }
-                        else
-                        {
-                            _device_agent->set_config(NULL, NULL, SR_CONF_ZERO, g_variant_new_boolean(false));
-                            update_view_status();
-                        }
-                        return;
+                        zero_adj();
                     }
+                    else
+                    {
+                        _device_agent->set_config_bool(SR_CONF_ZERO, false);
+                        update_view_status();
+                    }
+                    return;                     
                 }
             }
 
@@ -947,28 +888,23 @@ namespace pv
 
             if (_device_agent->get_work_mode() == DSO)
             {
-                GVariant *gvar = _device_agent->get_config(NULL, NULL, SR_CONF_ZERO);
+                bool zero;
 
-                if (gvar != NULL)
-                {
-                    bool zero = g_variant_get_boolean(gvar);
-                    g_variant_unref(gvar);
+                bool ret = _device_agent->get_config_bool(SR_CONF_ZERO, zero);
+                if (ret && zero)
+                {  
+                    QString strMsg(L_S(STR_PAGE_MSG,S_ID(IDS_MSG_AUTO_CALIB_START), "Auto Calibration program will be started. Don't connect any probes. \nIt can take a while!"));
 
-                    if (zero)
+                    if (MsgBox::Confirm(strMsg))
                     {
-                        QString strMsg(L_S(STR_PAGE_MSG,S_ID(IDS_MSG_AUTO_CALIB_START), "Auto Calibration program will be started. Don't connect any probes. \nIt can take a while!"));
-
-                        if (MsgBox::Confirm(strMsg))
-                        {
-                            zero_adj();
-                        }
-                        else
-                        {
-                            _device_agent->set_config(NULL, NULL, SR_CONF_ZERO, g_variant_new_boolean(false));
-                            update_view_status();
-                        }
-                        return;
+                        zero_adj();
                     }
+                    else
+                    {
+                        _device_agent->set_config_bool(SR_CONF_ZERO, false);
+                        update_view_status();
+                    }
+                    return;                    
                 }
             }
 
@@ -1022,12 +958,7 @@ namespace pv
 
             if (_device_agent->have_instance())
             {
-                GVariant *gvar = _device_agent->get_config(NULL, NULL, SR_CONF_TEST);
-                if (gvar != NULL)
-                {
-                    test = g_variant_get_boolean(gvar);
-                    g_variant_unref(gvar);
-                }
+                _device_agent->get_config_bool(SR_CONF_TEST, test);
             }
             if (!test)
             {
@@ -1230,7 +1161,7 @@ namespace pv
                 if (mode == LOGIC && _session->get_device()->is_hardware())
                 {
                     int mode_val = 0;
-                    if (_session->get_device()->get_config_value_int16(SR_CONF_OPERATION_MODE, mode_val)){                  
+                    if (_session->get_device()->get_config_int16(SR_CONF_OPERATION_MODE, mode_val)){
                         if (mode_val == LO_OP_INTEST){
                             _sample_rate.setEnabled(false);
                             _sample_count.setEnabled(false);
@@ -1270,18 +1201,11 @@ namespace pv
 
             if (_session->get_device()->is_demo() && bEnable)
             {
-                GVariant *gvar = _device_agent->get_config(NULL,NULL,SR_CONF_PATTERN_MODE);
-                if(gvar != NULL)
-                {
-                    QString rand_mode = g_variant_get_string(gvar,NULL);
-                    g_variant_unref(gvar);
-
-                    bool is_rand = rand_mode == "random";
-                    
-                    if (!is_rand && mode == LOGIC){
-                        _sample_rate.setEnabled(false);
-                        _sample_count.setEnabled(false);
-                    }                    
+                QString opt_mode = _device_agent->get_demo_operation_mode();
+                
+                if (opt_mode != "random" && mode == LOGIC){
+                    _sample_rate.setEnabled(false);
+                    _sample_count.setEnabled(false);
                 }
             }
         }

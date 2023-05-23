@@ -77,11 +77,9 @@ FftOptions::FftOptions(QWidget *parent, SigSession *session) :
 
     // setup _window_combobox _len_combobox
     _sample_limit = 0;
-    GVariant* gvar = _session->get_device()->get_config(NULL, NULL, SR_CONF_MAX_DSO_SAMPLELIMITS);
     
-    if (gvar != NULL) {
-        _sample_limit = g_variant_get_uint64(gvar) * 0.5;
-        g_variant_unref(gvar);
+    if (_session->get_device()->get_config_uint64(SR_CONF_MAX_DSO_SAMPLELIMITS, _sample_limit)) {
+        _sample_limit = _sample_limit * 0.5;
     }
     else {
         dsv_err("%s", "ERROR: config_get SR_CONF_MAX_DSO_SAMPLELIMITS failed.");

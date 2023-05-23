@@ -107,9 +107,9 @@ void WaitingDialog::accept()
 
     QFuture<void> future;
     future = QtConcurrent::run([&]{
-        _device_agent->set_config(NULL, NULL, SR_CONF_ZERO_SET,
-                              g_variant_new_boolean(true));
+        _device_agent->set_config_bool(SR_CONF_ZERO_SET, true);
     });
+
     Qt::WindowFlags flags = Qt::CustomizeWindowHint;
     QProgressDialog dlg(L_S(STR_PAGE_DLG, S_ID(IDS_DLG_SAVE_CALIBRATION_RESULTS), "Save calibration results... It can take a while."),
                         L_S(STR_PAGE_DLG, S_ID(IDS_DLG_CANCEL), "Cancel"),0,0,this,flags);
@@ -135,10 +135,10 @@ void WaitingDialog::reject()
 
     QFuture<void> future;
     future = QtConcurrent::run([&]{
-        _device_agent->set_config(NULL, NULL, _key, g_variant_new_boolean(false));
-        _device_agent->set_config(NULL, NULL, SR_CONF_ZERO_LOAD,
-                              g_variant_new_boolean(true));
+        _device_agent->set_config_bool(_key, false);
+        _device_agent->set_config_bool(SR_CONF_ZERO_LOAD, true);
     });
+
     Qt::WindowFlags flags = Qt::CustomizeWindowHint;
     QProgressDialog dlg(L_S(STR_PAGE_DLG, S_ID(IDS_DLG_LOAD_CURRENT_SETTING), "Load current setting... It can take a while."),
                         L_S(STR_PAGE_DLG, S_ID(IDS_DLG_CANCEL), "Cancel"),0,0,this,flags);
@@ -177,39 +177,28 @@ void WaitingDialog::changeText()
     {
         tips->setText(L_S(STR_PAGE_DLG, S_ID(IDS_DLG_WAITING), "Waiting"));
         index = 0;
-        GVariant* gvar;
         bool comb_comp_en = false;
         bool zero_fgain = false;
 
-        gvar = _device_agent->get_config(NULL, NULL, SR_CONF_PROBE_COMB_COMP_EN);
-        if (gvar != NULL) {
-            comb_comp_en = g_variant_get_boolean(gvar);
-            g_variant_unref(gvar);
-            if (comb_comp_en) {
-                gvar = _device_agent->get_config(NULL, NULL, SR_CONF_ZERO_COMB_FGAIN);
-                if (gvar != NULL) {
-                    zero_fgain = g_variant_get_boolean(gvar);
-                    g_variant_unref(gvar);
-                    
-                    if (zero_fgain) {                        
-                        for(auto s : _session->get_signals()){
-                            if (s->signal_type() == DSO_SIGNAL){
-                                view::DsoSignal *dsoSig = (view::DsoSignal*)s;
-                                dsoSig->set_enable(dsoSig->get_index() == 0);
-                            }                                
-                        }
-                        std::this_thread::sleep_for(std::chrono::milliseconds(100));
-                        _device_agent->set_config(NULL, NULL, SR_CONF_ZERO_COMB, g_variant_new_boolean(true));
-                    }
+        if (_device_agent->get_config_bool(SR_CONF_PROBE_COMB_COMP_EN, comb_comp_en) && comb_comp_en) {
+            
+            if (_device_agent->get_config_bool(SR_CONF_ZERO_COMB_FGAIN, zero_fgain) && zero_fgain) {                 
+                                        
+                for(auto s : _session->get_signals()){
+                    if (s->signal_type() == DSO_SIGNAL){
+                        view::DsoSignal *dsoSig = (view::DsoSignal*)s;
+                        dsoSig->set_enable(dsoSig->get_index() == 0);
+                    }                                
                 }
+
+                std::this_thread::sleep_for(std::chrono::milliseconds(100));
+                _device_agent->set_config_bool(SR_CONF_ZERO_COMB, true);
             }
         }
-
-        gvar = _device_agent->get_config(NULL, NULL, _key);
-        if (gvar != NULL) {
-            bool zero = g_variant_get_boolean(gvar);
-            g_variant_unref(gvar);
-            if (!zero) {
+        
+        bool bzero = false; 
+        if (_device_agent->get_config_bool(_key, bzero)) {
+            if (!bzero) {
                 movie->stop();
                 movie->jumpToFrame(0);
                 timer->stop();
@@ -218,7 +207,8 @@ void WaitingDialog::changeText()
                 _button_box.addButton(QDialogButtonBox::Save);
             }
         }
-    } else {
+    } 
+    else {
         tips->setText(tips->text()+".");
     }
 }

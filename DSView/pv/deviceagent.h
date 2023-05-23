@@ -91,21 +91,11 @@ public:
         _callback = callback;
     }
 
-    GVariant* get_config(const sr_channel *ch, const sr_channel_group *group, int key);
-
-    bool set_config(sr_channel *ch, sr_channel_group *group, int key, GVariant *data);
-
-	GVariant* get_config_list(const sr_channel_group *group, int key);
-
 	bool enable_probe(const sr_channel *probe, bool enable);
 
     bool enable_probe(int probe_index, bool enable);
 
     bool set_channel_name(int ch_index, const char *name);
-
-    bool get_config_value_int16(int key, int &value);
-
-    bool get_config_value_string(int key, QString &value);
 
     /**
 	 * @brief Gets the sample limit from the driver.
@@ -187,11 +177,42 @@ public:
 
     QString get_demo_operation_mode();
 
-    bool set_config_string(int key, const char *value);
+    GVariant* get_config_list(const sr_channel_group *group, int key);
+
+    GVariant* get_config(int key, const sr_channel *ch = NULL, const sr_channel_group *cg = NULL);
+    bool set_config(int key, GVariant *data, const sr_channel *ch = NULL, const sr_channel_group *cg = NULL);
+    bool have_config(int key, const sr_channel *ch = NULL, const sr_channel_group *cg = NULL);
+
+    bool get_config_string(int key, QString &value, const sr_channel *ch = NULL, const sr_channel_group *cg = NULL);
+    bool set_config_string(int key, const char *value, const sr_channel *ch = NULL, const sr_channel_group *cg = NULL);
+
+    bool get_config_bool(int key, bool &value, const sr_channel *ch = NULL, const sr_channel_group *cg = NULL);
+    bool set_config_bool(int key, bool value, const sr_channel *ch = NULL, const sr_channel_group *cg = NULL);
+
+    bool get_config_uint64(int key, uint64_t &value, const sr_channel *ch = NULL, const sr_channel_group *cg = NULL);
+    bool set_config_uint64(int key, uint64_t value, const sr_channel *ch = NULL, const sr_channel_group *cg = NULL);
+
+    bool get_config_uint16(int key, int &value, const sr_channel *ch = NULL, const sr_channel_group *cg = NULL);
+    bool set_config_uint16(int key, int value, const sr_channel *ch = NULL, const sr_channel_group *cg = NULL);
+
+    bool get_config_uint32(int key, uint32_t &value, const sr_channel *ch = NULL, const sr_channel_group *cg = NULL);
+    bool set_config_uint32(int key, uint32_t value, const sr_channel *ch = NULL, const sr_channel_group *cg = NULL);
+
+    bool get_config_int16(int key, int &value, const sr_channel *ch = NULL, const sr_channel_group *cg = NULL);
+    bool set_config_int16(int key, int value, const sr_channel *ch = NULL, const sr_channel_group *cg = NULL);
+
+    bool get_config_int32(int key, int &value, const sr_channel *ch = NULL, const sr_channel_group *cg = NULL);
+    bool set_config_int32(int key, int value, const sr_channel *ch = NULL, const sr_channel_group *cg = NULL);
+
+    bool get_config_byte(int key, int &value, const sr_channel *ch = NULL, const sr_channel_group *cg = NULL);
+    bool set_config_byte(int key, int value, const sr_channel *ch = NULL, const sr_channel_group *cg = NULL);
+
+    bool get_config_double(int key, double &value, const sr_channel *ch = NULL, const sr_channel_group *cg = NULL);
+    bool set_config_double(int key, double value, const sr_channel *ch = NULL, const sr_channel_group *cg = NULL);
 
 private:
     void config_changed();
-    bool is_in_history(ds_device_handle dev_handle);
+    bool is_in_history(ds_device_handle dev_handle);    
 
     //---------------device config-----------/
 public:
@@ -204,7 +225,6 @@ public:
   struct sr_config* new_config(int key, GVariant *data);
 
   void free_config(struct sr_config *src);
-
 
 private:
     ds_device_handle _dev_handle;

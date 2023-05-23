@@ -139,25 +139,11 @@ static GString *gen_header(const struct sr_output *o)
     g_string_append_printf(header, "; Channels (%d/%d)\n",
 			ctx->num_enabled_channels, num_channels);
 
-//	if (ctx->samplerate == 0) {
-//		if (sr_config_get(o->sdi->driver, o->sdi, NULL, NULL, SR_CONF_SAMPLERATE,
-//				&gvar) == SR_OK) {
-//			ctx->samplerate = g_variant_get_uint64(gvar);
-//			g_variant_unref(gvar);
-//		}
-//	}
+
     char *samplerate_s = sr_samplerate_string(ctx->samplerate);
     g_string_append_printf(header, "; Sample rate: %s\n", samplerate_s);
     g_free(samplerate_s);
 
-//    if (sr_config_get(o->sdi->driver, o->sdi, NULL, NULL, SR_CONF_LIMIT_SAMPLES,
-//            &gvar) == SR_OK) {
-//        uint64_t depth = g_variant_get_uint64(gvar);
-//        g_variant_unref(gvar);
-//        char *depth_s = sr_samplecount_string(depth);
-//        g_string_append_printf(header, "; Sample count: %s\n", depth_s);
-//        g_free(depth_s);
-//    }
     char *depth_s = sr_samplecount_string(ctx->limit_samples);
     g_string_append_printf(header, "; Sample count: %s\n", depth_s);
     g_free(depth_s);

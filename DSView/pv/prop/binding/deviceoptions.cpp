@@ -145,14 +145,14 @@ GVariant* DeviceOptions::config_getter(int key)
 { 
 	SigSession *session = AppControl::Instance()->GetSession();
 	DeviceAgent *_device_agent = session->get_device();	
-	return _device_agent->get_config(NULL, NULL, key);
+	return _device_agent->get_config(key);
 }
 
 void DeviceOptions::config_setter(int key, GVariant* value)
 {
 	SigSession *session = AppControl::Instance()->GetSession();
 	DeviceAgent *_device_agent = session->get_device();
-    _device_agent->set_config(NULL, NULL, key, value);
+    _device_agent->set_config(key, value);
 }
 
 void DeviceOptions::bind_bool(const QString &name, const QString label, int key)
@@ -316,13 +316,9 @@ void DeviceOptions::bind_bandwidths(const QString &name, const QString label, in
 	plist = (struct sr_list_item*)g_variant_get_uint64(gvar_list);
 	assert(plist);
 
-	bw_limit = FALSE;
-	gvar_tmp = _device_agent->get_config(NULL, NULL, SR_CONF_BANDWIDTH);
+	bw_limit = false;
+	_device_agent->get_config_bool(SR_CONF_BANDWIDTH, bw_limit);
 
-    if (gvar_tmp != NULL) {
-         bw_limit = g_variant_get_boolean(gvar_tmp);
-         g_variant_unref(gvar_tmp);
-    }
     if (!bw_limit)
         return;
 

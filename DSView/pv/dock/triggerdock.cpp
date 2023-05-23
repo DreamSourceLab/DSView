@@ -54,11 +54,7 @@ TriggerDock::TriggerDock(QWidget *parent, SigSession *session) :
     
     _cur_ch_num = 16;
     if (_session->get_device()->have_instance()) {
-        GVariant *gvar = _session->get_device()->get_config(NULL, NULL, SR_CONF_TOTAL_CH_NUM);
-        if (gvar != NULL) {
-            _cur_ch_num = g_variant_get_int16(gvar);
-            g_variant_unref(gvar);
-        }
+        _session->get_device()->get_config_int16(SR_CONF_TOTAL_CH_NUM, _cur_ch_num);
     }
 
     _widget = new QWidget(this);
@@ -193,11 +189,7 @@ void TriggerDock::adv_trigger()
 {
     if (_session->get_device()->is_hardware_logic()) {
         bool stream = false;
-        GVariant *gvar = _session->get_device()->get_config(NULL, NULL, SR_CONF_STREAM);
-        if (gvar != NULL) {
-            stream = g_variant_get_boolean(gvar);
-            g_variant_unref(gvar);
-        }
+        _session->get_device()->get_config_bool(SR_CONF_STREAM, stream);   
         
         if (stream) {
             QString strMsg(L_S(STR_PAGE_MSG, S_ID(IDS_MSG_STREAM_NO_AD_TRIGGER),
@@ -255,22 +247,16 @@ void TriggerDock::device_updated()
     uint64_t hw_depth;
     bool stream = false;
     uint8_t maxRange;
-    uint64_t sample_limits;
-    GVariant *gvar = _session->get_device()->get_config(NULL, NULL, SR_CONF_HW_DEPTH);
+    uint64_t sample_limits; 
     int mode = _session->get_device()->get_work_mode();
+    bool ret;
+    int ch_num;
 
-    if (gvar != NULL) {
-        hw_depth = g_variant_get_uint64(gvar);
-        g_variant_unref(gvar);
+    ret = _session->get_device()->get_config_uint64(SR_CONF_HW_DEPTH, hw_depth);
 
+    if (ret) {
         if (mode == LOGIC) {
-
-            gvar = _session->get_device()->get_config(NULL, NULL, SR_CONF_STREAM);
-            if (gvar != NULL) {
-                stream = g_variant_get_boolean(gvar);
-                g_variant_unref(gvar);
-            }
-
+            _session->get_device()->get_config_bool(SR_CONF_STREAM, stream);
             sample_limits = _session->get_device()->get_sample_limit();
 
             _adv_radioButton->setEnabled(!stream);
@@ -294,11 +280,8 @@ void TriggerDock::device_updated()
         }
     }
 
-    gvar = _session->get_device()->get_config(NULL, NULL, SR_CONF_TOTAL_CH_NUM);
-    if (gvar != NULL) {
-        int ch_num = g_variant_get_int16(gvar);
-        g_variant_unref(gvar);
-
+    ret = _session->get_device()->get_config_int16(SR_CONF_TOTAL_CH_NUM, ch_num);
+    if (ret) { 
         if (ch_num != _cur_ch_num) {
             _cur_ch_num = ch_num;
             setup_adv_tab();
