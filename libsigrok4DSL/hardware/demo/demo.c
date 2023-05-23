@@ -1059,6 +1059,7 @@ static int config_set(int id, GVariant *data, struct sr_dev_inst *sdi,
                     break;
                 }
             }
+
         }
         break;
     default:
@@ -1255,7 +1256,11 @@ static int hw_dev_acquisition_start(struct sr_dev_inst *sdi,
         
         if(sample_generator == PATTERN_RANDOM)
         {
+            logic_total_packet_num = (vdev->total_samples/8/packet_len);
+            logci_cur_packet_num = 1;
+            logic_data_status = LOGIC_FULL;
             init_random_data(vdev,sdi);
+            g_timer_start(run_time);
             sr_session_source_add(-1, 0, 0, receive_data_logic, sdi);
         }
         else
@@ -1396,21 +1401,55 @@ static int receive_data_logic(int fd, int revents, const struct sr_dev_inst *sdi
         logic.order = 0;
         logic.length = chan_num * packet_len;
 
-        if(!vdev->is_loop){
+        void *logic_buf = g_try_malloc0(chan_num * packet_len);
+        if(logic_buf == NULL)
+        {
+            sr_err("%s: logic buf malloc error", __func__);
+            return SR_ERR_MALLOC;
+        }
+
+        if(!vdev->is_loop)
+        {
             post_data_len += logic.length / enabled_probe_num;
-            if(post_data_len >= vdev->total_samples/8){
+            if(post_data_len >= vdev->total_samples/8)
+            {
                 get_last_packet_len(&logic,vdev);
             }
         }
-       
-        uint64_t random = vdev->logic_buf_len - logic.length;
-        random = rand() % random;
-        int index = enabled_probe_num * 8;
-        random = floor(random/index)*index;
-        logic.data = vdev->logic_buf + random;
 
+        if(vdev->samplerate >=LOGIC_EMPTY_FREQ && logic_data_status!= LOGIC_FULL)
+        {
+            memset(logic_buf,0,chan_num * packet_len);
+            if(logic_data_status == LOGIC_EMPTY_END)
+                logic_data_status = LOGIC_FULL;
+            else
+                logic_data_status++;
+        }
+        else
+        {
+            uint64_t random = vdev->logic_buf_len - logic.length;
+            random = rand() % random;
+            int index = enabled_probe_num * 8;
+            random = floor(random/index)*index;
+            memcpy(logic_buf,vdev->logic_buf + random,logic.length);
+            logic.data = logic_buf;
+            if(vdev->samplerate >=SR_MHZ(100))
+                logic_data_status++;
+        }
+
+        gdouble ideal_time = vdev->total_samples/(gdouble)vdev->samplerate;
+        ideal_time = ideal_time/(gdouble)logic_total_packet_num*(gdouble)logci_cur_packet_num;
+        gdouble packet_elapsed = g_timer_elapsed(run_time, NULL);
+        gdouble waittime = ideal_time - packet_elapsed;
+        logci_cur_packet_num++;
+        if(waittime > 0)
+        {
+            g_usleep(SR_MS(waittime));
+        }
         ds_data_forward(sdi, &packet);
-        delay_time();
+
+        
+        g_safe_free(logic_buf);
     }
 
     if (bToEnd || revents == -1)
@@ -1720,7 +1759,6 @@ static int receive_data_dso(int fd, int revents, const struct sr_dev_inst *sdi)
 
     int ret;
     char file_name[32];
-    int channel;
     int ch_index, malloc_chan_index;
     struct session_packet_buffer *pack_buffer;
     unz_file_info64 fileInfo;

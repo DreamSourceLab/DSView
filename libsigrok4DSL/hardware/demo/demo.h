@@ -78,6 +78,9 @@ extern char DS_RES_PATH[500];
 uint8_t sample_generator;
 static int64_t analog_count = 0;
 static uint64_t total_num = 0;
+static uint64_t logci_cur_packet_num = 0;
+static uint64_t logic_total_packet_num = 0;
+static uint8_t logic_data_status = 0;
 
 static enum DEMO_LOGIC_CHANNEL_ID ch_mode = DEMO_LOGIC125x16;
 static enum DEMO_LOGIC_CHANNEL_INDEX logic_index = LOGIC125x16;
@@ -278,7 +281,7 @@ static const uint64_t samplerates[] = {
 
 #define SEC 1
 #define LOGIC_POST_DATA_PER_SECOND(n) ((n)/(8))
-#define LOGIC_PACKET_NUM_PER_SEC (gdouble)200
+#define LOGIC_PACKET_NUM_PER_SEC (gdouble)1000
 #define LOGIC_PACKET_TIME(n) (gdouble)((SEC)/(n))
 #define LOGIC_PACKET_LEN(n) (ceil((LOGIC_POST_DATA_PER_SECOND(n))/(LOGIC_PACKET_NUM_PER_SEC)/(8))*(8))
 #define LOGIC_MIN_PACKET_LEN 8
@@ -288,7 +291,11 @@ static const uint64_t samplerates[] = {
 #define LOGIC_MAX_PACKET_NUM(n) (LOGIC_POST_DATA_PER_SECOND(n))/(LOGIC_MAX_PACKET_LEN)
 #define LOGIC_MAX_PACKET_TIME(n) ((SEC)/(gdouble)(LOGIC_MAX_PACKET_NUM(n)))
 
-#define LOGIC_BUF_LEN SR_MB(10)
+#define LOGIC_BUF_LEN SR_MB(2)
+
+#define LOGIC_EMPTY_FREQ SR_MHZ(100)
+#define LOGIC_EMPTY_END 9
+#define LOGIC_FULL 0
 
 
 #define DSO_PACKET_NUM_PER_SEC (gdouble)200
@@ -306,7 +313,7 @@ static const uint64_t samplerates[] = {
 #define ANALOG_MIN_PACKET_NUM(n) ((ANALOG_POST_DATA_PER_SECOND(n))/(ANALOG_MIN_PACKET_LEN))
 #define ANALOG_PACKET_ALIGN 2
 
-#define LOGIC_HW_DEPTH (SR_GHZ(1))
+#define LOGIC_HW_DEPTH (SR_GHZ(16))
 
 
 #define LOGIC_MAX_PROBE_NUM 16
