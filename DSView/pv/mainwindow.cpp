@@ -1928,12 +1928,11 @@ namespace pv
                 {
                     _pattern_mode = pattern_mode;
                     _device_agent->set_config_bool(SR_CONF_DEMO_INIT, true);
-                    _device_agent->update();
 
+                    _device_agent->update();
                     _session->init_signals();
                     update_toolbar_view_status();
                     _sampling_bar->update_sample_rate_list();
-
                     _protocol_widget->del_all_protocol();
                         
                     if(_pattern_mode != "random")
@@ -1951,12 +1950,17 @@ namespace pv
 
         case DSV_MSG_DEMO_OPERATION_MODE_CHNAGED:
             if(_device_agent->is_demo() &&_device_agent->get_work_mode() == LOGIC){
-                _protocol_widget->del_all_protocol();
                 _session->clear_view_data();
-                QString pattern_mode = _device_agent->get_demo_operation_mode();
-                
+
+                _device_agent->set_config_bool(SR_CONF_DEMO_INIT, true);
+                _device_agent->update();
+                _session->init_signals();
+                update_toolbar_view_status();
+                _sampling_bar->update_sample_rate_list();
+                _protocol_widget->del_all_protocol();
+
+                QString pattern_mode = _device_agent->get_demo_operation_mode();                
                 if(pattern_mode != "random"){
-                    _device_agent->update();
                     _session->set_operation_mode(OPT_SINGLE);
                     StoreSession ss(_session);
                     QJsonArray deArray = get_decoder_json_from_file(_device_agent->path());
