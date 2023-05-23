@@ -81,9 +81,10 @@ static uint64_t total_num = 0;
 static uint64_t logci_cur_packet_num = 0;
 static uint64_t logic_total_packet_num = 0;
 static uint8_t logic_data_status = 0;
+static gboolean channel_mode_change = FALSE;
 
-static enum DEMO_LOGIC_CHANNEL_ID ch_mode = DEMO_LOGIC125x16;
-static enum DEMO_LOGIC_CHANNEL_INDEX logic_index = LOGIC125x16;
+static enum DEMO_LOGIC_CHANNEL_ID ch_mode;
+static enum DEMO_LOGIC_CHANNEL_INDEX logic_index;
 
 struct session_packet_buffer;
 

@@ -610,6 +610,9 @@ static int hw_dev_open(struct sr_dev_inst *sdi)
     vdev->logic_buf = NULL;
     sdi->status = SR_ST_ACTIVE;
 
+    ch_mode = DEMO_LOGIC125x16;
+    logic_index = LOGIC125x16;
+
     if(vdev->logic_buf != NULL)
     {
         g_safe_free(vdev->logic_buf);
@@ -904,10 +907,28 @@ static int config_set(int id, GVariant *data, struct sr_dev_inst *sdi,
         break;
     case SR_CONF_PATTERN_MODE:
         stropt = g_variant_get_string(data, NULL);
+        uint8_t tmp_sample_generator = sample_generator;
         sample_generator = get_pattern_mode_index_by_string(sdi->mode , stropt);
         if(SR_OK != reset_dsl_path(sdi,sdi->mode,sample_generator))
         {
             sample_generator = PATTERN_RANDOM;
+        }
+        if(sdi->mode == LOGIC)
+        {
+            if(sample_generator == PATTERN_RANDOM)
+            {
+                if(!channel_mode_change && tmp_sample_generator != sample_generator)
+                {
+                    ch_mode = DEMO_LOGIC125x16;
+                    logic_index = LOGIC125x16;
+                    load_virtual_device_session(sdi);
+                }
+                channel_mode_change = FALSE;
+            }
+            else{
+                load_virtual_device_session(sdi);
+            }
+            
         }
         sr_dbg("%s: setting pattern to %d",
             __func__, sample_generator);
@@ -1054,8 +1075,8 @@ static int config_set(int id, GVariant *data, struct sr_dev_inst *sdi,
                 {
                     logic_index = i;
                     ch_mode = nv;
-                    logic_adjust_probe(sdi,logic_channel_modes[i].num);
-                    logic_adjust_samplerate(vdev);
+                    load_virtual_device_session(sdi);
+                    channel_mode_change = TRUE;
                     break;
                 }
             }
@@ -2611,10 +2632,10 @@ static int load_virtual_device_session(struct sr_dev_inst *sdi)
         {
             vdev->samplerate = LOGIC_DEFAULT_SAMPLERATE;
             vdev->total_samples = LOGIC_DEFAULT_TOTAL_SAMPLES;
-            vdev->num_probes = LOGIC_DEFAULT_NUM_PROBE;
+            vdev->num_probes = logic_channel_modes[logic_index].num;
             sr_dev_probes_free(sdi);
 
-            for (int i = 0; i < LOGIC_DEFAULT_NUM_PROBE; i++)
+            for (int i = 0; i < vdev->num_probes; i++)
             {
                 probe_name = probe_names[i];
                 if (!(probe = sr_channel_new(i, SR_CHANNEL_LOGIC, TRUE, probe_name)))
@@ -2625,9 +2646,6 @@ static int load_virtual_device_session(struct sr_dev_inst *sdi)
                 }
                 sdi->channels = g_slist_append(sdi->channels, probe);
             }
-            //updata
-            ch_mode = DEMO_LOGIC125x16;
-            logic_index = LOGIC125x16;
             logic_adjust_samplerate(sdi->priv);
         }
         break;
