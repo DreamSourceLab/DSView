@@ -144,6 +144,7 @@ private:
     volatile    bool _isBuilding;
     DeviceAgent *_device_agent;
     int     _cur_analog_tag_index;
+    QString _demo_operation_mode;
 
 	pv::prop::binding::DeviceOptions _device_options_binding;
     std::vector<pv::prop::binding::ProbeOptions *> _probe_options_binding_list;

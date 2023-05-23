@@ -146,6 +146,9 @@ DeviceOptions::DeviceOptions(QWidget *parent) :
    
     _device_agent->get_config_int16(SR_CONF_OPERATION_MODE, _opt_mode);
 
+    if (_device_agent->is_demo())
+        _demo_operation_mode = _device_agent->get_demo_operation_mode();
+
     try_resize_scroll();
   
     connect(&_mode_check_timer, SIGNAL(timeout()), this, SLOT(mode_check_timeout()));
@@ -452,25 +455,37 @@ void DeviceOptions::mode_check_timeout()
     if (_isBuilding)
         return;
 
-    bool test;
-    int mode;
+    if (_device_agent->is_hardware())
+    {
+        bool test;
+        int mode;
 
-    if (_device_agent->get_config_int16(SR_CONF_OPERATION_MODE, mode)) {
-        if (mode != _opt_mode) { 
-            _opt_mode = mode; 
+        if (_device_agent->get_config_int16(SR_CONF_OPERATION_MODE, mode)) {
+            if (mode != _opt_mode) { 
+                _opt_mode = mode; 
+                build_dynamic_panel();
+                try_resize_scroll();
+            }
+        }
+
+        if (_device_agent->get_config_bool(SR_CONF_TEST, test)) {
+            if (test) { 
+                for (auto box : _probes_checkBox_list) {
+                    box->setCheckState(Qt::Checked);
+                    box->setDisabled(true);
+                }
+            }
+        } 
+    }
+    else if (_device_agent->is_demo())
+    {
+        QString opt_mode = _device_agent->get_demo_operation_mode();
+        if (opt_mode != _demo_operation_mode){
+            _demo_operation_mode = opt_mode;
             build_dynamic_panel();
             try_resize_scroll();
         }
-    }
-
-    if (_device_agent->get_config_bool(SR_CONF_TEST, test)) {
-        if (test) { 
-            for (auto box : _probes_checkBox_list) {
-                box->setCheckState(Qt::Checked);
-                box->setDisabled(true);
-            }
-        }
-    } 
+    }    
 }
 
 void DeviceOptions::channel_check()
