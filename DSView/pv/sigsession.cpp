@@ -118,7 +118,6 @@ namespace pv
         _capture_times = 0;
         _confirm_store_time_id = 0;
         _repeat_wait_prog_step = 10;
-        _lst_capture_times = 0;
 
         _device_agent.set_callback(this);
 
@@ -621,6 +620,7 @@ namespace pv
             clear_decode_result(); 
         }
 
+        // Set the buffer to store the captured data
         if (bSwapBuffer){
             int buf_index = 0;
             for(int i=0; i<(int)_data_list.size(); i++){
@@ -1074,17 +1074,7 @@ namespace pv
     }
 
     void SigSession::feed_in_logic(const sr_datafeed_logic &o)
-    {   
-        //Switch the data buffer.
-        if (o.length > 0 && is_repeat_mode() && _is_stream_mode)
-        {  
-            if (_capture_times != _lst_capture_times && _capture_times > 1)
-            {
-                _lst_capture_times = _capture_times;
-                _callback->trigger_message(DSV_MSG_SWAP_CAPTURE_BUFFER);
-            }
-        }
-
+    {  
         if (_capture_data->get_logic()->memory_failed())
         {
             dsv_err("%s", "Unexpected logic packet");
@@ -1979,6 +1969,8 @@ namespace pv
             _opt_mode = m;
             _repeat_hold_prg = 0;
         }
+
+        _callback->trigger_message(DSV_MSG_COLLECT_MODE_CHANGED);
     }
 
     void SigSession::repeat_capture_wait_timeout()
@@ -2065,6 +2057,10 @@ namespace pv
                             bAddDecoder = true;
                             bSwapBuffer = true;
                         }
+                        else if (_capture_times > 1){
+                            bAddDecoder = true;
+                            bSwapBuffer = true;
+                        }
                     }
                     else if (is_loop_mode())
                     {
@@ -2076,7 +2072,7 @@ namespace pv
                         clear_decode_result();
                     }
 
-                    //Swap caputrued data buffer
+                    //Switch the caputrued data buffer to view.
                     if (bSwapBuffer)
                     {
                         if (_view_data != _capture_data)
@@ -2098,25 +2094,6 @@ namespace pv
 
                     _callback->frame_ended();
                 }
-            }
-            break;
-        
-        case DSV_MSG_SWAP_CAPTURE_BUFFER:
-            { 
-                clear_all_decode_task2();
-                clear_decode_result();
-
-                _view_data = _capture_data;
-                attach_data_to_signal(_view_data);
-
-                if (_is_stream_mode && is_repeat_mode())
-                {
-                    for (auto de : _decode_traces){
-                        de->decoder()->set_capture_end_flag(false);
-                        de->frame_ended();
-                        add_decode_task(de);
-                    }                
-                }         
             }
             break;
 

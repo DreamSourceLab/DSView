@@ -299,7 +299,7 @@ GSList *DeviceAgent::get_channels()
     return false;
  }
 
- int DeviceAgent::get_operation_mode()
+ int DeviceAgent::get_hardware_operation_mode()
  {
     assert(_dev_handle);
 
@@ -312,7 +312,7 @@ GSList *DeviceAgent::get_channels()
 
  bool DeviceAgent::is_stream_mode()
  { 
-    return get_operation_mode() == LO_OP_STREAM;
+    return get_hardware_operation_mode() == LO_OP_STREAM;
  }
 
  bool DeviceAgent::check_firmware_version()

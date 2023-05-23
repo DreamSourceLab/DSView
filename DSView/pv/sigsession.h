@@ -555,8 +555,7 @@ private:
     bool        _is_instant;
     int         _device_status;
     int         _work_time_id;
-    int         _capture_times;
-    int         _lst_capture_times;
+    int         _capture_times; 
     int         _confirm_store_time_id;
     uint64_t    _rt_refresh_time_id;
     uint64_t    _rt_ck_refresh_time_id;

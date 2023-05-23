@@ -169,7 +169,7 @@ public:
 
     bool channel_is_enable(int index);
 
-    int get_operation_mode();
+    int get_hardware_operation_mode();
 
     bool is_stream_mode();
 
