@@ -1859,7 +1859,9 @@ namespace pv
                     return;
                 }
 
-                if (confirm_to_store_data())
+                int mode = _device_agent->get_work_mode();
+
+                if (mode != DSO && confirm_to_store_data())
                 {
                     _is_auto_switch_device = true;
 
