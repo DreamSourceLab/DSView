@@ -510,7 +510,7 @@ namespace pv
             if (_device_agent.is_hardware()){
                 _is_stream_mode = _device_agent.is_stream_mode();
             }
-            else if (_device_agent.is_demo()){
+            else if (_device_agent.is_demo() || _device_agent.is_file()){
                 _is_stream_mode = true;
             }
 
