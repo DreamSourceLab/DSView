@@ -1928,8 +1928,7 @@ namespace pv
                 
                 if(pattern_mode != _pattern_mode)
                 {
-                    _pattern_mode = pattern_mode;
-                    _device_agent->set_config_bool(SR_CONF_DEMO_INIT, true);
+                    _pattern_mode = pattern_mode; 
 
                     _device_agent->update();
                     _session->clear_view_data();
