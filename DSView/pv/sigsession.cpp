@@ -1400,11 +1400,14 @@ namespace pv
 
             // Make a list of all the probes
             std::vector<const srd_channel *> all_probes;
-            for (const GSList *i = dec->channels; i; i = i->next)
-                all_probes.push_back((const srd_channel *)i->data);
 
-            for (const GSList *i = dec->opt_channels; i; i = i->next)
+            for (const GSList *i = dec->channels; i; i = i->next){
                 all_probes.push_back((const srd_channel *)i->data);
+            }
+
+            for (const GSList *i = dec->opt_channels; i; i = i->next){
+                all_probes.push_back((const srd_channel *)i->data);
+            }
 
             decoder_stack->stack().front()->set_probes(probes);
 
@@ -1452,7 +1455,7 @@ namespace pv
                 _decode_traces.push_back(trace);
 
                 // add decode task from ui
-                if (!silent)
+                if (!silent && have_view_data())
                 {
                     add_decode_task(trace);
                 }
