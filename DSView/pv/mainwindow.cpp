@@ -654,6 +654,11 @@ namespace pv
         sessionVar["Language"] = QJsonValue::fromVariant(app._frameOptions.language);
         sessionVar["Title"] = QJsonValue::fromVariant(title);
 
+        if (_device_agent->is_hardware() && _device_agent->get_work_mode() == LOGIC)
+        {
+            sessionVar["CollectMode"] = _session->get_collect_mode();
+        }
+
         gvar_opts = _device_agent->get_config_list(NULL, SR_CONF_DEVICE_SESSIONS);
         if (gvar_opts == NULL)
         {
@@ -780,7 +785,12 @@ namespace pv
         {
             dsv_err("%s", "session file version is error!");
             return false;
-        }            
+        }
+
+        if (sessionObj.contains("CollectMode") && _device_agent->is_hardware()){
+            int collect_mode = sessionObj["CollectMode"].toInt();
+            _session->set_collect_mode((DEVICE_COLLECT_MODE)collect_mode);
+        }
 
         int conf_dev_mode = sessionObj["DeviceMode"].toInt();
 
@@ -1938,7 +1948,7 @@ namespace pv
                     _protocol_widget->del_all_protocol();
                         
                     if(_pattern_mode != "random"){
-                        _session->set_operation_mode(OPT_SINGLE);
+                        _session->set_collect_mode(COLLECT_SINGLE);
                         StoreSession ss(_session);
                         QJsonArray deArray = get_decoder_json_from_file(_device_agent->path());
                         ss.load_decoders(_protocol_widget, deArray);

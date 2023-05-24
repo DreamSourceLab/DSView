@@ -74,15 +74,18 @@ class LissajousTrace;
 class MathTrace;
 }
 
-enum DEVICE_STATUS_TYPE{
+enum DEVICE_STATUS_TYPE
+{
     ST_INIT = 0,
     ST_RUNNING = 1,
     ST_STOPPED = 2,
 };
-enum COLLECT_OPT_MODE{
-    OPT_SINGLE = 0,
-    OPT_REPEAT = 1, 
-    OPT_LOOP = 2,
+
+enum DEVICE_COLLECT_MODE
+{
+    COLLECT_SINGLE = 0,
+    COLLECT_REPEAT = 1, 
+    COLLECT_LOOP = 2,
 }; 
 
 class SessionData
@@ -329,24 +332,28 @@ public:
         return _device_status == ST_STOPPED;
     }
 
-    void set_operation_mode(COLLECT_OPT_MODE m);
+    void set_collect_mode(DEVICE_COLLECT_MODE m);
+
+    inline int get_collect_mode(){
+        return (int)_clt_mode;
+    }
 
     inline bool is_repeat_mode(){
-        return _opt_mode == OPT_REPEAT;
+        return _clt_mode == COLLECT_REPEAT;
     }
 
     inline bool is_single_mode(){
-        return _opt_mode == OPT_SINGLE;
+        return _clt_mode == COLLECT_SINGLE;
     }
 
     inline bool is_loop_mode(){
-        return _opt_mode == OPT_LOOP;
+        return _clt_mode == COLLECT_LOOP;
     }
 
     bool is_realtime_refresh();
 
     inline bool is_repeating(){
-        return _opt_mode == OPT_REPEAT && !_is_instant;
+        return _clt_mode == COLLECT_REPEAT && !_is_instant;
     }
 
     inline void session_save(){
@@ -559,7 +566,7 @@ private:
     int         _confirm_store_time_id;
     uint64_t    _rt_refresh_time_id;
     uint64_t    _rt_ck_refresh_time_id;
-    COLLECT_OPT_MODE    _opt_mode;
+    DEVICE_COLLECT_MODE    _clt_mode;
     bool        _is_stream_mode;
     
     bool        _is_action;

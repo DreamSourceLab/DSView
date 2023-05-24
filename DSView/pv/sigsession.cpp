@@ -91,7 +91,7 @@ namespace pv
         _noData_cnt = 0;
         _data_lock = false;
         _data_updated = false;
-        _opt_mode = OPT_SINGLE;
+        _clt_mode = COLLECT_SINGLE;
         _rt_refresh_time_id = 0;
         _rt_ck_refresh_time_id = 0;
         _view_data = NULL;
@@ -216,7 +216,7 @@ namespace pv
 
         ds_device_handle old_dev = _device_agent.handle();
 
-        set_operation_mode(OPT_SINGLE);
+        set_collect_mode(COLLECT_SINGLE);
 
         _callback->trigger_message(DSV_MSG_CURRENT_DEVICE_CHANGE_PREV);
 
@@ -515,14 +515,14 @@ namespace pv
             }
 
             if (is_loop_mode() && !_is_stream_mode){
-                set_operation_mode(OPT_SINGLE); // Reset the capture mode.
+                set_collect_mode(COLLECT_SINGLE); // Reset the capture mode.
             }
 
             if (is_loop_mode() && _device_agent.is_demo())
             {
                 QString opt_mode = _device_agent.get_demo_operation_mode();
                 if (opt_mode != "random"){
-                    set_operation_mode(OPT_SINGLE);
+                    set_collect_mode(COLLECT_SINGLE);
                 }
             }
 
@@ -1960,13 +1960,13 @@ namespace pv
         }
     }
 
-    void SigSession::set_operation_mode(COLLECT_OPT_MODE m)
+    void SigSession::set_collect_mode(DEVICE_COLLECT_MODE m)
     {
         assert(!_is_working);
 
-        if (_opt_mode != m)
+        if (_clt_mode != m)
         {
-            _opt_mode = m;
+            _clt_mode = m;
             _repeat_hold_prg = 0;
         }
 
@@ -2114,6 +2114,8 @@ namespace pv
 
         if (cur_mode != mode)
         {
+            set_collect_mode(COLLECT_SINGLE);
+
             _device_agent.set_config_int16(SR_CONF_DEVICE_MODE, mode);
 
             if (cur_mode == LOGIC){

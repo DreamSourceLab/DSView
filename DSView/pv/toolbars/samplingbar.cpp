@@ -996,7 +996,7 @@ namespace pv
 
                     if (_session->is_loop_mode() && _device_agent->is_stream_mode() == false 
                         && _device_agent->is_hardware()){
-                        _session->set_operation_mode(OPT_SINGLE);
+                        _session->set_collect_mode(COLLECT_SINGLE);
                     }
 
                     if (_device_agent->is_stream_mode() || _device_agent->is_demo())
@@ -1030,7 +1030,7 @@ namespace pv
 
             if (act == _action_single)
             {  
-                _session->set_operation_mode(OPT_SINGLE);
+                _session->set_collect_mode(COLLECT_SINGLE);
 
                 if (_device_agent->is_demo()){
                     _device_agent->set_config_string(SR_CONF_PATTERN_MODE, "protocol");
@@ -1042,7 +1042,7 @@ namespace pv
                 if (_device_agent->is_stream_mode() || _device_agent->is_demo())
                 {
                     _session->set_repeat_intvl(0.1);
-                    _session->set_operation_mode(OPT_REPEAT);
+                    _session->set_collect_mode(COLLECT_REPEAT);
                 }
                 else{
                     pv::dialogs::Interval interval_dlg(this);
@@ -1053,7 +1053,7 @@ namespace pv
                     if (interval_dlg.is_done())
                     {
                         _session->set_repeat_intvl(interval_dlg.get_interval());
-                        _session->set_operation_mode(OPT_REPEAT);
+                        _session->set_collect_mode(COLLECT_REPEAT);
                        
                     }
                 }
@@ -1065,7 +1065,7 @@ namespace pv
             }
             else if (act == _action_loop)
             {  
-                _session->set_operation_mode(OPT_LOOP);
+                _session->set_collect_mode(COLLECT_LOOP);
 
                 if (_device_agent->is_demo()){
                     _device_agent->set_config_string(SR_CONF_PATTERN_MODE, "random");

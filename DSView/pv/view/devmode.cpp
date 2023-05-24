@@ -213,8 +213,7 @@ void DevMode::on_mode_change()
                 break;
             }
             
-            _session->stop_capture();
-            _session->set_operation_mode(OPT_SINGLE);
+            _session->stop_capture();            
             _session->session_save();                                    
             _session->switch_work_mode(mode);
 
