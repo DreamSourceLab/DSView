@@ -388,7 +388,9 @@ bool ProtocolDock::add_protocol_by_id(QString id, bool silent, std::list<pv::dat
         protocolId = QString((*it)->decoder()->id); 
     }
 
-    if (_session->add_decoder(decoder, silent, dstatus, sub_decoders) == false){
+    pv::view::Trace *trace = NULL;
+
+    if (_session->add_decoder(decoder, silent, dstatus, sub_decoders, trace) == false){
         return false;
     }
 
@@ -398,6 +400,7 @@ bool ProtocolDock::add_protocol_by_id(QString id, bool silent, std::list<pv::dat
     _top_layout->insertLayout(_protocol_lay_items.size(), layer);
     layer->m_decoderStatus = dstatus; 
     layer->m_protocolId = protocolId;
+    layer->_trace = trace;
 
     // set current protocol format
     string fmt = AppConfig::Instance().GetProtocolFormat(protocolId.toStdString());
@@ -1013,6 +1016,16 @@ bool ProtocolDock::protocol_sort_callback(const DecoderInfoItem *o1, const Decod
     _pro_keyword_edit->setEnabled(bEnable);
     _pro_add_button->setEnabled(bEnable);
     _pro_search_button->setEnabled(bEnable);
+ }
+
+ void ProtocolDock::update_deocder_item_name(void *trace_handel, const char *name)
+ {
+    for(auto p : _protocol_lay_items){
+        if (p->_trace == trace_handel){
+            p->set_label_name(QString(name));
+            break;
+        }
+    }
  }
 
 } // namespace dock

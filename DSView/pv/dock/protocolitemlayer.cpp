@@ -35,6 +35,7 @@ ProtocolItemLayer::ProtocolItemLayer(QWidget *parent, QString protocolName, IPro
         _protocolName = protocolName;
         m_bSetting = false;
         m_decoderStatus = NULL;
+        _trace = NULL;
 
         _protocol_label = new QLabel(parent);
         _progress_label = new QLabel(parent);
@@ -153,6 +154,11 @@ void ProtocolItemLayer::LoadFormatSelect(bool bSingle)
  void ProtocolItemLayer::enable_format(bool flag)
  {  
      _format_combox->setDisabled(!flag);
+ }
+
+ void ProtocolItemLayer::set_label_name(QString name)
+ {
+    _protocol_label->setText(name);
  }
 
 } //dock

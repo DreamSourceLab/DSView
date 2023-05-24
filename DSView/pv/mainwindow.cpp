@@ -186,6 +186,8 @@ namespace pv
         _protocol_widget = new dock::ProtocolDock(_protocol_dock, *_view, _session);
         _protocol_dock->setWidget(_protocol_widget);
 
+        _session->set_decoder_pannel(_protocol_widget);
+
         // measure dock
         _measure_dock = new QDockWidget(L_S(STR_PAGE_DLG, S_ID(IDS_DLG_MEASURE_DOCK_TITLE), "Measurement"), this);
         _measure_dock->setObjectName("measure_dock");

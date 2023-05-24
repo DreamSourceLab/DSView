@@ -30,6 +30,11 @@
 class DecoderStatus;
  
 namespace pv{
+
+namespace view{
+    class Trace;
+}
+
 namespace dock{
 
 class IProtocolItemLayerCallback
@@ -59,6 +64,8 @@ public:
     }
 
     void enable_format(bool flag);
+
+    void set_label_name(QString name);
   
 private slots: 
     void on_set_protocol(); 
@@ -68,6 +75,7 @@ private slots:
 public:
     DecoderStatus *m_decoderStatus; //DecoderStatus
     QString        m_protocolId;
+    pv::view::Trace *_trace;
   
 private:
     QLabel *_protocol_label;

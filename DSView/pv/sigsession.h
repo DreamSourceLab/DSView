@@ -202,7 +202,7 @@ public:
 	std::vector<view::Signal*>& get_signals(); 
 
     bool add_decoder(srd_decoder *const dec, bool silent, DecoderStatus *dstatus, 
-                        std::list<pv::data::decode::Decoder*> &sub_decoders);
+                        std::list<pv::data::decode::Decoder*> &sub_decoders, view::Trace* &out_trace);
     int get_trace_index_by_key_handel(void *handel);
     void remove_decoder(int index);
     void remove_decoder_by_key_handel(void *handel); 
@@ -424,6 +424,10 @@ public:
     void set_trace_name(view::Trace *trace, QString name);
     void set_decoder_row_label(int index, QString label);
 
+    inline void set_decoder_pannel(IDecoderPannel *pannel){
+        _decoder_pannel = pannel;
+    }
+
 private:
     void set_cur_samplelimits(uint64_t samplelimits);
     void set_cur_snap_samplerate(uint64_t samplerate);
@@ -579,6 +583,7 @@ private:
     SessionData       *_view_data;
     SessionData       *_capture_data;
     std::vector<SessionData*> _data_list;
+    IDecoderPannel  *_decoder_pannel;
    
 private:
 	// TODO: This should not be necessary. Multiple concurrent

@@ -98,6 +98,7 @@ namespace pv
         _capture_data = NULL;
         _is_stream_mode = false;
         _is_action = false;
+        _decoder_pannel = NULL;
 
         _data_list.push_back(new SessionData());
         _data_list.push_back(new SessionData());
@@ -1376,14 +1377,15 @@ namespace pv
     }
 
     bool SigSession::add_decoder(srd_decoder *const dec, bool silent, DecoderStatus *dstatus,
-                                 std::list<pv::data::decode::Decoder *> &sub_decoders)
+                                 std::list<pv::data::decode::Decoder *> &sub_decoders, view::Trace* &out_trace)
     {
-
         if (dec == NULL)
         {
             dsv_err("%s", "Decoder instance is null!");
             assert(false);
         }
+
+        out_trace = NULL;
 
         dsv_info("Create new decoder,name:\"%s\",id:\"%s\"", dec->name, dec->id);
 
@@ -1457,6 +1459,8 @@ namespace pv
 
                 signals_changed();
                 data_updated();
+                
+                out_trace = trace;
             }
             else
             {
@@ -2280,6 +2284,9 @@ namespace pv
         if (traceType == SR_CHANNEL_LOGIC || traceType == SR_CHANNEL_ANALOG)
         { 
             _device_agent.set_channel_name(trace->get_index(), name.toUtf8());
+        }
+        else if (traceType == SR_CHANNEL_DECODER && _decoder_pannel != NULL){
+            _decoder_pannel->update_deocder_item_name(trace, name.toUtf8().data());
         }
     }
 
