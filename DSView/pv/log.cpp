@@ -29,7 +29,7 @@
 xlog_writer *dsv_log = nullptr;
 static xlog_context *log_ctx = nullptr;
 static bool b_logfile = false;
-static int log_file_index = -1;
+static int log_file_index = -1; 
 
 void dsv_log_init()
 {
@@ -61,16 +61,10 @@ void dsv_log_level(int l)
 void dsv_log_enalbe_logfile(bool append)
 {
     if (!b_logfile && log_ctx){
-        b_logfile = true;
+        b_logfile = true; 
         
-        QString lf;
-
-        #ifdef Q_OS_LINUX
-            lf = QDir::homePath() + "/DSView.log";
-        #else 
-            lf = GetAppDataDir() + "/DSView.log";
-        #endif
-
+        QString lf = get_dsv_log_path();
+        
         dsv_info("%s\"%s\"", "Store log to file: ", lf.toUtf8().data());
 
         std::string log_file = pv::path::ToUnicodePath(lf);
@@ -82,11 +76,36 @@ void dsv_log_enalbe_logfile(bool append)
     }
 }
 
+void dsv_clear_log_file()
+{
+    QString lf = get_dsv_log_path();
+    std::string log_file = pv::path::ToUnicodePath(lf);
+    int ret = xlog_reset_log_file(log_ctx, log_file_index, log_file.c_str());
+
+    if (ret != 0){
+        dsv_err("%s", "Clear log file error!");
+    }
+}
+
 void dsv_remove_log_file()
 {
     if (b_logfile && log_ctx)
     {
         b_logfile = false;
         xlog_remove_receiver_by_index(log_ctx, log_file_index);
+        log_file_index = -1;
     }
+}
+
+QString get_dsv_log_path()
+{
+    QString lf;
+
+    #ifdef Q_OS_LINUX
+        lf = QDir::homePath() + "/DSView.log";
+    #else 
+        lf = GetAppDataDir() + "/DSView.log";
+    #endif
+
+    return lf;
 }

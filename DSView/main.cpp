@@ -35,6 +35,8 @@
 #include "pv/appcontrol.h"
 #include "pv/log.h" 
 #include "pv/ui/langresource.h"
+#include <QDateTime>
+#include <string>
 
 #ifdef _WIN32
 #include <windows.h>
@@ -199,7 +201,7 @@ bool bHighScale = true;
 	LangResource::Instance()->Load(app._frameOptions.language);
 
 	if (app._appOptions.ableSaveLog){
-		dsv_log_enalbe_logfile(false);
+		dsv_log_enalbe_logfile(app._appOptions.appendLogMode);
 
 		if (app._appOptions.logLevel >= logLevel){
 			dsv_log_level(app._appOptions.logLevel);
@@ -209,6 +211,10 @@ bool bHighScale = true;
 	//----------------------run
 	dsv_info("----------------- version: %s-----------------", DS_VERSION_STRING);
 	dsv_info("Qt:%s", QT_VERSION_STR);
+
+	QDateTime dateTime = QDateTime::currentDateTime();
+	std::string strTime = dateTime .toString("yyyy-MM-dd hh:mm:ss").toStdString();
+	dsv_info("%s", strTime.c_str());
  
 	//init core
 	if (!control->Init()){ 

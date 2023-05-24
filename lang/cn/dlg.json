@@ -666,5 +666,21 @@
     {
         "id": "IDS_DLG_DECODER_IF_TRANS",
         "text": "翻译参数名称"
+    },
+    {
+        "id": "IDS_DLG_LOG_PATH",
+        "text": "文件位置"
+    },
+    {
+        "id": "IDS_DLG_OPEN",
+        "text": "打开"
+    },
+    {
+        "id": "IDS_DLG_CLEARE",
+        "text": "清除"
+    },
+    {
+        "id": "IDS_DLG_APPEND_MODE",
+        "text": "追加模式"
     }
 ]

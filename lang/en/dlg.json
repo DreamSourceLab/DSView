@@ -666,5 +666,21 @@
     {
         "id": "IDS_DLG_DECODER_IF_TRANS",
         "text": "Translate param names"
+    },
+    {
+        "id": "IDS_DLG_LOG_PATH",
+        "text": "File Path"
+    },
+    {
+        "id": "IDS_DLG_OPEN",
+        "text": "Open"
+    },
+    {
+        "id": "IDS_DLG_CLEARE",
+        "text": "Clear"
+    },
+    {
+        "id": "IDS_DLG_APPEND_MODE",
+        "text": "Append mode"
     }
 ]

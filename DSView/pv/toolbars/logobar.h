@@ -71,6 +71,8 @@ private slots:
     void on_actionIssue_triggered();
     void on_action_update();
     void on_action_setting_log();
+    void on_open_log_file();
+    void on_clear_log_file();
 
 private:
     bool _enable;

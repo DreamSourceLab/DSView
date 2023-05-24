@@ -23,6 +23,7 @@
 #define _DSV_LOG_H_
 
 #include <log/xlog.h>
+#include <QString>
 
 extern xlog_writer *dsv_log;
 
@@ -34,6 +35,9 @@ void dsv_log_level(int l);
 
 void dsv_log_enalbe_logfile(bool append);
 void dsv_remove_log_file();
+void dsv_clear_log_file();
+
+QString get_dsv_log_path();
 
 #define LOG_PREFIX "" 
 #define dsv_err(fmt, args...) xlog_err(dsv_log, LOG_PREFIX fmt, ## args)

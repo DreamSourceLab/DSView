@@ -93,6 +93,11 @@ XLOG_API int xlog_add_receiver(xlog_context* ctx, xlog_receive_callback rev, int
 XLOG_API int xlog_add_receiver_from_file(xlog_context* ctx, const char *file_path, int *out_index, int bAppend);
 
 /**
+ * Clear the log file, and reopen from the path.
+*/
+XLOG_API int xlog_reset_log_file(xlog_context* ctx, int receiver_index, const char *file_path);
+
+/**
  * 	remove a log data receiver,return 0 if success.
  */
 XLOG_API int xlog_remove_receiver_by_index(xlog_context* ctx, int index);

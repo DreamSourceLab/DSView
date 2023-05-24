@@ -58,6 +58,7 @@ struct AppOptions
     bool  warnofMultiTrig;
     bool  originalData;
     bool  ableSaveLog;
+    bool  appendLogMode;
     int   logLevel;
     bool  transDecoderDlg;
 

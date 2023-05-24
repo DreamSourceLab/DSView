@@ -301,6 +301,43 @@ XLOG_API int xlog_add_receiver_from_file(xlog_context* ctx, const char *file_pat
 }
 
 /**
+ * Clear the log file, and reopen from the path.
+*/
+XLOG_API int xlog_reset_log_file(xlog_context* ctx, int receiver_index, const char *file_path)
+{
+    FILE *fh = NULL;
+    int ret = 0;
+
+    if (ctx == NULL || file_path == NULL || *file_path == 0){
+        return -1;
+    }
+
+    pthread_mutex_lock(&ctx->_mutext);
+
+    if (receiver_index < ctx->_count && ctx->_receivers[receiver_index]._file != NULL)
+    {
+        fclose(ctx->_receivers[receiver_index]._file);
+        ctx->_receivers[receiver_index]._file = NULL;
+
+        fh = fopen(file_path, "w+");
+
+        if (fh == NULL){
+            strcpy(ctx->_error, "open file error");
+            ret = -1;
+        }
+        else{
+            ctx->_receivers[receiver_index]._file = fh;
+        }
+    }
+    else{
+        ret = -1;
+    }
+
+    pthread_mutex_unlock(&ctx->_mutext);
+    return ret;
+}
+
+/**
  * 	remove a log data receiver,return 0 if success.
  */
 XLOG_API int xlog_remove_receiver_by_index(xlog_context* ctx, int index)

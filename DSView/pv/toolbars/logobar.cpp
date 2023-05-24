@@ -32,6 +32,11 @@
 #include <QFormLayout>
 #include <QWidget>
 #include <QCheckBox>
+#include <QLineEdit>
+#include <QPushButton>
+#include <QHBoxLayout>
+#include <QFile> 
+#include <QLabel>
 
 #include "logobar.h"
 #include "../dialogs/about.h"
@@ -41,6 +46,7 @@
 #include "../appcontrol.h"
 #include "../log.h"
 #include "../ui/langresource.h"
+#include "../ui/msgbox.h"
 
 
 namespace pv {
@@ -228,7 +234,7 @@ void LogoBar::on_action_setting_log()
     auto *topWind = AppControl::Instance()->GetTopWindow();
     dialogs::DSDialog dlg(topWind, false, true);
     dlg.setTitle(L_S(STR_PAGE_DLG, S_ID(IDS_DLG_LOG_OPTIONS), "Log Options"));
-    dlg.setMinimumSize(260, 120);
+    dlg.setMinimumSize(460, 300);
     QWidget *panel = new QWidget(&dlg);
     dlg.layout()->addWidget(panel);
     panel->setMinimumSize(250, 110);
@@ -245,19 +251,49 @@ void LogoBar::on_action_setting_log()
     }
     cbBox->setCurrentIndex(app._appOptions.logLevel);
 
-    QCheckBox *ckBox = new QCheckBox();
-    ckBox->setChecked(app._appOptions.ableSaveLog);
-    lay->addRow(L_S(STR_PAGE_DLG, S_ID(IDS_DLG_SAVE_FILE), "Save To File"), ckBox);
+    QCheckBox *ckSave = new QCheckBox();
+    ckSave->setChecked(app._appOptions.ableSaveLog);
+    lay->addRow(L_S(STR_PAGE_DLG, S_ID(IDS_DLG_SAVE_FILE), "Save To File"), ckSave);
+
+    QCheckBox *ckRebuild = new QCheckBox();
+    ckRebuild->setChecked(app._appOptions.appendLogMode);
+    lay->addRow(L_S(STR_PAGE_DLG, S_ID(IDS_DLG_APPEND_MODE), "Append mode"), ckRebuild);
+
+    QLineEdit  *etPath = new QLineEdit();
+    etPath->setReadOnly(true);
+    etPath->setText(get_dsv_log_path());
+    lay->addRow(L_S(STR_PAGE_DLG, S_ID(IDS_DLG_LOG_PATH), "File Path"), etPath);
+
+    QPushButton *btOpen = new QPushButton();
+    btOpen->setText(L_S(STR_PAGE_DLG, S_ID(IDS_DLG_OPEN), "Open"));
+    connect(btOpen, SIGNAL(released()), this, SLOT(on_open_log_file()));
+
+    QPushButton *btClear = new QPushButton();
+    btClear->setText(L_S(STR_PAGE_DLG, S_ID(IDS_DLG_CLEARE), "Clear"));
+    connect(btClear, SIGNAL(released()), this, SLOT(on_clear_log_file()));
+
+    QWidget *btWid = new QWidget();
+    QHBoxLayout *btLay = new QHBoxLayout();
+    btWid->setLayout(btLay);
+    btLay->setSpacing(10);
+    btLay->addWidget(btOpen);
+    btLay->addWidget(btClear);
+
+    lay->addRow("", btWid);
 
     dlg.exec();
 
     if (dlg.IsClickYes()){
-        bool ableSave = ckBox->isChecked();
+        bool ableSave = ckSave->isChecked();
         int level = cbBox->currentIndex();
+        bool appendLogMode = ckRebuild->isChecked();
 
-        if (ableSave != app._appOptions.ableSaveLog || level != app._appOptions.logLevel){
+        if (ableSave != app._appOptions.ableSaveLog 
+            || level != app._appOptions.logLevel
+            || appendLogMode != app._appOptions.appendLogMode){
             app._appOptions.ableSaveLog = ableSave;
             app._appOptions.logLevel = level;
+            app._appOptions.appendLogMode = appendLogMode;            
             app.SaveApp();
 
             dsv_log_level(level);
@@ -267,6 +303,33 @@ void LogoBar::on_action_setting_log()
             else
                 dsv_remove_log_file();
         }
+    }  
+}
+
+void LogoBar::on_open_log_file()
+{
+    QFile qf(get_dsv_log_path());
+    if (qf.exists()){
+        QDesktopServices::openUrl( QUrl("file:///" + get_dsv_log_path()));
+    }
+    else{
+        QString strMsg(L_S(STR_PAGE_MSG, S_ID(IDS_MSG_FILE_NOT_EXIST), "Not exist!"));
+        MsgBox::Show(strMsg);
+    }        
+}
+
+void LogoBar::on_clear_log_file()
+{
+    QFile qf(get_dsv_log_path());
+    if (qf.exists()){
+        QString strMsg(L_S(STR_PAGE_MSG, S_ID(IDS_MSG_TO_CLEAR_LOG), "Confirm!"));
+        if (MsgBox::Confirm(strMsg)){
+            dsv_clear_log_file();
+        }
+    }
+    else{
+        QString strMsg(L_S(STR_PAGE_MSG, S_ID(IDS_MSG_FILE_NOT_EXIST), "Not exist!"));
+        MsgBox::Show(strMsg);
     }  
 }
 

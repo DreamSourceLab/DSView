@@ -357,5 +357,13 @@
     {
         "id": "IDS_MSG_NO_ENABLED_CHANNEL",
         "text": "未启用通道!"
+    },
+    {
+        "id": "IDS_MSG_FILE_NOT_EXIST",
+        "text": "文件不存在!"
+    },
+    {
+        "id": "IDS_MSG_TO_CLEAR_LOG",
+        "text": "您确定要清除日志文件?"
     }
 ]

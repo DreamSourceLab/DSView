@@ -95,6 +95,7 @@ void _loadApp(AppOptions &o, QSettings &st){
     getFiled("warnofMultiTrig", st, o.warnofMultiTrig, true);
     getFiled("originalData", st, o.originalData, false);
     getFiled("ableSaveLog", st, o.ableSaveLog, false);
+    getFiled("appendLogMode", st, o.appendLogMode, false);
     getFiled("logLevel", st, o.logLevel, 3);
     getFiled("transDecoderDlg", st, o.transDecoderDlg, true);
 
@@ -113,6 +114,7 @@ void _saveApp(AppOptions &o, QSettings &st){
     setFiled("warnofMultiTrig", st, o.warnofMultiTrig);
     setFiled("originalData", st, o.originalData);
     setFiled("ableSaveLog", st, o.ableSaveLog);
+    setFiled("appendLogMode", st, o.appendLogMode);
     setFiled("logLevel", st, o.logLevel);
     setFiled("transDecoderDlg", st, o.transDecoderDlg);
 
