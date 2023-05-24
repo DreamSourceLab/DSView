@@ -406,9 +406,6 @@ public:
     void add_msg_listener(IMessageListener *ln);
     void broadcast_msg(int msg);    
     bool have_new_realtime_refresh(bool keep);
-
-    void set_decoder_row_label(int index, QString label);
-
     view::DecodeTrace* get_decoder_trace(int index);
     view::Signal* get_signal_by_index(int index);
 
@@ -424,6 +421,8 @@ public:
     }
 
     void clear_view_data();
+    void set_trace_name(view::Trace *trace, QString name);
+    void set_decoder_row_label(int index, QString label);
 
 private:
     void set_cur_samplelimits(uint64_t samplelimits);

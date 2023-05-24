@@ -214,11 +214,6 @@ void DecodeTrace::paint_back(QPainter &p, int left, int right, QColor fore, QCol
         QFont font=p.font();
         font.setPointSize(DefaultFontSize);
         p.setFont(font);
-//		p.setPen(QApplication::palette().color(QPalette::Base));
-//		for (int dx = -1; dx <= 1; dx++)
-//			for (int dy = -1; dy <= 1; dy++)
-//				if (dx != 0 && dy != 0)
-//					p.drawText(r.translated(dx, dy), f, h);
 
         // Draw the text
         p.setPen(fore);

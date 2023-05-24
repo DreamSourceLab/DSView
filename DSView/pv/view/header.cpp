@@ -445,15 +445,10 @@ void Header::on_action_set_name_triggered()
 
     if (nameEdit->isModified()) {
         QString v = nameEdit->text().trimmed();
-        if (v == ""){
+        if (v == "")
             v = QString::number(context_Trace->get_index());
-        }
-        context_Trace->set_name(v);
-        if (context_Trace->get_type() == SR_CHANNEL_LOGIC ||
-                context_Trace->get_type() == SR_CHANNEL_ANALOG)
-        {
-            _view.session().get_device()->set_channel_name(context_Trace->get_index(), v.toUtf8());
-        }
+        
+        _view.session().set_trace_name(context_Trace, v);
     }
 
     nameEdit->hide();

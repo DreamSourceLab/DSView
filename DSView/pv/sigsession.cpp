@@ -1415,6 +1415,15 @@ namespace pv
             {
                 trace->decoder()->add_sub_decoder(sub);
             }
+
+            if (sub_decoders.size() > 0){
+                auto lst_sub = sub_decoders.end();
+                lst_sub--;
+                QString sub_dec_name((*lst_sub)->decoder()->name);
+                if (sub_dec_name != "")
+                    trace->set_name(sub_dec_name);
+            }
+
             sub_decoders.clear();
 
             // set view early for decode start/end region setting
@@ -2212,14 +2221,6 @@ namespace pv
         }
     }
 
-    void SigSession::set_decoder_row_label(int index, QString label)
-    {
-        auto trace = get_decoder_trace(index);
-        if (trace != NULL){
-            trace->set_name(label);
-        }
-    }
-
     void SigSession::clear_signals()
     {   
         DESTROY_OBJECT(_math_trace);
@@ -2266,6 +2267,28 @@ namespace pv
     {
         _view_data->clear();
         data_updated();
+    }
+
+    void SigSession::set_trace_name(view::Trace *trace, QString name)
+    {
+        assert(trace);
+
+        trace->set_name(name);
+
+        int traceType = trace->get_type();
+
+        if (traceType == SR_CHANNEL_LOGIC || traceType == SR_CHANNEL_ANALOG)
+        { 
+            _device_agent.set_channel_name(trace->get_index(), name.toUtf8());
+        }
+    }
+
+    void SigSession::set_decoder_row_label(int index, QString label)
+    {
+        auto trace = get_decoder_trace(index);
+        if (trace != NULL){
+            trace->set_name(label);
+        }
     }
 
 } // namespace pv
