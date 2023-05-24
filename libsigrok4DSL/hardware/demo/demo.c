@@ -86,6 +86,43 @@ static struct sr_dev_driver *di = &demo_driver_info;
 
 extern struct ds_trigger *trigger;
 
+static void dso_status_update(struct session_vdev *vdev)
+{
+    struct sr_status *status = (struct sr_status*)&vdev->mstatus;
+   
+    //340 25M
+    //300 28
+    //
+    status->ch0_cyc_tlen = 340;
+    status->ch1_cyc_tlen = 340;
+    status->ch0_cyc_cnt = 85;
+    status->ch1_cyc_cnt = 85;
+    status->ch0_max = 158;
+    status->ch1_max = 158;
+    status->ch0_min = 78;
+    status->ch1_min = 78; 
+    status->ch0_cyc_plen = 170;
+    status->ch1_cyc_plen = 170;
+    status->ch0_cyc_llen = 0;
+    status->ch1_cyc_llen = 0;
+    status->ch0_level_valid = 0;
+    status->ch1_level_valid = 0;
+    status->ch0_plevel = 1;
+    status->ch1_plevel = 1;
+    status->ch0_low_level = 78;
+    status->ch1_low_level = 78;
+    status->ch0_high_level = 178;
+    status->ch1_high_level = 178;
+    status->ch0_cyc_rlen = 85;
+    status->ch1_cyc_rlen = 85;
+    status->ch0_cyc_flen = 85;
+    status->ch1_cyc_flen = 85;
+    status->ch0_acc_square = 12496225;
+    status->ch1_acc_square = 12496225;
+    status->ch0_acc_mean = 1280000;
+    status->ch1_acc_mean = 1280000;
+}
+
 static int logic_adjust_probe(struct sr_dev_inst *sdi, int num_probes)
 {
     uint16_t j;
@@ -687,7 +724,6 @@ static int hw_dev_close(struct sr_dev_inst *sdi)
         sdi->status = SR_ST_INACTIVE;
         return SR_OK;
     }
-
     return SR_ERR_CALL_STATUS;
 }
 
@@ -1274,12 +1310,40 @@ static int hw_dev_acquisition_start(struct sr_dev_inst *sdi,
             packet_len = LOGIC_MIN_PACKET_LEN;
             packet_time = LOGIC_MIN_PACKET_TIME(vdev->samplerate);
         }
+
+        if(vdev->samplerate >= SR_MHZ(100))
+        {
+            uint64_t ideal_len = 2;
+            while (1)
+            {
+                if(ideal_len>=packet_len)
+                {
+                    packet_len = ideal_len;
+                    break;
+                }
+                else
+                {
+                    ideal_len *=2;
+                }
+            }
+            
+            packet_time = vdev->samplerate/8;
+            packet_num = ceil(packet_time/(gdouble)packet_len);
+            packet_time = 1/(gdouble)packet_num;
+            logic_probe = 0;
+            logic_probe_num = 0;        
+        }
         
         if(sample_generator == PATTERN_RANDOM)
         {
             logic_total_packet_num = (vdev->total_samples/8/packet_len);
             logci_cur_packet_num = 1;
-            logic_data_status = LOGIC_FULL;
+            logic_buf = g_try_malloc0(enabled_probe_num * packet_len);
+            if(logic_buf == NULL)
+            {
+                sr_err("%s: logic buf malloc error", __func__);
+                return SR_ERR_MALLOC;
+            }
             init_random_data(vdev,sdi);
             g_timer_start(run_time);
             sr_session_source_add(-1, 0, 0, receive_data_logic, sdi);
@@ -1361,10 +1425,10 @@ static int hw_dev_status_get(const struct sr_dev_inst *sdi, struct sr_status *st
     (void)prg;
 
     struct session_vdev *vdev;
-
     if (sdi)
     {
         vdev = sdi->priv;
+        dso_status_update(vdev);
         *status = vdev->mstatus;
         return SR_OK;
     }
@@ -1422,13 +1486,6 @@ static int receive_data_logic(int fd, int revents, const struct sr_dev_inst *sdi
         logic.order = 0;
         logic.length = chan_num * packet_len;
 
-        void *logic_buf = g_try_malloc0(chan_num * packet_len);
-        if(logic_buf == NULL)
-        {
-            sr_err("%s: logic buf malloc error", __func__);
-            return SR_ERR_MALLOC;
-        }
-
         if(!vdev->is_loop)
         {
             post_data_len += logic.length / enabled_probe_num;
@@ -1438,13 +1495,19 @@ static int receive_data_logic(int fd, int revents, const struct sr_dev_inst *sdi
             }
         }
 
-        if(vdev->samplerate >=LOGIC_EMPTY_FREQ && logic_data_status!= LOGIC_FULL)
+        memset(logic_buf,LOGIC_LOW_LEVEL,chan_num * packet_len);
+
+        if(vdev->samplerate >= SR_MHZ(100))
         {
-            memset(logic_buf,0,chan_num * packet_len);
-            if(logic_data_status == LOGIC_EMPTY_END)
-                logic_data_status = LOGIC_FULL;
-            else
-                logic_data_status++;
+            for(int i = 0; i < logic_probe_num;i++)
+            {
+                logic_probe = probe_list[i];
+                for(uint16_t j = 0 ; j< packet_len/8;j++)
+                {
+                    uint64_t cur_index = (logic_probe*8) + (j*enabled_probe_num*8);
+                    memcpy(logic_buf+cur_index,vdev->logic_buf,8);
+                }
+            }
         }
         else
         {
@@ -1453,24 +1516,46 @@ static int receive_data_logic(int fd, int revents, const struct sr_dev_inst *sdi
             int index = enabled_probe_num * 8;
             random = floor(random/index)*index;
             memcpy(logic_buf,vdev->logic_buf + random,logic.length);
-            logic.data = logic_buf;
-            if(vdev->samplerate >=SR_MHZ(100))
-                logic_data_status++;
+        }
+        logic.data = logic_buf;
+
+        if(!vdev->is_loop)
+        {
+            gdouble ideal_time = vdev->total_samples/(gdouble)vdev->samplerate;
+            ideal_time = ideal_time/(gdouble)logic_total_packet_num*(gdouble)logci_cur_packet_num;
+            gdouble packet_elapsed = g_timer_elapsed(run_time, NULL);
+            gdouble waittime = ideal_time - packet_elapsed;
+            if(waittime > 0)
+            {
+                g_usleep(SR_MS(waittime));
+            }  
+        }
+        else
+        {
+            gdouble ideal_time = vdev->samplerate/8;
+            ideal_time = packet_len/(gdouble)ideal_time;
+            ideal_time = logci_cur_packet_num*ideal_time;
+            gdouble packet_elapsed = g_timer_elapsed(run_time, NULL);
+            gdouble waittime = ideal_time - packet_elapsed;
+            if(waittime > 0)
+            {
+                g_usleep(SR_MS(waittime));
+            }  
         }
 
-        gdouble ideal_time = vdev->total_samples/(gdouble)vdev->samplerate;
-        ideal_time = ideal_time/(gdouble)logic_total_packet_num*(gdouble)logci_cur_packet_num;
-        gdouble packet_elapsed = g_timer_elapsed(run_time, NULL);
-        gdouble waittime = ideal_time - packet_elapsed;
-        logci_cur_packet_num++;
-        if(waittime > 0)
-        {
-            g_usleep(SR_MS(waittime));
-        }
         ds_data_forward(sdi, &packet);
 
-        
-        g_safe_free(logic_buf);
+        logci_cur_packet_num++;
+        uint16_t target_packet = (SR_MB(2)/packet_len)+1;
+        if(logci_cur_packet_num % target_packet == 0)
+        {
+            logic_probe_num = rand()%enabled_probe_num+1;
+            memset(probe_list,LOGIC_HIGH_LEVEL,enabled_probe_num);
+            for(int i = 0; i< logic_probe_num;i++)
+            {
+                probe_list[i] = rand()%enabled_probe_num;
+            }
+        }
     }
 
     if (bToEnd || revents == -1)
