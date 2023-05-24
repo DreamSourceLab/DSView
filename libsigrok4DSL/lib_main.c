@@ -1636,4 +1636,10 @@ static struct libusb_device* get_new_detached_usb_device()
 	return dev;
 }
 
+SR_PRIV int post_message_callback(int msg)
+{
+	send_event(msg);
+	return SR_OK;
+}
+
 /**-------------------private function end---------------*/

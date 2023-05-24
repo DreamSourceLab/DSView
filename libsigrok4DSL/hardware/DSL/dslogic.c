@@ -283,9 +283,11 @@ static GSList *scan(GSList *options)
     uint8_t address;
     int isProduct;
     int num;
+    int is_speed_not_match;
 
 	drvc = di->priv;
     num = 0;
+    is_speed_not_match = 0;
  
     if (options != NULL)
         sr_info("%s", "Scan DSLogic device with options.");
@@ -351,17 +353,20 @@ static GSList *scan(GSList *options)
         usb_speed = libusb_get_device_speed(device_handle);
         if ((usb_speed != LIBUSB_SPEED_HIGH) && (usb_speed != LIBUSB_SPEED_SUPER)){
             sr_info("scan(): The idVendor is right, but the usb speed is too low, speed type:%d", usb_speed);
+            is_speed_not_match = 1;
             continue;
         }
 
         /* Check manufactory id and product id, and speed type. */
 		prof = NULL;
-        for (j = 0; supported_DSLogic[j].vid; j++) {
+        for (j = 0; supported_DSLogic[j].vid; j++) 
+        {
             if (des.idVendor == supported_DSLogic[j].vid &&
-                des.idProduct == supported_DSLogic[j].pid &&
-                usb_speed == supported_DSLogic[j].usb_speed) {
-                prof = &supported_DSLogic[j];
-                break;
+                des.idProduct == supported_DSLogic[j].pid){
+                    if (usb_speed == supported_DSLogic[j].usb_speed) {
+                        prof = &supported_DSLogic[j];
+                        break;
+                    }
 			}
 		}
 
@@ -465,6 +470,10 @@ static GSList *scan(GSList *options)
     }
 
     sr_info("Fond new DSLogic device count: %d", num);
+
+    if (is_speed_not_match){
+        post_message_callback(DS_EV_DEVICE_SPEED_NOT_MATCH);
+    }
 
 	return devices;
 }

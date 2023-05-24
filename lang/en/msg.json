@@ -366,5 +366,9 @@
     {
         "id": "IDS_MSG_TO_CLEAR_LOG",
         "text": "Are you sure to clear log file?"
+    },
+    {
+        "id": "IDS_MSG_DEVICE_SPEED_TOO_LOW",
+        "text": "Error, The speed of the USB port that \nthe device connected is too low!"
     }
 ]

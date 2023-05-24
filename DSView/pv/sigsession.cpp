@@ -1952,7 +1952,11 @@ namespace pv
 
         case DS_EV_INACTIVE_DEVICE_DETACH:
             _callback->trigger_message(DSV_MSG_DEVICE_LIST_UPDATED); // Update list only.
-            break;    
+            break;
+        
+        case DS_EV_DEVICE_SPEED_NOT_MATCH:
+            _callback->trigger_message(DS_EV_DEVICE_SPEED_NOT_MATCH);
+            break;
 
         default:
             dsv_err("%s", "Error!Unknown device event.");
@@ -2111,6 +2115,13 @@ namespace pv
             break;
 
         case DSV_MSG_COLLECT_END:   
+            break;
+
+        case DS_EV_DEVICE_SPEED_NOT_MATCH:
+            {
+                QString strMsg(L_S(STR_PAGE_MSG, S_ID(IDS_MSG_DEVICE_SPEED_TOO_LOW), "Speed too low!"));
+                _callback->delay_prop_msg(strMsg);
+            }
             break;
         }     
     }

@@ -365,5 +365,9 @@
     {
         "id": "IDS_MSG_TO_CLEAR_LOG",
         "text": "您确定要清除日志文件?"
+    },
+    {
+        "id": "IDS_MSG_DEVICE_SPEED_TOO_LOW",
+        "text": "错误, 设备连接的USB端口速度太低!"
     }
 ]

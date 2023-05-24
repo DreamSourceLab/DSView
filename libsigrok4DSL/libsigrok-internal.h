@@ -415,6 +415,8 @@ SR_PRIV int current_device_acquisition_stop();
 
 SR_PRIV int lib_extern_init(struct sr_context *ctx);
 
+SR_PRIV int post_message_callback(int msg);
+
 /*--- hwdriver.c ------------------------------------------------------------*/
 
 SR_PRIV int sr_config_get(const struct sr_dev_driver *driver,

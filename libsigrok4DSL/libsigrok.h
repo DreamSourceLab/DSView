@@ -1304,6 +1304,8 @@ SR_API void ds_log_level(int level);
 
 #define DS_EV_COLLECT_TASK_END_BY_ERROR		106
 
+#define DS_EV_DEVICE_SPEED_NOT_MATCH	107
+
 enum DS_DEVICE_EVENT_TYPE
 {
 	DS_EV_NEW_DEVICE_ATTACH = 1,
