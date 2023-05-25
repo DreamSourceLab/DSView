@@ -80,8 +80,12 @@ static int64_t analog_count = 0;
 static uint64_t total_num = 0;
 static uint64_t logci_cur_packet_num = 0;
 static uint64_t logic_total_packet_num = 0;
-static uint8_t logic_data_status = 0;
+static uint8_t logic_probe = 0;
+static uint8_t logic_probe_num = 16;
 static gboolean channel_mode_change = FALSE;
+static uint64_t packet_num;
+static void *logic_buf;
+static uint8_t probe_list[16];
 
 static enum DEMO_LOGIC_CHANNEL_ID ch_mode;
 static enum DEMO_LOGIC_CHANNEL_INDEX logic_index;
@@ -359,7 +363,7 @@ static const uint64_t samplerates[] = {
 #define DSO_DEFAULT_VFACOTR SR_V(1)
 #define DSO_DEFAULT_HW_OFFSET 128
 #define DSO_DEFAULT_OFFSET 128
-#define DSO_DEFAULT_TRIG_VAL 0.5
+#define DSO_DEFAULT_TRIG_VAL 128
 
 #define ANALOG_DEFAULT_SAMPLERATE SR_MHZ(1)
 #define ANALOG_DEFAULT_TOTAL_SAMPLES SR_MHZ(1)
@@ -541,6 +545,8 @@ static const int ranx[] = {
   1,  30, -12,  44,  20,  49,  29, -43,  42,  30, -34,  24,  20, -40,  33, -12,  13, -45,  45, -24,
 -41,  36,  -8,  46,  47, -34,  28, -39,   7, -32,  38, -27,  28,  -3,  -8,  43, -37, -24,   6,   3,
 };
+
+static void dso_status_update(struct session_vdev *vdev);
 
 static int get_logic_probe_type_index_by_probe_type(int probe_type);
 
