@@ -599,6 +599,12 @@ const uint8_t *LogicSnapshot::get_samples(uint64_t start_sample, uint64_t &end_s
 
 bool LogicSnapshot::get_sample(uint64_t index, int sig_index)
 {
+    std::lock_guard<std::mutex> lock(_mutex);
+    return get_sample_unlock(index, sig_index);
+}
+
+bool LogicSnapshot::get_sample_unlock(uint64_t index, int sig_index)
+{
     index += _loop_offset;
     _ring_sample_count += _loop_offset;
 
@@ -660,12 +666,12 @@ bool LogicSnapshot::get_display_edges(std::vector<std::pair<bool, bool> > &edges
     bool start_sample;
 
     // Get the initial state
-    start_sample = last_sample = get_sample(index++, sig_index);
+    start_sample = last_sample = get_sample_unlock(index++, sig_index);
     togs.push_back(pair<uint16_t, bool>(0, last_sample));
 
     while(edges.size() < width) {
         // search next edge
-        bool has_edge = get_nxt_edge(index, last_sample, end, 0, sig_index);
+        bool has_edge = get_nxt_edge_unlock(index, last_sample, end, 0, sig_index);
 
         // calc the edge position
         int64_t gap = (index / min_length) - pixels_offset;
@@ -676,9 +682,9 @@ bool LogicSnapshot::get_display_edges(std::vector<std::pair<bool, bool> > &edges
         }
 
         if (index > end)
-            last_sample = get_sample(end, sig_index);
+            last_sample = get_sample_unlock(end, sig_index);
         else
-            last_sample = get_sample(index - 1, sig_index);
+            last_sample = get_sample_unlock(index - 1, sig_index);
 
         if (has_edge) {
             edges.push_back(pair<bool, bool>(true, last_sample));
@@ -691,7 +697,7 @@ bool LogicSnapshot::get_display_edges(std::vector<std::pair<bool, bool> > &edges
     }
 
     if (togs.size() < max_togs) {
-        last_sample = get_sample(end, sig_index);
+        last_sample = get_sample_unlock(end, sig_index);
         togs.push_back(pair<uint16_t, bool>(edges.size() - 1, last_sample));
     }
 
@@ -701,6 +707,13 @@ bool LogicSnapshot::get_display_edges(std::vector<std::pair<bool, bool> > &edges
 }
 
 bool LogicSnapshot::get_nxt_edge(uint64_t &index, bool last_sample, uint64_t end,
+                      double min_length, int sig_index)
+{
+    std::lock_guard<std::mutex> lock(_mutex);
+    return get_nxt_edge_unlock(index, last_sample, end, min_length, sig_index);
+}
+
+bool LogicSnapshot::get_nxt_edge_unlock(uint64_t &index, bool last_sample, uint64_t end,
                       double min_length, int sig_index)
 {
     index += _loop_offset;
@@ -773,6 +786,8 @@ bool LogicSnapshot::get_nxt_edge_self(uint64_t &index, bool last_sample, uint64_
 bool LogicSnapshot::get_pre_edge(uint64_t &index, bool last_sample,
                       double min_length, int sig_index)
 {
+    std::lock_guard<std::mutex> lock(_mutex);
+
     index += _loop_offset;
     _ring_sample_count += _loop_offset;
 
@@ -938,7 +953,7 @@ bool LogicSnapshot::block_pre_edge(uint64_t *lbp, uint64_t &index, bool last_sam
             else
                 index--;
 
-            // using get_sample() to avoid out of block case
+            // using get_sample_self() to avoid out of block case
             bool sample = get_sample_self(index, sig_index);
             if (sample ^ last_sample) {
                 index++;
@@ -1021,6 +1036,8 @@ bool LogicSnapshot::block_pre_edge(uint64_t *lbp, uint64_t &index, bool last_sam
 bool LogicSnapshot::pattern_search(int64_t start, int64_t end, int64_t& index,
                         std::map<uint16_t, QString> &pattern, bool isNext)
 {
+    std::lock_guard<std::mutex> lock(_mutex);
+    
     start += _loop_offset;
     end += _loop_offset;
     index += _loop_offset;

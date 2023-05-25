@@ -131,7 +131,11 @@ public:
     void decode_end();
 
 private:
+    bool get_sample_unlock(uint64_t index, int sig_index);
     bool get_sample_self(uint64_t index, int sig_index);
+
+    bool get_nxt_edge_unlock(uint64_t &index, bool last_sample, uint64_t end,
+                      double min_length, int sig_index);
     bool get_nxt_edge_self(uint64_t &index, bool last_sample, uint64_t end,
                       double min_length, int sig_index);
 
