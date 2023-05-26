@@ -309,6 +309,12 @@ public:
 
     void check_calibration();
 
+    void update_view_port();
+
+    inline void update_all_trace_postion(){
+        signals_changed();
+    }
+
 signals:
 	void hover_point_changed();
     void cursor_update();
@@ -327,15 +333,18 @@ private:
 
     void update_margins();
 
-    static bool compare_trace_v_offsets(
-        const pv::view::Trace *a,
-        const pv::view::Trace *b);
+    static bool compare_trace_v_offsets( const Trace *a, const Trace *b);
 
     void clear();
     void reconstruct();  
 	bool eventFilter(QObject *object, QEvent *event);
 	bool viewportEvent(QEvent *e);
 	void resizeEvent(QResizeEvent *e);
+
+public:
+    static bool compare_trace_view_index(const Trace *a, const Trace *b);
+
+    static bool compare_trace_y(const Trace *a, const Trace *b);
  
 public slots:
     void reload();

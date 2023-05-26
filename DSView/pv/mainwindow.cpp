@@ -963,6 +963,8 @@ namespace pv
 
         _session->reload();
 
+        std::vector<int> view_indexs;
+
         // load signal setting
         if (mode == DSO)
         {
@@ -1031,8 +1033,8 @@ namespace pv
                         }
 
                         if (s->signal_type() == SR_CHANNEL_LOGIC && obj.contains("view_index"))
-                        {
-                            _session->set_channel_view_index(s->get_index(), obj["view_index"].toInt());
+                        {  
+                            view_indexs.push_back(obj["view_index"].toInt());
                         }
 
                         break;
@@ -1045,6 +1047,17 @@ namespace pv
         _sampling_bar->update_sample_rate_list();
         _trigger_widget->device_updated();
         _view->header_updated();
+         
+        if (mode == LOGIC && view_indexs.size()){
+            int i = 0;
+
+            for (auto s : _session->get_signals()){
+                s->set_view_index(view_indexs[i]);
+                i++;
+            }
+
+            _view->update_all_trace_postion();
+        }
 
         // load trigger settings
         if (sessionObj.contains("trigger"))

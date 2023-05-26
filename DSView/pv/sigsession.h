@@ -428,8 +428,6 @@ public:
         _decoder_pannel = pannel;
     }
 
-    void set_channel_view_index(int orgIndex, int viewIndex);
-
 private:
     void set_cur_samplelimits(uint64_t samplelimits);
     void set_cur_snap_samplerate(uint64_t samplerate);
@@ -520,6 +518,7 @@ private:
     }
 
     view::Trace* get_channel_by_index(int orgIndex);
+    void make_channels_view_index();
  
 private:
     mutable std::mutex      _sampling_mutex;

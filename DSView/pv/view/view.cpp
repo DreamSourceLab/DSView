@@ -27,6 +27,7 @@
 #include <QEvent>
 #include <QMouseEvent>
 #include <QScrollBar>
+#include <algorithm>
 
 #include "groupsignal.h"
 #include "decodetrace.h"
@@ -365,24 +366,52 @@ void View::get_traces(int type, std::vector<Trace*> &traces)
         traces.push_back(math);
     }
 
-    stable_sort(traces.begin(), traces.end(), compare_trace_v_offsets);
+    sort(traces.begin(), traces.end(), compare_trace_v_offsets);
 }
 
-bool View::compare_trace_v_offsets(const Trace *a,
-    const Trace *b)
+bool View::compare_trace_v_offsets(const Trace *a, const Trace *b)
 {
     assert(a);
     assert(b);
 
     Trace *a1 = const_cast<Trace*>(a);
     Trace *b1 = const_cast<Trace*>(b);
+    int v1 = 0;
+    int v2 = 0;
 
-    if (a1->get_type() != b1->get_type())
-        return a1->get_type() < b1->get_type();
-    else if (a1->get_type() == SR_CHANNEL_DSO || a1->get_type() == SR_CHANNEL_ANALOG)
-        return a1->get_index() < b1->get_index();
-    else
-        return a1->get_v_offset() < b1->get_v_offset();
+    if (a1->get_type() != b1->get_type()){
+        v1 = a1->get_type();
+        v2 = b1->get_type();
+    } 
+    else if (a1->get_type() == SR_CHANNEL_DSO || a1->get_type() == SR_CHANNEL_ANALOG){
+        v1 = a1->get_index();
+        v2 = b1->get_index();
+    } 
+    else{
+        v1 = a1->get_v_offset();
+        v2 = b1->get_v_offset();
+    }
+    return v1 < v2;
+}
+
+bool View::compare_trace_view_index(const Trace *a, const Trace *b)
+{
+    assert(a);
+    assert(b);
+
+    Trace *a1 = const_cast<Trace*>(a);
+    Trace *b1 = const_cast<Trace*>(b);
+    return a1->get_view_index() < b1->get_view_index();
+}
+
+bool View::compare_trace_y(const Trace *a, const Trace *b)
+{
+    assert(a);
+    assert(b);
+
+    Trace *a1 = const_cast<Trace*>(a);
+    Trace *b1 = const_cast<Trace*>(b);
+    return a1->get_v_offset() < b1->get_v_offset();
 }
 
 void View::show_cursors(bool show)
@@ -597,11 +626,18 @@ void View::signals_changed()
     get_traces(ALL_VIEW, traces);
 
     for(auto t : traces) {
-        if (_trace_view_map[t->get_type()] == TIME_VIEW)
+        if (_trace_view_map[t->get_type()] == TIME_VIEW){
             time_traces.push_back(t);
-        else if (_trace_view_map[t->get_type()] == FFT_VIEW)
+        }
+        else if (_trace_view_map[t->get_type()] == FFT_VIEW){
             if (t->enabled())
                 fft_traces.push_back(t);
+        }
+
+        if (t->get_type() == SR_CHANNEL_LOGIC)
+            logic_traces.push_back(t);
+        else if (t->get_type() == SR_CHANNEL_DECODER)
+            decoder_traces.push_back(t);
     }
 
     if (!fft_traces.empty()) {
@@ -611,6 +647,7 @@ void View::signals_changed()
             _viewport_list.push_back(_fft_viewport);
             _vsplitter->refresh();
         }
+
         for(auto t : fft_traces) {
             t->set_view(this);
             t->set_viewport(_fft_viewport);
@@ -624,9 +661,12 @@ void View::signals_changed()
 
         // Find the _fft_viewport in the stack
         std::list< QWidget *>::iterator iter = _viewport_list.begin();
-        for(unsigned int i = 0; i < _viewport_list.size(); i++, iter++)
+
+        for(unsigned int i = 0; i < _viewport_list.size(); i++, iter++){
             if ((*iter) == _fft_viewport)
                 break;
+        }
+
         // Delete the element
         if (iter != _viewport_list.end())
             _viewport_list.erase(iter);
@@ -645,9 +685,11 @@ void View::signals_changed()
 
         if (_device_agent->have_instance() == false){
             assert(false);
-        } 
+        }
+        
+        int mode = _device_agent->get_work_mode();
 
-        if (_device_agent->get_work_mode() == LOGIC) {
+        if (mode == LOGIC) {
             int v;
             bool ret;
 
@@ -676,12 +718,29 @@ void View::signals_changed()
 
         _spanY = _signalHeight + 2 * actualMargin;
         int next_v_offset = actualMargin;
+        
+        //Make list by view index;
+        if (mode == LOGIC)
+        {
+            sort(logic_traces.begin(), logic_traces.end(), compare_trace_view_index);
+            time_traces.clear();
+            
+            for(auto t : decoder_traces){
+                time_traces.push_back(t);
+            }
+
+            for(auto t : logic_traces){
+                time_traces.push_back(t);
+            }
+        }
 
         for(auto t : time_traces) {
             t->set_view(this);
             t->set_viewport(_time_viewport);
+
             if (t->rows_size() == 0)
                 continue;
+
             const double traceHeight = _signalHeight*t->rows_size();
             t->set_totalHeight((int)traceHeight);
             t->set_v_offset(next_v_offset + 0.5 * traceHeight + actualMargin);
@@ -1257,6 +1316,12 @@ int  View::get_body_height()
         return _time_viewport->height();
     return 0;
 }
+
+ void View::update_view_port()
+ {
+    if (_time_viewport)
+        _time_viewport->update();
+ }
 
 } // namespace view
 } // namespace pv

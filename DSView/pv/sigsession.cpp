@@ -865,9 +865,9 @@ namespace pv
         }
  
         clear_signals();
-
         std::vector<view::Signal *>().swap(_signals);
         _signals = sigs;
+        make_channels_view_index();
 
         spectrum_rebuild();
         lissajous_disable();
@@ -962,10 +962,22 @@ namespace pv
 
         if (!sigs.empty())
         { 
+            std::vector<int> view_indexs;
+            for(auto s : _signals){
+                view_indexs.push_back(s->get_view_index());
+            }
+
             dsv_info("SigSession::reload(), clear signals");
             clear_signals();
             std::vector<view::Signal *>().swap(_signals);
             _signals = sigs;
+            make_channels_view_index();
+
+            if (_device_agent.get_work_mode() == LOGIC){
+                for (int i=0; i<view_indexs.size() && i<_signals.size(); i++){
+                    _signals[i]->set_view_index(view_indexs[i]);
+                }
+            }
         }
 
         spectrum_rebuild();
@@ -2322,11 +2334,12 @@ namespace pv
         return NULL;
     }
 
-    void SigSession::set_channel_view_index(int orgIndex, int viewIndex)
+    void SigSession::make_channels_view_index()
     {
-        auto trace = get_channel_by_index(orgIndex);
-        if (trace != NULL){
-            trace->set_view_index(viewIndex);
+        int index = 0;
+
+        for(auto t : _signals){
+            t->set_view_index(index++);
         }
     }
 

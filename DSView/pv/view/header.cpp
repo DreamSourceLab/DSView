@@ -31,6 +31,7 @@
 #include <QStyleOption>
 #include <QApplication>
 #include <assert.h>
+#include <algorithm>
 
 #include "view.h"
 #include "trace.h"
@@ -239,8 +240,26 @@ void Header::mouseReleaseEvent(QMouseEvent *event)
             changeName(event);
         }
     }
+
+    // Make view index by Y value;
+    int mode = _view.session().get_device()->get_work_mode();    
+    if (_moveFlag && mode == LOGIC)
+    {
+        std::vector<Trace*> traces;
+
+        for (auto s : _view.session().get_signals()){
+            traces.push_back(s);
+        }
+    
+        sort(traces.begin(), traces.end(), View::compare_trace_y);
+
+        int index = 0;
+        for (auto t : traces){
+            t->set_view_index(index++);
+        }
+    }
+
     if (_moveFlag) {
-        //move(event);
         _drag_traces.clear();
         _view.signals_changed();
         _view.set_all_update(true);
