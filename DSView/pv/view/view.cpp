@@ -591,6 +591,8 @@ void View::signals_changed()
     std::vector<Trace*> time_traces;
     std::vector<Trace*> fft_traces;
     std::vector<Trace*> traces;
+    std::vector<Trace*> logic_traces;
+    std::vector<Trace*> decoder_traces;
 
     get_traces(ALL_VIEW, traces);
 

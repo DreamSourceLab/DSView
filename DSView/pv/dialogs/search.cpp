@@ -53,7 +53,7 @@ Search::Search(QWidget *parent, SigSession *session, std::map<uint16_t, QString>
     int index = 0;
 
     for(auto s :  _session->get_signals()) {
-        if (s->signal_type() == LOGIC_SIGNAL) {
+        if (s->signal_type() == SR_CHANNEL_LOGIC) {
             view::LogicSignal *logicSig = (view::LogicSignal*)s;
             QLineEdit *search_lineEdit = new QLineEdit(this);
             if (pattern.find(logicSig->get_index()) != pattern.end())
@@ -113,7 +113,7 @@ std::map<uint16_t, QString> Search::get_pattern()
 
     int index = 0;
     for(auto s :_session->get_signals()) {
-        if (s->signal_type() == LOGIC_SIGNAL) {
+        if (s->signal_type() == SR_CHANNEL_LOGIC) {
             view::LogicSignal *logicSig = (view::LogicSignal*)s;
             pattern[logicSig->get_index()] = _search_lineEdit_vec[index]->text();
             index++;

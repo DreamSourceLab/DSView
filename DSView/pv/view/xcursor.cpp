@@ -47,7 +47,7 @@ XCursor::XCursor(View &view, QColor &colour,
     _sig_index = -1;
     
     for(auto s : _view.session().get_signals()) {        
-        if (s->signal_type() == DSO_SIGNAL){
+        if (s->signal_type() == SR_CHANNEL_DSO){
             DsoSignal *dsoSig = (DsoSignal*)s;
             if (dsoSig->enabled()) {
                 _dsoSig = dsoSig;

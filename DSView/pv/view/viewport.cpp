@@ -261,7 +261,7 @@ void Viewport::paintSignals(QPainter &p, QColor fore, QColor back)
         for(auto t : traces){
             if (t->enabled()){
 
-                if (t->signal_type() == LOGIC_SIGNAL)
+                if (t->signal_type() == SR_CHANNEL_LOGIC)
                 {
                     LogicSignal *logic_signal = (LogicSignal*)t;
                 
@@ -629,7 +629,7 @@ void Viewport::mousePressEvent(QMouseEvent *event)
 
        for(auto s : _view.session().get_signals()) 
        { 
-            if (s->signal_type() == DSO_SIGNAL && s->enabled()) {
+            if (s->signal_type() == SR_CHANNEL_DSO && s->enabled()) {
                 DsoSignal *dsoSig = (DsoSignal*)s;
                 if (dsoSig->get_trig_rect(0, _view.get_view_width()).contains(_mouse_point)) {
                    _drag_sig = s;
@@ -694,7 +694,7 @@ void Viewport::mousePressEvent(QMouseEvent *event)
                     bool no_dsoSig = true;
 
                     while (true) { 
-                        if ((*s)->signal_type() == DSO_SIGNAL && (*s)->enabled()) {
+                        if ((*s)->signal_type() == SR_CHANNEL_DSO && (*s)->enabled()) {
                             view::DsoSignal *dsoSig = (view::DsoSignal*)(*s);
                             no_dsoSig = false;
                             if (sig_looped) {
@@ -768,7 +768,7 @@ void Viewport::mouseMoveEvent(QMouseEvent *event)
         if ((event->buttons() & Qt::LeftButton) ||
             !(event->buttons() | Qt::NoButton)) {
             if (_action_type == DSO_TRIG_MOVE) {
-                if (_drag_sig && _drag_sig->signal_type() == DSO_SIGNAL) {            
+                if (_drag_sig && _drag_sig->signal_type() == SR_CHANNEL_DSO) {            
                     view::DsoSignal *dsoSig = (view::DsoSignal*)_drag_sig;
                     dsoSig->set_trig_vpos(event->pos().y());
                     _dso_trig_moved = true;
@@ -783,14 +783,14 @@ void Viewport::mouseMoveEvent(QMouseEvent *event)
                     bool logic = false;
 
                    for(auto s : _view.session().get_signals()) {                     
-                        if (mode == LOGIC && s->signal_type() == LOGIC_SIGNAL) {
+                        if (mode == LOGIC && s->signal_type() == SR_CHANNEL_LOGIC) {
                             view::LogicSignal *logicSig = (view::LogicSignal*)s;
                             if (logicSig->measure(event->pos(), index0, index1, index2)) {
                                 logic = true;
                                 break;
                             }
                         }
-                        if (mode == DSO && s->signal_type() == DSO_SIGNAL) {
+                        if (mode == DSO && s->signal_type() == SR_CHANNEL_DSO) {
                             view::DsoSignal *dsoSig = (view::DsoSignal*)s;
                             curX = min(dsoSig->get_view_rect().right(), curX);
                             break;
@@ -924,7 +924,7 @@ void Viewport::mouseReleaseEvent(QMouseEvent *event)
                         const auto &sigs = _view.session().get_signals();
 
                         for(auto s : sigs) { 
-                            if (s->signal_type() == LOGIC_SIGNAL) {
+                            if (s->signal_type() == SR_CHANNEL_LOGIC) {
                                 view::LogicSignal *logicSig = (view::LogicSignal*)s;
                                 if (logicSig->edge(event->pos(), _edge_start, 10)) {
                                     _action_type = LOGIC_JUMP;
@@ -1124,7 +1124,7 @@ void Viewport::mouseDoubleClickEvent(QMouseEvent *event)
 
             if (mode == LOGIC) {
                 for(auto s : _view.session().get_signals()) {
-                    if (s->signal_type() == LOGIC_SIGNAL) {
+                    if (s->signal_type() == SR_CHANNEL_LOGIC) {
                         view::LogicSignal *logicSig  = (view::LogicSignal*)s;
                         if (logicSig->measure(event->pos(), index0, index1, index2)) {
                             logic = true;
@@ -1262,7 +1262,7 @@ void Viewport::wheelEvent(QWheelEvent *event)
     const auto &sigs = _view.session().get_signals();
     for (auto s : sigs)
     {
-        if (s->signal_type() == DSO_SIGNAL){   
+        if (s->signal_type() == SR_CHANNEL_DSO){   
             view::DsoSignal *dsoSig = (view::DsoSignal*)s;
             dsoSig->auto_end();
         }
@@ -1400,7 +1400,7 @@ void Viewport::measure()
         const uint64_t sample_rate = _view.session().cur_snap_samplerate();
 
         for(auto s : _view.session().get_signals()) {
-            if (s->signal_type() == LOGIC_SIGNAL) {
+            if (s->signal_type() == SR_CHANNEL_LOGIC) {
                 view::LogicSignal *logicSig  = (view::LogicSignal*)s;
                 if (_action_type == NO_ACTION) {
                     if (logicSig->measure(_mouse_point, _cur_sample, _nxt_sample, _thd_sample)) {
@@ -1452,7 +1452,7 @@ void Viewport::measure()
                     }
                 }
             } 
-            else if (s->signal_type() == DSO_SIGNAL) {
+            else if (s->signal_type() == SR_CHANNEL_DSO) {
                  view::DsoSignal *dsoSig = ( view::DsoSignal*)s;
                 if (s->enabled()) {
                     if (_measure_en && dsoSig->measure(_view.hover_point())) {
@@ -1463,7 +1463,7 @@ void Viewport::measure()
                     }
                 }
             }
-            else if (s->signal_type() == ANALOG_SIGNAL) {
+            else if (s->signal_type() == SR_CHANNEL_ANALOG) {
                 view::AnalogSignal *analogSig = (view::AnalogSignal*)s;
                 if (s->enabled()) {
                     if (_measure_en && analogSig->measure(_view.hover_point())) {
@@ -1558,7 +1558,7 @@ void Viewport::paintMeasure(QPainter &p, QColor fore, QColor back)
         _measure_type == DSO_VALUE) {
 
         for(auto s : _view.session().get_signals()) {
-            if (s->signal_type() == DSO_SIGNAL) {
+            if (s->signal_type() == SR_CHANNEL_DSO) {
                 uint64_t index;
                 double value;
                 view::DsoSignal *dsoSig  = (view::DsoSignal*)s;
@@ -1570,7 +1570,7 @@ void Viewport::paintMeasure(QPainter &p, QColor fore, QColor back)
                                hpoint.x(), dsoSig->get_view_rect().bottom());
                 }
             } 
-            else if (s->signal_type() == ANALOG_SIGNAL) {
+            else if (s->signal_type() == SR_CHANNEL_ANALOG) {
                 uint64_t index;
                 double value;
                 QPointF hpoint;
@@ -1587,7 +1587,7 @@ void Viewport::paintMeasure(QPainter &p, QColor fore, QColor back)
 
     if (_dso_ym_valid) {
         for(auto s : _view.session().get_signals()) {          
-            if (s->signal_type() == DSO_SIGNAL) {
+            if (s->signal_type() == SR_CHANNEL_DSO) {
                 view::DsoSignal *dsoSig = (view::DsoSignal*)s;
                 if (dsoSig->get_index() == _dso_ym_sig_index) {
                     p.setPen(QPen(dsoSig->get_colour(), 1, Qt::DotLine));

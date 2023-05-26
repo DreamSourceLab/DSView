@@ -612,7 +612,7 @@ void MeasureDock::update_edge()
             const auto &sigs = _session->get_signals();
 
             for(auto s : _session->get_signals()) {
-                if (s->signal_type() == LOGIC_SIGNAL
+                if (s->signal_type() == SR_CHANNEL_LOGIC
                         && s->enabled()
                         && s->get_index() == _edge_ch_cmb_vec[edge_index]->currentText().toInt())
                   {
@@ -663,7 +663,7 @@ void MeasureDock::update_probe_selector(DsComboBox *selector)
     selector->clear(); 
 
     for(auto s : _session->get_signals()) {
-        if (s->signal_type() == LOGIC_SIGNAL && s->enabled()){
+        if (s->signal_type() == SR_CHANNEL_LOGIC && s->enabled()){
             selector->addItem(QString::number(s->get_index()));
         }
     }

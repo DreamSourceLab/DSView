@@ -907,7 +907,7 @@ void TriggerDock::try_commit_trigger()
     {
         /* simple trigger check trigger_enable */
         for(auto s : _session->get_signals()){ 
-            if (s->signal_type() == LOGIC_SIGNAL) {
+            if (s->signal_type() == SR_CHANNEL_LOGIC) {
                 view::LogicSignal *logicSig = (view::LogicSignal*)s;
                 if (logicSig->commit_trig())
                     num++;
@@ -929,7 +929,7 @@ void TriggerDock::try_commit_trigger()
 
             if (msg.mBox()->clickedButton() == cancelButton) {
                 for(auto s : _session->get_signals()){
-                    if (s->signal_type() == LOGIC_SIGNAL) {
+                    if (s->signal_type() == SR_CHANNEL_LOGIC) {
                         view::LogicSignal *logicSig = (view::LogicSignal*)s;
                         logicSig->set_trig(view::LogicSignal::NONTRIG);
                         logicSig->commit_trig();

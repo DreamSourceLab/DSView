@@ -80,7 +80,7 @@ MathOptions::MathOptions(SigSession *session, QWidget *parent) :
     QHBoxLayout *src2_layout = new QHBoxLayout();
 
     for(auto s : _session->get_signals()) {
-        if (s->signal_type() == DSO_SIGNAL) {
+        if (s->signal_type() == SR_CHANNEL_DSO) {
             view::DsoSignal *dsoSig = (view::DsoSignal*)s;
             QString index_str = QString::number(dsoSig->get_index());
             QRadioButton *xradio = new QRadioButton(index_str, _src1_group);
@@ -208,7 +208,7 @@ void MathOptions::accept()
     view::DsoSignal *dsoSig2 = NULL;
 
     for(auto s : _session->get_signals()) {
-        if (s->signal_type() == DSO_SIGNAL) {
+        if (s->signal_type() == SR_CHANNEL_DSO) {
             view::DsoSignal *dsoSig = (view::DsoSignal*)s;
             if (dsoSig->get_index() == src1)
                 dsoSig1 = dsoSig;

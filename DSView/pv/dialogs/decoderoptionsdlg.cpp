@@ -282,7 +282,7 @@ DsComboBox* DecoderOptionsDlg::create_probe_selector(
 
 	for(auto s : sigs) 
     {
-        if (s->signal_type() == LOGIC_SIGNAL && s->enabled()){
+        if (s->signal_type() == SR_CHANNEL_LOGIC && s->enabled()){
 			selector->addItem(s->get_name(),QVariant::fromValue(s->get_index()));
             
             if (probe_iter != _dec->channels().end()) {

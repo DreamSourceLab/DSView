@@ -58,7 +58,7 @@ Trace::Trace(QString name, uint16_t index, int type) :
     _typeWidth(SquareNum)
 {
     _index_list.push_back(index);
-    _signal_type = UNKNOWN_SIGNAL;
+    _view_index = 0;
 }
 
 Trace::Trace(QString name, std::list<int> index_list, int type, int sec_index) :
@@ -71,7 +71,7 @@ Trace::Trace(QString name, std::list<int> index_list, int type, int sec_index) :
     _totalHeight(30),
     _typeWidth(SquareNum)
 {
-    _signal_type = UNKNOWN_SIGNAL;
+    _view_index = 0;
 }
 
 Trace::Trace(const Trace &t) :
@@ -87,13 +87,9 @@ Trace::Trace(const Trace &t) :
     _typeWidth(t._typeWidth),
     _text_size(t._text_size)
 {
-    _signal_type = UNKNOWN_SIGNAL;
+    _view_index = 0;
 }
 
-QString Trace::get_name()
-{
-	return _name;
-}
 
 int Trace::get_name_width()
 {
@@ -108,32 +104,6 @@ void Trace::set_name(QString name)
 	_name = name;
 }
 
-QColor Trace::get_colour()
-{
-	return _colour;
-}
-
-void Trace::set_colour(QColor colour)
-{
-	_colour = colour;
-}
-
-int Trace::get_v_offset()
-{
-	return _v_offset;
-}
-
-void Trace::set_v_offset(int v_offset)
-{
-	_v_offset = v_offset;
-}
-
-
-int Trace::get_type()
-{
-    return _type;
-}
-
 int Trace::get_index()
 {
     if(_index_list.size() == 0){
@@ -141,11 +111,6 @@ int Trace::get_index()
     }
     
     return _index_list.front();
-}
-
-std::list<int> Trace::get_index_list()
-{
-    return _index_list;
 }
 
 void Trace::set_index_list(const std::list<int> &index_list)
@@ -157,44 +122,13 @@ void Trace::set_index_list(const std::list<int> &index_list)
     _index_list = index_list;
 }
 
-int Trace::get_sec_index()
-{
-    return _sec_index;
-}
-
-void Trace::set_sec_index(int sec_index)
-{
-    _sec_index = sec_index;
-}
-
-int Trace::get_old_v_offset()
-{
-    return _old_v_offset;
-}
-
-void Trace::set_old_v_offset(int v_offset)
-{
-    _old_v_offset = v_offset;
-}
-
 int Trace::get_zero_vpos()
 {
     return _v_offset;
 }
 
-int Trace::get_totalHeight()
-{
-    return _totalHeight;
-}
-
-void Trace::set_totalHeight(int height)
-{
-    _totalHeight = height;
-}
-
 void Trace::resize()
 {
-
 }
 
 void Trace::set_view(pv::view::View *view)
@@ -204,23 +138,12 @@ void Trace::set_view(pv::view::View *view)
     connect(_view, SIGNAL(resize()), this, SLOT(resize()));
 }
 
-pv::view::View* Trace::get_view()
-{
-    return _view;
-}
-
 void Trace::set_viewport(pv::view::Viewport *viewport)
 {
     assert(viewport);
     _viewport = viewport;
 }
-
-pv::view::Viewport* Trace::get_viewport()
-{
-    return _viewport;
-}
-
-
+ 
 void Trace::paint_prepare()
 {
     assert(_view);
@@ -414,11 +337,6 @@ QRect Trace::get_view_rect()
     return QRect(0, 0, _view->viewport()->width(), _view->viewport()->height());
 }
 
-int Trace::get_y()
-{
-    return _v_offset;
-}
-
 QColor Trace::get_text_colour()
 {
 	return (_colour.lightness() > 64) ? Qt::black : Qt::white;
@@ -439,21 +357,6 @@ void Trace::on_colour_changed(const QColor &colour)
 int Trace::rows_size()
 {
     return 1;
-}
-
-int Trace::get_leftWidth()
-{
-    return SquareWidth/2 + Margin;
-}
-
-int Trace::get_rightWidth()
-{
-    return 2 * Margin + _typeWidth * SquareWidth + 1.5 * SquareWidth;
-}
-
-int Trace::get_headerHeight()
-{
-    return SquareWidth;
 }
 
 QRectF Trace::get_rect(const char *s, int y, int right)

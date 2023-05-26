@@ -185,7 +185,7 @@ void WaitingDialog::changeText()
             if (_device_agent->get_config_bool(SR_CONF_ZERO_COMB_FGAIN, zero_fgain) && zero_fgain) {                 
                                         
                 for(auto s : _session->get_signals()){
-                    if (s->signal_type() == DSO_SIGNAL){
+                    if (s->signal_type() == SR_CHANNEL_DSO){
                         view::DsoSignal *dsoSig = (view::DsoSignal*)s;
                         dsoSig->set_enable(dsoSig->get_index() == 0);
                     }                                

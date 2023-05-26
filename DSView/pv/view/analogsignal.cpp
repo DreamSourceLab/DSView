@@ -55,7 +55,6 @@ AnalogSignal::AnalogSignal(data::AnalogSnapshot *data, sr_channel *probe) :
     _typeWidth = 5;
     _colour = SignalColours[probe->index % countof(SignalColours)];
 
-    _signal_type = ANALOG_SIGNAL;
     uint32_t ui32;
      
     // channel bits
@@ -92,9 +91,7 @@ AnalogSignal::AnalogSignal(view::AnalogSignal *s, pv::data::AnalogSnapshot *data
     _hover_index(0),
     _hover_point(QPointF(-1, -1)),
     _hover_value(0)
-{
-    _signal_type = ANALOG_SIGNAL;
-    
+{ 
     _typeWidth = 5;
     _bits = s->get_bits();
     _ref_min = s->get_ref_min();

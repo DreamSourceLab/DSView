@@ -322,7 +322,7 @@ namespace pv
         { 
             for (auto s : _session->get_signals())
             {
-                if (s->signal_type() == DSO_SIGNAL){
+                if (s->signal_type() == SR_CHANNEL_DSO){
                     view::DsoSignal *dsoSig = (view::DsoSignal*)s;
                     dsoSig->set_enable(true);
                 }
@@ -347,7 +347,7 @@ namespace pv
             {
                 for (auto s : _session->get_signals())
                 {
-                    if (s->signal_type() == DSO_SIGNAL){
+                    if (s->signal_type() == SR_CHANNEL_DSO){
                         view::DsoSignal *dsoSig = (view::DsoSignal*)s;
                         dsoSig->commit_settings();
                     }

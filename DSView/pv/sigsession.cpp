@@ -437,11 +437,11 @@ namespace pv
         // update current hw offset
         for (auto s : _signals)
         {  
-            if (s->signal_type() == DSO_SIGNAL){   
+            if (s->signal_type() == SR_CHANNEL_DSO){   
                 view::DsoSignal *dsoSig = (view::DsoSignal*)s;
                 dsoSig->set_zero_ratio(dsoSig->get_zero_ratio());
             }            
-            else if (s->signal_type() == ANALOG_SIGNAL){  
+            else if (s->signal_type() == SR_CHANNEL_ANALOG){  
                 view::AnalogSignal *analogSig = (view::AnalogSignal*)s;
                 analogSig->set_zero_ratio(analogSig->get_zero_ratio());
             }
@@ -584,7 +584,7 @@ namespace pv
         {
             // reset measure of dso signal
             for (auto s : _signals){ 
-                if (s->signal_type() == DSO_SIGNAL){
+                if (s->signal_type() == SR_CHANNEL_DSO){
                     view::DsoSignal *dsoSig = (view::DsoSignal*)s;
                     dsoSig->set_mValid(false);
                 }
@@ -914,7 +914,7 @@ namespace pv
                     {
                         if ((*i)->get_index() == probe->index)
                         {                            
-                            if ((*i)->signal_type() == LOGIC_SIGNAL){
+                            if ((*i)->signal_type() == SR_CHANNEL_LOGIC){
                                 view::LogicSignal *logicSig = (view::LogicSignal*)(*i);
                                 signal = new view::LogicSignal(logicSig, _view_data->get_logic(), probe);
                             }
@@ -941,7 +941,7 @@ namespace pv
                     {
                         if ((*i)->get_index() == probe->index)
                         {
-                            if ((*i)->signal_type() == ANALOG_SIGNAL){
+                            if ((*i)->signal_type() == SR_CHANNEL_ANALOG){
                                 view::AnalogSignal *analogSig = (view::AnalogSignal*)(*i);
                                 signal = new view::AnalogSignal(analogSig, _view_data->get_analog(), probe);
                             }                               
@@ -1132,7 +1132,7 @@ namespace pv
             // reset scale of dso signal
             for (auto s : _signals)
             { 
-                if (s->signal_type() == DSO_SIGNAL){   
+                if (s->signal_type() == SR_CHANNEL_DSO){   
                     view::DsoSignal *dsoSig = (view::DsoSignal*)s;
                     dsoSig->set_scale(dsoSig->get_view_rect().height()); 
                 }
@@ -1153,7 +1153,7 @@ namespace pv
 
         for (auto s : _signals)
         { 
-            if (s->signal_type() == DSO_SIGNAL && (s->enabled())){
+            if (s->signal_type() == SR_CHANNEL_DSO && (s->enabled())){
                 view::DsoSignal *dsoSig = (view::DsoSignal*)s;
                 dsoSig->paint_prepare();
             }                
@@ -1211,7 +1211,7 @@ namespace pv
             // reset scale of analog signal
             for (auto s : _signals)
             { 
-                if (s->signal_type() == ANALOG_SIGNAL){   
+                if (s->signal_type() == SR_CHANNEL_ANALOG){   
                     view::AnalogSignal *analogSig = (view::AnalogSignal*)s;
                     analogSig->set_scale(analogSig->get_totalHeight());
                 }
@@ -1348,11 +1348,11 @@ namespace pv
                 if (!s->enabled())
                     continue;
                 
-                if (s->signal_type() == LOGIC_SIGNAL)
+                if (s->signal_type() == SR_CHANNEL_LOGIC)
                     logic_ch_num++;
-                else if (s->signal_type() == DSO_SIGNAL)
+                else if (s->signal_type() == SR_CHANNEL_DSO)
                     dso_ch_num++;
-                else if (s->signal_type() == ANALOG_SIGNAL)
+                else if (s->signal_type() == SR_CHANNEL_ANALOG)
                     analog_ch_num++;
             }
         }
@@ -1552,7 +1552,7 @@ namespace pv
 
         for (auto s : _signals)
         { 
-            if (s->signal_type() == DSO_SIGNAL){
+            if (s->signal_type() == SR_CHANNEL_DSO){
                 has_dso_signal = true;
                 // check already have
                 auto iter = _spectrum_traces.begin();
@@ -1676,7 +1676,7 @@ namespace pv
     {
         for (auto s : _signals)
         { 
-            if (s->signal_type() == DSO_SIGNAL)
+            if (s->signal_type() == SR_CHANNEL_DSO)
             {
                 view::DsoSignal *dsoSig = (view::DsoSignal*)s;
                 dsoSig->auto_end();
@@ -2223,15 +2223,15 @@ namespace pv
         for (auto sig : _signals){
             int type = sig->signal_type();
             switch(type){
-                case LOGIC_SIGNAL:
+                case SR_CHANNEL_LOGIC:
                     s1 = (view::LogicSignal*)sig;
                     s1->set_data(data->get_logic());
                     break;
-                case ANALOG_SIGNAL:
+                case SR_CHANNEL_ANALOG:
                     s2 = (view::AnalogSignal*)sig;
                     s2->set_data(data->get_analog());
                     break;
-                case DSO_SIGNAL:
+                case SR_CHANNEL_DSO:
                     s3 = (view::DsoSignal*)sig;
                     s3->set_data(data->get_dso());
                     break;
@@ -2309,6 +2309,24 @@ namespace pv
         auto trace = get_decoder_trace(index);
         if (trace != NULL){
             trace->set_name(label);
+        }
+    }
+
+    view::Trace* SigSession::get_channel_by_index(int orgIndex)
+    {
+        for(auto t : _signals){
+            if (t->get_index() == orgIndex){
+                return t;
+            }
+        }
+        return NULL;
+    }
+
+    void SigSession::set_channel_view_index(int orgIndex, int viewIndex)
+    {
+        auto trace = get_channel_by_index(orgIndex);
+        if (trace != NULL){
+            trace->set_view_index(viewIndex);
         }
     }
 

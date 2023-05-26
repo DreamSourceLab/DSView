@@ -381,7 +381,7 @@ void DecodeTrace::draw_annotation(const pv::data::decode::Annotation &a,
                     const double mark_end = a.end_sample() / samples_per_pixel - pixels_offset;
 
                     for(auto s : _session->get_signals()) {
-                        if((s->get_index() == iter.second) && s->signal_type() == LOGIC_SIGNAL) {
+                        if((s->get_index() == iter.second) && s->signal_type() == SR_CHANNEL_LOGIC) {
                             view::LogicSignal *logicSig = (view::LogicSignal*)s;
                             logicSig->paint_mark(p, start, mark_end, type/100);
                             break;

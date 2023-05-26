@@ -200,7 +200,7 @@ void Header::mousePressEvent(QMouseEvent *event)
         }
 
         for(auto t : traces){
-            if (t->signal_type() == LOGIC_SIGNAL && _view.session().is_working()){
+            if (t->signal_type() == SR_CHANNEL_LOGIC && _view.session().is_working()){
                 // Disable set trigger from left pannel when capturing.
                 break;
             }

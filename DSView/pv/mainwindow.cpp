@@ -704,6 +704,7 @@ namespace pv
         {
             QJsonObject s_obj;
             s_obj["index"] = s->get_index();
+            s_obj["view_index"] = s->get_view_index();
             s_obj["type"] = s->get_type();
             s_obj["enabled"] = s->enabled();
             s_obj["name"] = s->get_name();
@@ -719,7 +720,7 @@ namespace pv
                 s_obj["strigger"] = logicSig->get_trig();
             }
             
-            if (s->signal_type() == DSO_SIGNAL)
+            if (s->signal_type() == SR_CHANNEL_DSO)
             {
                 view::DsoSignal *dsoSig = (view::DsoSignal*)s;
                 s_obj["vdiv"] = QJsonValue::fromVariant(static_cast<qulonglong>(dsoSig->get_vDialValue()));
@@ -729,7 +730,7 @@ namespace pv
                 s_obj["zeroPos"] = dsoSig->get_zero_ratio();
             }
  
-            if (s->signal_type() == ANALOG_SIGNAL)
+            if (s->signal_type() == SR_CHANNEL_ANALOG)
             {
                 view::AnalogSignal *analogSig = (view::AnalogSignal*)s;
                 s_obj["vdiv"] = QJsonValue::fromVariant(static_cast<qulonglong>(analogSig->get_vdiv()));
@@ -928,8 +929,8 @@ namespace pv
                 {
                     QJsonObject obj = value.toObject();
 
-                    if ((probe->index == obj["index"].toDouble()) &&
-                        (probe->type == obj["type"].toDouble()))
+                    if ((probe->index == obj["index"].toInt()) &&
+                        (probe->type == obj["type"].toInt()))
                     {
                         isEnabled = true;
                         QString chan_name = obj["name"].toString().trimmed();
@@ -976,7 +977,7 @@ namespace pv
                     {
                         s->set_colour(QColor(obj["colour"].toString()));
                        
-                        if (s->signal_type() == DSO_SIGNAL)
+                        if (s->signal_type() == SR_CHANNEL_DSO)
                         {   
                             view::DsoSignal *dsoSig = (view::DsoSignal*)s;
                             dsoSig->load_settings();
@@ -996,8 +997,8 @@ namespace pv
                 for (const QJsonValue &value : sessionObj["channel"].toArray())
                 {
                     QJsonObject obj = value.toObject();
-                    if ((s->get_index() == obj["index"].toDouble()) &&
-                        (s->get_type() == obj["type"].toDouble()))
+                    if ((s->get_index() == obj["index"].toInt()) &&
+                        (s->get_type() == obj["type"].toInt()))
                     {
                         QString chan_name = obj["name"].toString().trimmed();
                         if (chan_name == ""){
@@ -1013,7 +1014,7 @@ namespace pv
                             logicSig->set_trig(obj["strigger"].toDouble());
                         }
  
-                        if (s->signal_type() == DSO_SIGNAL)
+                        if (s->signal_type() == SR_CHANNEL_DSO)
                         {
                             view::DsoSignal *dsoSig = (view::DsoSignal*)s;
                             dsoSig->load_settings();
@@ -1022,11 +1023,16 @@ namespace pv
                             dsoSig->commit_settings();
                         }
  
-                        if (s->signal_type() == ANALOG_SIGNAL)
+                        if (s->signal_type() == SR_CHANNEL_ANALOG)
                         {   
                             view::AnalogSignal *analogSig = (view::AnalogSignal*)s;
                             analogSig->set_zero_ratio(obj["zeroPos"].toDouble());
                             analogSig->commit_settings();
+                        }
+
+                        if (s->signal_type() == SR_CHANNEL_LOGIC && obj.contains("view_index"))
+                        {
+                            _session->set_channel_view_index(s->get_index(), obj["view_index"].toInt());
                         }
 
                         break;
@@ -1214,7 +1220,7 @@ namespace pv
             case Qt::Key_0:
                 for (auto s : sigs)
                 {
-                    if (s->signal_type() == DSO_SIGNAL)
+                    if (s->signal_type() == SR_CHANNEL_DSO)
                     {
                         view::DsoSignal *dsoSig = (view::DsoSignal*)s;
                         if (dsoSig->get_index() == 0)
@@ -1230,7 +1236,7 @@ namespace pv
             case Qt::Key_1:
                 for (auto s : sigs)
                 {
-                    if (s->signal_type() == DSO_SIGNAL)
+                    if (s->signal_type() == SR_CHANNEL_DSO)
                     {
                         view::DsoSignal *dsoSig = (view::DsoSignal*)s;
                         if (dsoSig->get_index() == 1)
@@ -1246,7 +1252,7 @@ namespace pv
             case Qt::Key_Up:
                 for (auto s : sigs)
                 {
-                    if (s->signal_type() == DSO_SIGNAL){
+                    if (s->signal_type() == SR_CHANNEL_DSO){
                         view::DsoSignal *dsoSig = (view::DsoSignal*)s;
                         if (dsoSig->get_vDialActive())
                         {
@@ -1261,7 +1267,7 @@ namespace pv
             case Qt::Key_Down:
                 for (auto s : sigs)
                 {
-                    if (s->signal_type() == DSO_SIGNAL){
+                    if (s->signal_type() == SR_CHANNEL_DSO){
                         view::DsoSignal *dsoSig = (view::DsoSignal*)s;
                         if (dsoSig->get_vDialActive())
                         {

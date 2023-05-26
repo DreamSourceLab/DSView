@@ -64,8 +64,6 @@ DsoSignal::DsoSignal(data::DsoSnapshot *data,
     for(uint64_t i = 0; i < vDialUnitCount; i++){
         vUnit.append(vDialUnit[i]);
     }
-
-    _signal_type = DSO_SIGNAL;
     
     _vDial = NULL;
     _period = 0;

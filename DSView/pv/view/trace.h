@@ -36,14 +36,6 @@
 
 class QFormLayout;
 
-enum SIGNAL_TYPE
-{   
-    UNKNOWN_SIGNAL = 0,
-    LOGIC_SIGNAL = 1,
-    DSO_SIGNAL = 2,
-    ANALOG_SIGNAL = 3,   
-};
-
 namespace pv {
 namespace view {
 
@@ -81,7 +73,10 @@ public:
 	/**
 	 * Gets the name of this signal.
 	 */
-	QString get_name();
+	inline QString get_name(){
+        return _name;
+    }
+
     virtual int get_name_width();
 
 	/**
@@ -92,63 +87,99 @@ public:
 	/**
 	 * Get the colour of the signal.
 	 */
-	QColor get_colour();
+	inline QColor get_colour(){
+        return _colour;
+    }
 
 	/**
 	 * Set the colour of the signal.
 	 */
-	void set_colour(QColor colour);
+	inline void set_colour(QColor colour){
+        _colour = colour;
+    }
 
 	/**
 	 * Gets the vertical layout offset of this signal.
 	 */
-	int get_v_offset();
+	inline int get_v_offset(){
+        return _v_offset;
+    }
 
 	/**
 	 * Sets the vertical layout offset of this signal.
 	 */
-	void set_v_offset(int v_offset);
+	inline void set_v_offset(int v_offset){
+        _v_offset = v_offset;
+    }
 
     /**
      * Gets trace type
      */
-    int get_type();
+    inline int get_type(){
+        return _type;
+    }
 
     /**
      * Index process
      */
     int get_index();
-    std::list<int> get_index_list();
+
+    inline std::list<int> get_index_list(){
+        return _index_list;
+    }
+
     void set_index_list(const std::list<int> &index_list);
-    int get_sec_index();
-    void set_sec_index(int sec_index);
+
+    inline int get_sec_index(){
+        return _sec_index;
+    }
+
+    inline void set_sec_index(int sec_index){
+        _sec_index = sec_index;
+    }
 
     /**
      * Gets the height of this signal.
      */
-    int get_totalHeight();
+    inline int get_totalHeight(){
+        return _totalHeight;
+    }
 
     /**
      * Sets the height of this signal.
      */
-    void set_totalHeight(int height);
+    inline void set_totalHeight(int height){
+         _totalHeight = height;
+    }
 
     /**
      * Geom
      */
-    int get_leftWidth();
-    int get_rightWidth();
-    int get_headerHeight();
+    inline int get_leftWidth(){
+        return SquareWidth/2 + Margin;
+    }
+
+    inline int get_rightWidth(){
+        return 2 * Margin + _typeWidth * SquareWidth + 1.5 * SquareWidth;
+    }
+
+    inline int get_headerHeight(){
+        return SquareWidth;
+    }
 
     /**
      * Gets the old vertical layout offset of this signal.
      */
-    int get_old_v_offset();
+    inline int get_old_v_offset(){
+        return _old_v_offset;
+    }
 
     /**
      * Sets the old vertical layout offset of this signal.
      */
-    void set_old_v_offset(int v_offset);
+    inline void set_old_v_offset(int v_offset){
+        _old_v_offset = v_offset;
+    }
 
     virtual int get_zero_vpos();
 
@@ -158,9 +189,16 @@ public:
     virtual bool enabled() = 0;
 
 	virtual void set_view(pv::view::View *view);
-    pv::view::View* get_view();
+
+    inline pv::view::View* get_view(){
+        return _view;
+    }
+
     virtual void set_viewport(pv::view::Viewport *viewport);
-    pv::view::Viewport* get_viewport();
+
+    inline pv::view::Viewport* get_viewport(){
+        return _viewport;
+    }
 
     /**
      * Paints prepare
@@ -203,7 +241,9 @@ public:
 	/**
 	 * Gets the y-offset of the axis.
 	 */
-	int get_y();
+	inline int get_y(){
+        return _v_offset;
+    }
 
     /**
      * Determines if a point is in the header rect.
@@ -243,8 +283,16 @@ public:
 
     virtual bool mouse_wheel(int right, const QPoint pt, const int shift);
 
-    inline SIGNAL_TYPE signal_type(){
-        return _signal_type;
+    inline int signal_type(){
+        return get_type();
+    }
+
+    inline void set_view_index(int index){
+        _view_index = index;
+    }
+
+    inline int get_view_index(){
+        return _view_index;
     }
 
 protected:
@@ -296,9 +344,9 @@ protected:
     int _old_v_offset;
     int _totalHeight;
     int _typeWidth;
+    int _view_index;
 
-    QSizeF _text_size;
-    SIGNAL_TYPE     _signal_type;   
+    QSizeF _text_size;  
 };
 
 } // namespace view

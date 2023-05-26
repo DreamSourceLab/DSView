@@ -90,7 +90,7 @@ void ViewStatus::paintEvent(QPaintEvent *)
             view::DsoSignal *dsoSig = NULL;
 
             for(auto s : _session->get_signals()) {
-                if (s->signal_type() == DSO_SIGNAL && s->enabled()) {
+                if (s->signal_type() == SR_CHANNEL_DSO && s->enabled()) {
                     dsoSig = (view::DsoSignal*)s;
                     if (sig_index == dsoSig->get_index())
                         break;

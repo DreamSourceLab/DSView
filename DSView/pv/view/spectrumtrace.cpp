@@ -81,7 +81,7 @@ SpectrumTrace::SpectrumTrace(pv::SigSession *session,
     _typeWidth = 0;
 
     for(auto s : _session->get_signals()) {
-        if (s->signal_type() == DSO_SIGNAL && index == s->get_index()){
+        if (s->signal_type() == SR_CHANNEL_DSO && index == s->get_index()){
             _colour = s->get_colour();
         }
     }
@@ -304,7 +304,7 @@ void SpectrumTrace::paint_mid(QPainter &p, int left, int right, QColor fore, QCo
         double vfactor = 0;
         
         for(auto s : _session->get_signals()) {
-            if (s->signal_type() == DSO_SIGNAL) {
+            if (s->signal_type() == SR_CHANNEL_DSO) {
                 view::DsoSignal *dsoSig = (view::DsoSignal*)s;
                 if(dsoSig->get_index() == _spectrum_stack->get_index()) {
                     vdiv = dsoSig->get_vDialValue();

@@ -419,7 +419,7 @@ void DsoTriggerDock::update_view()
     _channel_comboBox->clear();
     
     for(auto s : _session->get_signals()) {
-        if (s->signal_type() == DSO_SIGNAL) {
+        if (s->signal_type() == SR_CHANNEL_DSO) {
             view::DsoSignal *dsoSig = (view::DsoSignal*)s;
             _channel_comboBox->addItem(dsoSig->get_name(), QVariant::fromValue(dsoSig->get_index()));
         }

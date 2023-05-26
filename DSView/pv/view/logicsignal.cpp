@@ -44,8 +44,7 @@ LogicSignal::LogicSignal(data::LogicSnapshot *data,
     Signal(probe),
     _data(data)
 {
-    _trig = NONTRIG;
-    _signal_type = LOGIC_SIGNAL;
+    _trig = NONTRIG; 
     _paint_align_sample_count = 0;
 }
 
@@ -55,8 +54,7 @@ LogicSignal::LogicSignal(view::LogicSignal *s,
     Signal(*s, probe),
     _data(data),
     _trig(s->get_trig())
-{
-    _signal_type = LOGIC_SIGNAL;
+{ 
     _paint_align_sample_count = 0;
 }
 
