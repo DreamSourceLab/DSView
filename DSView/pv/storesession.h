@@ -82,7 +82,7 @@ private:
  
 
 public:    
-    bool json_decoders(QJsonArray &array);
+    bool gen_decoders_json(QJsonArray &array);
     bool load_decoders(dock::ProtocolDock *widget, QJsonArray &dec_array);
     QString MakeSaveFile(bool bDlg);
     QString MakeExportFile(bool bDlg);

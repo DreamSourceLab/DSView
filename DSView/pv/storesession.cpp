@@ -999,7 +999,7 @@ void StoreSession::export_proc(data::Snapshot *snapshot)
 bool StoreSession::decoders_gen(std::string &str)
 {  
     QJsonArray dec_array;
-    if (!json_decoders(dec_array))
+    if (!gen_decoders_json(dec_array))
         return false;
     QJsonDocument sessionDoc(dec_array);
     QString data = QString::fromUtf8(sessionDoc.toJson()); 
@@ -1007,7 +1007,7 @@ bool StoreSession::decoders_gen(std::string &str)
     return true;
 }
 
-bool StoreSession::json_decoders(QJsonArray &array)
+bool StoreSession::gen_decoders_json(QJsonArray &array)
 {  
     for(auto s : _session->get_decode_signals()) {
         QJsonObject dec_obj;
@@ -1074,9 +1074,11 @@ bool StoreSession::json_decoders(QJsonArray &array)
             }
             show_obj[d->id] = QJsonValue::fromVariant(dec->shown());
         }
+        
         dec_obj["version"] = DEOCDER_CONFIG_VERSION;
         dec_obj["label"] = QString(s->get_name().toUtf8().data());
         dec_obj["stacked decoders"] = stack_array;
+        dec_obj["view_index"] = s->get_view_index();
 
         auto rows = stack->get_rows_gshow();
         for (auto i = rows.begin(); i != rows.end(); i++) {
@@ -1148,6 +1150,11 @@ bool StoreSession::load_decoders(dock::ProtocolDock *widget, QJsonArray &dec_arr
 
         if (dec_obj.contains("label")){
             _session->set_decoder_row_label(dec_index, dec_obj["label"].toString());    
+        }
+
+        if (dec_obj.contains("view_index")){
+            int chan_view_index = dec_obj["view_index"].toInt();
+            _session->get_decoder_trace(dec_index)->set_view_index(chan_view_index);
         }
 
         std::list<int> bind_indexs;

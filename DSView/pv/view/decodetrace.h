@@ -189,9 +189,7 @@ private:
 	uint64_t	 	_decode_end;
 	
 	uint64_t		_decode_cursor1; // the cursor key, sample start index 
-	uint64_t		_decode_cursor2;
-	 
-	QFormLayout 	*_pub_input_layer;
+	uint64_t		_decode_cursor2;	 
 
 	std::vector<QString> 	_cur_row_headings; 
  

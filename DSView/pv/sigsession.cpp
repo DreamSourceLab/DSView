@@ -889,6 +889,7 @@ namespace pv
         int logic_chan_num = 0;
         int dso_chan_num = 0;
         int all_chann_num = 0;
+        int start_view_dex = -1;
 
         set_cur_snap_samplerate(_device_agent.get_sample_rate());
         set_cur_samplelimits(_device_agent.get_sample_limit());
@@ -917,6 +918,8 @@ namespace pv
                             if ((*i)->signal_type() == SR_CHANNEL_LOGIC){
                                 view::LogicSignal *logicSig = (view::LogicSignal*)(*i);
                                 signal = new view::LogicSignal(logicSig, _view_data->get_logic(), probe);
+                                if (logicSig->get_view_index() < start_view_dex || start_view_dex == -1)
+                                    start_view_dex = logicSig->get_view_index();
                             }
                                
                             break;
@@ -971,7 +974,7 @@ namespace pv
             clear_signals();
             std::vector<view::Signal *>().swap(_signals);
             _signals = sigs;
-            make_channels_view_index();
+            make_channels_view_index(start_view_dex);
 
             if (_device_agent.get_work_mode() == LOGIC){
                 for (int i=0; i<view_indexs.size() && i<_signals.size(); i++){
@@ -2334,9 +2337,12 @@ namespace pv
         return NULL;
     }
 
-    void SigSession::make_channels_view_index()
+    void SigSession::make_channels_view_index(int start_dex)
     {
         int index = 0;
+
+        if (start_dex != -1)
+            index  = start_dex;
 
         for(auto t : _signals){
             t->set_view_index(index++);

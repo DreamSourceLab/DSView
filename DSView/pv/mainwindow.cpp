@@ -753,7 +753,7 @@ namespace pv
 
         StoreSession ss(_session);
         QJsonArray decodeJson;
-        ss.json_decoders(decodeJson);
+        ss.gen_decoders_json(decodeJson);
         sessionVar["decoder"] = decodeJson;
 
         if (_device_agent->get_work_mode() == DSO)
@@ -1074,6 +1074,7 @@ namespace pv
                 haveDecoder = true;
                 StoreSession ss(_session);
                 ss.load_decoders(_protocol_widget, deArray);
+                _view->update_all_trace_postion();
             }
         }
 
@@ -1776,6 +1777,7 @@ namespace pv
                     StoreSession ss(_session);
                     QJsonArray deArray = get_decoder_json_from_file(_device_agent->path());
                     ss.load_decoders(_protocol_widget, deArray);
+                    _view->update_all_trace_postion();
                 }
                 
                 _session->start_capture(true);
@@ -1797,6 +1799,7 @@ namespace pv
                             StoreSession ss(_session);
                             QJsonArray deArray = get_decoder_json_from_file(_device_agent->path());
                             ss.load_decoders(_protocol_widget, deArray);
+                            _view->update_all_trace_postion();
                         }
                     }
                 }
@@ -1847,6 +1850,7 @@ namespace pv
                         StoreSession ss(_session);
                         QJsonArray deArray = get_decoder_json_from_file(_device_agent->path());
                         ss.load_decoders(_protocol_widget, deArray);
+                        _view->update_all_trace_postion();
                     }
                 }
             }
@@ -1975,6 +1979,7 @@ namespace pv
                         StoreSession ss(_session);
                         QJsonArray deArray = get_decoder_json_from_file(_device_agent->path());
                         ss.load_decoders(_protocol_widget, deArray);
+                        _view->update_all_trace_postion();
 
                         if (msg == DSV_MSG_END_DEVICE_OPTIONS)
                             _session->start_capture(false); // Auto load data.

@@ -518,7 +518,7 @@ private:
     }
 
     view::Trace* get_channel_by_index(int orgIndex);
-    void make_channels_view_index();
+    void make_channels_view_index(int start_dex = -1);
  
 private:
     mutable std::mutex      _sampling_mutex;

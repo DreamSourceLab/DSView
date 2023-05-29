@@ -247,6 +247,10 @@ void Header::mouseReleaseEvent(QMouseEvent *event)
     {
         std::vector<Trace*> traces;
 
+        for (auto s : _view.session().get_decode_signals()){
+            traces.push_back(s);
+        }
+
         for (auto s : _view.session().get_signals()){
             traces.push_back(s);
         }

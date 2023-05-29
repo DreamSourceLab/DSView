@@ -719,17 +719,27 @@ void View::signals_changed()
         _spanY = _signalHeight + 2 * actualMargin;
         int next_v_offset = actualMargin;
         
-        //Make list by view index;
+        //Make list by view-index;
         if (mode == LOGIC)
-        {
-            sort(logic_traces.begin(), logic_traces.end(), compare_trace_view_index);
+        {   
             time_traces.clear();
-            
-            for(auto t : decoder_traces){
-                time_traces.push_back(t);
-            }
+
+            std::vector<Trace*> all_traces;
 
             for(auto t : logic_traces){
+                all_traces.push_back(t);
+            }
+
+            for(auto t : decoder_traces){
+                if (t->get_view_index() != -1)
+                    all_traces.push_back(t);
+                else
+                    time_traces.push_back(t);
+            }
+
+            sort(all_traces.begin(), all_traces.end(), compare_trace_view_index);    
+
+            for(auto t : all_traces){
                 time_traces.push_back(t);
             }
         }

@@ -123,7 +123,6 @@ DecodeTrace::DecodeTrace(pv::SigSession *session,
 
     _colour = DecodeColours[index % countof(DecodeColours)];
  
-    _pub_input_layer = NULL;
     _decode_start = 0;
     _decode_end  = INT64_MAX; 
     _decoder_stack = decoder_stack;
