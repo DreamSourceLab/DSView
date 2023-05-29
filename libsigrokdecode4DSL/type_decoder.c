@@ -71,6 +71,7 @@ static int py_parse_ann_data(PyObject *list_obj, char ***out_strv, int list_size
 	int nstr;
 	char *up_ptr;
 	char c;
+	char *str_tmp;
 	 
 	gstate = PyGILState_Ensure();
 
@@ -130,27 +131,33 @@ static int py_parse_ann_data(PyObject *list_obj, char ***out_strv, int list_size
 		//check numberic field value
 		if (str[0]== '@'){
 			nstr = strlen(str) - 1;
+
 			if (nstr > 0 && nstr < DECODE_NUM_HEX_MAX_LEN){
 				strcpy(hex_str_buf, str + 1);
 				
 				str[0] = '\n';  //set ignore flag
 				str[1] = 0;
-			}
 
-			//convert to upper
-			up_ptr = hex_str_buf;
+				//convert to upper
+				up_ptr = hex_str_buf;
 
-			while (*up_ptr)
-			{
-				c = *up_ptr;
+				while (*up_ptr)
+				{
+					c = *up_ptr;
 
-				if (c >= 'a' && c <= 'f'){
-					*up_ptr = c - 32;
+					if (c >= 'a' && c <= 'f'){
+						*up_ptr = c - 32;
+					}
+					
+					up_ptr++;
 				}
-				
-				up_ptr++;
 			}
-			
+			else if (nstr > 0){
+				// Remove the first letter.
+				str_tmp = g_strdup(str+1);
+				free(str);
+				str = str_tmp;
+			}						
 		}
 
 		strv[i] = str;

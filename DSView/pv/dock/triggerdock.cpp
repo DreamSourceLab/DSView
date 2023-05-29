@@ -74,9 +74,11 @@ TriggerDock::TriggerDock(QWidget *parent, SigSession *session) :
     _stages_label = new QLabel(_widget);
     _stages_label->setDisabled(true);
     stages_comboBox = new DsComboBox(_widget);
-    for (int i = 1; i <= TriggerStages; i++)
+
+    for (int i = 1; i <= TriggerStages; i++){
         stages_comboBox->addItem(QString::number(i));
-    //stages_comboBox->setCurrentIndex(stages_comboBox->count() - 1);
+    }
+
     stages_comboBox->setDisabled(true);
 
     _adv_tabWidget = new QTabWidget(_widget);
@@ -110,7 +112,6 @@ TriggerDock::TriggerDock(QWidget *parent, SigSession *session) :
     _widget->setLayout(layout);
 
     this->setWidget(_widget);
-    //_widget->setGeometry(0, 0, sizeHint().width(), 1000);
     _widget->setObjectName("triggerWidget");
 
     retranslateUi();
@@ -148,21 +149,26 @@ void TriggerDock::retranslateUi()
                                 "X: Don't care\n0: Low level\n1: High level\nR: Rising edge\nF: Falling edge\nC: Rising/Falling edge"));
     _data_bits_label->setText(L_S(STR_PAGE_DLG, S_ID(IDS_DLG_DATA_BITS), "Data Bits"));
 
-    for (int i = 0; i < _inv_exp_label_list.length(); i++)
+    for (int i = 0; i < _inv_exp_label_list.length(); i++){
         _inv_exp_label_list.at(i)->setText(L_S(STR_PAGE_DLG, S_ID(IDS_DLG_INV), "Inv"));
+    }
 
-    for (int i = 0; i < _count_exp_label_list.length(); i++)
+    for (int i = 0; i < _count_exp_label_list.length(); i++){
         _count_exp_label_list.at(i)->setText(L_S(STR_PAGE_DLG, S_ID(IDS_DLG_COUNTER), "Counter"));
+    }
 
-    for (int i = 0; i < _contiguous_label_list.length(); i++)
+    for (int i = 0; i < _contiguous_label_list.length(); i++){
         _contiguous_label_list.at(i)->setText(L_S(STR_PAGE_DLG, S_ID(IDS_DLG_CONTIGUOUS), "Contiguous"));
+    }
 
-    for (int i = 0; i < _stage_groupBox_list.length(); i++)
+    for (int i = 0; i < _stage_groupBox_list.length(); i++){
         _stage_groupBox_list.at(i)->setTitle(L_S(STR_PAGE_DLG, S_ID(IDS_DLG_STAGE), "Stage")+QString::number(i));
+    }
 
-    for (int i = 0; i < _stage_note_label_list.length(); i++)
+    for (int i = 0; i < _stage_note_label_list.length(); i++){
         _stage_note_label_list.at(i)->setText(L_S(STR_PAGE_DLG, S_ID(IDS_DLG_SERIAL_NOTE_LABEL), 
                                              "X: Don't care\n0: Low level\n1: High level\nR: Rising edge\nF: Falling edge\nC: Rising/Falling edge"));
+    }
 }
 
 void TriggerDock::reStyle()
@@ -219,9 +225,11 @@ void TriggerDock::widget_enable(int index)
     stages_comboBox->setDisabled(false);
     _adv_tabWidget->setDisabled(false);
     enable_stages = stages_comboBox->currentText().toInt();
+    
     for (int i = 0; i < enable_stages; i++) {
         _stage_tabWidget->setTabEnabled(i, true);
     }
+
     for (int i = enable_stages; i < TriggerStages; i++) {
           _stage_tabWidget->setTabEnabled(i, false);
     }
