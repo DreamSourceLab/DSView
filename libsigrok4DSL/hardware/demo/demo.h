@@ -43,6 +43,7 @@
 #define LOGIC_BUF_LEN SR_MB(2)
 
 #define LOGIC_FREQ_LIMIT SR_MHZ(100)
+#define LOGIC_MEMORY_LIMIT SR_MB(500)
 
 #define DSO_PACKET_NUM_PER_SEC (gdouble)200
 #define DSO_PACKET_TIME ((SEC)/(DSO_PACKET_NUM_PER_SEC))
@@ -59,7 +60,7 @@
 #define ANALOG_MIN_PACKET_NUM(n) ((ANALOG_POST_DATA_PER_SECOND(n))/(ANALOG_MIN_PACKET_LEN))
 #define ANALOG_PACKET_ALIGN 2
 
-#define LOGIC_HW_DEPTH (SR_GHZ(10))
+#define LOGIC_HW_DEPTH (SR_GHZ(16))
 
 
 #define LOGIC_MAX_PROBE_NUM 16
@@ -234,6 +235,7 @@ struct session_vdev
     gboolean offset_change;
     gboolean timebase_change;
     gboolean channel_mode_change;
+    gboolean logic_mem_limit;
 
     //post
     uint64_t post_data_len;

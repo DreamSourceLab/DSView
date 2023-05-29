@@ -161,34 +161,34 @@ static void dso_status_update(struct session_vdev *vdev)
 {
     struct sr_status *status = (struct sr_status*)&vdev->mstatus;
    
-    status->ch0_cyc_tlen = 340;
-    status->ch1_cyc_tlen = 340;
-    status->ch0_cyc_cnt = 100;
-    status->ch1_cyc_cnt = 85;
-    status->ch0_max = 158;
-    status->ch1_max = 158;
-    status->ch0_min = 78;
-    status->ch1_min = 78; 
-    status->ch0_cyc_plen = 170;
-    status->ch1_cyc_plen = 170;
-    status->ch0_cyc_llen = 0;
-    status->ch1_cyc_llen = 0;
-    status->ch0_level_valid = 0;
-    status->ch1_level_valid = 0;
-    status->ch0_plevel = 1;
-    status->ch1_plevel = 1;
-    status->ch0_low_level = 78;
-    status->ch1_low_level = 78;
-    status->ch0_high_level = 178;
-    status->ch1_high_level = 178;
-    status->ch0_cyc_rlen = 85;
-    status->ch1_cyc_rlen = 85;
-    status->ch0_cyc_flen = 85;
-    status->ch1_cyc_flen = 85;
-    status->ch0_acc_square = 12496225;
-    status->ch1_acc_square = 12496225;
-    status->ch0_acc_mean = 1280000;
-    status->ch1_acc_mean = 1280000;
+    // status->ch0_cyc_tlen = 340;
+    // status->ch1_cyc_tlen = 340;
+    // status->ch0_cyc_cnt = 100;
+    // status->ch1_cyc_cnt = 85;
+    // status->ch0_max = 158;
+    // status->ch1_max = 158;
+    // status->ch0_min = 78;
+    // status->ch1_min = 78; 
+    // status->ch0_cyc_plen = 170;
+    // status->ch1_cyc_plen = 170;
+    // status->ch0_cyc_llen = 0;
+    // status->ch1_cyc_llen = 0;
+    // status->ch0_level_valid = 0;
+    // status->ch1_level_valid = 0;
+    // status->ch0_plevel = 1;
+    // status->ch1_plevel = 1;
+    // status->ch0_low_level = 78;
+    // status->ch1_low_level = 78;
+    // status->ch0_high_level = 178;
+    // status->ch1_high_level = 178;
+    // status->ch0_cyc_rlen = 85;
+    // status->ch1_cyc_rlen = 85;
+    // status->ch0_cyc_flen = 85;
+    // status->ch1_cyc_flen = 85;
+    // status->ch0_acc_square = 12496225;
+    // status->ch1_acc_square = 12496225;
+    // status->ch0_acc_mean = 1280000;
+    // status->ch1_acc_mean = 1280000;
 }
 
 static int logic_adjust_probe(struct sr_dev_inst *sdi, int num_probes)
@@ -1325,6 +1325,9 @@ static int hw_dev_acquisition_start(struct sr_dev_inst *sdi,
                 sr_err("%s: logic_post_buf malloc error", __func__);
                 return SR_ERR_MALLOC;
             }
+
+            vdev->logic_mem_limit = (((vdev->total_samples/8)*vdev->enabled_probes) >= LOGIC_MEMORY_LIMIT) ? TRUE : FALSE;
+
             init_random_data(vdev,sdi);
             g_timer_start(run_time);
             sr_session_source_add(-1, 0, 0, receive_data_logic, sdi);
@@ -1475,7 +1478,7 @@ static int receive_data_logic(int fd, int revents, const struct sr_dev_inst *sdi
         }
 
         memset(logic_post_buf,LOGIC_LOW_LEVEL,chan_num * vdev->packet_len);
-        if(vdev->samplerate >= LOGIC_FREQ_LIMIT && vdev->total_samples/vdev->samplerate >= SEC)
+        if(vdev->logic_mem_limit)
         {
             for(int i = 0; i < vdev->logic_sel_probe_num;i++)
             {
@@ -1508,7 +1511,7 @@ static int receive_data_logic(int fd, int revents, const struct sr_dev_inst *sdi
         }  
         ds_data_forward(sdi, &packet);
 
-        if(vdev->samplerate >= LOGIC_FREQ_LIMIT && vdev->total_samples/vdev->samplerate >= SEC)
+        if(vdev->logic_mem_limit)
         {
             uint16_t target_packet = (LOGIC_BLOCK_LEN/vdev->packet_len);
             if(vdev->logci_cur_packet_num % target_packet == 0)
