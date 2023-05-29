@@ -682,5 +682,9 @@
     {
         "id": "IDS_DLG_APPEND_MODE",
         "text": "追加模式"
+    },
+    {
+        "id": "IDS_DLG_TRIG_DISPLAY_MIDDLE",
+        "text": "触发位置自动居中显示"
     }
 ]

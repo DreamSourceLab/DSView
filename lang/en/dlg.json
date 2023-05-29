@@ -682,5 +682,9 @@
     {
         "id": "IDS_DLG_APPEND_MODE",
         "text": "Append mode"
+    },
+    {
+        "id": "IDS_DLG_TRIG_DISPLAY_MIDDLE",
+        "text": "Trig pos display at the middle"
     }
 ]

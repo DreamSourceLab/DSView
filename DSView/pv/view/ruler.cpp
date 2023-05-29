@@ -522,7 +522,6 @@ void Ruler::draw_osc_tick_mark(QPainter &p)
     double typical_width;
     double tick_period = 0;
     double scale = _view.scale();
-    //int64_t offset = _view.offset();
     int64_t offset = 0;
 
     // Find tick spacing, and number formatting that does not cause
@@ -588,8 +587,7 @@ void Ruler::draw_osc_tick_mark(QPainter &p)
             p.drawText(x, 2 * ValueMargin, 0, text_height,
                 AlignCenter | AlignTop | TextDontClip,
                 format_time(t, prefix));
-            p.drawLine(QPoint(x, major_tick_y1),
-                QPoint(x, tick_y2));
+            p.drawLine(QPoint(x, major_tick_y1), QPoint(x, tick_y2));
         }
         else
         {
@@ -604,8 +602,7 @@ void Ruler::draw_osc_tick_mark(QPainter &p)
                 p.drawText(x, 2 * ValueMargin, 0, minor_tick_y1 + ValueMargin,
                     AlignCenter | AlignTop | TextDontClip,
                     format_time(t - major_t, minor_prefix));
-            p.drawLine(QPoint(x, minor_tick_y1),
-                QPoint(x, tick_y2));
+            p.drawLine(QPoint(x, minor_tick_y1), QPoint(x, tick_y2));
         }
 
         division++;
@@ -625,6 +622,7 @@ void Ruler::draw_osc_tick_mark(QPainter &p)
             i++;
         }
     }
+    
     if (_view.trig_cursor_shown()) {
         _view.get_trig_cursor()->paint_fix_label(p, rect(), prefix, 'T', _view.get_trig_cursor()->colour(), false);
     }

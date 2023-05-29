@@ -120,7 +120,7 @@ TrigBar::TrigBar(SigSession *session, QWidget *parent) :
     connect(_action_lissajous, SIGNAL(triggered()), this, SLOT(on_actionLissajous_triggered()));
     connect(_dark_style, SIGNAL(triggered()), this, SLOT(on_actionDark_triggered()));
     connect(_light_style, SIGNAL(triggered()), this, SLOT(on_actionLight_triggered()));
-    connect(_action_dispalyOptions, SIGNAL(triggered()), this, SLOT(on_application_param()));
+    connect(_action_dispalyOptions, SIGNAL(triggered()), this, SLOT(on_display_setting()));
 }
 
 //语言变化
@@ -262,7 +262,7 @@ void TrigBar::reload()
         _search_action->setVisible(false);
         _function_action->setVisible(true);
         _action_lissajous->setVisible(true);
-        _action_dispalyOptions->setVisible(false);
+        _action_dispalyOptions->setVisible(true);
     }
 
     DockOptions *opt = getDockOptions();
@@ -314,7 +314,7 @@ void TrigBar::on_actionLissajous_triggered()
     lissajous_dlg.exec();
 }
 
- void TrigBar::on_application_param()
+ void TrigBar::on_display_setting()
  {    
     pv::dialogs::ApplicationParamDlg dlg;
     dlg.ShowDlg(this);

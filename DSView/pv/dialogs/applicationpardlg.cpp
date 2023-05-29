@@ -27,6 +27,8 @@
 #include "../config/appconfig.h"
 
 #include "../ui/langresource.h"
+#include "../appcontrol.h"
+#include "../sigsession.h"
 
 namespace pv
 {
@@ -53,9 +55,21 @@ bool ApplicationParamDlg::ShowDlg(QWidget *parent)
     //show config
     AppConfig &app = AppConfig::Instance();
 
+    int mode = AppControl::Instance()->GetSession()->get_device()->get_work_mode();
+
     QCheckBox *ck_quickScroll = new QCheckBox();
     ck_quickScroll->setChecked(app._appOptions.quickScroll);
-    lay.addRow(L_S(STR_PAGE_DLG, S_ID(IDS_DLG_QUICK_SCROLL), "Quick scroll"), ck_quickScroll);
+
+    QCheckBox *ck_trigInMid = new QCheckBox();
+    ck_trigInMid->setChecked(app._appOptions.trigPosDisplayInMid);
+
+    if (mode == LOGIC){
+        lay.addRow(L_S(STR_PAGE_DLG, S_ID(IDS_DLG_QUICK_SCROLL), "Quick scroll"), ck_quickScroll);
+    }
+    else if (mode == DSO){
+        lay.addRow(L_S(STR_PAGE_DLG, S_ID(IDS_DLG_TRIG_DISPLAY_MIDDLE), "Tig pos in middle"), ck_trigInMid);
+    }
+
     dlg.layout()->addLayout(&lay);  
      
     dlg.exec();
@@ -65,6 +79,8 @@ bool ApplicationParamDlg::ShowDlg(QWidget *parent)
     //save config
     if (ret){
         app._appOptions.quickScroll = ck_quickScroll->isChecked();
+        app._appOptions.trigPosDisplayInMid = ck_trigInMid->isChecked();
+
         app.SaveApp();
     }
    

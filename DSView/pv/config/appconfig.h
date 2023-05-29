@@ -61,6 +61,7 @@ struct AppOptions
     bool  appendLogMode;
     int   logLevel;
     bool  transDecoderDlg;
+    bool  trigPosDisplayInMid;
 
     std::vector<StringPair> m_protocolFormats;
 };

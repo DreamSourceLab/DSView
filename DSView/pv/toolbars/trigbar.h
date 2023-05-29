@@ -69,7 +69,7 @@ private slots:
     void on_actionLissajous_triggered();
     void on_actionFft_triggered();
     void on_actionMath_triggered();
-    void on_application_param();
+    void on_display_setting();
 
 public slots:
     void protocol_clicked();

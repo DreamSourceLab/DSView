@@ -48,6 +48,7 @@
 #include "../dialogs/lissajousoptions.h"
 #include "../dsvdef.h"
 #include "../log.h"
+#include "../config/appconfig.h"
 
 
 using namespace std;
@@ -488,11 +489,16 @@ void View::receive_trigger(quint64 trig_pos)
 {
     const double time = trig_pos * 1.0 / _session->cur_snap_samplerate();
     _trig_cursor->set_index(trig_pos);
+
     if (ds_trigger_get_en() ||
         _device_agent->is_virtual() ||
         _device_agent->get_work_mode() == DSO) {
         _show_trig_cursor = true;
-        set_scale_offset(_scale,  (time / _scale) - (get_view_width() / 2));
+
+        AppConfig &app = AppConfig::Instance();
+        if (app._appOptions.trigPosDisplayInMid){
+            set_scale_offset(_scale,  (time / _scale) - (get_view_width() / 2));
+        }
     }
 
     _ruler->update();
@@ -597,8 +603,6 @@ void View::update_scale_offset()
 
     _preScale = _scale;
     _preOffset = _offset;
-
-    //_trig_cursor->set_index(_session->get_trigger_pos());
 
     _ruler->update();
     viewport_update();
