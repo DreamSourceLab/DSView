@@ -81,14 +81,13 @@ MainFrame::MainFrame()
     QIcon icon;
     icon.addFile(QString::fromUtf8(":/icons/logo.svg"), QSize(), QIcon::Normal, QIcon::Off);    
     setWindowIcon(icon);
-  
+    
     // Title
     _titleBar = new toolbars::TitleBar(true, this);
-     
+
     // MainWindow
-    _mainWindow = new MainWindow(this);
+    _mainWindow = new MainWindow(_titleBar, this);
     _mainWindow->setWindowFlags(Qt::Widget);
-    _titleBar->setTitle(_mainWindow->windowTitle());
 
     QVBoxLayout *vbox = new QVBoxLayout();
     vbox->setContentsMargins(0,0,0,0);

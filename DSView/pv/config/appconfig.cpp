@@ -99,6 +99,7 @@ void _loadApp(AppOptions &o, QSettings &st){
     getFiled("logLevel", st, o.logLevel, 3);
     getFiled("transDecoderDlg", st, o.transDecoderDlg, true);
     getFiled("trigPosDisplayInMid", st, o.trigPosDisplayInMid, true);
+    getFiled("displayProfileInBar", st, o.displayProfileInBar, false);
 
     QString fmt;
     getFiled("protocalFormats", st, fmt, "");
@@ -119,6 +120,7 @@ void _saveApp(AppOptions &o, QSettings &st){
     setFiled("logLevel", st, o.logLevel);
     setFiled("transDecoderDlg", st, o.transDecoderDlg);
     setFiled("trigPosDisplayInMid", st, o.trigPosDisplayInMid);
+    setFiled("displayProfileInBar", st, o.displayProfileInBar);
 
     QString fmt =  FormatArrayToString(o.m_protocolFormats);
     setFiled("protocalFormats", st, fmt);

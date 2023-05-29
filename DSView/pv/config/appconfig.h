@@ -62,6 +62,7 @@ struct AppOptions
     int   logLevel;
     bool  transDecoderDlg;
     bool  trigPosDisplayInMid;
+    bool  displayProfileInBar;
 
     std::vector<StringPair> m_protocolFormats;
 };

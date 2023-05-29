@@ -96,6 +96,8 @@ public:
 
 #define DSV_MSG_CLEAR_DECODE_DATA       8001
 
+#define DSV_MSG_APP_OPTIONS_CHANGED     9001
+
 class IMessageListener
 {
 public:

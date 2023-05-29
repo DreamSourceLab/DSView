@@ -57,6 +57,7 @@ class SamplingBar;
 class TrigBar;
 class FileBar;
 class LogoBar;
+class TitleBar;
 }
 
 namespace dock{
@@ -89,7 +90,7 @@ public:
     static const int Per_Chan_Height = 35;
      
 public:
-    explicit MainWindow(QWidget *parent = 0);
+    explicit MainWindow(toolbars::TitleBar *title_bar, QWidget *parent = 0);
 
     void openDoc();
 
@@ -148,7 +149,8 @@ private:
     QJsonDocument get_session_json_from_file(QString file);
     QJsonArray get_decoder_json_from_file(QString file);
     void calc_min_height();
-    void session_save();   
+    void session_save();
+    void update_title_bar_text();
    
 private:
     //ISessionCallback 
@@ -200,6 +202,7 @@ private:
     toolbars::TrigBar       *_trig_bar;
     toolbars::FileBar       *_file_bar;
     toolbars::LogoBar       *_logo_bar; //help button, on top right
+    toolbars::TitleBar      *_title_bar;
 
 
     QDockWidget             *_protocol_dock;
@@ -225,6 +228,8 @@ private:
     QWidget         *_frame;
     DsTimer         _delay_prop_msg_timer;
     QString         _strMsg;
+    QString         _lst_title_string;
+    QString         _title_ext_string;
 
     int _key_value;
     bool _key_vaild;

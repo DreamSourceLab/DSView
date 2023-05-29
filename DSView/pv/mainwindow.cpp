@@ -103,11 +103,15 @@
 namespace pv
 {
 
-    MainWindow::MainWindow(QWidget *parent)
+    MainWindow::MainWindow(toolbars::TitleBar *title_bar, QWidget *parent)
         : QMainWindow(parent)
     {
         _msg = NULL;
         _frame = parent;
+
+        assert(title_bar);
+
+        _title_bar = title_bar;
 
         _session = AppControl::Instance()->GetSession();
         _session->set_callback(this);
@@ -125,6 +129,8 @@ namespace pv
 
         _key_vaild = false;
         _last_key_press_time = high_resolution_clock::now();
+
+        update_title_bar_text();
     }
 
     void MainWindow::setup_ui()
@@ -196,6 +202,7 @@ namespace pv
         _measure_dock->setVisible(false);
         _measure_widget = new dock::MeasureDock(_measure_dock, *_view, _session);
         _measure_dock->setWidget(_measure_widget);
+
         // search dock
         _search_dock = new QDockWidget(L_S(STR_PAGE_DLG, S_ID(IDS_DLG_SEARCH_DOCK_TITLE), "Search..."), this);
         _search_dock->setObjectName("search_dock");
@@ -203,7 +210,7 @@ namespace pv
         _search_dock->setTitleBarWidget(new QWidget(_search_dock));
         _search_dock->setAllowedAreas(Qt::BottomDockWidgetArea);
         _search_dock->setVisible(false);
-        // dock::SearchDock *_search_widget = new dock::SearchDock(_search_dock, *_view, _session);
+
         _search_widget = new dock::SearchDock(_search_dock, *_view, _session);
         _search_dock->setWidget(_search_widget);
 
@@ -212,10 +219,6 @@ namespace pv
         addDockWidget(Qt::RightDockWidgetArea, _dso_trigger_dock);
         addDockWidget(Qt::RightDockWidgetArea, _measure_dock);
         addDockWidget(Qt::BottomDockWidgetArea, _search_dock);
-        
-        // Set the title
-        QString title = QApplication::applicationName() + " v" + QApplication::applicationVersion();
-        setWindowTitle(QApplication::translate("MainWindow", title.toLocal8Bit().data(), 0));
 
         // event filter
         _view->installEventFilter(this);
@@ -634,6 +637,11 @@ namespace pv
         if (ret && _device_agent->get_work_mode() == DSO)
         {
             _dso_trigger_widget->update_view();
+        }
+
+        if (_device_agent->is_hardware()){
+            _title_ext_string = name;
+            update_title_bar_text();
         }
 
         return ret;
@@ -1583,7 +1591,8 @@ namespace pv
     }
 
     void MainWindow::load_device_config()
-    {
+    {   
+        _title_ext_string = "";        
         int mode = _device_agent->get_work_mode();
 
         if (_device_agent->is_hardware())
@@ -1610,7 +1619,9 @@ namespace pv
                 }
             }            
 
-            on_load_session(ses_name);
+            if (on_load_session(ses_name)){
+                _title_ext_string = ses_name;
+            }
         }
         else if (_device_agent->is_demo())
         {
@@ -1752,6 +1763,7 @@ namespace pv
         {
             reset_all_view();
             load_device_config();
+            update_title_bar_text();
             _sampling_bar->update_device_list();
             
             _logo_bar->dsl_connected(_session->get_device()->is_hardware());
@@ -1827,6 +1839,7 @@ namespace pv
             _view->mode_changed(); 
             reset_all_view();
             load_device_config();
+            update_title_bar_text();
 
             update_toolbar_view_status();
             _sampling_bar->update_sample_rate_list();
@@ -1987,7 +2000,11 @@ namespace pv
                 }                
             }
             calc_min_height();            
-            break;                      
+            break;
+
+        case DSV_MSG_APP_OPTIONS_CHANGED:
+            update_title_bar_text();
+            break;                
         }
     }
 
@@ -2027,6 +2044,24 @@ namespace pv
             MsgBox::Show("", _strMsg, this, &_msg);
             _msg = NULL;
         }            
+    }
+
+    void MainWindow::update_title_bar_text()
+    {
+          // Set the title
+        QString title = QApplication::applicationName() + " v" + QApplication::applicationVersion();
+        AppConfig &app = AppConfig::Instance();
+
+        if (_title_ext_string != "" && app._appOptions.displayProfileInBar){
+            title += " [" + _title_ext_string + "]";
+        }
+
+        if (_lst_title_string != title){
+            _lst_title_string = title;
+
+            setWindowTitle(QApplication::translate("MainWindow", title.toLocal8Bit().data(), 0));
+            _title_bar->setTitle(this->windowTitle());
+        }        
     }
 
 } // namespace pv

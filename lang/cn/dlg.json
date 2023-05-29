@@ -65,7 +65,7 @@
     },
     {
         "id": "IDS_DLG_QUICK_SCROLL",
-        "text": "快速滚动"
+        "text": "通过鼠标快速滚动波形"
     },
     {
         "id": "IDS_DLG_SAVE",
@@ -686,5 +686,9 @@
     {
         "id": "IDS_DLG_TRIG_DISPLAY_MIDDLE",
         "text": "触发位置自动居中显示"
+    },
+    {
+        "id": "IDS_DLG_DISPLAY_PROFILE_IN_BAR",
+        "text": "将配置文件名显示在标题栏上"
     }
 ]

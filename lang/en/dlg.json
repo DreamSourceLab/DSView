@@ -65,7 +65,7 @@
     },
     {
         "id": "IDS_DLG_QUICK_SCROLL",
-        "text": "Quick scroll"
+        "text": "Quick scroll waveform by mouse"
     },
     {
         "id": "IDS_DLG_SAVE",
@@ -686,5 +686,9 @@
     {
         "id": "IDS_DLG_TRIG_DISPLAY_MIDDLE",
         "text": "Trig pos display at the middle"
+    },
+    {
+        "id": "IDS_DLG_DISPLAY_PROFILE_IN_BAR",
+        "text": "Display the profile in title bar"
     }
 ]

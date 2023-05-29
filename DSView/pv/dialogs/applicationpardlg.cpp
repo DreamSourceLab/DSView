@@ -48,7 +48,7 @@ bool ApplicationParamDlg::ShowDlg(QWidget *parent)
 {
     DSDialog dlg(parent, true, true);
     dlg.setTitle(L_S(STR_PAGE_DLG, S_ID(IDS_DLG_DISPLAY_OPTIONS), "Display options"));
-    dlg.setMinimumSize(300, 200);
+    dlg.setMinimumSize(300, 230);
     QFormLayout &lay = *(new QFormLayout());
     lay.setContentsMargins(0,20,0,30);
 
@@ -63,12 +63,19 @@ bool ApplicationParamDlg::ShowDlg(QWidget *parent)
     QCheckBox *ck_trigInMid = new QCheckBox();
     ck_trigInMid->setChecked(app._appOptions.trigPosDisplayInMid);
 
+    QCheckBox *ck_profileBar = new QCheckBox();
+    ck_profileBar->setChecked(app._appOptions.displayProfileInBar);
+
+    lay.setHorizontalSpacing(8);
+
     if (mode == LOGIC){
         lay.addRow(L_S(STR_PAGE_DLG, S_ID(IDS_DLG_QUICK_SCROLL), "Quick scroll"), ck_quickScroll);
     }
     else if (mode == DSO){
         lay.addRow(L_S(STR_PAGE_DLG, S_ID(IDS_DLG_TRIG_DISPLAY_MIDDLE), "Tig pos in middle"), ck_trigInMid);
     }
+
+    lay.addRow(L_S(STR_PAGE_DLG, S_ID(IDS_DLG_DISPLAY_PROFILE_IN_BAR), "Profile in bar"), ck_profileBar);
 
     dlg.layout()->addLayout(&lay);  
      
@@ -80,8 +87,11 @@ bool ApplicationParamDlg::ShowDlg(QWidget *parent)
     if (ret){
         app._appOptions.quickScroll = ck_quickScroll->isChecked();
         app._appOptions.trigPosDisplayInMid = ck_trigInMid->isChecked();
+        app._appOptions.displayProfileInBar = ck_profileBar->isChecked();
 
         app.SaveApp();
+
+        AppControl::Instance()->GetSession()->broadcast_msg(DSV_MSG_APP_OPTIONS_CHANGED);
     }
    
    return ret;
