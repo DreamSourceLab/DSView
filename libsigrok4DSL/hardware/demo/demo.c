@@ -163,7 +163,7 @@ static void dso_status_update(struct session_vdev *vdev)
    
     status->ch0_cyc_tlen = 340;
     status->ch1_cyc_tlen = 340;
-    status->ch0_cyc_cnt = 85;
+    status->ch0_cyc_cnt = 100;
     status->ch1_cyc_cnt = 85;
     status->ch0_max = 158;
     status->ch1_max = 158;
@@ -298,7 +298,6 @@ static void init_pattern_mode_list()
             if(pattern_strings_logic[i] != NULL)
             {
                 g_safe_free(pattern_strings_logic[i]);
-                pattern_strings_logic[i] =NULL;
             }
         }
     }
@@ -309,7 +308,6 @@ static void init_pattern_mode_list()
             if(pattern_strings_dso[i] != NULL)
             {
                 g_safe_free(pattern_strings_dso[i]);
-                pattern_strings_dso[i] =NULL;
             }
         }
     }
@@ -320,7 +318,6 @@ static void init_pattern_mode_list()
             if(pattern_strings_analog[i] != NULL)
             {
                 g_safe_free(pattern_strings_analog[i]);
-                pattern_strings_analog[i] =NULL;
             }
         }
     }
@@ -407,16 +404,21 @@ static int get_pattern_mode_from_file(uint8_t device_mode)
             if(strstr(filename,".demo") != NULL)
             {
                 str_len = strlen(filename)-strlen(".demo");
-                char *tmp_file_name = g_try_malloc0(str_len)+1;
-                memcpy(tmp_file_name,filename,str_len);
-                tmp_file_name[str_len] = 0;
+                char *file_name = g_try_malloc0(str_len+1);
+                if (file_name == NULL)
+                {
+                    sr_err("%s: file_name malloc failed", __func__);
+                    return SR_ERR_MALLOC;
+                }
+                strncpy(file_name,filename,str_len);
+                file_name[str_len] = 0;
 
                 if(device_mode == LOGIC)
-                    pattern_strings_logic[index] = tmp_file_name;
+                    pattern_strings_logic[index] = file_name;
                 else if(device_mode == DSO)
-                    pattern_strings_dso[index] = tmp_file_name;
+                    pattern_strings_dso[index] = file_name;
                 else if(device_mode == ANALOG)
-                    pattern_strings_analog[index] = tmp_file_name;
+                    pattern_strings_analog[index] = file_name;
                 if(index < 99)
                     index++;
             }
@@ -439,7 +441,6 @@ static void scan_dsl_file(struct sr_dev_inst *sdi)
 {
     struct session_vdev * vdev = sdi->priv;
     
-
     init_pattern_mode_list();
 
     get_pattern_mode_from_file(LOGIC);
@@ -1279,26 +1280,8 @@ static int hw_dev_acquisition_start(struct sr_dev_inst *sdi,
             vdev->enabled_probes++;
     }
 
-    /* Send header packet to the session bus. */
-    std_session_send_df_header(sdi, LOG_PREFIX);
-
-    /* Send trigger packet to the session bus */
-    if (vdev->trig_pos != 0)
-    {
-        struct ds_trigger_pos session_trigger;
-        if (sdi->mode == DSO)
-            session_trigger.real_pos = vdev->trig_pos * vdev->enabled_probes / vdev->num_probes;
-        else
-            session_trigger.real_pos = vdev->trig_pos;
-        packet.type = SR_DF_TRIGGER;
-        packet.payload = &session_trigger;
-        ds_data_forward(sdi, &packet);
-    }
-
-
     if(sdi->mode == LOGIC)
     {
-        // reset_vdev->enabled_probes(sdi);
         vdev->post_data_len = 0;
         vdev->packet_len = LOGIC_PACKET_LEN(vdev->samplerate);
         vdev->packet_time = LOGIC_PACKET_TIME(LOGIC_PACKET_NUM_PER_SEC);
@@ -1339,7 +1322,7 @@ static int hw_dev_acquisition_start(struct sr_dev_inst *sdi,
             logic_post_buf = g_try_malloc0(vdev->enabled_probes * vdev->packet_len);
             if(logic_post_buf == NULL)
             {
-                sr_err("%s: logic buf malloc error", __func__);
+                sr_err("%s: logic_post_buf malloc error", __func__);
                 return SR_ERR_MALLOC;
             }
             init_random_data(vdev,sdi);
