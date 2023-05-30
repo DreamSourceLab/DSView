@@ -36,6 +36,7 @@ void dsv_log_level(int l);
 void dsv_log_enalbe_logfile(bool append);
 void dsv_remove_log_file();
 void dsv_clear_log_file();
+void dsv_set_log_file_enable(bool flag);
 
 QString get_dsv_log_path();
 

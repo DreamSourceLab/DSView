@@ -103,6 +103,11 @@ XLOG_API int xlog_reset_log_file(xlog_context* ctx, int receiver_index, const ch
 XLOG_API int xlog_remove_receiver_by_index(xlog_context* ctx, int index);
 
 /**
+ * Set the log receiver enable to disable.
+*/
+XLOG_API int xlog_set_receiver_enable(xlog_context* ctx, int index, int bEnable);
+
+/**
  * 	clear all receiver,return 0 if success.
  */
 XLOG_API int xlog_clear_all_receiver(xlog_context* ctx);

@@ -33,7 +33,6 @@
 #include <QWidget>
 #include <QCheckBox>
 #include <QLineEdit>
-#include <QPushButton>
 #include <QHBoxLayout>
 #include <QFile> 
 #include <QLabel>
@@ -60,6 +59,8 @@ LogoBar::LogoBar(SigSession *session, QWidget *parent) :
     _logo_button(this)
 {
     _mainForm  = NULL;
+    _log_open_bt = NULL;
+    _log_clear_bt = NULL;
 
     setMovable(false);
     setContentsMargins(0,0,0,0);
@@ -261,10 +262,12 @@ void LogoBar::on_action_setting_log()
 
     QPushButton *btOpen = new QPushButton();
     btOpen->setText(L_S(STR_PAGE_DLG, S_ID(IDS_DLG_OPEN), "Open"));
-    connect(btOpen, SIGNAL(released()), this, SLOT(on_open_log_file()));
+    _log_open_bt = btOpen;
+    connect(btOpen, SIGNAL(released()), this, SLOT(on_open_log_file()));   
 
     QPushButton *btClear = new QPushButton();
     btClear->setText(L_S(STR_PAGE_DLG, S_ID(IDS_DLG_CLEARE), "Clear"));
+    _log_clear_bt = btClear;
     connect(btClear, SIGNAL(released()), this, SLOT(on_clear_log_file()));
 
     QWidget *btWid = new QWidget();
@@ -299,10 +302,11 @@ void LogoBar::on_action_setting_log()
 
             dsv_log_level(level);
             
-            if (ableSave)
+            if (ableSave){
                 dsv_log_enalbe_logfile(false);
-            else
-                dsv_remove_log_file();
+            }
+
+            dsv_set_log_file_enable(ableSave);
         }
     }  
 }
@@ -326,6 +330,14 @@ void LogoBar::on_clear_log_file()
         QString strMsg(L_S(STR_PAGE_MSG, S_ID(IDS_MSG_TO_CLEAR_LOG), "Confirm!"));
         if (MsgBox::Confirm(strMsg)){
             dsv_clear_log_file();
+
+            if (_log_open_bt != NULL && _log_clear_bt != NULL){
+                QFile qf(get_dsv_log_path());
+                if (qf.exists() == false){
+                    _log_open_bt->setEnabled(false);
+                    _log_clear_bt->setEnabled(false);
+                }
+            }
         }
     }
     else{

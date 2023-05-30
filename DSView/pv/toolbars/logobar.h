@@ -28,6 +28,7 @@
 #include <QAction>
 #include <QMenu>
 #include <libsigrok.h> 
+#include <QPushButton>
 
 #include "../sigsession.h"
 #include "../interface/icallbacks.h"
@@ -92,6 +93,9 @@ private:
     QAction *_issue;
     QAction *_update;
     QAction *_log;
+
+    QPushButton *_log_open_bt;
+    QPushButton *_log_clear_bt;
 
     IMainForm *_mainForm;
 };

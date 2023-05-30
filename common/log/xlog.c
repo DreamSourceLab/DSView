@@ -42,7 +42,8 @@ typedef void (*xlog_print_func)(struct xlog_receiver_info *info, const char *dom
 
 struct xlog_receiver_info
 {
-    int _type; //see enum xlog_receiver_type  
+    int     _type; //see enum xlog_receiver_type
+    int     _enable;
     FILE    *_file;
     xlog_print_func _fn; // print function
     xlog_receive_callback _rev; //user callback
@@ -149,13 +150,17 @@ static xlog_context* xlog_new_context(int bConsole)
         for(i=0; i< RECEIVER_MAX_COUNT; i++){
             ctx->_receivers[i]._fn = NULL;
             ctx->_receivers[i]._file = NULL;
+            ctx->_receivers[i]._enable = 0;
+            ctx->_receivers[i]._rev = NULL;
+            ctx->_receivers[i]._type = -1;
         }
         ctx->_count = 0;
         ctx->_log_level = XLOG_LEVEL_INFO;
 
         if (bConsole){
             ctx->_receivers[0]._fn = print_to_console;
-            ctx->_receivers[0]._type = RECEIVER_TYPE_CONSOLE;        
+            ctx->_receivers[0]._type = RECEIVER_TYPE_CONSOLE;
+            ctx->_receivers[0]._enable = 1;  
             ctx->_count = 1;
         }        
 
@@ -236,6 +241,7 @@ XLOG_API int xlog_add_receiver(xlog_context* ctx, xlog_receive_callback rev, int
     ctx->_receivers[i]._type = RECEIVER_TYPE_CALLBACK;
     ctx->_receivers[i]._rev = rev;
     ctx->_receivers[i]._fn = print_to_user_callback;
+    ctx->_receivers[i]._enable = 1;
     ctx->_count++;
 
     if (out_index)
@@ -290,6 +296,7 @@ XLOG_API int xlog_add_receiver_from_file(xlog_context* ctx, const char *file_pat
     ctx->_receivers[i]._type = RECEIVER_TYPE_FILE;
     ctx->_receivers[i]._fn = print_to_file;
     ctx->_receivers[i]._file = fh;
+    ctx->_receivers[i]._enable = 1;
     ctx->_count++;
 
     if (out_index)
@@ -355,6 +362,7 @@ XLOG_API int xlog_remove_receiver_by_index(xlog_context* ctx, int index)
     } 
 
     ctx->_receivers[index]._fn = NULL;
+    ctx->_receivers[index]._enable = 0;
     index++;
 
     while (index < RECEIVER_MAX_COUNT)
@@ -363,6 +371,7 @@ XLOG_API int xlog_remove_receiver_by_index(xlog_context* ctx, int index)
         ctx->_receivers[index-1]._type = ctx->_receivers[index]._type;
         ctx->_receivers[index-1]._rev = ctx->_receivers[index]._rev;
         ctx->_receivers[index-1]._file = ctx->_receivers[index]._file;
+        ctx->_receivers[index-1]._enable = ctx->_receivers[index]._enable;
         index++;
     }
     ctx->_count--;
@@ -370,6 +379,30 @@ XLOG_API int xlog_remove_receiver_by_index(xlog_context* ctx, int index)
     pthread_mutex_unlock(&ctx->_mutext);
     
     return 0;    
+}
+
+/**
+ * Set the log receiver enable to disable.
+*/
+XLOG_API int xlog_set_receiver_enable(xlog_context* ctx, int index, int bEnable)
+{
+     if (ctx == NULL){
+        return -1;
+    }
+
+    pthread_mutex_lock(&ctx->_mutext);
+
+    if (index < 0 || index >= ctx->_count){
+        strcpy(ctx->_error, "index out of range");
+        pthread_mutex_unlock(&ctx->_mutext);
+        return -1;
+    } 
+
+    ctx->_receivers[index]._enable = bEnable > 0 ? 1 : 0;
+
+    pthread_mutex_unlock(&ctx->_mutext);
+    
+    return 0;   
 }
 
 /**
@@ -386,6 +419,12 @@ XLOG_API int xlog_clear_all_receiver(xlog_context* ctx)
 
     for (i = 0; i < RECEIVER_MAX_COUNT; i++){
         ctx->_receivers[i]._fn = NULL;
+        ctx->_receivers[i]._enable = 0;
+
+        if (ctx->_receivers[i]._file != NULL){
+            fclose(ctx->_receivers[i]._file);
+            ctx->_receivers[i]._file = NULL;
+        }
     }
     ctx->_count = 0;
 
@@ -492,7 +531,7 @@ XLOG_API int xlog_err(xlog_writer *wr, const char *format, ...)
     for (i = 0; i < ctx->_count; i++){
         inf = &ctx->_receivers[i];
 
-        if (inf->_fn != NULL){
+        if (inf->_fn != NULL && inf->_enable){
             va_start(args, format);
             inf->_fn(inf, wr->_domain, format, args);
             va_end(args);
@@ -528,7 +567,7 @@ XLOG_API int xlog_warn(xlog_writer *wr, const char *format, ...)
     for (i = 0; i < ctx->_count; i++){
         inf = &ctx->_receivers[i];
 
-        if (inf->_fn != NULL){
+        if (inf->_fn != NULL && inf->_enable){
             va_start(args, format);
             inf->_fn(inf, wr->_domain, format, args);
             va_end(args);
@@ -564,7 +603,7 @@ XLOG_API int xlog_info(xlog_writer *wr, const char *format, ...)
     for (i = 0; i < ctx->_count; i++){
         inf = &ctx->_receivers[i];
 
-        if (inf->_fn != NULL){
+        if (inf->_fn != NULL && inf->_enable){
             va_start(args, format);
             inf->_fn(inf, wr->_domain, format, args);
             va_end(args);
@@ -600,7 +639,7 @@ XLOG_API int xlog_dbg(xlog_writer *wr, const char *format, ...)
     for (i = 0; i < ctx->_count; i++){
         inf = &ctx->_receivers[i];
 
-        if (inf->_fn != NULL){
+        if (inf->_fn != NULL && inf->_enable){
             va_start(args, format);
             inf->_fn(inf, wr->_domain, format, args);
             va_end(args);
@@ -636,7 +675,7 @@ XLOG_API int xlog_detail(xlog_writer *wr, const char *format, ...)
     for (i = 0; i < ctx->_count; i++){
         inf = &ctx->_receivers[i];
 
-        if (inf->_fn != NULL){
+        if (inf->_fn != NULL && inf->_enable){
             va_start(args, format);
             inf->_fn(inf, wr->_domain, format, args);
             va_end(args);

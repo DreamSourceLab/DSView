@@ -77,13 +77,32 @@ void dsv_log_enalbe_logfile(bool append)
 }
 
 void dsv_clear_log_file()
-{
-    QString lf = get_dsv_log_path();
-    std::string log_file = pv::path::ToUnicodePath(lf);
-    int ret = xlog_reset_log_file(log_ctx, log_file_index, log_file.c_str());
+{   
+    if (b_logfile && log_ctx)
+    {
+        QString lf = get_dsv_log_path();
+        std::string log_file = pv::path::ToUnicodePath(lf);
+        int ret = xlog_reset_log_file(log_ctx, log_file_index, log_file.c_str());
 
-    if (ret != 0){
-        dsv_err("%s", "Clear log file error!");
+        if (ret != 0){
+            dsv_err("%s", "Clear log file error!");
+        }
+    }
+    else{
+        QDir dir;
+        QString filePath = get_dsv_log_path();
+        if (dir.exists(filePath))
+        {
+            dir.remove(filePath);
+        }
+    }
+}
+
+void dsv_set_log_file_enable(bool flag)
+{
+    if (b_logfile && log_ctx)
+    {
+        xlog_set_receiver_enable(log_ctx, log_file_index, flag);
     }
 }
 
