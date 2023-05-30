@@ -690,5 +690,13 @@
     {
         "id": "IDS_DLG_DISPLAY_PROFILE_IN_BAR",
         "text": "将配置文件名显示在标题栏上"
+    },
+    {
+        "id": "IDS_DLG_SERIAL_HEX",
+        "text": "十六进制 :"
+    },
+    {
+        "id": "IDS_DLG_SERIAL_INPUT_AS_HEX",
+        "text": "以十六进制格式输入"
     }
 ]

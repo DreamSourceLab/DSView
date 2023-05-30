@@ -56,6 +56,9 @@ class AnnotationResTable
 
        void reset();
 
+       static int hexToDecimal(char * hex);
+       static void decimalToBinString(unsigned long long num, int bitSize, char *buffer, int buffer_size);
+
     private:
         const char* format_to_string(const char *hex_str, int fmt);
 

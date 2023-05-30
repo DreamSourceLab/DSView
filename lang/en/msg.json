@@ -97,7 +97,7 @@
     },
     {
         "id": "IDS_MSG_CLOSE_DEVICE",
-        "text": "Are you sure to close the device?"
+        "text": "Are you sure to remove this device?"
     },
     {
         "id": "IDS_MSG_SET_DEF_CAL_SETTING",

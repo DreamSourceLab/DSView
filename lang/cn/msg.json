@@ -96,7 +96,7 @@
     },   
     {
         "id": "IDS_MSG_CLOSE_DEVICE",
-        "text": "是否确定关闭这个设备?"
+        "text": "是否确定要移除这个设备?"
     },
     {
         "id": "IDS_MSG_SET_DEF_CAL_SETTING",

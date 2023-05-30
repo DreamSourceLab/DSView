@@ -27,6 +27,7 @@
 #include <QObject>
 #include <QGridLayout>
 #include <QVBoxLayout>
+#include <QHBoxLayout>
 #include <QPainter>
 #include <QRegularExpressionValidator>
 #include <QSplitter>
@@ -41,6 +42,8 @@
 #include "../view/logicsignal.h"
 #include "../ui/langresource.h"
 #include "../ui/msgbox.h"
+#include "../log.h"
+#include "../data/decode/annotationrestable.h"
 
 namespace pv {
 namespace dock {
@@ -56,6 +59,11 @@ TriggerDock::TriggerDock(QWidget *parent, SigSession *session) :
     if (_session->get_device()->have_instance()) {
         _session->get_device()->get_config_int16(SR_CONF_TOTAL_CH_NUM, _cur_ch_num);
     }
+
+    _serial_hex_label = NULL;
+    _serial_hex_lineEdit = NULL;
+    _serial_hex_ck_label = NULL;
+    _is_serial_val_setting = false;
 
     _widget = new QWidget(this);
     _simple_radioButton = new QRadioButton(_widget);
@@ -142,6 +150,8 @@ void TriggerDock::retranslateUi()
     _serial_data_label->setText(L_S(STR_PAGE_DLG, S_ID(IDS_DLG_DATA_CHANNEL), "Data Channel: "));
     _serial_value_label->setText(L_S(STR_PAGE_DLG, S_ID(IDS_DLG_DATA_VALUE), "Data Value: "));
     _serial_groupBox->setTitle(L_S(STR_PAGE_DLG, S_ID(IDS_DLG_SERIAL_TRIGGER), "Serial Trigger"));
+    _serial_hex_label->setText(L_S(STR_PAGE_DLG, S_ID(IDS_DLG_SERIAL_HEX), "Hex: "));
+    _serial_hex_ck_label->setText(L_S(STR_PAGE_DLG, S_ID(IDS_DLG_SERIAL_INPUT_AS_HEX), "Input hex"));
 
     _adv_tabWidget->setTabText(0, L_S(STR_PAGE_DLG, S_ID(IDS_DLG_STAGE_TRIGGER), "Stage Trigger"));
     _adv_tabWidget->setTabText(1, L_S(STR_PAGE_DLG, S_ID(IDS_DLG_SERIAL_TRIGGER), "Serial Trigger"));
@@ -225,7 +235,7 @@ void TriggerDock::widget_enable(int index)
     stages_comboBox->setDisabled(false);
     _adv_tabWidget->setDisabled(false);
     enable_stages = stages_comboBox->currentText().toInt();
-    
+
     for (int i = 0; i < enable_stages; i++) {
         _stage_tabWidget->setTabEnabled(i, true);
     }
@@ -759,6 +769,31 @@ void TriggerDock::setup_adv_tab()
     QValidator *value_validator2 = new QRegularExpressionValidator(value_rx2, _stage_tabWidget);
     _serial_value_lineEdit->setValidator(value_validator2);
 
+    _serial_hex_label = new QLabel(_serial_groupBox);
+    _serial_hex_lineEdit = new QLineEdit("", _serial_groupBox);
+    _serial_hex_lineEdit->setMaxLength(4);
+    QRegularExpression value_rx_hex("[0-9a-fA-F]+");
+    QValidator *value_validator_hex = new QRegularExpressionValidator(value_rx_hex, _stage_tabWidget);
+    _serial_hex_lineEdit->setValidator(value_validator_hex);
+    _serial_hex_lineEdit->setMaximumWidth(70);
+    _serial_hex_lineEdit->setReadOnly(true);
+
+    QCheckBox *hex_ckbox = new QCheckBox();
+    _serial_hex_ck_label = new QLabel();
+    hex_ckbox->setMaximumWidth(18);
+
+    QHBoxLayout *hex_lay = new QHBoxLayout();
+    hex_lay->setSpacing(5);
+    hex_lay->setContentsMargins(0,0,0,0);
+    QWidget *hex_wid = new QWidget();
+    hex_wid->setLayout(hex_lay);
+    hex_lay->setAlignment(Qt::AlignLeft);
+    hex_lay->addWidget(_serial_hex_lineEdit);
+    hex_lay->addWidget(hex_ckbox);
+    hex_lay->addWidget(_serial_hex_ck_label);
+
+    connect(hex_ckbox, SIGNAL(clicked(bool)), this, SLOT(on_hex_checkbox_click(bool))); 
+  
     _serial_bits_comboBox = new DsComboBox(_serial_groupBox);
 
     for(int i = 1; i <= 16; i++){
@@ -831,7 +866,8 @@ void TriggerDock::setup_adv_tab()
         serial_glayout->addWidget(serial5_value_exp_label, row++, 1, 1, 3);
         serial_glayout->addWidget(_serial_edge_label, row, 0);
         serial_glayout->addWidget(_serial_edge_lineEdit, row++, 1, 1, 3);
-    } else {
+    }
+    else {
         QLabel *serial0_value_exp_label = new QLabel("15 ---------- 8 7 ----------- 0 ", _serial_groupBox);
         serial0_value_exp_label->setFont(font);
         serial_glayout->addWidget(serial0_value_exp_label, row++, 1, 1, 3);
@@ -864,6 +900,8 @@ void TriggerDock::setup_adv_tab()
     serial_glayout->addWidget(_serial_bits_comboBox, row++, 1);
     serial_glayout->addWidget(_serial_value_label, row, 0);
     serial_glayout->addWidget(_serial_value_lineEdit, row++, 1, 1, 3);
+    serial_glayout->addWidget(_serial_hex_label, row, 0);
+    serial_glayout->addWidget(hex_wid, row++, 1, 1, 3);
 
     _serial_note_label = new QLabel(_serial_groupBox);
     serial_layout->addLayout(serial_glayout);
@@ -877,6 +915,12 @@ void TriggerDock::setup_adv_tab()
     connect(_serial_stop_lineEdit, SIGNAL(editingFinished()), this, SLOT(value_changed()));
     connect(_serial_edge_lineEdit, SIGNAL(editingFinished()), this, SLOT(value_changed()));
     connect(_serial_value_lineEdit, SIGNAL(editingFinished()), this, SLOT(value_changed()));
+
+    connect(_serial_value_lineEdit, SIGNAL(textChanged(const QString&)), 
+                this, SLOT(on_serial_value_changed(const QString&)));
+
+    connect(_serial_hex_lineEdit, SIGNAL(editingFinished()), 
+                this, SLOT(on_serial_hex_changed()));
 
     _adv_tabWidget->addTab((QWidget *)_stage_tabWidget, L_S(STR_PAGE_DLG, S_ID(IDS_DLG_STAGE_TRIGGER), "Stage Trigger"));
     _adv_tabWidget->addTab((QWidget *)_serial_groupBox, L_S(STR_PAGE_DLG, S_ID(IDS_DLG_SERIAL_TRIGGER), "Serial Trigger"));
@@ -952,6 +996,72 @@ void TriggerDock::try_commit_trigger()
             }
         }
     }
+}
+
+void TriggerDock::on_hex_checkbox_click(bool ck)
+{
+   _serial_hex_lineEdit->setReadOnly(!ck);
+   if (ck){
+       _serial_hex_lineEdit->setFocus();
+   }
+}
+
+void TriggerDock::on_serial_value_changed(const QString &v)
+{
+    if (_is_serial_val_setting)
+        return;
+
+    QString s(v);
+    s = s.replace(" ", "").toLower();
+    _serial_hex_lineEdit->setText("");
+
+    if (s != "" && s.indexOf("x") == -1)
+    { 
+        char *buf = s.toLocal8Bit().data();
+        int len = s.length();
+        unsigned long val = 0;
+
+        if (len == 16)
+        {
+            for (int i=0; i<len; i++)
+            { 
+                if (*(buf+i) == '1'){
+                    val += 1 << (len - i - 1);
+                }
+            }
+
+            char tmp[10];
+            sprintf(tmp, "%02X", val);
+            _serial_hex_lineEdit->setText(QString(tmp));
+        }       
+    }
+}
+
+void TriggerDock::on_serial_hex_changed()
+{
+    if (_is_serial_val_setting)
+        return;
+    
+    _is_serial_val_setting = true;
+
+    QString s = _serial_hex_lineEdit->text();
+    _serial_hex_lineEdit->setText(s.toUpper());
+
+    if (s.length() <= 4)
+    {
+        while (s.length() < 4){
+            s = "0" + s;
+        }
+        
+        const char *str = s.toLocal8Bit().data();
+        char *endptr = NULL;
+        unsigned long val = strtoul(str, &endptr, 16);
+        char buffer[18];
+        AnnotationResTable::decimalToBinString(val, 16, buffer, sizeof(buffer));
+        _serial_value_lineEdit->setText(QString(buffer));
+    }
+
+    _is_serial_val_setting = false;
 }
 
 } // namespace dock

@@ -22,6 +22,7 @@
 #include "annotationrestable.h"
 #include <assert.h>
 #include <stdlib.h> 
+#include <math.h>
 #include "../../log.h"
 #include "../../dsvdef.h"
  
@@ -338,5 +339,61 @@ void AnnotationResTable::reset()
 	}
 	m_resourceTable.clear();
 	m_indexs.clear();
+}
+
+int AnnotationResTable::hexToDecimal(char * hex)
+{
+	assert(hex);
+    int len = strlen(hex);
+
+    double b = 16;
+    int result = 0;
+    char *p = hex;
+
+    while(*p) {
+        if(*p >= '0' && *p <= '9')
+            result += (int)pow(b, --len) * (*p - '0');
+        else if(*p >= 'a' && *p <= 'f')
+            result += (int)pow(b, --len) * (*p - 'a' + 10);
+        else if(*p >= 'A' && *p <= 'F')
+            result += (int)pow(b, --len) * (*p - 'A' + 10);
+
+        p++;
+    }
+
+    return result;
+}
+
+void AnnotationResTable::decimalToBinString(unsigned long long num, int bitSize, char *buffer, int buffer_size)
+{
+
+	assert(buffer);
+	assert(buffer_size);
+	 
+	if (bitSize < 8)
+		bitSize = 8;
+	if (bitSize > 64)
+		bitSize = 64;
+
+	assert(bitSize < buffer_size);
+
+	int v;
+	char *wr = buffer + bitSize;
+	*wr = 0;
+	wr--;
+
+	while (num > 0 && wr >= buffer)
+	{
+		v = num % 2;
+		*wr = v ? '1' : '0';
+		wr--;
+		num = num / 2;
+	}
+
+	while (wr >= buffer)
+	{
+		*wr = '0';
+		wr--;
+	}
 }
  

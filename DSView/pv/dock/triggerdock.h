@@ -86,14 +86,15 @@ private:
      *        1: advanced trigger
      */
     bool commit_trigger();
- 
 
 private slots:
     void simple_trigger();
     void adv_trigger();
     void widget_enable(int index);
-
-    void value_changed(); 
+    void value_changed();
+    void on_hex_checkbox_click(bool ck);
+    void on_serial_value_changed(const QString &v);
+    void on_serial_hex_changed();
 
 private:
     SigSession *_session;
@@ -141,9 +142,13 @@ private:
     QLabel *_serial_value_label;
     QLineEdit *_serial_value_lineEdit;
     DsComboBox *_serial_bits_comboBox;
+    QLabel *_serial_hex_label;
+    QLineEdit *_serial_hex_lineEdit;
+    QLabel *_serial_hex_ck_label;
 
     QLabel *_serial_note_label;
     QLabel *_data_bits_label;
+    bool    _is_serial_val_setting;
 
     QVector <QLabel *>  _inv_exp_label_list;
     QVector <QLabel *>  _count_exp_label_list;
