@@ -276,6 +276,12 @@ void LogoBar::on_action_setting_log()
 
     lay->addRow("", btWid);
 
+    QFile qf(get_dsv_log_path());
+    if (qf.exists() == false){
+        btOpen->setEnabled(false);
+        btClear->setEnabled(false);
+    }
+
     dlg.exec();
 
     if (dlg.IsClickYes()){
