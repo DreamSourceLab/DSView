@@ -37,9 +37,10 @@
 //--------------------api---
 QString GetIconPath();
 QString GetAppDataDir();
-QString GetResourceDir();
+QString GetFirmwareDir();
 QString GetUserDataDir();
 QString GetDecodeScriptDir();
+QString GetProfileDir();
 
 //------------------class
   

@@ -74,9 +74,9 @@ bool AppControl::Init()
     cs = pv::path::ToUnicodePath(qs);
     dsv_info("GetAppDataDir:\"%s\"", cs.c_str());
 
-    qs = GetResourceDir();
+    qs = GetFirmwareDir();
     cs = pv::path::ToUnicodePath(qs);
-    dsv_info("GetResourceDir:\"%s\"", cs.c_str());
+    dsv_info("GetFirmwareDir:\"%s\"", cs.c_str());
 
     qs = GetUserDataDir();
     cs = pv::path::ToUnicodePath(qs);

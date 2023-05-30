@@ -420,15 +420,10 @@ namespace pv
     }
 
     QString MainWindow::genSessionFileName(bool isNewFormat)
-    {
-#if QT_VERSION >= 0x050400
-        QString path = QStandardPaths::writableLocation(QStandardPaths::AppDataLocation);
-#else
-        QString path = QStandardPaths::writableLocation(QStandardPaths::DataLocation);
-#endif
-
+    { 
         AppConfig &app = AppConfig::Instance();
 
+        QString path = GetProfileDir();
         QDir dir(path);
         if (dir.exists() == false){
             dir.mkpath(path);
@@ -1625,7 +1620,7 @@ namespace pv
         }
         else if (_device_agent->is_demo())
         {
-            QDir dir(GetResourceDir());
+            QDir dir(GetFirmwareDir());
             if (dir.exists())
             { 
                 QString ses_name = dir.absolutePath() + "/" 

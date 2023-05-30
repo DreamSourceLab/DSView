@@ -259,11 +259,6 @@ void LogoBar::on_action_setting_log()
     ckRebuild->setChecked(app._appOptions.appendLogMode);
     lay->addRow(L_S(STR_PAGE_DLG, S_ID(IDS_DLG_APPEND_MODE), "Append mode"), ckRebuild);
 
-    QLineEdit  *etPath = new QLineEdit();
-    etPath->setReadOnly(true);
-    etPath->setText(get_dsv_log_path());
-    lay->addRow(L_S(STR_PAGE_DLG, S_ID(IDS_DLG_LOG_PATH), "File Path"), etPath);
-
     QPushButton *btOpen = new QPushButton();
     btOpen->setText(L_S(STR_PAGE_DLG, S_ID(IDS_DLG_OPEN), "Open"));
     connect(btOpen, SIGNAL(released()), this, SLOT(on_open_log_file()));

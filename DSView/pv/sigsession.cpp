@@ -151,7 +151,7 @@ namespace pv
         ds_set_datafeed_callback(data_feed_callback);
 
         // firmware resource directory
-        QString resdir = GetResourceDir();
+        QString resdir = GetFirmwareDir();
         std::string res_path = pv::path::ToUnicodePath(resdir);
         ds_set_firmware_resource_dir(res_path.c_str());
 

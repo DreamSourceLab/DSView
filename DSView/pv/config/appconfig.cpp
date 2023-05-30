@@ -358,7 +358,8 @@ QString GetAppDataDir()
 #endif
 }
 
-QString GetResourceDir(){
+QString GetFirmwareDir()
+{
     QDir dir1 =  GetAppDataDir() + "/res";
     // ./res
     if (dir1.exists()){
@@ -403,4 +404,13 @@ QString GetDecodeScriptDir()
          return dir.absolutePath();        
     }
     return "";
+}
+
+QString GetProfileDir()
+{
+ #if QT_VERSION >= 0x050400
+    return QStandardPaths::writableLocation(QStandardPaths::AppDataLocation);
+    #else
+    return QStandardPaths::writableLocation(QStandardPaths::DataLocation);
+    #endif
 }

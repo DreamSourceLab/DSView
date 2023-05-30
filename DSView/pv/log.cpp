@@ -103,8 +103,14 @@ QString get_dsv_log_path()
 
     #ifdef Q_OS_LINUX
         lf = QDir::homePath() + "/DSView.log";
-    #else 
-        lf = GetAppDataDir() + "/DSView.log";
+    #endif
+
+    #ifdef _WIN32
+        lf = GetUserDataDir() + "/DSView.log";
+    #endif
+
+    #ifdef Q_OS_DARWIN
+        lf = GetUserDataDir() + "/DSView.log";
     #endif
 
     return lf;

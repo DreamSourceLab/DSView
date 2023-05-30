@@ -188,7 +188,7 @@ void FileBar::on_actionLoad_triggered()
 
 void FileBar::on_actionDefault_triggered()
 { 
-    QDir dir(GetResourceDir());
+    QDir dir(GetFirmwareDir());
     if (!dir.exists()) { 
           MsgBox::Show(NULL, L_S(STR_PAGE_MSG, S_ID(IDS_MSG_NOT_FOND_DEFAULT_PROFILE),
              "Cannot find default profile for this device!"), this);
@@ -202,7 +202,7 @@ void FileBar::on_actionDefault_triggered()
 
 QString FileBar::genDefaultSessionFile()
 {   
-    QDir dir(GetResourceDir());
+    QDir dir(GetFirmwareDir());
 
     QString driver_name = _session->get_device()->driver_name();
     QString mode_name = QString::number(_session->get_device()->get_work_mode());
