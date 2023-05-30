@@ -188,7 +188,6 @@ SRD_PRIV int py_dictitem_as_str(PyObject *py_obj, const char *key,
 	}
 
 	if (!(py_value = PyDict_GetItemString(py_obj, key))) {
-		srd_detail("Dictionary has no attribute '%s'.", key);
 		goto err;
 	}
 
@@ -226,7 +225,6 @@ SRD_PRIV int py_dictitem_to_int(PyObject *py_obj, const char *key)
     }
 
     if (!(py_value = PyDict_GetItemString(py_obj, key))) {
-        srd_detail("Dictionary has no attribute '%s'.", key);
         goto err;
     }
 
