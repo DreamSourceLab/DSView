@@ -191,6 +191,8 @@ void LogicSnapshot::first_payload(const sr_datafeed_logic &logic, uint64_t total
     for (unsigned int i = 0; i < _channel_num; i++) {
         _last_sample[i] = *rd_data++;
         _last_calc_count[i] = 0;
+        _cur_ref_block_indexs[i].root_index = 0;
+        _cur_ref_block_indexs[i].lbp_index = 0;
     }
 
     append_payload(logic);
@@ -545,8 +547,10 @@ void LogicSnapshot::calc_mipmap(unsigned int order, uint8_t index0, uint8_t inde
         _ch_data[order][index0].tog |= 1ULL << index1;
     }
     else if (isEnd){
+        uint64_t ref_root = _cur_ref_block_indexs[order].root_index;
+        uint64_t ref_lbp  = _cur_ref_block_indexs[order].lbp_index;
 
-        if (_able_free)
+        if (_able_free || index0 > ref_root || (index0 == ref_root && index1 > ref_lbp))
             free(_ch_data[order][index0].lbp[index1]);
         else
             _free_block_list.push_back(_ch_data[order][index0].lbp[index1]);
@@ -596,6 +600,9 @@ const uint8_t *LogicSnapshot::get_samples(uint64_t start_sample, uint64_t &end_s
     else{
         if (lbp != NULL)
             *lbp = _ch_data[order][index0].lbp[index1];
+
+        _cur_ref_block_indexs[order].root_index = index0;
+        _cur_ref_block_indexs[order].lbp_index  = index1;
         
         return (uint8_t*)_ch_data[order][index0].lbp[index1] + offset;
     }

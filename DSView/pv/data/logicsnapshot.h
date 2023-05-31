@@ -31,7 +31,7 @@
 #include <vector>
 #include <map>
 
-#define CHANNEL_MAX_COUNT 512
+#define CHANNEL_MAX_COUNT 64
 
 namespace LogicSnapshotTest {
 class Pow2;
@@ -71,6 +71,12 @@ private:
         uint64_t tog;
         uint64_t value; 
         void *lbp[Scale];
+    };
+
+    struct BlockIndex
+    {
+        uint64_t    root_index;
+        uint64_t    lbp_index;
     };
 
 public:
@@ -228,6 +234,7 @@ private:
     uint64_t    _loop_offset;
     bool        _able_free;
     std::vector<void*> _free_block_list;
+    struct BlockIndex _cur_ref_block_indexs[CHANNEL_MAX_COUNT];
  
 	friend class LogicSnapshotTest::Pow2;
 	friend class LogicSnapshotTest::Basic;
