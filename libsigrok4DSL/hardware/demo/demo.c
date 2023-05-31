@@ -522,7 +522,7 @@ static int reset_dsl_path(struct sr_dev_inst *sdi,uint8_t device_mode ,uint8_t p
     
     char *str = g_try_malloc0(500);
     strcpy(str,DS_RES_PATH);
-    strcat(str,"../");
+    memset(dir_str+strlen(dir_str)-strlen("res/"),0,strlen("res/"));
     strcat(str,"demo/");
 
     if (pattern_mode != PATTERN_RANDOM)
