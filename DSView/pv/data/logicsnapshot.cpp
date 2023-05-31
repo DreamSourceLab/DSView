@@ -560,7 +560,7 @@ void LogicSnapshot::calc_mipmap(unsigned int order, uint8_t index0, uint8_t inde
         _last_calc_count[order] = samples;
 } 
 
-const uint8_t *LogicSnapshot::get_samples(uint64_t start_sample, uint64_t &end_sample, int sig_index)
+const uint8_t *LogicSnapshot::get_samples(uint64_t start_sample, uint64_t &end_sample, int sig_index, void **lbp)
 { 
     std::lock_guard<std::mutex> lock(_mutex);
 
@@ -593,8 +593,12 @@ const uint8_t *LogicSnapshot::get_samples(uint64_t start_sample, uint64_t &end_s
 
     if (order == -1 || _ch_data[order][index0].lbp[index1] == NULL)
         return NULL;
-    else
+    else{
+        if (lbp != NULL)
+            *lbp = _ch_data[order][index0].lbp[index1];
+        
         return (uint8_t*)_ch_data[order][index0].lbp[index1] + offset;
+    }
 }
 
 bool LogicSnapshot::get_sample(uint64_t index, int sig_index)
@@ -1241,6 +1245,22 @@ void LogicSnapshot::decode_end()
         free(p);
     }
     _free_block_list.clear();
+}
+
+void LogicSnapshot::free_decode_lpb(void *lbp)
+{
+    assert(lbp);
+
+    std::lock_guard<std::mutex> lock(_mutex);
+
+    for (auto it = _free_block_list.begin(); it != _free_block_list.end(); it++)
+    {
+        if ((*it) == lbp){
+            _free_block_list.erase(it);
+            free(lbp);
+            break;
+        }
+    }
 }
 
 } // namespace data

@@ -94,7 +94,7 @@ public:
 
 	void append_payload(const sr_datafeed_logic &logic);
 
-    const uint8_t * get_samples(uint64_t start_sample, uint64_t& end_sample, int sig_index);
+    const uint8_t * get_samples(uint64_t start_sample, uint64_t& end_sample, int sig_index, void **lbp=NULL);
 
     bool get_sample(uint64_t index, int sig_index);
 
@@ -129,6 +129,12 @@ public:
     }
 
     void decode_end();
+
+    void free_decode_lpb(void *lbp);
+
+    inline bool is_able_free(){
+        return _able_free;
+    }
 
 private:
     bool get_sample_unlock(uint64_t index, int sig_index);

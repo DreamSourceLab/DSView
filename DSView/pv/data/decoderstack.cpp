@@ -529,6 +529,12 @@ void DecoderStack::decode_data(const uint64_t decode_start, const uint64_t decod
     _progress = 0;
     uint64_t sended_len  = 0;
     _is_decoding = true;
+
+    void* lbp_array[35];
+
+    for (int j =0 ; j < logic_di->dec_num_channels; j++){
+        lbp_array[j] = NULL;
+    }
   
     while(i < end_index && !_no_memory && !status->_bStop)
     {
@@ -559,10 +565,11 @@ void DecoderStack::decode_data(const uint64_t decode_start, const uint64_t decod
             break;
         }
 
-        uint64_t chunk_end = end_index; 
+        uint64_t chunk_end = end_index;
 
         for (int j =0 ; j < logic_di->dec_num_channels; j++) {
             int sig_index = logic_di->dec_channelmap[j];
+            void *lbp = NULL;
 
             if (sig_index == -1) {
                 chunk.push_back(NULL);
@@ -570,9 +577,18 @@ void DecoderStack::decode_data(const uint64_t decode_start, const uint64_t decod
             }
             else {
                 if (_snapshot->has_data(sig_index)) {
-                    auto data_ptr = _snapshot->get_samples(i, chunk_end, sig_index);
+                    const uint8_t *data_ptr = _snapshot->get_samples(i, chunk_end, sig_index, &lbp);
                     chunk.push_back(data_ptr);
                     chunk_const.push_back(_snapshot->get_sample(i, sig_index));
+
+                    if (_snapshot->is_able_free() == false)
+                    {
+                        if (lbp_array[j] != lbp){
+                            if (lbp_array[j] != NULL)
+                                _snapshot->free_decode_lpb(lbp_array[j]);
+                            lbp_array[j] = lbp;
+                        }
+                    }
                 }
                 else {
                     _error_message = L_S(STR_PAGE_MSG, S_ID(IDS_MSG_DECODERSTACK_DECODE_DATA_ERROR),
