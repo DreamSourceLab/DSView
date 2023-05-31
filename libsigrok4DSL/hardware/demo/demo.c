@@ -159,16 +159,64 @@ static int vdev_init(struct sr_dev_inst *sdi)
 
 static void dso_status_update(struct session_vdev *vdev)
 {
-    struct sr_status *status = (struct sr_status*)&vdev->mstatus;
-   
-    // status->ch0_cyc_tlen = 340;
-    // status->ch1_cyc_tlen = 340;
-    // status->ch0_cyc_cnt = 100;
-    // status->ch1_cyc_cnt = 85;
-    // status->ch0_max = 158;
-    // status->ch1_max = 158;
-    // status->ch0_min = 78;
-    // status->ch1_min = 78; 
+//    struct sr_status *status = (struct sr_status*)&vdev->mstatus;
+//    struct session_packet_buffer *pack_buffer = vdev->packet_buffer;
+
+//    uint8_t ch_max = DSO_MID_VAL;
+//    uint8_t ch_min = DSO_MID_VAL;
+//    uint16_t max_count = 0;
+//    int interval1 = 0;
+//    int interval2 = 0;
+//    for(int i = 0 ; i<20000 ; i+=2)
+//    {
+//        uint8_t val = *(uint8_t*)(pack_buffer->post_buf +i);
+//        if (val >  ch_max)
+//            ch_max = val;
+//        if (val <  ch_min)
+//            ch_min = val;
+
+//        if(vdev->timebase == SR_US(200))
+//        {
+//            if(val == 177 && !interval1)
+//            {
+//                interval1 = i;
+//                continue;
+//            }
+//            if(val == 177 && !interval2)
+//            {
+//                interval2 = i;
+//                continue;
+//            }
+//        }
+//        else
+//        {
+//            if(val == 178 && !interval1)
+//            {
+//                interval1 = i;
+//            }
+//            if(val == 78 && !interval2)
+//            {
+//                interval2 = i;
+//            }
+//        }
+//    }
+
+//    if(vdev->sample_generator != PATTERN_RANDOM)
+//    {
+//        status->ch0_cyc_tlen = (uint32_t)abs(interval1-interval2);
+//        status->ch1_cyc_tlen = (uint32_t)abs(interval1-interval2);
+//        if(vdev->timebase == SR_US(200))
+//        {
+//            status->ch0_cyc_tlen = status->ch0_cyc_tlen/2;
+//            status->ch1_cyc_tlen = status->ch1_cyc_tlen/2;
+//        }
+//        status->ch0_cyc_cnt = 1;
+//        status->ch1_cyc_cnt = 1;
+//    }
+
+//    //187,68
+//    status->ch0_max = status->ch1_max = ch_max;
+//    status->ch0_min = status->ch1_min = ch_min;
     // status->ch0_cyc_plen = 170;
     // status->ch1_cyc_plen = 170;
     // status->ch0_cyc_llen = 0;
@@ -244,7 +292,7 @@ static void logic_adjust_samplerate(struct session_vdev * vdev)
 }
 
 
-static void init_analog_random_data(struct session_vdev * vdev)
+static int init_analog_random_data(struct session_vdev * vdev)
 {
     if(vdev->analog_buf != NULL)
     {
@@ -266,6 +314,7 @@ static void init_analog_random_data(struct session_vdev * vdev)
             *(uint8_t*)(vdev->analog_buf + i) = *(uint8_t*)(vdev->analog_buf + i -1);
     }
     vdev->analog_buf_len = DSO_BUF_LEN;
+    return SR_OK;
 }
 
 static int delay_time(struct session_vdev *vdev)
@@ -380,7 +429,7 @@ static int get_pattern_mode_from_file(uint8_t device_mode)
     int str_len;
 
     strcpy(dir_str,DS_RES_PATH);
-    strcat(dir_str,"../");
+    memset(dir_str+strlen(dir_str)-strlen("res/"),0,strlen("res/"));
     strcat(dir_str,"demo/");
 
     if(device_mode == LOGIC)
@@ -567,7 +616,7 @@ static void adjust_samplerate(struct sr_dev_inst *sdi)
 
 }
 
-static void init_random_data(struct session_vdev * vdev,struct sr_dev_inst *sdi)
+static int init_random_data(struct session_vdev * vdev,struct sr_dev_inst *sdi)
 {
     int cur_probe = 0;
     int probe_count[LOGIC_MAX_PROBE_NUM] = {0};
@@ -576,9 +625,10 @@ static void init_random_data(struct session_vdev * vdev,struct sr_dev_inst *sdi)
     memset(probe_status,LOGIC_HIGH_LEVEL,16);
     memset(vdev->logic_buf,0,LOGIC_BUF_LEN);
 
+    srand((unsigned)time(NULL));
     for(int i = 0 ;i < vdev->enabled_probes;i++)
     {
-        probe_count[i] = rand()%SR_KB(5);
+        probe_count[i] = rand()%SR_KB(1);
     }
 
     for(int i = 0 ; i < vdev->logic_buf_len ;i++)
@@ -600,12 +650,12 @@ static void init_random_data(struct session_vdev * vdev,struct sr_dev_inst *sdi)
                 probe_status[cur_probe] = LOGIC_LOW_LEVEL;
             else
                 probe_status[cur_probe] = LOGIC_HIGH_LEVEL;
-            probe_count[cur_probe] = rand()%SR_KB(5);
+            probe_count[cur_probe] = rand()%SR_KB(1);
             memset(vdev->logic_buf+i,probe_status[cur_probe],1);
             probe_count[cur_probe] -= 1;
         }
     }
-    return 0;
+   return SR_OK;
 }
 
 
