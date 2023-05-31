@@ -31,19 +31,16 @@ public:
     virtual void session_save()=0;
     virtual void data_updated()=0;
     virtual void update_capture()=0;
-
     virtual void cur_snap_samplerate_changed()=0;
     virtual void signals_changed()=0;
     virtual void receive_trigger(quint64 trigger_pos)=0;
     virtual void frame_ended()=0;
     virtual void frame_began()=0;
-
     virtual void show_region(uint64_t start, uint64_t end, bool keep)=0;
     virtual void show_wait_trigger()=0;
     virtual void repeat_hold(int percent)=0;
     virtual void decode_done()=0;
-    virtual void receive_data_len(quint64 len)=0;
-    
+    virtual void receive_data_len(quint64 len)=0;    
     virtual void receive_header()=0;
     virtual void trigger_message(int msg)=0;  
     virtual void delay_prop_msg(QString strMsg)=0;

@@ -332,7 +332,7 @@ namespace pv
         try
         {
             if (_device_agent->is_hardware()){
-                session_save();
+                save_config();
             }
 
             _session->set_file(file_name);
@@ -349,6 +349,11 @@ namespace pv
     void MainWindow::session_error()
     {
         _event.session_error();
+    }
+
+    void MainWindow::session_save()
+    {
+        save_config();
     }
 
     void MainWindow::on_session_error()
@@ -400,7 +405,7 @@ namespace pv
         _session->clear_error();
     }
 
-    void MainWindow::session_save()
+    void MainWindow::save_config()
     { 
         if (_device_agent->have_instance() == false)
         {
@@ -411,22 +416,22 @@ namespace pv
         AppConfig &app = AppConfig::Instance();        
 
         if (_device_agent->is_hardware()){
-            QString sessionFile = genSessionFileName(true);
-            on_store_session(sessionFile);
+            QString sessionFile = gen_config_file_path(true);
+            save_config_to_file(sessionFile);
         }
 
         app._frameOptions.windowState = saveState();
         app.SaveFrame();
     }
 
-    QString MainWindow::genSessionFileName(bool isNewFormat)
+    QString MainWindow::gen_config_file_path(bool isNewFormat)
     { 
         AppConfig &app = AppConfig::Instance();
 
-        QString path = GetProfileDir();
-        QDir dir(path);
+        QString file = GetProfileDir();
+        QDir dir(file);
         if (dir.exists() == false){
-            dir.mkpath(path);
+            dir.mkpath(file);
         } 
 
         QString driver_name = _device_agent->driver_name();
@@ -447,7 +452,7 @@ namespace pv
             _sampling_bar->commit_settings();
         }
         // not used, refer to closeEvent of mainFrame
-        session_save();
+        save_config();
         
         if (confirm_to_store_data()){
             on_save();
@@ -600,34 +605,40 @@ namespace pv
 
     bool MainWindow::on_load_session(QString name)
     {
-        if (name == ""){
-            dsv_err("%s", "Session file name is empty.");
+        return load_config_from_file(name);
+    }
+
+    bool MainWindow::load_config_from_file(QString file)
+    {
+        if (file == ""){
+            dsv_err("%s", "File name is empty.");
             assert(false);
         }
 
-        std::string file_name = pv::path::ToUnicodePath(name);
-        dsv_info("Load session file: \"%s\"", file_name.c_str());
+        _protocol_widget->del_all_protocol();
 
-        QFile sf(name);
-        bool bDone;
+        std::string file_name = pv::path::ToUnicodePath(file);
+        dsv_info("Load device profile: \"%s\"", file_name.c_str());
+        
+        QFile sf(file);
 
         if (!sf.exists()){ 
-            dsv_warn("Warning: session file is not exists: \"%s\"", file_name.c_str());
+            dsv_warn("Warning: device profile is not exists: \"%s\"", file_name.c_str());
             return false;
         }
 
         if (!sf.open(QIODevice::ReadOnly))
         {
-            dsv_warn("%s", "Warning: Couldn't open session file to load!");
+            dsv_warn("%s", "Warning: Couldn't open device profile to load!");
             return false;
         }
 
-        QString sdata = QString::fromUtf8(sf.readAll());       
-        QJsonDocument sessionDoc = QJsonDocument::fromJson(sdata.toUtf8());
+        QString data = QString::fromUtf8(sf.readAll());
+        QJsonDocument doc = QJsonDocument::fromJson(data.toUtf8());
         sf.close();
 
-        _protocol_widget->del_all_protocol();
-        int ret = load_session_json(sessionDoc, bDone);
+        bool bDecoder = false;
+        int ret = load_config_from_json(doc, bDecoder);
 
         if (ret && _device_agent->get_work_mode() == DSO)
         {
@@ -635,14 +646,14 @@ namespace pv
         }
 
         if (_device_agent->is_hardware()){
-            _title_ext_string = name;
+            _title_ext_string = file;
             update_title_bar_text();
         }
 
         return ret;
     }
 
-    bool MainWindow::gen_session_json(QJsonObject &sessionVar)
+    bool MainWindow::gen_config_json(QJsonObject &sessionVar)
     {
         AppConfig &app = AppConfig::Instance();
 
@@ -770,18 +781,18 @@ namespace pv
         return true;
     }
 
-    bool MainWindow::load_session_json(QJsonDocument json, bool &haveDecoder)
+    bool MainWindow::load_config_from_json(QJsonDocument &doc, bool &haveDecoder)
     {
         haveDecoder = false;
 
-        QJsonObject sessionObj = json.object();
+        QJsonObject sessionObj = doc.object();
 
         int mode = _device_agent->get_work_mode();
 
-        // check session file version
+        // check config file version
         if (!sessionObj.contains("Version"))
         {
-            dsv_dbg("%s", "session file version is not exists!");
+            dsv_dbg("%s", "Profile version is not exists!");
             return false;
         }
 
@@ -789,7 +800,7 @@ namespace pv
 
         if (format_ver < 2)
         {
-            dsv_err("%s", "session file version is error!");
+            dsv_err("%s", "Profile version is error!");
             return false;
         }
 
@@ -882,7 +893,7 @@ namespace pv
 
                 if (gvar == NULL)
                 {
-                    dsv_warn("Warning: session file, failed to parse key:'%s'", info->name);
+                    dsv_warn("Warning: Profile failed to parse key:'%s'", info->name);
                     continue;
                 }
 
@@ -966,8 +977,6 @@ namespace pv
 
         _session->reload();
 
-        std::vector<int> view_indexs;
-
         // load signal setting
         if (mode == DSO)
         {
@@ -1034,12 +1043,7 @@ namespace pv
                             analogSig->set_zero_ratio(obj["zeroPos"].toDouble());
                             analogSig->commit_settings();
                         }
-
-                        if (s->signal_type() == SR_CHANNEL_LOGIC && obj.contains("view_index"))
-                        {  
-                            view_indexs.push_back(obj["view_index"].toInt());
-                        }
-
+                        
                         break;
                     }
                 }
@@ -1050,17 +1054,6 @@ namespace pv
         _sampling_bar->update_sample_rate_list();
         _trigger_widget->device_updated();
         _view->header_updated();
-         
-        if (mode == LOGIC && view_indexs.size()){
-            int i = 0;
-
-            for (auto s : _session->get_signals()){
-                s->set_view_index(view_indexs[i]);
-                i++;
-            }
-
-            _view->update_all_trace_postion();
-        }
 
         // load trigger settings
         if (sessionObj.contains("trigger"))
@@ -1091,10 +1084,47 @@ namespace pv
         if (gvar_opts != NULL)
             g_variant_unref(gvar_opts);
 
+        load_channel_view_indexs(doc);
+
         return true;
     }
 
+    void MainWindow::load_channel_view_indexs(QJsonDocument &doc)
+    {
+        QJsonObject sessionObj = doc.object();
+
+        int mode = _device_agent->get_work_mode();
+        if (mode != LOGIC)
+            return;
+
+        std::vector<int> view_indexs;
+
+        for (const QJsonValue &value : sessionObj["channel"].toArray()){
+            QJsonObject obj = value.toObject();
+
+            if (obj.contains("view_index")){  
+                view_indexs.push_back(obj["view_index"].toInt());
+            }
+        }
+
+         if (view_indexs.size()){
+            int i = 0;
+
+            for (auto s : _session->get_signals()){
+                s->set_view_index(view_indexs[i]);
+                i++;
+            }
+
+            _view->update_all_trace_postion();
+        }
+    }
+    
     bool MainWindow::on_store_session(QString name)
+    {
+        return save_config_to_file(name);
+    }
+
+    bool MainWindow::save_config_to_file(QString name)
     {
         if (name == ""){
             dsv_err("%s", "Session file name is empty.");
@@ -1107,7 +1137,7 @@ namespace pv
         QFile sf(name);
         if (!sf.open(QIODevice::WriteOnly | QIODevice::Text))
         {
-            dsv_warn("%s", "Warning: Couldn't open session file to write!");
+            dsv_warn("%s", "Warning: Couldn't open profile to write!");
             return false;
         }
 
@@ -1115,7 +1145,7 @@ namespace pv
         encoding::set_utf8(outStream);
 
         QJsonObject sessionVar;
-        if (!gen_session_json(sessionVar)){
+        if (!gen_config_json(sessionVar)){
             return false;
         }
 
@@ -1128,7 +1158,7 @@ namespace pv
     bool MainWindow::genSessionData(std::string &str)
     {
         QJsonObject sessionVar;
-        if (!gen_session_json(sessionVar))
+        if (!gen_config_json(sessionVar))
         {
             return false;
         }
@@ -1564,7 +1594,7 @@ namespace pv
         return ret;
     }
 
-    void MainWindow::check_session_file_version()
+    void MainWindow::check_config_file_version()
     {
         auto device_agent = _session->get_device();
         if (device_agent->is_file() && device_agent->is_new_device())
@@ -1589,17 +1619,18 @@ namespace pv
     {   
         _title_ext_string = "";        
         int mode = _device_agent->get_work_mode();
+        QString file;
 
         if (_device_agent->is_hardware())
         { 
-            QString ses_name = genSessionFileName(true);
+            QString ses_name = gen_config_file_path(true);
 
             bool bExist = false;
 
             QFile sf(ses_name);
             if (!sf.exists()){
-                dsv_info("Try to load the low version session file.");
-                ses_name =  genSessionFileName(false);
+                dsv_info("Try to load the low version profile.");
+                ses_name =  gen_config_file_path(false);
             }
             else{
                 bExist = true;
@@ -1609,42 +1640,48 @@ namespace pv
             {
                 QFile sf2(ses_name);
                 if (!sf2.exists()){
-                    dsv_info("Try to load the default session file.");
+                    dsv_info("Try to load the default profile.");
                     ses_name = _file_bar->genDefaultSessionFile();
                 }
-            }            
+            } 
 
-            if (on_load_session(ses_name)){
-                _title_ext_string = ses_name;
-            }
+            file =  ses_name;
         }
         else if (_device_agent->is_demo())
         {
             QDir dir(GetFirmwareDir());
             if (dir.exists())
-            { 
+            {
                 QString ses_name = dir.absolutePath() + "/" 
                             + _device_agent->driver_name() + QString::number(mode) + ".dsc";
 
                 QFile sf(ses_name);
                 if (sf.exists()){
-                    on_load_session(ses_name);
+                    file = ses_name;
                 }
+            }
+        }
+
+        if (file != ""){
+            bool ret = load_config_from_file(file);
+            if (ret && _device_agent->is_hardware()){
+                _title_ext_string = file;
             }
         }
     }
 
-    QJsonDocument MainWindow::get_session_json_from_file(QString file)
+    QJsonDocument MainWindow::get_config_json_from_data_file(QString file, bool &bSucesss)
     {
         QJsonDocument sessionDoc;
         QJsonParseError error;
+        bSucesss = false;
 
         if (file == ""){
             dsv_err("%s", "File name is empty.");
             assert(false);
         }
 
-        auto f_name = path::ConvertPath(file);
+        auto f_name = pv::path::ConvertPath(file);
         ZipReader rd(f_name.c_str());
         auto *data = rd.GetInnterFileData("session");
 
@@ -1660,6 +1697,9 @@ namespace pv
                 QString estr = error.errorString();
                 dsv_err("File::get_session(), parse json error:\"%s\"!", estr.toUtf8().data());
             }
+            else{
+                bSucesss = true;
+            }
 
             rd.ReleaseInnerFileData(data);
         }
@@ -1667,10 +1707,12 @@ namespace pv
         return sessionDoc;
     }
 
-    QJsonArray MainWindow::get_decoder_json_from_file(QString file)
+    QJsonArray MainWindow::get_decoder_json_from_data_file(QString file, bool &bSucesss)
     {
         QJsonArray dec_array;
         QJsonParseError error;
+
+        bSucesss = false;
 
         if (file == ""){
             dsv_err("%s", "File name is empty.");
@@ -1693,6 +1735,9 @@ namespace pv
             {
                 QString estr = error.errorString();
                 dsv_err("MainWindow::get_decoder_json_from_file(), parse json error:\"%s\"!", estr.toUtf8().data());
+            }
+            else{
+                bSucesss = true;
             }
 
             dec_array = sessionDoc.array();
@@ -1775,47 +1820,48 @@ namespace pv
 
             if (_device_agent->is_file())
             {
-                check_session_file_version();
+                check_config_file_version();
 
                 bool bDoneDecoder = false;
-                load_session_json(get_session_json_from_file(_device_agent->path()), bDoneDecoder);
+                bool bLoadSuccess = false;
+                QJsonDocument doc = get_config_json_from_data_file(_device_agent->path(), bLoadSuccess);
 
-                if (!bDoneDecoder && _device_agent->get_work_mode() == LOGIC){
-                    StoreSession ss(_session);
-                    QJsonArray deArray = get_decoder_json_from_file(_device_agent->path());
-                    ss.load_decoders(_protocol_widget, deArray);
-                    _view->update_all_trace_postion();
+                if (bLoadSuccess){
+                    load_config_from_json(doc, bDoneDecoder);
                 }
-                
+
+                if (!bDoneDecoder && _device_agent->get_work_mode() == LOGIC)
+                {                    
+                    QJsonArray deArray = get_decoder_json_from_data_file(_device_agent->path(), bLoadSuccess);
+
+                    if (bLoadSuccess){
+                        StoreSession ss(_session);
+                        ss.load_decoders(_protocol_widget, deArray);
+                    }                    
+                }
+
+                _view->update_all_trace_postion();                
                 _session->start_capture(true);
             }
-
-            if (_device_agent->is_demo())
+            else if (_device_agent->is_demo())
             {
                 if(_device_agent->get_work_mode() == LOGIC)
                 {
                     _pattern_mode = _device_agent->get_demo_operation_mode();
                     _protocol_widget->del_all_protocol();
+                    _view->auto_set_max_scale();
 
-                    if(_device_agent->get_work_mode() == LOGIC)
-                    {
-                        _view->auto_set_max_scale();
-
-                        if(_pattern_mode != "random" && _device_agent->path() != "")
-                        {
-                            StoreSession ss(_session);
-                            QJsonArray deArray = get_decoder_json_from_file(_device_agent->path());
-                            ss.load_decoders(_protocol_widget, deArray);
-                            _view->update_all_trace_postion();
-                        }
+                    if(_pattern_mode != "random"){
+                       load_demo_decoder_config(_pattern_mode);
                     }
                 }
             }
-        }
-        calc_min_height();
+      
+            calc_min_height();
 
-        if (_device_agent->is_hardware() && _device_agent->is_new_device()){
-            check_usb_device_speed();
+            if (_device_agent->is_hardware() && _device_agent->is_new_device()){
+                check_usb_device_speed();
+            }
         }
         break;
 
@@ -1852,13 +1898,9 @@ namespace pv
 
                 if(_device_agent->get_work_mode() == LOGIC)
                 {
-                    if(_pattern_mode != "random")
-                    {
+                    if(_pattern_mode != "random"){
                         _device_agent->update();
-                        StoreSession ss(_session);
-                        QJsonArray deArray = get_decoder_json_from_file(_device_agent->path());
-                        ss.load_decoders(_protocol_widget, deArray);
-                        _view->update_all_trace_postion();
+                        load_demo_decoder_config(_pattern_mode);
                     }
                 }
             }
@@ -1919,7 +1961,7 @@ namespace pv
 
             // Save current config, and switch to the last device.
             _session->device_event_object()->device_updated();
-            session_save();
+            save_config();
             _view->hide_calibration();
 
             if (confirm_to_store_data()){
@@ -1984,10 +2026,7 @@ namespace pv
                         
                     if(_pattern_mode != "random"){
                         _session->set_collect_mode(COLLECT_SINGLE);
-                        StoreSession ss(_session);
-                        QJsonArray deArray = get_decoder_json_from_file(_device_agent->path());
-                        ss.load_decoders(_protocol_widget, deArray);
-                        _view->update_all_trace_postion();
+                        load_demo_decoder_config(_pattern_mode);
 
                         if (msg == DSV_MSG_END_DEVICE_OPTIONS)
                             _session->start_capture(false); // Auto load data.
@@ -2057,6 +2096,26 @@ namespace pv
             setWindowTitle(QApplication::translate("MainWindow", title.toLocal8Bit().data(), 0));
             _title_bar->setTitle(this->windowTitle());
         }        
+    }
+
+    void MainWindow::load_demo_decoder_config(QString optname)
+    { 
+        QString file = GetAppDataDir() + "/demo/logic/" + optname + ".demo";
+        bool bLoadSurccess = false;
+
+        QJsonArray deArray = get_decoder_json_from_data_file(file, bLoadSurccess);
+
+        if (bLoadSurccess){
+            StoreSession ss(_session);
+            ss.load_decoders(_protocol_widget, deArray);
+        }
+
+        QJsonDocument doc = get_config_json_from_data_file(file, bLoadSurccess);
+        if (bLoadSurccess){
+            load_channel_view_indexs(doc);
+        }
+        
+        _view->update_all_trace_postion();
     }
 
 } // namespace pv

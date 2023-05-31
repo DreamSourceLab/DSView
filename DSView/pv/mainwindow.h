@@ -130,31 +130,38 @@ signals:
 public:
     //IMainForm
     void switchLanguage(int language);
-    bool able_to_close();
+    bool able_to_close(); 
    
 private: 
 	void setup_ui();
     void retranslateUi(); 
     bool eventFilter(QObject *object, QEvent *event);
-
     void check_usb_device_speed();
     void reset_all_view();
     bool confirm_to_store_data();
     void update_toolbar_view_status();
-    bool load_session_json(QJsonDocument json, bool &haveDecoder);
-    QString genSessionFileName(bool isNewFormat);
-    bool gen_session_json(QJsonObject &sessionVar);
-    void check_session_file_version();
-    void load_device_config();
-    QJsonDocument get_session_json_from_file(QString file);
-    QJsonArray get_decoder_json_from_file(QString file);
-    void calc_min_height();
-    void session_save();
+    void calc_min_height();    
     void update_title_bar_text();
+
+    //json operation
+private:
+    QString gen_config_file_path(bool isNewFormat);
+    bool load_config_from_file(QString file);
+    bool load_config_from_json(QJsonDocument &doc, bool &haveDecoder);
+    void load_device_config();
+    bool gen_config_json(QJsonObject &sessionVar);
+    void save_config();
+    bool save_config_to_file(QString file);
+    void load_channel_view_indexs(QJsonDocument &doc); 
+    QJsonDocument get_config_json_from_data_file(QString file, bool &bSucesss);
+    QJsonArray get_decoder_json_from_data_file(QString file, bool &bSucesss);
+    void check_config_file_version(); 
+    void load_demo_decoder_config(QString optname);
    
 private:
     //ISessionCallback 
     void session_error();
+    void session_save();
     void data_updated();
     void update_capture();
     void cur_snap_samplerate_changed();      
