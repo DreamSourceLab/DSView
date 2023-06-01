@@ -459,7 +459,7 @@ static int logic_adjust_probe(struct sr_dev_inst *sdi, int num_probes);
 
 static void logic_adjust_samplerate(struct session_vdev * vdev);
 
-static void init_analog_random_data(struct session_vdev * vdev);
+static int init_analog_random_data(struct session_vdev * vdev);
 
 static int delay_time(struct session_vdev *vdev);
 
@@ -479,7 +479,7 @@ static int reset_dsl_path(struct sr_dev_inst *sdi,uint8_t device_mode ,uint8_t p
 
 static void adjust_samplerate(struct sr_dev_inst *sdi);
 
-static void init_random_data(struct session_vdev * vdev,struct sr_dev_inst *sdi);
+static int init_random_data(struct session_vdev * vdev,struct sr_dev_inst *sdi);
 
 static int hw_init(struct sr_context *sr_ctx);
 
