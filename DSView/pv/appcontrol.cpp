@@ -73,6 +73,8 @@ bool AppControl::Init()
     qs = GetAppDataDir();
     cs = pv::path::ToUnicodePath(qs);
     dsv_info("GetAppDataDir:\"%s\"", cs.c_str());
+    cs = pv::path::ToUnicodePath(qs);
+    ds_set_user_data_dir(cs.c_str());
 
     qs = GetFirmwareDir();
     cs = pv::path::ToUnicodePath(qs);

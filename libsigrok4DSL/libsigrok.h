@@ -1391,6 +1391,11 @@ SR_API void ds_set_datafeed_callback(ds_datafeed_callback_t cb);
 SR_API void ds_set_firmware_resource_dir(const char *dir);
 
 /**
+ * Set user data directory.
+*/
+SR_API void ds_set_user_data_dir(const char *dir);
+
+/**
  * Get the device list, if the field _handle is 0, the list visited to end.
  * User need call free() to release the buffer. If the list is empty, the out_list is null.
  */

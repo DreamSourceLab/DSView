@@ -39,6 +39,8 @@
 
 #include "../../log.h"
 
+extern char DS_USR_PATH[500];
+
 /* Message logging helpers with subsystem-specific prefix string. */
 
 #undef LOG_PREFIX
@@ -48,6 +50,19 @@
 /* TODO: Should be configurable. */
 #define BUFSIZE                512*1024
 #define DSO_BUFSIZE            10*1024
+
+#define PATTERN_COUNT 20
+#define RANDOM_NAME "random"
+
+struct demo_mode_pattern
+{
+    char *patterns[PATTERN_COUNT+1];
+    int   count;
+};
+
+static struct demo_mode_pattern demo_pattern_array[3];
+static int b_load_directory = 0;
+static char* demo_mode_names[3] = {"logic", "dso", "analog"};
 
 static struct DEMO_channels logic_channel_modes[] = {
     {DEMO_LOGIC125x16,  LOGIC,  SR_CHANNEL_LOGIC,  16, 1, SR_MHZ(1), SR_Mn(1),
@@ -85,6 +100,10 @@ SR_PRIV struct sr_dev_driver demo_driver_info;
 static struct sr_dev_driver *di = &demo_driver_info;
 
 extern struct ds_trigger *trigger;
+
+static int get_pattern_mode_from_file(const char *sub_dir, struct demo_mode_pattern* info, int max_count);
+static int get_pattern_mode_index_by_string(uint8_t device_mode, const char* pattern);
+static const char* get_pattern_name(uint8_t device_mode, int index);
 
 static int vdev_init(struct sr_dev_inst *sdi)
 {
@@ -337,151 +356,91 @@ static void get_last_packet_len(struct sr_datafeed_logic *logic,struct session_v
     vdev->post_data_len = vdev->total_samples/8;
 }
 
-static void init_pattern_mode_list()
+static int get_pattern_mode_index_by_string(uint8_t device_mode, const char* pattern)
 {
-    int i;
-    if(pattern_logic_count != 1)
+    int dex = 0;
+
+    struct  demo_mode_pattern* info = &demo_pattern_array[device_mode];
+
+    while (dex < info->count)
     {
-        for(i = 1 ;i < pattern_logic_count ; i++)
-        {
-            if(pattern_strings_logic[i] != NULL)
-            {
-                g_safe_free(pattern_strings_logic[i]);
-            }
-        }
+        if (strcmp(info->patterns[dex], pattern) == 0)
+            return dex;
+        dex++;
     }
-    if(pattern_dso_count != 1)
-    {
-        for(i = 1 ;i < pattern_dso_count ; i++)
-        {
-            if(pattern_strings_dso[i] != NULL)
-            {
-                g_safe_free(pattern_strings_dso[i]);
-            }
-        }
-    }
-    if(pattern_analog_count != 1)
-    {
-        for(i = 1 ;i < pattern_analog_count ; i++)
-        {
-            if(pattern_strings_analog[i] != NULL)
-            {
-                g_safe_free(pattern_strings_analog[i]);
-            }
-        }
-    }
+
+    return -1;    
 }
 
-static int get_pattern_mode_index_by_string(uint8_t device_mode , const char* str)
+static const char* get_pattern_name(uint8_t device_mode, int index)
 {
-    int index = PATTERN_INVALID,
-    i = PATTERN_RANDOM;
-    if (device_mode == LOGIC)
-    {
-        while (pattern_strings_logic[i] != NULL)
-        {
-            if(!strcmp(str,pattern_strings_logic[i]))
-            {
-                index = i;
-                break;
-            }
-            else
-                i++;
-        }
-    }
-    else if (device_mode == DSO)
-    {
-        while (pattern_strings_dso[i] != NULL)
-        {
-            if(!strcmp(str,pattern_strings_dso[i]))
-            {
-                index = i;
-                break;
-            }
-            else
-                i++;
-        }
-    }
-    else
-    {
-        while (pattern_strings_analog[i] != NULL)
-        {
-            if(!strcmp(str,pattern_strings_analog[i]))
-            {
-                index = i;
-                break;
-            }
-            else
-                i++;
-        }
-    }
+    struct  demo_mode_pattern* info = &demo_pattern_array[device_mode];
+    if (index >= 0 && index < info->count){
+        return info->patterns[index];
+    } 
 
-    if(index == PATTERN_INVALID)
-        index = PATTERN_RANDOM;
-    return index;
+    assert(0);
+    return NULL;
 }
 
-static int get_pattern_mode_from_file(uint8_t device_mode)
+static int get_pattern_mode_from_file(const char *sub_dir, struct demo_mode_pattern* info, int max_count)
 {
     const gchar * filename = NULL;
-    char dir_str[500];
+    char dir_path_buf[500];
     int index = 1;
     int str_len;
+    char *dir_path = dir_path_buf;
+    char *file_path = NULL;
+    char  short_name[50];
+    int i;
+    int num;
 
-    strcpy(dir_str,DS_RES_PATH);
-    memset(dir_str+strlen(dir_str)-strlen("res/"),0,strlen("res/"));
-    strcat(dir_str,"demo/");
+    assert(sub_dir);
+    assert(info);
 
-    if(device_mode == LOGIC)
-        strcat(dir_str,"logic/");
-    else if(device_mode == DSO)
-        strcat(dir_str,"dso/");
-    else if(device_mode == ANALOG)
-        strcat(dir_str,"analog/");
+    for (i=0; i<max_count; i++){
+        info->patterns[i] = NULL;
+    }
+    info->patterns[max_count] = NULL;
+
+    info->patterns[0] = RANDOM_NAME;
+    num = 1;
+    info->count = num;
+
+    strcpy(dir_path, DS_USR_PATH); 
+    strcat(dir_path,"/demo/");
+    strcat(dir_path, sub_dir);
 
     GDir *dir  = NULL;
-    dir = g_dir_open(dir_str,0,NULL);
+    dir = g_dir_open(dir_path,0,NULL);
     if(dir == NULL)
-    {
+    {  
+        sr_err("Faild to open dir:%s", dir_path);
         return SR_ERR;
     }
 
     while ((filename = g_dir_read_name(dir)) != NULL)
-    {
+    {    
         if (FALSE == g_file_test(filename,G_FILE_TEST_IS_DIR))
-        {
-            if(strstr(filename,".demo") != NULL)
-            {
-                str_len = strlen(filename)-strlen(".demo");
-                char *file_name = g_try_malloc0(str_len+1);
-                if (file_name == NULL)
-                {
-                    sr_err("%s: file_name malloc failed", __func__);
-                    return SR_ERR_MALLOC;
-                }
-                strncpy(file_name,filename,str_len);
-                file_name[str_len] = 0;
+        {   
+            file_path = filename; 
 
-                if(device_mode == LOGIC)
-                    pattern_strings_logic[index] = file_name;
-                else if(device_mode == DSO)
-                    pattern_strings_dso[index] = file_name;
-                else if(device_mode == ANALOG)
-                    pattern_strings_analog[index] = file_name;
-                if(index < 99)
-                    index++;
+            if(strstr(file_path,".demo") != NULL)
+            {       
+                str_len = strlen(file_path) - 5;
+                strncpy(short_name,file_path, sizeof(short_name)-1);
+                short_name[str_len] = 0;
+                info->patterns[num++] = g_strdup(short_name);
+
+                if (num >= max_count)
+                    break;
             }
         }
     }
 
     g_dir_close(dir);
 
-    if(device_mode == LOGIC)
-        pattern_logic_count = index;
-    else if(device_mode == DSO)
-        pattern_dso_count = index;
-    else if(device_mode == ANALOG)
-        pattern_analog_count = index;
+    info->count = num;
 
     return SR_OK;
 }
@@ -489,92 +448,53 @@ static int get_pattern_mode_from_file(uint8_t device_mode)
 static void scan_dsl_file(struct sr_dev_inst *sdi)
 {
     struct session_vdev * vdev = sdi->priv;
-    
-    init_pattern_mode_list();
+    int dex;
 
-    get_pattern_mode_from_file(LOGIC);
-    get_pattern_mode_from_file(DSO);
-    get_pattern_mode_from_file(ANALOG);
+    if (b_load_directory == 0){
+        get_pattern_mode_from_file(demo_mode_names[LOGIC], &demo_pattern_array[LOGIC], PATTERN_COUNT);
+        get_pattern_mode_from_file(demo_mode_names[DSO], &demo_pattern_array[DSO], PATTERN_COUNT);
+        get_pattern_mode_from_file(demo_mode_names[ANALOG], &demo_pattern_array[ANALOG], PATTERN_COUNT);
+        b_load_directory = 1;
+    }
 
-    if(PATTERN_RANDOM <get_pattern_mode_index_by_string(LOGIC, DEFAULT_LOGIC_FILE))
-    {
-        int index = get_pattern_mode_index_by_string(LOGIC, DEFAULT_LOGIC_FILE);
-        char * str =  pattern_strings_logic[index];
-        pattern_strings_logic[index] = pattern_strings_logic[PATTERN_DEFAULT];
-        pattern_strings_logic[PATTERN_DEFAULT] = str;
-        vdev->sample_generator = PATTERN_DEFAULT;
-        sdi->mode = LOGIC;
-        reset_dsl_path(sdi,LOGIC,PATTERN_DEFAULT);
-    }
-    else
-    {
-        vdev->sample_generator = PATTERN_RANDOM;
-        sdi->mode = LOGIC;
-        reset_dsl_path(sdi,LOGIC,PATTERN_RANDOM);
-    }
+    dex = get_pattern_mode_index_by_string(LOGIC, DEFAULT_LOGIC_FILE);
+
+    if(dex == -1)
+        dex = PATTERN_RANDOM;
+
+    vdev->sample_generator = dex;
+    sdi->mode = LOGIC;
+    reset_dsl_path(sdi, dex);
 }
 
-static int reset_dsl_path(struct sr_dev_inst *sdi,uint8_t device_mode ,uint8_t pattern_mode)
-{
-    unzFile archive = NULL;
+static int reset_dsl_path(struct sr_dev_inst *sdi, uint8_t pattern_mode)
+{ 
+    struct demo_mode_pattern *info = NULL;
     if(sdi->path != NULL)
         g_safe_free(sdi->path);
-    
-    char *str = g_try_malloc0(500);
-    strcpy(str,DS_RES_PATH);
-    memset(str+strlen(str)-strlen("res/"),0,strlen("res/"));
-    strcat(str,"demo/");
+
+    char file_path[500];
+
+    strcpy(file_path, DS_USR_PATH);
+    strcat(file_path,"/demo/");
 
     if (pattern_mode != PATTERN_RANDOM)
     {
-        switch (device_mode)
-        {
-        case LOGIC:
-            if(NULL != pattern_strings_logic[pattern_mode])
-            {
-                strcat(str,"logic/");
-                strcat(str,pattern_strings_logic[pattern_mode]);
-            }
-            break;
-        case DSO:
-            if(NULL != pattern_strings_dso[pattern_mode])
-            {
-                strcat(str,"dso/");
-                strcat(str,pattern_strings_dso[pattern_mode]);
-            }
-            break;
-        case ANALOG:
-            if(NULL != pattern_strings_analog[pattern_mode])
-            {
-                strcat(str,"analog/");
-                strcat(str,pattern_strings_analog[pattern_mode]);
-            }
-            break;
-        default:
-            break;
-        }
-        strcat(str,".demo");
-    }
+        info = &demo_pattern_array[sdi->mode];
+        assert(pattern_mode < info->count);
 
-    if(pattern_mode != PATTERN_RANDOM)
-    {
-        archive = unzOpen64(str);
-        if (NULL != archive){
-            sdi->path = str;
-            return SR_OK;
-        }
-        else{
-            g_safe_free(str);
-            sdi->path = g_strdup("");
-            return SR_ERR;
-        }
+        strcat(file_path, demo_mode_names[sdi->mode]);
+        strcat(file_path, "/");
+        strcat(file_path, info->patterns[pattern_mode]);
+        strcat(file_path,".demo");
 
+        sdi->path = g_strdup(file_path);
     }
     else{
-        g_safe_free(str);
         sdi->path = g_strdup("");
-        return SR_OK;
     }
+    
+    return SR_OK;
 }
 
 static void adjust_samplerate(struct sr_dev_inst *sdi)
@@ -662,6 +582,11 @@ static int init_random_data(struct session_vdev * vdev,struct sr_dev_inst *sdi)
 static int hw_init(struct sr_context *sr_ctx)
 {
     return std_hw_init(sr_ctx, di, LOG_PREFIX);
+}
+
+static int clean_up()
+{
+    return SR_OK;
 }
 
 static GSList *hw_scan(GSList *options)
@@ -801,6 +726,8 @@ static int config_get(int id, GVariant **data, const struct sr_dev_inst *sdi,
 {
     (void)cg;
 
+    char *patter_name = NULL;
+
     assert(sdi);
     assert(sdi->priv);
 
@@ -821,12 +748,8 @@ static int config_get(int id, GVariant **data, const struct sr_dev_inst *sdi,
         *data = g_variant_new_boolean(vdev->instant);
         break;
     case SR_CONF_PATTERN_MODE:
-        if(sdi->mode == LOGIC)
-            *data = g_variant_new_string(pattern_strings_logic[vdev->sample_generator]);
-        else if(sdi->mode == DSO)
-            *data = g_variant_new_string(pattern_strings_dso[vdev->sample_generator]);
-        else
-            *data = g_variant_new_string(pattern_strings_analog[vdev->sample_generator]);
+        patter_name = get_pattern_name(sdi->mode, vdev->sample_generator);
+        *data = g_variant_new_string(patter_name);
         break;
     case SR_CONF_MAX_HEIGHT:
         *data = g_variant_new_string(maxHeights[vdev->max_height]);
@@ -954,6 +877,7 @@ static int config_set(int id, GVariant *data, struct sr_dev_inst *sdi,
     const char *stropt;
     unsigned int i;
     int nv;
+    uint8_t tmp_sample_generator;
 
     assert(sdi);
     assert(sdi->priv);
@@ -977,36 +901,36 @@ static int config_set(int id, GVariant *data, struct sr_dev_inst *sdi,
         switch (sdi->mode)
         {
             case LOGIC:
-                if(SR_OK == reset_dsl_path(sdi,sdi->mode ,PATTERN_DEFAULT))
-                {
-                    vdev->sample_generator = PATTERN_DEFAULT;
-                }
+                nv = get_pattern_mode_index_by_string(LOGIC, DEFAULT_LOGIC_FILE);
+                if (nv != -1)
+                    vdev->sample_generator = nv;
                 else
-                {
                     vdev->sample_generator = PATTERN_RANDOM;
-                }
+
+                reset_dsl_path(sdi,vdev->sample_generator);
                 break;
             case DSO:
-                reset_dsl_path(sdi,sdi->mode ,PATTERN_RANDOM);
+                reset_dsl_path(sdi, PATTERN_RANDOM);
                 vdev->sample_generator = PATTERN_RANDOM;
                 break;
             case ANALOG:
-                reset_dsl_path(sdi,sdi->mode ,PATTERN_RANDOM);
+                reset_dsl_path(sdi, PATTERN_RANDOM);
                 vdev->sample_generator = PATTERN_RANDOM;
-                break;
-            default:
                 break;
         }
         load_virtual_device_session(sdi);
         break;
     case SR_CONF_PATTERN_MODE:
         stropt = g_variant_get_string(data, NULL);
-        uint8_t tmp_sample_generator = vdev->sample_generator;
-        vdev->sample_generator = get_pattern_mode_index_by_string(sdi->mode , stropt);
-        if(SR_OK != reset_dsl_path(sdi,sdi->mode,vdev->sample_generator))
-        {
+        tmp_sample_generator = vdev->sample_generator;
+        nv = get_pattern_mode_index_by_string(sdi->mode , stropt);
+
+        if(nv == -1)
             vdev->sample_generator = PATTERN_RANDOM;
-        }
+        else
+            vdev->sample_generator = nv;
+        reset_dsl_path(sdi, vdev->sample_generator);
+
         if(sdi->mode == LOGIC)
         {
             if(vdev->sample_generator == PATTERN_RANDOM)
@@ -1021,9 +945,9 @@ static int config_set(int id, GVariant *data, struct sr_dev_inst *sdi,
             }
             else{
                 load_virtual_device_session(sdi);
-            }
-            
+            }            
         }
+
         sr_dbg("%s: setting pattern to %d",
             __func__, vdev->sample_generator);
         break;
@@ -1148,9 +1072,6 @@ static int config_set(int id, GVariant *data, struct sr_dev_inst *sdi,
     case SR_CONF_INSTANT:
         vdev->instant = g_variant_get_boolean(data);
         break;
-    case SR_CONF_DEMO_INIT:
-        load_virtual_device_session(sdi);
-        break;
     case SR_CONF_LOOP_MODE:
         vdev->is_loop = g_variant_get_boolean(data);
         sr_info("Set demo loop mode:%d", vdev->is_loop);
@@ -1189,6 +1110,7 @@ static int config_list(int key, GVariant **data, const struct sr_dev_inst *sdi,
 
     GVariant *gvar;
     GVariantBuilder gvb;
+    struct demo_mode_pattern *info = NULL;
 
     (void)sdi;
     struct session_vdev *vdev = sdi->priv;
@@ -1219,18 +1141,8 @@ static int config_list(int key, GVariant **data, const struct sr_dev_inst *sdi,
         *data = g_variant_builder_end(&gvb);
         break;
     case SR_CONF_PATTERN_MODE:
-        if(sdi->mode == LOGIC)
-        {
-            *data = g_variant_new_strv(pattern_strings_logic, pattern_logic_count);
-        }
-        else if (sdi->mode == DSO)
-        {
-            *data = g_variant_new_strv(pattern_strings_dso, pattern_dso_count);
-        }
-        else
-        {
-            *data = g_variant_new_strv(pattern_strings_analog, pattern_analog_count);
-        }
+        info = &demo_pattern_array[sdi->mode];
+        *data = g_variant_new_strv(info->patterns, info->count);
         break;
     case SR_CONF_MAX_HEIGHT:
         *data = g_variant_new_strv(maxHeights, ARRAY_SIZE(maxHeights));
@@ -2826,7 +2738,7 @@ SR_PRIV struct sr_dev_driver demo_driver_info = {
     .api_version = 1,
     .driver_type = DRIVER_TYPE_DEMO,
     .init = hw_init,
-    .cleanup = NULL,
+    .cleanup = clean_up,
     .scan = hw_scan,
     .dev_mode_list = hw_dev_mode_list,
     .config_get = config_get,

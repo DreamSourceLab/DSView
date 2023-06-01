@@ -125,8 +125,7 @@
 #define ANALOG_DEFAULT_MAP_MAX (gdouble)+5
 
 
-enum DEMO_PATTERN {
-    PATTERN_INVALID = -1,    
+enum DEMO_PATTERN {  
     PATTERN_RANDOM = 0,
     PATTERN_DEFAULT = 1,
 };
@@ -151,13 +150,6 @@ enum DEMO_LOGIC_CHANNEL_INDEX {
     LOGIC1000x3 = 3,
 };
 
-static char *pattern_strings_logic[100]  = {"random"};
-static char *pattern_strings_dso[100] = {"random"};
-static char *pattern_strings_analog[100] = {"random"};
-static int pattern_logic_count = 1;
-static int pattern_dso_count= 1;
-static int pattern_analog_count= 1;
-
 static uint64_t samplerates_file[1];
 static uint64_t samplecounts_file[1];
 
@@ -165,7 +157,7 @@ static GTimer *packet_interval = NULL;
 static GTimer *run_time = NULL;
 
 static int max_probe_num = 0;
-extern char DS_RES_PATH[500];
+
 static int64_t analog_count = 0;
 static gboolean channel_mode_change = FALSE;
 static uint64_t packet_num;
@@ -465,17 +457,12 @@ static int delay_time(struct session_vdev *vdev);
 
 static void get_last_packet_len(struct sr_datafeed_logic *logic,struct session_vdev * vdev);
 
-static void init_pattern_mode_list();
-
 static int get_bit(uint64_t timebase);
 
-static int get_pattern_mode_index_by_string(uint8_t device_mode , const char* str);
-
-static int get_pattern_mode_from_file(uint8_t device_mode);
 
 static void scan_dsl_file(struct sr_dev_inst *sdi);
 
-static int reset_dsl_path(struct sr_dev_inst *sdi,uint8_t device_mode ,uint8_t pattern_mode);
+static int reset_dsl_path(struct sr_dev_inst *sdi, uint8_t pattern_mode);
 
 static void adjust_samplerate(struct sr_dev_inst *sdi);
 

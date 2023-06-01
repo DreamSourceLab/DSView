@@ -353,11 +353,12 @@ static GSList *scan(GSList *options)
         else {
             char *firmware;
             char *res_path = DS_RES_PATH;
-            if (!(firmware = g_try_malloc(strlen(res_path)+strlen(prof->firmware)+1))) {
+            if (!(firmware = g_try_malloc(strlen(res_path)+strlen(prof->firmware) + 5))) {
                 sr_err("Firmware path malloc error!");
                 return NULL;
-            }
+            }            
             strcpy(firmware, res_path);
+            strcat(firmware, "/");
             strcat(firmware, prof->firmware);
 
             sr_info("Install firmware bin file, device:\"%s\", file:\"%s\"", prof->model, firmware);

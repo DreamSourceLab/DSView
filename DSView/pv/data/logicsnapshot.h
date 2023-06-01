@@ -222,6 +222,8 @@ private:
 
     void move_first_node_to_last();
 
+    void free_head_blocks(int count);
+
 private:
     std::vector<std::vector<struct RootNode>> _ch_data;
     uint8_t     _byte_fraction;

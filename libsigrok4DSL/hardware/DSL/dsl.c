@@ -1875,11 +1875,13 @@ SR_PRIV int dsl_dev_open(struct sr_dev_driver *di, struct sr_dev_inst *sdi, gboo
         if (!(*fpga_done)) {
             char *fpga_bit;
             char *res_path = DS_RES_PATH;
-            if (!(fpga_bit = g_try_malloc(strlen(res_path)+strlen(devc->profile->fpga_bit33)+1))) {
+            if (!(fpga_bit = g_try_malloc(strlen(res_path)+strlen(devc->profile->fpga_bit33) + 5))) {
                 sr_err("fpag_bit path malloc error!");
                 return SR_ERR_MALLOC;
             }
             strcpy(fpga_bit, res_path);
+            strcat(fpga_bit, "/");
+
             switch(devc->th_level) {
             case SR_TH_3V3:
                 strcat(fpga_bit, devc->profile->fpga_bit33);

@@ -1270,5 +1270,40 @@ void LogicSnapshot::free_decode_lpb(void *lbp)
     }
 }
 
+void LogicSnapshot::free_head_blocks(int count)
+{  
+    for (unsigned int i = 0; i < _channel_num; i++)
+    {  
+        for (int j=0; j<count; j++)
+        {
+            if (_ch_data[i][0].lbp[j] != NULL){
+                free(_ch_data[i][0].lbp[j]);
+                _ch_data[i][0].lbp[j] = NULL;
+            }
+        }
+
+        int rnum = (int)_ch_data[i].size();
+
+        uint64_t lst_top = 0;
+        uint64_t lst_val = 0;
+
+        for (int r=0; r<rnum; r++)
+        {
+            
+        }
+ 
+        _ch_data[i][0].tog = (_ch_data[i][0].tog) << count;
+        _ch_data[i][0].value = (_ch_data[i][0].value) << count;
+
+        for (int k=count; k < Scale; k++)
+        {
+
+        }
+
+        int len = (int)_ch_data[i].size();
+        
+    }
+}
+
 } // namespace data
 } // namespace pv

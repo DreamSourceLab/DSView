@@ -439,11 +439,12 @@ static GSList *scan(GSList *options)
         else {
             char *firmware;
             char *res_path = DS_RES_PATH;
-            if (!(firmware = g_try_malloc(strlen(res_path)+strlen(prof->firmware)+1))) {
+            if (!(firmware = g_try_malloc(strlen(res_path)+strlen(prof->firmware) + 5))) {
                 sr_err("Firmware path malloc error!");
                 return NULL;
             }
             strcpy(firmware, res_path);
+            strcat(firmware, "/");
             strcat(firmware, prof->firmware);
 
             sr_info("Install firmware bin file, device:\"%s\", file:\"%s\"", prof->model, firmware);
@@ -1066,11 +1067,12 @@ static int config_set(int id, GVariant *data, struct sr_dev_inst *sdi,
 
             char *fpga_bit;
             char *res_path = DS_RES_PATH;
-            if (!(fpga_bit = g_try_malloc(strlen(res_path) + strlen(devc->profile->fpga_bit33) + 1))) {
+            if (!(fpga_bit = g_try_malloc(strlen(res_path) + strlen(devc->profile->fpga_bit33) + 5))) {
                 sr_err("fpag_bit path malloc error!");
                 return SR_ERR_MALLOC;
             }
             strcpy(fpga_bit, res_path);
+            strcat(fpga_bit, "/");
 
             switch(devc->th_level) 
             {

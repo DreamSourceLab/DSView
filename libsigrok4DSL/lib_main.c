@@ -42,7 +42,10 @@
 #undef LOG_PREFIX
 #define LOG_PREFIX "lib_main: "
 
-char DS_RES_PATH[500] = {0};
+// Have been encoding.
+char DS_RES_PATH[500];
+
+char DS_USR_PATH[500];
 
 struct sr_lib_context
 {
@@ -242,20 +245,20 @@ SR_API int ds_lib_exit()
  * Set the firmware binary file directory
  */
 SR_API void ds_set_firmware_resource_dir(const char *dir)
-{
+{  
+	memset(DS_RES_PATH, 0, sizeof(DS_RES_PATH));
 	if (dir)
-	{
 		strcpy(DS_RES_PATH, dir);
+}
 
-		int len = strlen(DS_RES_PATH);
-		if (DS_RES_PATH[len - 1] != '/')
-		{
-			DS_RES_PATH[len] = '/';
-			DS_RES_PATH[len + 1] = 0;
-		}
-
-		sr_info("Firmware resource directory:\"%s\"", DS_RES_PATH);
-	}
+/**
+ * Set user data directory.
+*/
+SR_API void ds_set_user_data_dir(const char *dir)
+{ 
+	memset(DS_USR_PATH, 0, sizeof(DS_USR_PATH));
+	if (dir)
+		strcpy(DS_USR_PATH, dir);
 }
 
 /**
