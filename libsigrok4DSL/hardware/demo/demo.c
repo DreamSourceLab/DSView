@@ -28,7 +28,6 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/stat.h>
-
 #include <inttypes.h>
 #include <unistd.h>
 #ifdef _WIN32
@@ -410,7 +409,7 @@ static int get_pattern_mode_from_file(const char *sub_dir, struct demo_mode_patt
     strcpy(dir_path, DS_USR_PATH); 
     strcat(dir_path,"/demo/");
     strcat(dir_path, sub_dir);
-
+ 
     GDir *dir  = NULL;
     dir = g_dir_open(dir_path,0,NULL);
     if(dir == NULL)
@@ -437,7 +436,6 @@ static int get_pattern_mode_from_file(const char *sub_dir, struct demo_mode_patt
             }
         }
     }
-
     g_dir_close(dir);
 
     info->count = num;
@@ -2511,7 +2509,7 @@ static int load_virtual_device_session(struct sr_dev_inst *sdi)
             archive = unzOpen64(sdi->path);
             if (NULL == archive)
             {
-                sr_err("%s: Load zip file error.", __func__);
+                sr_err("%s: Load file error:\"%s\"", __func__, sdi->path);
                 return SR_ERR;
             }
             if (unzLocateFile(archive, "header", 0) != UNZ_OK)
@@ -2570,8 +2568,7 @@ static int load_virtual_device_session(struct sr_dev_inst *sdi)
                         val = g_key_file_get_string(kf, sections[i], keys[j], NULL);
                         if (!strcmp(keys[j], "version"))
                         {
-                            version = strtoull(val, NULL, 10);
-                            sr_info("The 'header' file format version:%d", version);
+                            version = strtoull(val, NULL, 10); 
                         }
                     }
                 }
