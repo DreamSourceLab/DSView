@@ -175,8 +175,9 @@ public:
 
     bool check_firmware_version();
 
-    QString get_demo_operation_mode();
+    QString get_demo_operation_mode(); 
 
+public:
     GVariant* get_config_list(const sr_channel_group *group, int key);
 
     GVariant* get_config(int key, const sr_channel *ch = NULL, const sr_channel_group *cg = NULL);
@@ -211,8 +212,7 @@ public:
     bool set_config_double(int key, double value, const sr_channel *ch = NULL, const sr_channel_group *cg = NULL);
 
 private:
-    void config_changed();
-    bool is_in_history(ds_device_handle dev_handle);    
+    void config_changed(); 
 
     //---------------device config-----------/
 public:
@@ -233,8 +233,7 @@ private:
     QString     _driver_name;
     QString     _path;
     bool        _is_new_device;
-    struct sr_dev_inst  *_di;
-    std::vector<ds_device_handle> _history_handles;
+    struct sr_dev_inst  *_di; 
     IDeviceAgentCallback *_callback;
 };
 

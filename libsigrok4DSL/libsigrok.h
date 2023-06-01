@@ -1334,6 +1334,7 @@ struct ds_device_full_info
 	char 	path[256]; //file path
 	char 	driver_name[20];
 	int 	dev_type; // enum sr_device_type
+	int 	actived_times;
 	struct sr_dev_inst *di;
 };
 

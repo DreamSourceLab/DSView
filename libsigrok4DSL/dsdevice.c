@@ -207,6 +207,7 @@ SR_PRIV struct sr_dev_inst *sr_dev_inst_new(int mode, int status,
 	sdi->status = status;
     sdi->handle = (ds_device_handle)sdi;
 	sdi->dev_type = DEV_TYPE_UNKOWN;
+	sdi->actived_times = 0;
 
 	if (vendor != NULL){
 		sdi->vendor = g_strdup(vendor);

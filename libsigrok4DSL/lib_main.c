@@ -400,6 +400,7 @@ SR_API int ds_active_device(ds_device_handle handle)
 			if (ret == SR_OK)
 			{
 				lib_ctx.actived_device_instance = dev;
+				dev->actived_times++;
 			}
 			else
 			{  
@@ -646,6 +647,7 @@ SR_API int ds_get_actived_device_info(struct ds_device_full_info *fill_info)
 	p->driver_name[0] = '\0';
 	p->dev_type = DEV_TYPE_UNKOWN;
 	p->di = NULL;
+	p->actived_times = 0;
 
 	pthread_mutex_lock(&lib_ctx.mutext);
 
@@ -655,6 +657,7 @@ SR_API int ds_get_actived_device_info(struct ds_device_full_info *fill_info)
 		p->handle = dev->handle;
 		p->dev_type = dev->dev_type;
 		p->di = dev;
+		p->actived_times = dev->actived_times;
 		strncpy(p->name, dev->name, sizeof(p->name) - 1);
 
 		if (dev->driver && dev->driver->name)

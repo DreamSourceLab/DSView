@@ -175,6 +175,8 @@ struct sr_dev_inst {
 
     /** Device instance private data (used?) */
     void *priv;
+
+	int actived_times;
 };
 
 struct sr_session 

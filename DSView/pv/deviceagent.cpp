@@ -40,6 +40,7 @@ void DeviceAgent::update()
     _path = "";
     _di = NULL;
     _dev_type = 0;
+    _is_new_device = false;
 
     struct ds_device_full_info info;
 
@@ -48,19 +49,14 @@ void DeviceAgent::update()
         _dev_handle = info.handle;
         _dev_type = info.dev_type;
         _di = info.di;
+        _is_new_device = info.actived_times == 1;
+
         _dev_name = QString::fromLocal8Bit(info.name);
         _driver_name = QString::fromLocal8Bit(info.driver_name);
 
         if (info.path[0] != '\0'){
             _path = QString::fromLocal8Bit(info.path);
-        }
-
-        if (is_in_history(_dev_handle) == false){
-            _is_new_device = true;
-        }
-        else{
-            _is_new_device = false; 
-        }
+        } 
     }
 }
 
@@ -287,17 +283,6 @@ GSList *DeviceAgent::get_channels()
     assert(_dev_handle);
     return ds_get_actived_device_channels();
 }
-
- bool DeviceAgent::is_in_history(ds_device_handle dev_handle)
- {
-    for(ds_device_handle h : _history_handles){
-        if (h == dev_handle){
-            return true;
-        }        
-    }
-    _history_handles.push_back(dev_handle);
-    return false;
- }
 
  int DeviceAgent::get_hardware_operation_mode()
  {
