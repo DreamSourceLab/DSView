@@ -185,11 +185,8 @@ void LogicSnapshot::first_payload(const sr_datafeed_logic &logic, uint64_t total
     _sample_count = 0;
     _ring_sample_count = 0;
 
-    assert(logic.data);
-    uint64_t *rd_data = (uint64_t*)logic.data;
-
     for (unsigned int i = 0; i < _channel_num; i++) {
-        _last_sample[i] = *rd_data++;
+        _last_sample[i] = 0;
         _last_calc_count[i] = 0;
         _cur_ref_block_indexs[i].root_index = 0;
         _cur_ref_block_indexs[i].lbp_index = 0;
@@ -668,10 +665,6 @@ bool LogicSnapshot::get_display_edges(std::vector<std::pair<bool, bool> > &edges
     assert(start <= end);
     assert(min_length > 0);
 
-  //  start += _loop_offset;
-  //  end += _loop_offset;
-  //  _ring_sample_count += _loop_offset;
-
     uint64_t index = start;
     bool last_sample;
     bool start_sample;
@@ -711,8 +704,6 @@ bool LogicSnapshot::get_display_edges(std::vector<std::pair<bool, bool> > &edges
         last_sample = get_sample_unlock(end, sig_index);
         togs.push_back(pair<uint16_t, bool>(edges.size() - 1, last_sample));
     }
-
-   // _ring_sample_count -= _loop_offset;
 
     return start_sample;
 }
