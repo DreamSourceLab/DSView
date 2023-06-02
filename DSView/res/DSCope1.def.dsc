@@ -1,16 +1,18 @@
 {
+    "Bandwidth Limit": 0,
     "Device": "DSCope",
     "DeviceMode": 1,
-    "Horizontal trigger position": "50",
+    "Horizontal trigger position": 50,
     "Language": 31,
-    "Operation Mode": "Normal",
+    "Operation Mode": 0,
     "Time base": "10000",
-    "Trigger channel": "0",
+    "Title": "DSView v1.3.0-RC7",
+    "Trigger channel": 0,
     "Trigger hold off": "0",
-    "Trigger margin": "8",
-    "Trigger slope": "0",
-    "Trigger source": "0",
-    "Version": 2,
+    "Trigger margin": 8,
+    "Trigger slope": 0,
+    "Trigger source": 0,
+    "Version": 3,
     "channel": [
         {
             "colour": "#eeb211",
@@ -18,11 +20,12 @@
             "enabled": true,
             "index": 0,
             "name": "0",
-            "trigValue": 0.40157480314960631,
+            "trigValue": 0.4,
             "type": 10001,
             "vdiv": 1000,
             "vfactor": 1,
-            "zeroPos": 0.40157480314960631
+            "view_index": 0,
+            "zeroPos": 0.4
         },
         {
             "colour": "#009925",
@@ -30,11 +33,12 @@
             "enabled": true,
             "index": 1,
             "name": "1",
-            "trigValue": 0.59842519685039375,
+            "trigValue": 0.5957446808510638,
             "type": 10001,
             "vdiv": 1000,
             "vfactor": 1,
-            "zeroPos": 0.59842519685039375
+            "view_index": 1,
+            "zeroPos": 0.5957446808510638
         }
     ],
     "decoder": [
@@ -54,6 +58,16 @@
             "index": 0,
             "site": 2,
             "type": 18
+        },
+        {
+            "index": 0,
+            "site": 3,
+            "type": 18
+        },
+        {
+            "index": 0,
+            "site": 4,
+            "type": 19
         },
         {
             "index": 1,

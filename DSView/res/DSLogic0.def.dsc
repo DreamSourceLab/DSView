@@ -1,25 +1,27 @@
 {
-    "Channel Mode": "Use 16 Channels (Max 20MHz)",
+    "Channel Mode": 0,
+    "CollectMode": 0,
     "Device": "DSLogic",
     "DeviceMode": 0,
     "Enable RLE Compress": 0,
-    "Filter Targets": "None",
-    "Horizontal trigger position": "0",
+    "Filter Targets": 0,
+    "Horizontal trigger position": 0,
     "Language": 31,
     "Max Height": "1X",
-    "Operation Mode": "Stream Mode",
-    "Sample count": "1000000",
+    "Operation Mode": 1,
+    "Sample count": "1000448",
     "Sample rate": "1000000",
-    "Stop Options": "Upload captured data",
-    "Threshold Level": 1,
-    "Trigger channel": "0",
+    "Stop Options": 1,
+    "Threshold Level": "1",
+    "Title": "DSView v1.3.0-RC7",
+    "Trigger channel": 0,
     "Trigger hold off": "0",
-    "Trigger margin": "8",
-    "Trigger slope": "0",
-    "Trigger source": "0",
+    "Trigger margin": 8,
+    "Trigger slope": 0,
+    "Trigger source": 0,
     "Using Clock Negedge": 0,
     "Using External Clock": 0,
-    "Version": 2,
+    "Version": 3,
     "channel": [
         {
             "colour": "default",
@@ -27,7 +29,8 @@
             "index": 0,
             "name": "0",
             "strigger": 0,
-            "type": 10000
+            "type": 10000,
+            "view_index": 0
         },
         {
             "colour": "default",
@@ -35,7 +38,8 @@
             "index": 1,
             "name": "1",
             "strigger": 0,
-            "type": 10000
+            "type": 10000,
+            "view_index": 1
         },
         {
             "colour": "default",
@@ -43,7 +47,8 @@
             "index": 2,
             "name": "2",
             "strigger": 0,
-            "type": 10000
+            "type": 10000,
+            "view_index": 2
         },
         {
             "colour": "default",
@@ -51,7 +56,8 @@
             "index": 3,
             "name": "3",
             "strigger": 0,
-            "type": 10000
+            "type": 10000,
+            "view_index": 3
         },
         {
             "colour": "default",
@@ -59,7 +65,8 @@
             "index": 4,
             "name": "4",
             "strigger": 0,
-            "type": 10000
+            "type": 10000,
+            "view_index": 4
         },
         {
             "colour": "default",
@@ -67,7 +74,8 @@
             "index": 5,
             "name": "5",
             "strigger": 0,
-            "type": 10000
+            "type": 10000,
+            "view_index": 5
         },
         {
             "colour": "default",
@@ -75,7 +83,8 @@
             "index": 6,
             "name": "6",
             "strigger": 0,
-            "type": 10000
+            "type": 10000,
+            "view_index": 6
         },
         {
             "colour": "default",
@@ -83,7 +92,8 @@
             "index": 7,
             "name": "7",
             "strigger": 0,
-            "type": 10000
+            "type": 10000,
+            "view_index": 7
         },
         {
             "colour": "default",
@@ -91,7 +101,8 @@
             "index": 8,
             "name": "8",
             "strigger": 0,
-            "type": 10000
+            "type": 10000,
+            "view_index": 8
         },
         {
             "colour": "default",
@@ -99,7 +110,8 @@
             "index": 9,
             "name": "9",
             "strigger": 0,
-            "type": 10000
+            "type": 10000,
+            "view_index": 9
         },
         {
             "colour": "default",
@@ -107,7 +119,8 @@
             "index": 10,
             "name": "10",
             "strigger": 0,
-            "type": 10000
+            "type": 10000,
+            "view_index": 10
         },
         {
             "colour": "default",
@@ -115,7 +128,8 @@
             "index": 11,
             "name": "11",
             "strigger": 0,
-            "type": 10000
+            "type": 10000,
+            "view_index": 11
         },
         {
             "colour": "default",
@@ -123,7 +137,8 @@
             "index": 12,
             "name": "12",
             "strigger": 0,
-            "type": 10000
+            "type": 10000,
+            "view_index": 12
         },
         {
             "colour": "default",
@@ -131,7 +146,8 @@
             "index": 13,
             "name": "13",
             "strigger": 0,
-            "type": 10000
+            "type": 10000,
+            "view_index": 13
         },
         {
             "colour": "default",
@@ -139,7 +155,8 @@
             "index": 14,
             "name": "14",
             "strigger": 0,
-            "type": 10000
+            "type": 10000,
+            "view_index": 14
         },
         {
             "colour": "default",
@@ -147,7 +164,8 @@
             "index": 15,
             "name": "15",
             "strigger": 0,
-            "type": 10000
+            "type": 10000,
+            "view_index": 15
         }
     ],
     "decoder": [
