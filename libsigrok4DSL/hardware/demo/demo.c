@@ -177,115 +177,100 @@ static int vdev_init(struct sr_dev_inst *sdi)
 
 static void dso_status_update(struct session_vdev *vdev)
 {
-//    struct sr_status *status = (struct sr_status*)&vdev->mstatus;
-//    struct session_packet_buffer *pack_buffer = vdev->packet_buffer;
+    struct sr_status *status = (struct sr_status*)&vdev->mstatus;
+    struct session_packet_buffer *pack_buffer = vdev->packet_buffer;
 
-//    uint8_t ch_max = DSO_MID_VAL;
-//    uint8_t ch_min = DSO_MID_VAL;
-//    uint16_t max_count = 0;
-//    int interval1 = 0;
-//    int interval2 = 0;
-//    for(int i = 0 ; i<20000 ; i+=2)
-//    {
-//        uint8_t val = *(uint8_t*)(pack_buffer->post_buf +i);
-//        if (val >  ch_max)
-//            ch_max = val;
-//        if (val <  ch_min)
-//            ch_min = val;
+    uint8_t ch_max = DSO_MID_VAL;
+    uint8_t ch_min = DSO_MID_VAL;
+    uint16_t max_count = 0;
+    int interval1 = 0;
+    int interval2 = 0;
+    uint16_t cur_l = DSO_PACKET_LEN -1;
+    uint64_t tmp_val = 0;
+    uint32_t rlen = 0;
+    gboolean isrising = FALSE;
+    gboolean isfallng = FALSE;
+    uint8_t pre_val = 0;
+    uint16_t len = 0;
 
-//        if(vdev->timebase == SR_US(200))
-//        {
-//            if(val == 177 && !interval1)
-//            {
-//                interval1 = i;
-//                continue;
-//            }
-//            if(val == 177 && !interval2)
-//            {
-//                interval2 = i;
-//                continue;
-//            }
-//        }
-//        else
-//        {
-//            if(val == 178 && !interval1)
-//            {
-//                interval1 = i;
-//            }
-//            if(val == 78 && !interval2)
-//            {
-//                interval2 = i;
-//            }
-//        }
-//    }
+    status->ch0_cyc_tlen = status->ch1_cyc_tlen = DSO_PACKET_LEN/2;
+    for(int i = 0 ; i<DSO_PACKET_LEN ; i+=2)
+    {
+        uint8_t val = *(uint8_t*)(pack_buffer->post_buf +i);
+        if (val >  ch_max)
+            ch_max = val;
+        if (val <  ch_min)
+            ch_min = val;
+    }
+    status->ch0_max = status->ch1_max = ch_max;
+    status->ch0_min = status->ch1_min = ch_min;
 
-//    if(vdev->sample_generator != PATTERN_RANDOM)
-//    {
-//        status->ch0_cyc_tlen = (uint32_t)abs(interval1-interval2);
-//        status->ch1_cyc_tlen = (uint32_t)abs(interval1-interval2);
-//        if(vdev->timebase == SR_US(200))
-//        {
-//            status->ch0_cyc_tlen = status->ch0_cyc_tlen/2;
-//            status->ch1_cyc_tlen = status->ch1_cyc_tlen/2;
-//        }
-//        status->ch0_cyc_cnt = 1;
-//        status->ch1_cyc_cnt = 1;
-//    }
+    status->ch0_cyc_rlen =  status->ch1_cyc_rlen = 0;
+    status->ch0_cyc_flen =  status->ch1_cyc_flen = 0;
 
-//    //187,68
-//    status->ch0_max = status->ch1_max = ch_max;
-//    status->ch0_min = status->ch1_min = ch_min;
-    // status->ch0_cyc_plen = 170;
-    // status->ch1_cyc_plen = 170;
-    // status->ch0_cyc_llen = 0;
-    // status->ch1_cyc_llen = 0;
-    // status->ch0_level_valid = 0;
-    // status->ch1_level_valid = 0;
-    // status->ch0_plevel = 1;
-    // status->ch1_plevel = 1;
-    // status->ch0_low_level = 78;
-    // status->ch1_low_level = 78;
-    // status->ch0_high_level = 178;
-    // status->ch1_high_level = 178;
-    // status->ch0_cyc_rlen = 85;
-    // status->ch1_cyc_rlen = 85;
-    // status->ch0_cyc_flen = 85;
-    // status->ch1_cyc_flen = 85;
-    // status->ch0_acc_square = 12496225;
-    // status->ch1_acc_square = 12496225;
-    // status->ch0_acc_mean = 1280000;
-    // status->ch1_acc_mean = 1280000;
-}
-
-static int logic_adjust_probe(struct sr_dev_inst *sdi, int num_probes)
-{
-    uint16_t j;
-    struct sr_channel *probe;
-    struct DSL_context *devc = sdi->priv;
-    GSList *l;
-
-    assert(num_probes > 0);
-
-    j = g_slist_length(sdi->channels);
-    while(j < num_probes) {
-        if (!(probe = sr_channel_new(j, SR_CHANNEL_LOGIC,
-                                   TRUE, probe_names[j])))
-            return SR_ERR;
-        sdi->channels = g_slist_append(sdi->channels, probe);
-        j++;
+    for(int i = 0 ; i<DSO_PACKET_LEN ; i+=2)
+    {
+        uint8_t val = *(uint8_t*)(pack_buffer->post_buf +i);
+//        sr_info("val:%d,pre_val:%d",val,pre_val);
+        if(pre_val != 0)
+        {
+            if(isfallng || isrising)
+            {
+                if(isrising)
+                {
+                    if(val == ch_min)
+                    {
+                        isrising = FALSE;
+                        status->ch0_cyc_rlen =  status->ch1_cyc_rlen +=len;
+                    }
+                    else
+                    {
+                        len++;
+                    }
+                }
+                else if(isfallng)
+                {
+                    if(val >= DSO_MID_VAL)
+                    {
+                        isfallng = FALSE;
+                        status->ch0_cyc_flen =  status->ch1_cyc_flen +=len;
+                    }
+                    else
+                    {
+                        len++;
+                    }
+                }
+            }
+            else
+            {
+                if(val <= DSO_MID_VAL && pre_val >= DSO_MID_VAL)
+                {
+                    isrising = TRUE;
+                    len = 0;
+                }
+                else if(pre_val == ch_min && val > ch_min)
+                {
+                    isfallng = TRUE;
+                    len = 0;
+                }
+            }
+        }
+        pre_val = val;
     }
 
-    while(j > num_probes) {
-        sdi->channels = g_slist_delete_link(sdi->channels, g_slist_last(sdi->channels));
-        j--;
-    }
 
-    for(l = sdi->channels; l; l = l->next) {
-        probe = (struct sr_channel *)l->data;
-        probe->enabled = TRUE;
-        probe->type = SR_CHANNEL_LOGIC;
-    }
-    return SR_OK;
+    status->ch0_level_valid = status->ch1_level_valid = 1;
+    status->ch0_high_level = status->ch1_high_level = ch_max;
+    status->ch0_low_level = status->ch1_low_level = ch_min;
+
+    status->ch0_cyc_plen = status->ch1_cyc_plen = 5000;
+    status->ch0_cyc_llen = status->ch1_cyc_llen = 0;
+
+    status->ch0_cyc_cnt = status->ch1_cyc_cnt =DSO_PACKET_LEN/get_bit(vdev->timebase);
+    status->ch0_plevel = 1;
+    status->ch1_plevel = 1;
+    status->ch0_acc_mean = 10;
+    status->ch1_acc_mean = 100;
 }
 
 static void logic_adjust_samplerate(struct session_vdev * vdev)
@@ -1370,7 +1355,6 @@ static int hw_dev_status_get(const struct sr_dev_inst *sdi, struct sr_status *st
     if (sdi)
     {
         vdev = sdi->priv;
-        dso_status_update(vdev);
         *status = vdev->mstatus;
         return SR_OK;
     }
@@ -2065,44 +2049,7 @@ static int receive_data_dso(int fd, int revents, const struct sr_dev_inst *sdi)
 
         if(vdev->timebase_change || vdev->vdiv_change || vdev->offset_change)
         {
-            int index;
-            int bit = get_bit(vdev->timebase); 
-
-            if(vdev->sample_generator!= PATTERN_RANDOM)
-            {
-                void* tmp_buf = g_try_malloc0(bit);
-                if(tmp_buf == NULL)
-                {
-                    sr_err("%s: tmp_buf malloc failed", __func__);
-                    return SR_ERR_MALLOC;
-                }
-                for(int i = 0 ; i < bit ; i++)
-                {
-                    if(i%2 == 0)
-                    {
-                        if(bit == 10)
-                            index = i * 16;
-                        else
-                            index = i * 100 / (bit / 2);
-                    }
-                    else
-                    {
-                        
-                        if(bit == 10)
-                            index = (i-1) * 16 + 1;
-                        else
-                            index = (i-1) * 100 / (bit / 2) + 1;
-                    }
-                    *((uint8_t*)tmp_buf+ i) = *((uint8_t*)pack_buffer->post_buf + index + 30);
-                }
-
-                for(int i = 0 ; i < DSO_PACKET_LEN/bit ; i++)
-                {
-                    memcpy(pack_buffer->post_buf+i*bit,tmp_buf,bit);
-                }
-
-                g_safe_free(tmp_buf);
-            }
+            dso_wavelength_updata(vdev);
 
             uint16_t offset;
             uint16_t high_gate,low_gate;
@@ -2169,6 +2116,11 @@ static int receive_data_dso(int fd, int revents, const struct sr_dev_inst *sdi)
                 }
             }
 
+            for(int i = 0 ; i < DSO_PACKET_LEN ;i+=2)
+            {
+                // sr_info("val:%d",*(uint8_t*)(vdev->packet_buffer->post_buf+i));
+            }
+
             vdev->offset_change = FALSE;
             vdev->timebase_change = FALSE;
             vdev->vdiv_change = FALSE;
@@ -2214,8 +2166,7 @@ static int receive_data_dso(int fd, int revents, const struct sr_dev_inst *sdi)
             *(uint8_t*)pack_buffer->post_buf = top0;
             *((uint8_t*)pack_buffer->post_buf + 1)= top1;
             pack_buffer->post_len = DSO_PACKET_LEN;
-        }
-        
+        }    
     }
     else
     {
@@ -2230,6 +2181,7 @@ static int receive_data_dso(int fd, int revents, const struct sr_dev_inst *sdi)
             vdev->instant = FALSE;
         }
     }
+
 
     if (pack_buffer->post_len >= byte_align * chan_num && !bToEnd)
     {
@@ -2247,8 +2199,8 @@ static int receive_data_dso(int fd, int revents, const struct sr_dev_inst *sdi)
         
         delay_time(vdev);
         g_timer_start(packet_interval);
-        // Send data back.
         ds_data_forward(sdi, &packet);
+        dso_status_update(vdev);
     }
 
     if (bToEnd || revents == -1)
@@ -2452,7 +2404,6 @@ static void send_error_packet(const struct sr_dev_inst *cb_sdi, struct session_v
     sr_session_source_remove(-1);
     close_archive(vdev);
 }
-
 
 static int close_archive(struct session_vdev *vdev)
 {
@@ -2728,6 +2679,63 @@ static int load_virtual_device_session(struct sr_dev_inst *sdi)
     return SR_OK;
 }
 
+int hw_cleanup()
+{
+    return SR_OK;
+}
+
+int dso_wavelength_updata(struct session_vdev *vdev)
+{
+    int index;
+    int bit = get_bit(vdev->timebase); 
+    struct session_packet_buffer *pack_buffer= vdev->packet_buffer;
+
+    int l = 0;
+    char* pattern_mode = demo_pattern_array[DSO].patterns[vdev->sample_generator];
+    if(!strcmp(pattern_mode,"sine"))
+        l = 30;
+    if(!strcmp(pattern_mode,"triangle"))
+        l = 106;
+    
+    if(vdev->sample_generator!= PATTERN_RANDOM)
+    {
+        void* tmp_buf = g_try_malloc0(bit);
+        if(tmp_buf == NULL)
+        {
+            sr_err("%s: tmp_buf malloc failed", __func__);
+            return SR_ERR_MALLOC;
+        }
+        
+
+        for(int i = 0 ; i < bit ; i++)
+        {
+            if(i%2 == 0)
+            {
+                if(bit == 10)
+                    index = i * 16;
+                else
+                    index = i * 100 / (bit / 2);
+            }
+            else
+            {
+                
+                if(bit == 10)
+                    index = (i-1) * 16 + 1;
+                else
+                    index = (i-1) * 100 / (bit / 2) + 1;
+            }
+            
+            *((uint8_t*)tmp_buf+ i) = *((uint8_t*)pack_buffer->post_buf + index + l);
+        }
+
+        for(int i = 0 ; i < DSO_PACKET_LEN/bit ; i++)
+        {
+            memcpy(pack_buffer->post_buf+i*bit,tmp_buf,bit);
+        }
+
+        g_safe_free(tmp_buf);
+    }
+}
 
 SR_PRIV struct sr_dev_driver demo_driver_info = {
     .name = "virtual-demo",

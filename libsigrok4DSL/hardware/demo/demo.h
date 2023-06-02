@@ -513,5 +513,9 @@ static void send_error_packet(const struct sr_dev_inst *cb_sdi, struct session_v
 
 static int close_archive(struct session_vdev *vdev);
 
+static int hw_cleanup();
+
+static int dso_wavelength_updata(struct session_vdev *vdev);
+
 
 #endif
