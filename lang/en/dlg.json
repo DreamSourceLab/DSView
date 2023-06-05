@@ -698,5 +698,9 @@
     {
         "id": "IDS_DLG_SERIAL_INPUT_AS_HEX",
         "text": "Input with hex format"
+    },
+    {
+        "id": "IDS_DLG_USE_ABORT_DATA_REPEAT",
+        "text": "Allow use of the midway stopped data on repeat mode"
     }
 ]
