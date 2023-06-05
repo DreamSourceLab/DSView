@@ -2323,7 +2323,7 @@ namespace pv
     {
         auto trace = get_decoder_trace(index);
         if (trace != NULL){
-            trace->set_name(label);
+            set_trace_name(trace, label);
         }
     }
 
