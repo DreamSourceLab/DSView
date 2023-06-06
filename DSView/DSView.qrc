@@ -56,7 +56,7 @@
         <file>icons/light/maximize.svg</file>
         <file>icons/light/nav.svg</file>
         <file>icons/light/next.svg</file>
-        <file>icons/light/oneloop.svg</file>
+        <file>icons/light/once.svg</file>
         <file>icons/light/open.svg</file>
         <file>icons/light/params.svg</file>
         <file>icons/light/pre.svg</file>
@@ -89,7 +89,7 @@
         <file>icons/dark/maximize.svg</file>
         <file>icons/dark/nav.svg</file>
         <file>icons/dark/next.svg</file>
-        <file>icons/dark/oneloop.svg</file>
+        <file>icons/dark/once.svg</file>
         <file>icons/dark/open.svg</file>
         <file>icons/dark/params.svg</file>
         <file>icons/dark/pre.svg</file>
@@ -138,8 +138,8 @@
         <file>icons/dsl_logo.svg</file>
         <file>icons/dark/minimize.svg</file>
         <file>icons/logo.svg</file>
-        <file>icons/light/update.svg</file>
-        <file>icons/dark/update.svg</file>
+        <file>icons/light/loop.svg</file>
+        <file>icons/dark/loop.svg</file>
         <file>icons/light/log.svg</file>
         <file>icons/dark/log.svg</file>
     </qresource>

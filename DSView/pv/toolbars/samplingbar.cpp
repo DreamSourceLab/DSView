@@ -39,9 +39,9 @@
 #include "../ui/langresource.h"
 #include "../view/view.h"
 
-#define SINGLE_ACTION_ICON  "/oneloop.svg"
+#define SINGLE_ACTION_ICON  "/once.svg"
 #define REPEAT_ACTION_ICON  "/repeat.svg"
-#define LOOP_ACTION_ICON  "/update.svg"
+#define LOOP_ACTION_ICON  "/loop.svg"
 
 using std::map;
 using std::max;
