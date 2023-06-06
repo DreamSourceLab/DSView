@@ -729,6 +729,7 @@ static int hw_dev_close(struct sr_dev_inst *sdi)
         safe_free(sdi->path);
         safe_free(packet_interval);
         safe_free(run_time);
+        safe_free(vdev->analog_post_buf);
 
         sdi->status = SR_ST_INACTIVE;
         return SR_OK;
@@ -1363,7 +1364,8 @@ static int hw_dev_acquisition_start(struct sr_dev_inst *sdi,
         if(vdev->sample_generator == PATTERN_RANDOM)
             init_analog_random_data(vdev);
             
-        vdev->analog_read_pos = 0;       
+        vdev->analog_read_pos = 0;
+        vdev->analog_post_buf_len = 0;
 
         sr_session_source_add(-1, 0, 0, receive_data_analog, sdi);
     }
@@ -2385,33 +2387,28 @@ static int receive_data_analog(int fd, int revents, const struct sr_dev_inst *sd
         vdev->load_data = FALSE;
     }
 
-    void* buf = malloc(vdev->packet_len);
-    if(buf == NULL)
-    {
-        sr_err("%s: buf malloc failed", __func__);
-        return SR_ERR_MALLOC;
+    if(vdev->analog_post_buf_len != vdev->packet_len){
+        safe_free(vdev->analog_post_buf);
+        vdev->analog_post_buf = malloc(vdev->packet_len);
+        if(vdev->analog_post_buf == NULL)
+        {
+            sr_err("%s: buf malloc failed", __func__);
+            return SR_ERR_MALLOC;
+        }
+        vdev->analog_post_buf_len = vdev->packet_len;
     }
 
     if(vdev->analog_read_pos + vdev->packet_len >= vdev->analog_buf_len - 1 )
     {
         uint64_t back_len = vdev->analog_buf_len - vdev->analog_read_pos;
-        for (int i = 0; i < back_len; i++)
-        {
-            uint8_t temp_val = *((uint8_t*)vdev->analog_buf + vdev->analog_read_pos + i);
-            memset(buf + i,temp_val,1);
-        }
-
         uint64_t front_len = vdev->packet_len - back_len;
-        for (int i = 0; i < front_len; i++)
-        {
-            uint8_t temp_val = *((uint8_t*)vdev->analog_buf + i);
-            memset(buf + back_len + i,temp_val,1);
-        }
+        memcpy(vdev->analog_post_buf , vdev->analog_buf + vdev->analog_read_pos , back_len);
+        memcpy(vdev->analog_post_buf+ back_len , vdev->analog_buf, front_len);
         vdev->analog_read_pos = front_len;
     }
     else
     {
-        memcpy(buf,vdev->analog_buf + vdev->analog_read_pos,vdev->packet_len);
+        memcpy(vdev->analog_post_buf,vdev->analog_buf + vdev->analog_read_pos,vdev->packet_len);
         vdev->analog_read_pos += vdev->packet_len;
     }
 
@@ -2423,11 +2420,11 @@ static int receive_data_analog(int fd, int revents, const struct sr_dev_inst *sd
     analog.mq = SR_MQ_VOLTAGE;
     analog.unit = SR_UNIT_VOLT;
     analog.mqflags = SR_MQFLAG_AC;
-    analog.data = buf;
+    analog.data = vdev->analog_post_buf;
 
     delay_time(vdev);
     ds_data_forward(sdi, &packet);
-    safe_free(buf);
+    
 
     return TRUE;
 }

@@ -182,7 +182,9 @@ struct session_vdev
     void *dso_buf;
 
     void *analog_buf;
+    void *analog_post_buf;
     uint64_t analog_buf_len;
+    uint64_t analog_post_buf_len;
     uint64_t analog_read_pos;
 
     int cur_block;
