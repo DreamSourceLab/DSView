@@ -884,6 +884,9 @@ static int config_get(int id, GVariant **data, const struct sr_dev_inst *sdi,
     case SR_CONF_CHANNEL_MODE:
         *data = g_variant_new_int16(vdev->logic_ch_mode);
         break;
+    case SR_CONF_HORIZ_TRIGGERPOS:
+        *data = g_variant_new_byte(vdev->trigger_hrate);
+        break;
     default:
         return SR_ERR_NA;
     }
@@ -1117,6 +1120,9 @@ static int config_set(int id, GVariant *data, struct sr_dev_inst *sdi,
             }
 
         }
+        break;
+     case SR_CONF_HORIZ_TRIGGERPOS:
+        vdev->trigger_hrate = g_variant_get_byte(data);
         break;
     default:
         sr_err("Unknown capability: %d.", id);

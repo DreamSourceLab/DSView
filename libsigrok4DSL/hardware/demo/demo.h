@@ -204,6 +204,7 @@ struct session_vdev
     uint8_t max_height;
     struct sr_status mstatus;
     struct session_packet_buffer   *packet_buffer;
+    uint8_t   trigger_hrate; //dso trig position.
 
     //time
     uint64_t packet_len;

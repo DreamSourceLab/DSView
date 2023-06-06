@@ -233,7 +233,7 @@ void DsoTriggerDock::pos_changed(int pos)
     ret = _session->get_device()->set_config_byte(
                                             SR_CONF_HORIZ_TRIGGERPOS,pos);
     if (!ret) {        
-        if (_session->get_device()->is_hardware()){
+        if (_session->get_device()->is_hardware() || true){
             QString strMsg(L_S(STR_PAGE_MSG, S_ID(IDS_MSG_CHANGE_HOR_TRI_POS_FAIL), 
                                        "Change horiz trigger position failed!"));
                                 
@@ -379,6 +379,10 @@ void DsoTriggerDock::update_view()
     bool bDisable = _session->get_device()->is_file();
     bool ret;
 
+    if (_session->get_device()->is_demo()){
+        bDisable = true;
+    }
+
     for(QAbstractButton * btn :  _source_group->buttons()){
         btn->setDisabled(bDisable);
     }
@@ -395,6 +399,11 @@ void DsoTriggerDock::update_view()
 
     _position_spinBox->setDisabled(bDisable);
     _position_slider->setDisabled(bDisable);
+
+    if (_session->get_device()->is_demo()){
+        _position_spinBox->setDisabled(false);
+        _position_slider->setDisabled(false);
+    }
 
     if (_session->get_device()->is_file()){
         return;
