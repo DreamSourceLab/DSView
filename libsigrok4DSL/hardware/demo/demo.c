@@ -40,6 +40,16 @@
 
 extern char DS_USR_PATH[500];
 
+static uint64_t samplerates_file[1];
+static uint64_t samplecounts_file[1];
+static GTimer *packet_interval = NULL;
+static GTimer *run_time = NULL;
+static int max_probe_num = 0;
+static int64_t analog_count = 0;
+static gboolean channel_mode_change = FALSE;
+static uint64_t packet_num;
+static void *logic_post_buf = NULL;
+
 /* Message logging helpers with subsystem-specific prefix string. */
 
 #undef LOG_PREFIX
@@ -157,7 +167,7 @@ static int vdev_init(struct sr_dev_inst *sdi)
     vdev->is_loop = FALSE;
     vdev->unit_bits = (sdi->mode == LOGIC) ? 1 : 8;
 
-    vdev->logic_buf = g_try_malloc0(LOGIC_BUF_LEN);
+    vdev->logic_buf = malloc(LOGIC_BUF_LEN);
     if(vdev->logic_buf == NULL)
     {
         sr_err("%s: vdev->logic_buf malloc failed", __func__);
@@ -165,7 +175,7 @@ static int vdev_init(struct sr_dev_inst *sdi)
     }
     vdev->logic_buf_len = LOGIC_BUF_LEN;
 
-    vdev->dso_buf = g_try_malloc0(DSO_PACKET_LEN);
+    vdev->dso_buf = malloc(DSO_PACKET_LEN);
     if(vdev->dso_buf == NULL)
     {
         sr_err("%s: vdev->dso_buf malloc failed", __func__);
@@ -323,18 +333,15 @@ static void logic_adjust_samplerate(struct session_vdev * vdev)
 
 static int init_analog_random_data(struct session_vdev * vdev)
 {
-    if(vdev->analog_buf != NULL)
-    {
-        g_safe_free(vdev->analog_buf);
-        vdev->analog_buf = NULL;
-    }
+    safe_free(vdev->analog_buf);
 
-    vdev->analog_buf = g_try_malloc0(DSO_BUF_LEN);
+    vdev->analog_buf = malloc(DSO_BUF_LEN);
     if (vdev->analog_buf == NULL)
     {
         sr_err("%s: vdev->analog_buf malloc failed", __func__);
         return SR_ERR_MALLOC;
     }
+
     for(int i = 0;i < DSO_BUF_LEN ;i++)
     {
         if(i % 2 == 0)
@@ -342,6 +349,7 @@ static int init_analog_random_data(struct session_vdev * vdev)
         else
             *(uint8_t*)(vdev->analog_buf + i) = *(uint8_t*)(vdev->analog_buf + i -1);
     }
+
     vdev->analog_buf_len = DSO_BUF_LEN;
     return SR_OK;
 }
@@ -480,7 +488,7 @@ static int reset_dsl_path(struct sr_dev_inst *sdi, uint8_t pattern_mode)
 { 
     struct demo_mode_pattern *info = NULL;
     if(sdi->path != NULL)
-        g_safe_free(sdi->path);
+        safe_free(sdi->path);
 
     char file_path[500];
 
@@ -526,9 +534,12 @@ static void adjust_samplerate(struct sr_dev_inst *sdi)
         return;
 
     vdev->samplerates_max_index = ARRAY_SIZE(samplerates) - 1;
-    while (samplerates[vdev->samplerates_max_index] >
-           channel_modes[cur_mode].max_samplerate)
+
+    while (samplerates[vdev->samplerates_max_index] > 
+        channel_modes[cur_mode].max_samplerate)
+    {
         vdev->samplerates_max_index--;
+    }
 
     vdev->samplerates_min_index = 0;
     while (samplerates[vdev->samplerates_min_index] <
@@ -555,8 +566,8 @@ static int init_random_data(struct session_vdev * vdev,struct sr_dev_inst *sdi)
     memset(vdev->logic_buf,0,LOGIC_BUF_LEN);
 
     srand((unsigned)time(NULL));
-    for(int i = 0 ;i < vdev->enabled_probes;i++)
-    {
+
+    for(int i = 0 ;i < vdev->enabled_probes;i++){
         probe_count[i] = rand()%SR_KB(1);
     }
 
@@ -568,6 +579,7 @@ static int init_random_data(struct session_vdev * vdev,struct sr_dev_inst *sdi)
             if(cur_probe >vdev->enabled_probes-1)
                 cur_probe = 0;
         }
+
         if(probe_count[cur_probe]> 0)
         {
             memset(vdev->logic_buf+i,probe_status[cur_probe],1);
@@ -610,22 +622,24 @@ static GSList *hw_scan(GSList *options)
 
     sr_info("%s", "Scan demo device.");
 
-    vdev = g_try_malloc0(sizeof(struct session_vdev));
+    vdev = malloc(sizeof(struct session_vdev));
     if (vdev == NULL)
     {
         sr_err("%s: sdi->priv malloc failed", __func__);
         return devices;
     }
+    memset(vdev, 0, sizeof(struct session_vdev));
 
     sdi = sr_dev_inst_new(LOGIC, SR_ST_INACTIVE,
                           supported_Demo[0].vendor,
                           supported_Demo[0].model,
                           supported_Demo[0].model_version);
     if (!sdi) {
-        g_safe_free(vdev);
+        safe_free(vdev);
         sr_err("Device instance creation failed.");
         return NULL;
     }
+
     sdi->priv = vdev;
     sdi->driver = di;
     sdi->dev_type = DEV_TYPE_DEMO;
@@ -696,11 +710,11 @@ static int hw_dev_close(struct sr_dev_inst *sdi)
         if (vdev->packet_buffer != NULL){
             pack_buf = vdev->packet_buffer;
 
-            g_safe_free(pack_buf->post_buf);
+            safe_free(pack_buf->post_buf);
 
             for (i = 0; i < SESSION_MAX_CHANNEL_COUNT; i++){
                 if (pack_buf->block_bufs[i] != NULL){
-                    g_safe_free(pack_buf->block_bufs[i]);
+                    safe_free(pack_buf->block_bufs[i]);
                     pack_buf->block_bufs[i] = NULL;
                 }
                 else{
@@ -709,12 +723,12 @@ static int hw_dev_close(struct sr_dev_inst *sdi)
             }
         }
 
-        g_safe_free(vdev->packet_buffer);
-        g_safe_free(vdev->logic_buf);
-        g_safe_free(vdev->analog_buf);
-        g_safe_free(sdi->path);
-        g_safe_free(packet_interval);
-        g_safe_free(run_time);
+        safe_free(vdev->packet_buffer);
+        safe_free(vdev->logic_buf);
+        safe_free(vdev->analog_buf);
+        safe_free(sdi->path);
+        safe_free(packet_interval);
+        safe_free(run_time);
 
         sdi->status = SR_ST_INACTIVE;
         return SR_OK;
@@ -1269,7 +1283,7 @@ static int hw_dev_acquisition_start(struct sr_dev_inst *sdi,
             {
                 if(ideal_len>=vdev->packet_len)
                 {
-                    sr_info("len:%d",ideal_len);
+                    //sr_info("len:%d",ideal_len);
                     vdev->packet_len = ideal_len;
                     break;
                 }
@@ -1288,9 +1302,9 @@ static int hw_dev_acquisition_start(struct sr_dev_inst *sdi,
         if(vdev->sample_generator == PATTERN_RANDOM)
         {
             vdev->logci_cur_packet_num = 1;
-            if(logic_post_buf == NULL)
-                g_safe_free(logic_post_buf);
-            logic_post_buf = g_try_malloc0(vdev->enabled_probes * vdev->packet_len);
+            safe_free(logic_post_buf);
+
+            logic_post_buf = malloc(vdev->enabled_probes * vdev->packet_len);
             if(logic_post_buf == NULL)
             {
                 sr_err("%s: logic_post_buf malloc error", __func__);
@@ -1563,14 +1577,16 @@ static int receive_data_logic_decoder(int fd, int revents, const struct sr_dev_i
     g_timer_start(packet_interval);
 
     // Make buffer
-    if (vdev->packet_buffer == NULL){
+    if (vdev->packet_buffer == NULL)
+    {
         vdev->cur_block = 0;
 
-        vdev->packet_buffer = g_try_malloc0(sizeof(struct session_packet_buffer));
+        vdev->packet_buffer = malloc(sizeof(struct session_packet_buffer));
         if (vdev->packet_buffer == NULL){
             sr_err("%s: vdev->packet_buffer malloc failed", __func__);
             return SR_ERR_MALLOC;
         }
+        memset(vdev->packet_buffer, 0, sizeof(struct session_packet_buffer));
 
         for (ch_index = 0; ch_index <= chan_num; ch_index++){
             vdev->packet_buffer->block_bufs[ch_index] = NULL;
@@ -1579,7 +1595,7 @@ static int receive_data_logic_decoder(int fd, int revents, const struct sr_dev_i
 
         vdev->packet_buffer->post_buf_len = chan_num * vdev->packet_len;
 
-        vdev->packet_buffer->post_buf = g_try_malloc0(vdev->packet_buffer->post_buf_len + 1);
+        vdev->packet_buffer->post_buf = malloc(vdev->packet_buffer->post_buf_len + 1);
         if (vdev->packet_buffer->post_buf == NULL){
             sr_err("%s: vdev->packet_buffer->post_buf malloc failed", __func__);
             return SR_ERR_MALLOC;
@@ -1601,7 +1617,7 @@ static int receive_data_logic_decoder(int fd, int revents, const struct sr_dev_i
         {
             if(pack_buffer->block_bufs[ch_index] != NULL)
             {
-                g_safe_free(pack_buffer->block_bufs[ch_index]);
+                safe_free(pack_buffer->block_bufs[ch_index]);
             }
             pack_buffer->block_bufs[ch_index] = NULL;
             pack_buffer->block_read_positions[ch_index] = 0;
@@ -1615,12 +1631,9 @@ static int receive_data_logic_decoder(int fd, int revents, const struct sr_dev_i
     if(pack_buffer->post_buf_len != chan_num * vdev->packet_len)
     {
         pack_buffer->post_buf_len = chan_num * vdev->packet_len;
-        if(pack_buffer->post_buf != NULL)
-        {
-            g_safe_free(pack_buffer->post_buf);
-        }
+        safe_free(pack_buffer->post_buf);
 
-        pack_buffer->post_buf = g_try_malloc0(pack_buffer->post_buf_len);
+        pack_buffer->post_buf = malloc(pack_buffer->post_buf_len);
         if (pack_buffer->post_buf == NULL)
         {
             sr_err("%s: pack_buffer->post_buf malloc failed", __func__);
@@ -1683,11 +1696,11 @@ static int receive_data_logic_decoder(int fd, int revents, const struct sr_dev_i
                         for (malloc_chan_index = 0; malloc_chan_index < chan_num; malloc_chan_index++){
                             // Release the old buffer.
                             if (pack_buffer->block_bufs[malloc_chan_index] != NULL){
-                                g_safe_free(pack_buffer->block_bufs[malloc_chan_index]);
+                                safe_free(pack_buffer->block_bufs[malloc_chan_index]);
                                 pack_buffer->block_bufs[malloc_chan_index] = NULL;
                             }
 
-                            pack_buffer->block_bufs[malloc_chan_index] = g_try_malloc0(pack_buffer->block_data_len + 1);
+                            pack_buffer->block_bufs[malloc_chan_index] = malloc(pack_buffer->block_data_len + 1);
                             if (pack_buffer->block_bufs[malloc_chan_index] == NULL){
                                 sr_err("%s: block buffer malloc failed", __func__);
                                 send_error_packet(sdi, vdev, &packet);
@@ -1855,14 +1868,16 @@ static int receive_data_dso(int fd, int revents, const struct sr_dev_inst *sdi)
     }
 
     // Make buffer
-    if (vdev->packet_buffer == NULL){
+    if (vdev->packet_buffer == NULL)
+    {
         vdev->cur_block = 0;
 
-        vdev->packet_buffer = g_try_malloc0(sizeof(struct session_packet_buffer));
+        vdev->packet_buffer = malloc(sizeof(struct session_packet_buffer));
         if (vdev->packet_buffer == NULL){
             sr_err("%s: vdev->packet_buffer malloc failed", __func__);
             return SR_ERR_MALLOC;
         }
+        memset(vdev->packet_buffer, 0, sizeof(struct session_packet_buffer));
 
         for (ch_index = 0; ch_index <= chan_num; ch_index++){
             vdev->packet_buffer->block_bufs[ch_index] = NULL;
@@ -1871,7 +1886,7 @@ static int receive_data_dso(int fd, int revents, const struct sr_dev_inst *sdi)
 
         vdev->packet_buffer->post_buf_len = chan_num * 10000;
 
-        vdev->packet_buffer->post_buf = g_try_malloc0(vdev->packet_buffer->post_buf_len);
+        vdev->packet_buffer->post_buf = malloc(vdev->packet_buffer->post_buf_len);
         if (vdev->packet_buffer->post_buf == NULL){
             sr_err("%s: vdev->packet_buffer->post_buf malloc failed", __func__);
             return SR_ERR_MALLOC;
@@ -1883,15 +1898,15 @@ static int receive_data_dso(int fd, int revents, const struct sr_dev_inst *sdi)
         pack_buffer->block_data_len = 0;
         pack_buffer->block_chan_read_pos = 0;
     }
+
     pack_buffer = vdev->packet_buffer;
+
     if(pack_buffer->post_buf_len != chan_num * 10000)
     {
         vdev->packet_buffer->post_buf_len = chan_num * 10000;
-        if(pack_buffer->post_buf != NULL)
-        {
-            g_safe_free(pack_buffer->post_buf);
-        }
-        pack_buffer->post_buf = g_try_malloc0(pack_buffer->post_buf_len);
+        safe_free(pack_buffer->post_buf);
+
+        pack_buffer->post_buf = malloc(pack_buffer->post_buf_len);
         if (pack_buffer->post_buf == NULL)
         {
             sr_err("%s: pack_buffer->post_buf malloc failed", __func__);
@@ -1907,7 +1922,7 @@ static int receive_data_dso(int fd, int revents, const struct sr_dev_inst *sdi)
         {
             if(pack_buffer->block_bufs[ch_index] != NULL)
             {
-                g_safe_free(pack_buffer->block_bufs[ch_index]);
+                safe_free(pack_buffer->block_bufs[ch_index]);
             }
             pack_buffer->block_bufs[ch_index] = NULL;
             pack_buffer->block_read_positions[ch_index] = 0;
@@ -1991,11 +2006,11 @@ static int receive_data_dso(int fd, int revents, const struct sr_dev_inst *sdi)
                                     for (malloc_chan_index = 0; malloc_chan_index < chan_num; malloc_chan_index++){
                                         // Release the old buffer.
                                         if (pack_buffer->block_bufs[malloc_chan_index] != NULL){
-                                            g_safe_free(pack_buffer->block_bufs[malloc_chan_index]);
+                                            safe_free(pack_buffer->block_bufs[malloc_chan_index]);
                                             pack_buffer->block_bufs[malloc_chan_index] = NULL;
                                         }
 
-                                        pack_buffer->block_bufs[malloc_chan_index] = g_try_malloc0(pack_buffer->block_data_len + 1);
+                                        pack_buffer->block_bufs[malloc_chan_index] = malloc(pack_buffer->block_data_len + 1);
                                         if (pack_buffer->block_bufs[malloc_chan_index] == NULL){
                                             sr_err("%s: block buffer malloc failed", __func__);
                                             send_error_packet(sdi, vdev, &packet);
@@ -2142,11 +2157,6 @@ static int receive_data_dso(int fd, int revents, const struct sr_dev_inst *sdi)
                 }
             }
 
-            for(int i = 0 ; i < DSO_PACKET_LEN ;i+=2)
-            {
-                // sr_info("val:%d",*(uint8_t*)(vdev->packet_buffer->post_buf+i));
-            }
-
             vdev->offset_change = FALSE;
             vdev->timebase_change = FALSE;
             vdev->vdiv_change = FALSE;
@@ -2270,7 +2280,7 @@ static int receive_data_analog(int fd, int revents, const struct sr_dev_inst *sd
         {
             vdev->analog_buf_len = 0;
 
-            void* analog_data = g_try_malloc0(ANALOG_DATA_LEN_PER_CYCLE);
+            void* analog_data = malloc(ANALOG_DATA_LEN_PER_CYCLE);
             if(analog_data == NULL)
             {
                 sr_err("%s:analog_data malloc failed",__func__);
@@ -2307,17 +2317,15 @@ static int receive_data_analog(int fd, int revents, const struct sr_dev_inst *sd
                 total_buf_len = total_buf_len / ANALOG_DATA_LEN_PER_CYCLE * ANALOG_DATA_LEN_PER_CYCLE;
             }
 
-            if(vdev->analog_buf != NULL)
-            {
-                g_safe_free(vdev->analog_buf);
-                vdev->analog_buf = NULL;
-            }
-            vdev->analog_buf = (g_try_malloc0(total_buf_len));
+            
+            safe_free(vdev->analog_buf);
+            vdev->analog_buf = malloc(total_buf_len);            
             if (vdev->analog_buf == NULL)
             {
                 sr_err("%s: vdev->analog_buf malloc failed", __func__);
                 return SR_ERR_MALLOC;
             }
+
             vdev->analog_buf_len = total_buf_len;
             uint64_t per_block_after_expend = total_buf_len / ANALOG_DATA_LEN_PER_CYCLE;
 
@@ -2329,6 +2337,7 @@ static int receive_data_analog(int fd, int revents, const struct sr_dev_inst *sd
             uint8_t val = 0;
             uint16_t tem;
             uint64_t cur_l = 0;
+
             for(int i = 0 ; i < ANALOG_DATA_LEN_PER_CYCLE;i++)
             {
                 if(i % 2 == 0)
@@ -2371,17 +2380,18 @@ static int receive_data_analog(int fd, int revents, const struct sr_dev_inst *sd
                     memset(vdev->analog_buf + cur_l,temp_value,1);
                 }
             }
-            g_safe_free(analog_data);
+            safe_free(analog_data);
         }
         vdev->load_data = FALSE;
     }
 
-    void* buf = g_try_malloc0(vdev->packet_len);
+    void* buf = malloc(vdev->packet_len);
     if(buf == NULL)
     {
         sr_err("%s: buf malloc failed", __func__);
         return SR_ERR_MALLOC;
     }
+
     if(vdev->analog_read_pos + vdev->packet_len >= vdev->analog_buf_len - 1 )
     {
         uint64_t back_len = vdev->analog_buf_len - vdev->analog_read_pos;
@@ -2417,7 +2427,7 @@ static int receive_data_analog(int fd, int revents, const struct sr_dev_inst *sd
 
     delay_time(vdev);
     ds_data_forward(sdi, &packet);
-    g_safe_free(buf);
+    safe_free(buf);
 
     return TRUE;
 }
@@ -2509,7 +2519,7 @@ static int load_virtual_device_session(struct sr_dev_inst *sdi)
                 return SR_ERR;
             }
 
-            if (!(metafile = g_try_malloc(fileInfo.uncompressed_size)))
+            if (!(metafile = malloc(fileInfo.uncompressed_size)))
             {
                 sr_err("%s: metafile malloc failed", __func__);
                 return SR_ERR_MALLOC;
@@ -2616,7 +2626,7 @@ static int load_virtual_device_session(struct sr_dev_inst *sdi)
 
             g_strfreev(sections);
             g_key_file_free(kf);
-            g_safe_free(metafile);
+            safe_free(metafile);
         }
         else
         {
@@ -2802,7 +2812,7 @@ int dso_wavelength_updata(struct session_vdev *vdev)
             memcpy(pack_buffer->post_buf+i*bit,tmp_buf,bit);
         }
 
-        g_safe_free(tmp_buf);
+        safe_free(tmp_buf);
     }
 }
 

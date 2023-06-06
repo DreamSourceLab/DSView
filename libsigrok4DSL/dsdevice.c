@@ -23,6 +23,7 @@
 #include "config.h" /* Needed for HAVE_LIBUSB_1_0 and others. */
 #include "log.h"
 #include <string.h>
+#include <assert.h>
 
 #undef LOG_PREFIX
 #define LOG_PREFIX "device: "
@@ -46,17 +47,12 @@ SR_PRIV struct sr_channel *sr_channel_new(uint16_t index, int type, gboolean ena
 {
 	struct sr_channel *probe;
 
-	probe = g_try_malloc0(sizeof(struct sr_channel));
-
+	probe = malloc(sizeof(struct sr_channel));
 	if (probe == NULL) {
-		sr_err("Probe malloc failed.");
+		sr_err("%s,ERROR:failed to alloc memory.", __func__);
 		return NULL;
 	}
-
-	probe->trigger = NULL;
-	probe->name = NULL;
-	probe->map_unit = NULL;
-	probe->vga_ptr = NULL;
+	memset(probe, 0, sizeof(struct sr_channel));
 
 	probe->index = index;
 	probe->type = type;
@@ -173,7 +169,7 @@ SR_PRIV int sr_dev_trigger_set(const struct sr_dev_inst *sdi, uint16_t probenum,
 		probe = l->data;
 		if (probe->index == probenum) {
 			/* If the probe already has a trigger, kill it first. */
-            g_safe_free(probe->trigger);
+            safe_free(probe->trigger);
             probe->trigger = g_strdup(trigger);
 			ret = SR_OK;
 			break;
@@ -188,26 +184,15 @@ SR_PRIV struct sr_dev_inst *sr_dev_inst_new(int mode, int status,
 		const char *vendor, const char *model, const char *version)
 {
 	struct sr_dev_inst *sdi;
-
-	if (!(sdi = g_try_malloc(sizeof(struct sr_dev_inst)))) {
-		sr_err("Device instance malloc failed.");
+	if (!(sdi = malloc(sizeof(struct sr_dev_inst)))) {
+		sr_err("%s,ERROR:failed to alloc memory.", __func__);
 		return NULL;
 	}
-
-	sdi->driver = NULL;
-	sdi->channels = NULL;
-	sdi->conn = NULL;
-	sdi->priv = NULL;
-	sdi->vendor = NULL;
-	sdi->version = NULL;
-	sdi->path = NULL;
-
+	memset(sdi, 0, sizeof(struct sr_dev_inst));
+ 
     sdi->mode = mode;
-	sdi->name[0] = '\0';
 	sdi->status = status;
     sdi->handle = (ds_device_handle)sdi;
-	sdi->dev_type = DEV_TYPE_UNKOWN;
-	sdi->actived_times = 0;
 
 	if (vendor != NULL){
 		sdi->vendor = g_strdup(vendor);
@@ -231,9 +216,9 @@ SR_PRIV void sr_dev_probes_free(struct sr_dev_inst *sdi)
 
     for (l = sdi->channels; l; l = l->next) {
         probe = l->data;
-        g_safe_free(probe->name);
-        g_safe_free(probe->trigger);
-		g_safe_free(probe->vga_ptr);
+        safe_free(probe->name);
+        safe_free(probe->trigger);
+		safe_free(probe->vga_ptr);
         g_free(probe);
     }
 	g_safe_free_list(sdi->channels);
@@ -246,11 +231,11 @@ SR_PRIV void sr_dev_inst_free(struct sr_dev_inst *sdi)
 
 	sr_dev_probes_free(sdi);
 	
-	g_safe_free(sdi->conn);
-	g_safe_free(sdi->priv);
-	g_safe_free(sdi->vendor);
-	g_safe_free(sdi->version);
-	g_safe_free(sdi->path);
+	safe_free(sdi->conn);
+	safe_free(sdi->priv);
+	safe_free(sdi->vendor);
+	safe_free(sdi->version);
+	safe_free(sdi->path);
 
 	g_free(sdi);
 }
@@ -259,16 +244,14 @@ SR_PRIV void sr_dev_inst_free(struct sr_dev_inst *sdi)
 SR_PRIV struct sr_usb_dev_inst *sr_usb_dev_inst_new(uint8_t bus, uint8_t address)
 {
 	struct sr_usb_dev_inst *udi;
-
-	if (!(udi = g_try_malloc(sizeof(struct sr_usb_dev_inst)))) {
-		sr_err("USB device instance malloc failed.");
+	if (!(udi = malloc(sizeof(struct sr_usb_dev_inst)))) {
+		sr_err("%s,ERROR:failed to alloc memory.", __func__);
 		return NULL;
 	}
+	memset(udi, 0, sizeof(struct sr_usb_dev_inst));
 
 	udi->bus = bus;
 	udi->address = address;
-	udi->devhdl = NULL;
-	udi->usb_dev = NULL; 
 
 	return udi;
 }
@@ -307,10 +290,11 @@ SR_PRIV struct sr_serial_dev_inst *sr_serial_dev_inst_new(const char *port,
 		return NULL;
 	}
 
-	if (!(serial = g_try_malloc0(sizeof(struct sr_serial_dev_inst)))) {
-		sr_err("Serial device instance malloc failed.");
+	if (!(serial = malloc(sizeof(struct sr_serial_dev_inst)))) {
+		sr_err("%s,ERROR:failed to alloc memory.", __func__);
 		return NULL;
 	}
+	memset(serial, 0, sizeof(struct sr_serial_dev_inst));
 
 	serial->port = g_strdup(port);
 	if (serialcomm)

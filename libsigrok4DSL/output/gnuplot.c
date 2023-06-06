@@ -56,9 +56,15 @@ static int init(struct sr_output *o, GHashTable *options)
 	if (!o || !o->sdi)
 		return SR_ERR_ARG;
 
-	ctx = g_malloc0(sizeof(struct context));
+	ctx = malloc(sizeof(struct context));
+	if (ctx == NULL){
+		sr_err("%s,ERROR:failed to alloc memory.", __func__);
+		return SR_ERR;
+	}
+
 	o->priv = ctx;
 	ctx->num_enabled_channels = 0;
+
 	for (l = o->sdi->channels; l; l = l->next) {
 		ch = l->data;
 		if (ch->type != SR_CHANNEL_LOGIC)
@@ -67,11 +73,17 @@ static int init(struct sr_output *o, GHashTable *options)
 			continue;
 		ctx->num_enabled_channels++;
 	}
+
 	if (ctx->num_enabled_channels <= 0) {
 		sr_err("No logic channel enabled.");
 		return SR_ERR;
 	}
-	ctx->channel_index = g_malloc(sizeof(int) * ctx->num_enabled_channels);
+	ctx->channel_index = malloc(sizeof(int) * ctx->num_enabled_channels);
+
+	if (ctx->channel_index == NULL){
+		sr_err("%s,ERROR:failed to alloc memory.", __func__);
+		return SR_ERR;
+	}
 
 	/* Once more to map the enabled channels. */
 	for (i = 0, l = o->sdi->channels; l; l = l->next) {
@@ -166,7 +178,11 @@ static int receive(const struct sr_output *o, const struct sr_datafeed_packet *p
 
 	if (!ctx->prevsample) {
 		/* Can't allocate this until we know the stream's unitsize. */
-		ctx->prevsample = g_malloc0(logic->unitsize);
+		ctx->prevsample = malloc(logic->unitsize);
+
+		if (ctx->prevsample == NULL){
+			sr_err("%s,ERROR:failed to alloc memory.", __func__);
+		}
 	}
 
 	if (!ctx->header_done) {

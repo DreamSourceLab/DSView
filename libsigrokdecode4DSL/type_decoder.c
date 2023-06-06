@@ -342,8 +342,11 @@ static int convert_binary(struct srd_decoder_inst *di, PyObject *obj,
 	pdb = pdata->data;
 	pdb->bin_class = bin_class;
 	pdb->size = size;
-	if (!(pdb->data = g_try_malloc(pdb->size)))
+	if (!(pdb->data = malloc(pdb->size))){
+		srd_err("%s,ERROR:failed to alloc memory.", __func__);
 		return SRD_ERR_MALLOC;
+	}
+
 	memcpy((void *)pdb->data, (const void *)buf, pdb->size);
 
 	return SRD_OK;
@@ -677,7 +680,13 @@ static PyObject *Decoder_register(PyObject *self, PyObject *args,
 		return py_new_output_id;
 	}
 
-	pdo = g_malloc(sizeof(struct srd_pd_output));
+	pdo = malloc(sizeof(struct srd_pd_output));
+	if (pdo == NULL){
+		PyGILState_Release(gstate);
+		srd_err("%s,ERROR:failed to alloc memory.", __func__);
+		return SRD_ERR;
+	}
+    memset(pdo, 0, sizeof(struct srd_pd_output));
 
 	/* pdo_id is just a simple index, nothing is deleted from this list anyway. */
 	pdo->pdo_id = g_slist_length(di->pd_output);
@@ -822,9 +831,16 @@ static int create_term_list(PyObject *py_dict, GSList **term_list, gboolean cur_
 				goto err;
 			} 
 
-			term = g_malloc(sizeof(struct srd_term));
-			term->type = get_term_type(term_str);
-			term->channel = PyLong_AsLong(py_key);
+			term = malloc(sizeof(struct srd_term));
+			if (term != NULL){
+                memset(term, 0, sizeof(struct srd_term));
+				term->type = get_term_type(term_str);
+				term->channel = PyLong_AsLong(py_key);
+			}
+			else{
+				srd_err("%s,ERROR:failed to alloc memory.", __func__);
+			}
+			
 			g_free(term_str);
 
 		} else if (PyUnicode_Check(py_key)) {
@@ -834,10 +850,16 @@ static int create_term_list(PyObject *py_dict, GSList **term_list, gboolean cur_
 				srd_err("Failed to get number of samples to skip.");
 				goto err;
 			}
-			term = g_malloc(sizeof(struct srd_term));
-			term->type = SRD_TERM_SKIP;
-			term->num_samples_to_skip = num_samples_to_skip;
-            term->num_samples_already_skipped = cur_matched ? (term->num_samples_to_skip != 0) : 0;
+			term = malloc(sizeof(struct srd_term));
+			if (term != NULL){
+                memset(term, 0, sizeof(struct srd_term));
+				term->type = SRD_TERM_SKIP;
+				term->num_samples_to_skip = num_samples_to_skip;
+				term->num_samples_already_skipped = cur_matched ? (term->num_samples_to_skip != 0) : 0;
+			}
+			else{
+				srd_err("%s,ERROR:failed to alloc memory.", __func__);
+			}	
 			
 		} else {
 			srd_err("Term key is neither a string nor a number.");
@@ -992,15 +1014,25 @@ ret_9999:
  */
 static int set_skip_condition(struct srd_decoder_inst *di, uint64_t count)
 {
+	assert(di);
+
 	struct srd_term *term;
 	GSList *term_list;
 
 	condition_list_free(di);
-	term = g_malloc(sizeof(*term));
-	term->type = SRD_TERM_SKIP;
-	term->num_samples_to_skip = count;
-    term->num_samples_already_skipped = di->abs_cur_matched ? (term->num_samples_to_skip != 0) : 0;
-	term_list = g_slist_append(NULL, term);
+
+	term = malloc(sizeof(struct srd_term));
+	if (term != NULL){
+		memset(term, 0, sizeof(struct srd_term));
+		term->type = SRD_TERM_SKIP;
+		term->num_samples_to_skip = count;
+		term->num_samples_already_skipped = di->abs_cur_matched ? (term->num_samples_to_skip != 0) : 0;
+		term_list = g_slist_append(NULL, term);
+	}
+	else{
+		srd_err("%s,ERROR:failed to alloc memory.", __func__);
+	}
+
 	di->condition_list = g_slist_append(di->condition_list, term_list);
 
 	return SRD_OK;

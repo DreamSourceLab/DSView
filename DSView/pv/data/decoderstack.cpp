@@ -676,7 +676,10 @@ void DecoderStack::execute_decode_stack()
     // all decoderstatck execute in sequence
 	srd_session_new(&session);
 
-	assert(session);
+    if (session == NULL){
+        dsv_err("Failed to call srd_session_new()");
+        assert(false);
+    }
     
     // Get the intial sample count
     _sample_count = _snapshot->get_ring_sample_count();

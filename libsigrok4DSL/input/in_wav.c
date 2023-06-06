@@ -95,8 +95,10 @@ static int init(struct sr_input *in, const char *filename)
 	if (get_wav_header(filename, buf) != SR_OK)
 		return SR_ERR;
 
-	if (!(ctx = g_try_malloc0(sizeof(struct context))))
+	if (!(ctx = malloc(sizeof(struct context)))){
+		sr_err("%s,ERROR:failed to alloc memory.", __func__);
 		return SR_ERR_MALLOC;
+	}
 
 	/* Create a virtual device. */
 	in->sdi = sr_dev_inst_new(LOGIC, SR_ST_ACTIVE, NULL, NULL, NULL);

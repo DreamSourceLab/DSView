@@ -52,7 +52,7 @@
  * @param unit The unit to append to the string, or NULL if the string
  *             has no units.
  *
- * @return A g_try_malloc()ed string representation of the samplerate value,
+ * @return A malloc()ed string representation of the samplerate value,
  *         or NULL upon errors. The caller is responsible to g_free() the
  *         memory.
  */
@@ -97,7 +97,7 @@ SR_API char *sr_si_string_u64(uint64_t x, const char *unit)
  * @param unit The unit to append to the string, or NULL if the string
  *             has no units.
  *
- * @return A g_try_malloc()ed string representation of the samplerate value,
+ * @return A malloc()ed string representation of the samplerate value,
  *         or NULL upon errors. The caller is responsible to g_free() the
  *         memory.
  */
@@ -139,7 +139,7 @@ SR_API char *sr_iec_string_u64(uint64_t x, const char *unit)
  *
  * @param samplerate The samplerate in Hz.
  *
- * @return A g_try_malloc()ed string representation of the samplerate value,
+ * @return A malloc()ed string representation of the samplerate value,
  *         or NULL upon errors. The caller is responsible to g_free() the
  *         memory.
  */
@@ -155,7 +155,7 @@ SR_API char *sr_samplerate_string(uint64_t samplerate)
  *
  * @param samplecount.
  *
- * @return A g_try_malloc()ed string representation of the samplecount value,
+ * @return A malloc()ed string representation of the samplecount value,
  *         or NULL upon errors. The caller is responsible to g_free() the
  *         memory.
  */
@@ -172,7 +172,7 @@ SR_API char *sr_samplecount_string(uint64_t samplecount)
  *
  * @param frequency The frequency in Hz.
  *
- * @return A g_try_malloc()ed string representation of the frequency value,
+ * @return A malloc()ed string representation of the frequency value,
  *         or NULL upon errors. The caller is responsible to g_free() the
  *         memory.
  */
@@ -182,7 +182,7 @@ SR_API char *sr_period_string(uint64_t frequency)
 	int r;
 
 	/* Allocate enough for a uint64_t as string + " ms". */
-	if (!(o = g_try_malloc0(30 + 1))) {
+	if (!(o = malloc(30 + 1))) {
 		sr_err("%s: o malloc failed", __func__);
 		return NULL;
 	}
@@ -213,7 +213,7 @@ SR_API char *sr_period_string(uint64_t frequency)
  *
  * @param time The time in ns.
  *
- * @return A g_try_malloc()ed string representation of the time value,
+ * @return A malloc()ed string representation of the time value,
  *         or NULL upon errors. The caller is responsible to g_free() the
  *         memory.
  */
@@ -223,7 +223,7 @@ SR_API char *sr_time_string(uint64_t time)
     int r;
 
     /* Allocate enough for a uint64_t as string + " ms". */
-    if (!(o = g_try_malloc0(30 + 1))) {
+    if (!(o = malloc(30 + 1))) {
         sr_err("%s: o malloc failed", __func__);
         return NULL;
     }
@@ -262,7 +262,7 @@ SR_API char *sr_time_string(uint64_t time)
  * @param v_p The voltage numerator.
  * @param v_q The voltage denominator.
  *
- * @return A g_try_malloc()ed string representation of the voltage value,
+ * @return A malloc()ed string representation of the voltage value,
  *         or NULL upon errors. The caller is responsible to g_free() the
  *         memory.
  */
@@ -271,7 +271,7 @@ SR_API char *sr_voltage_string(uint64_t v_p, uint64_t v_q)
 	int r;
 	char *o;
 
-	if (!(o = g_try_malloc0(30 + 1))) {
+	if (!(o = malloc(30 + 1))) {
 		sr_err("%s: o malloc failed", __func__);
 		return NULL;
 	}

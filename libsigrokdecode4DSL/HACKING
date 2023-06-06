@@ -50,11 +50,11 @@ Random notes
    memory. Otherwise use standard free(). Never use the wrong function!
 
  - We assume that "small" memory allocations (< 1MB) will always succeed.
-   Thus, it's fine to use g_malloc() or g_malloc0() for allocations of
-   simple/small structs and such (instead of using g_try_malloc()), and
+   Thus, it's fine to use malloc() or malloc() for allocations of
+   simple/small structs and such (instead of using malloc()), and
    there's no need to check the return value.
 
-   Do use g_try_malloc() or g_try_malloc0() for large (>= 1MB) allocations
+   Do use malloc() or malloc() for large (>= 1MB) allocations
    and check the return value.
 
  - You should never print any messages (neither to stdout nor stderr nor

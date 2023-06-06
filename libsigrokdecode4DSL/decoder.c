@@ -112,10 +112,10 @@ static void channel_free(void *data)
 	if (!ch)
 		return;
 
-	g_safe_free(ch->desc);
-	g_safe_free(ch->name);
-	g_safe_free(ch->id);
-	g_safe_free(ch->idn);
+	safe_free(ch->desc);
+	safe_free(ch->name);
+	safe_free(ch->id);
+	safe_free(ch->idn);
 	g_free(ch);
 }
 
@@ -151,9 +151,9 @@ static void decoder_option_free(void *data)
 
 	g_slist_free_full(opt->values, &variant_free);
 	variant_free(opt->def);
-	g_safe_free(opt->desc);
-	g_safe_free(opt->id);
-	g_safe_free(opt->idn);
+	safe_free(opt->desc);
+	safe_free(opt->id);
+	safe_free(opt->idn);
 	g_free(opt);
 }
 
@@ -227,11 +227,12 @@ static int get_channels(const struct srd_decoder *d, const char *attr,
 				"a list of dict elements.", d->name, attr);
 			goto err_out;
 		}
-		pdch = g_malloc(sizeof(struct srd_channel));
-		pdch->id = NULL;
-		pdch->name = NULL;		
-		pdch->desc = NULL;
-		pdch->idn = NULL;
+		pdch = malloc(sizeof(struct srd_channel));
+		if (pdch == NULL){
+			srd_err("%s,ERROR:failed to alloc memory.", __func__);
+			goto err_out;
+		}
+		memset(pdch, 0, sizeof(struct srd_channel));
 
 		/* Add to list right away so it doesn't get lost. */
 		pdchl = g_slist_prepend(pdchl, pdch);
@@ -311,12 +312,12 @@ static int get_options(struct srd_decoder *d)
 			goto err_out;
 		}
 
-		o = g_malloc0(sizeof(struct srd_decoder_option));
-		o->id = NULL;
-		o->idn = NULL;
-		o->desc = NULL;
-		o->def = NULL;
-		o->values = NULL;
+		o = malloc(sizeof(struct srd_decoder_option));
+		if (o == NULL){
+			srd_err("%s,ERROR:failed to alloc memory.", __func__);
+			goto err_out;
+		}
+		memset(o, 0, sizeof(struct srd_decoder_option));
 
 		/* Add to list right away so it doesn't get lost. */
 		options = g_slist_prepend(options, o);
@@ -416,6 +417,8 @@ static int get_annotations(struct srd_decoder *dec)
 	int ann_type = 7;
 	unsigned int j;
 	PyGILState_STATE gstate;
+
+	assert(dec);
 
 	gstate = PyGILState_Ensure();
 
@@ -519,7 +522,13 @@ static int get_annotation_rows(struct srd_decoder *dec)
 				dec->name);
 			goto err_out;
 		}
-		ann_row = g_malloc0(sizeof(struct srd_decoder_annotation_row));
+		ann_row = malloc(sizeof(struct srd_decoder_annotation_row));
+		if (ann_row == NULL){
+			srd_err("%s,ERROR:failed to alloc memory.", __func__);
+			goto err_out;
+		}
+		memset(ann_row, 0, sizeof(struct srd_decoder_annotation_row));
+
 		/* Add to list right away so it doesn't get lost. */
 		annotation_rows = g_slist_prepend(annotation_rows, ann_row);
 
@@ -740,7 +749,13 @@ SRD_API int srd_decoder_load(const char *module_name)
 		return SRD_OK;
 	}
 
-	d = g_malloc0(sizeof(struct srd_decoder));
+	d = malloc(sizeof(struct srd_decoder));
+	if (d == NULL){
+		srd_err("%s,ERROR:failed to alloc memory.", __func__);
+		goto err_out;
+	}
+	memset(d, 0, sizeof(struct srd_decoder));
+
 	fail_txt = NULL;
 
 	//Load module from python script file,module_name is a sub directory
@@ -1089,6 +1104,8 @@ static void srd_decoder_load_all_path(char *path)
 	const gchar *direntry;
 	int ldst = 0;
 
+	assert(path);
+
 	if (!(dir = g_dir_open(path, 0, NULL))) {
 		/* Not really fatal. Try zipimport method too. */
 		srd_decoder_load_all_zip_path(path);
@@ -1121,8 +1138,9 @@ SRD_API int srd_decoder_load_all(void)
 	if (!srd_check_init())
 		return SRD_ERR;
 
-	for (l = searchpaths; l; l = l->next)
+    for (l = searchpaths; l; l = l->next){
 		srd_decoder_load_all_path(l->data);
+    }
 
 	return SRD_OK;
 }
