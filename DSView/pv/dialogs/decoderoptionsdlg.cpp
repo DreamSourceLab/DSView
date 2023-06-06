@@ -171,13 +171,26 @@ void DecoderOptionsDlg::load_options_view()
     bool bLang = AppConfig::Instance()._appOptions.transDecoderDlg;
 
     if (LangResource::Instance()->is_lang_en() == false){
+        QWidget *sp1 = new QWidget();
+        sp1->setFixedHeight(5);
+        form->addRow(sp1);
         QString trans_lable(L_S(STR_PAGE_DLG, S_ID(IDS_DLG_DECODER_IF_TRANS), "Translate param names"));
         QCheckBox *ck_trans = new QCheckBox();
+        ck_trans->setFixedSize(20,20);
         ck_trans->setChecked(bLang);
         connect(ck_trans, SIGNAL(released()), this, SLOT(on_trans_pramas()));
-        ck_trans->setStyleSheet("margin-left:60px");    
-        form->addRow(ck_trans, new QLabel(trans_lable));
-        h_ex2 = 30;   
+        ck_trans->setStyleSheet("margin-top:5px");
+        QLabel *trans_lb = new QLabel(trans_lable);
+        
+        QHBoxLayout *trans_lay = new QHBoxLayout();
+        QWidget *trans_wid = new QWidget();
+        trans_wid->setLayout(trans_lay);
+        trans_lay->setSpacing(0);
+        trans_lay->setContentsMargins(10,0,0,0);
+        trans_lay->addWidget(ck_trans);
+        trans_lay->addWidget(trans_lb);
+        form->addRow("", trans_wid);
+        h_ex2 = 40;   
     }  
 
   //tr

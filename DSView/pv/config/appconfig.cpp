@@ -100,6 +100,7 @@ void _loadApp(AppOptions &o, QSettings &st){
     getFiled("transDecoderDlg", st, o.transDecoderDlg, true);
     getFiled("trigPosDisplayInMid", st, o.trigPosDisplayInMid, true);
     getFiled("displayProfileInBar", st, o.displayProfileInBar, false);
+    getFiled("swapBackBufferAlways", st, o.swapBackBufferAlways, false);
 
     QString fmt;
     getFiled("protocalFormats", st, fmt, "");
@@ -121,6 +122,7 @@ void _saveApp(AppOptions &o, QSettings &st){
     setFiled("transDecoderDlg", st, o.transDecoderDlg);
     setFiled("trigPosDisplayInMid", st, o.trigPosDisplayInMid);
     setFiled("displayProfileInBar", st, o.displayProfileInBar);
+    setFiled("swapBackBufferAlways", st, o.swapBackBufferAlways);
 
     QString fmt =  FormatArrayToString(o.m_protocolFormats);
     setFiled("protocalFormats", st, fmt);

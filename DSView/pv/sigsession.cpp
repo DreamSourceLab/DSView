@@ -2102,6 +2102,17 @@ namespace pv
                         bAddDecoder = true;
                     }
 
+                    if (is_repeat_mode())
+                    {
+                        AppConfig &app = AppConfig::Instance();
+                        bool swapBackBufferAlways = app._appOptions.swapBackBufferAlways;
+                        if (!swapBackBufferAlways && !_is_working && _capture_times > 1){
+                            bAddDecoder = false;
+                            bSwapBuffer = false;
+                            _capture_data->clear();
+                        }
+                    }
+
                     if (bAddDecoder){
                         clear_all_decode_task2();
                         clear_decode_result();
@@ -2323,7 +2334,7 @@ namespace pv
     {
         auto trace = get_decoder_trace(index);
         if (trace != NULL){
-            trace->set_name(label);
+            set_trace_name(trace, label);
         }
     }
 

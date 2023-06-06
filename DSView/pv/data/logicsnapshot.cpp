@@ -117,6 +117,7 @@ void LogicSnapshot::first_payload(const sr_datafeed_logic &logic, uint64_t total
     bool channel_changed = false;
     uint16_t channel_num = 0;
     _able_free = able_free;
+    _lst_free_block_index = 0;
 
     for(void *p : _free_block_list){
         free(p);
@@ -231,10 +232,20 @@ void LogicSnapshot::append_cross_payload(const sr_datafeed_logic &logic)
             return;
         _sample_count = _total_sample_count;
     }
- 
-    if (_is_loop && (_loop_offset + samples >= LeafBlockSamples * Scale)){        
-        move_first_node_to_last();
-        _loop_offset -= LeafBlockSamples * Scale;
+
+    if (_is_loop)
+    {
+        if (_loop_offset + samples >= LeafBlockSamples * Scale){        
+            move_first_node_to_last();
+            _loop_offset -= LeafBlockSamples * Scale;
+            _lst_free_block_index = 0;
+        }
+        else{
+            int free_count = _loop_offset / LeafBlockSamples;
+            if (free_count > _lst_free_block_index){
+                free_head_blocks(free_count);
+            }
+        }
     }
  
     _ring_sample_count += _loop_offset;
@@ -937,6 +948,8 @@ bool LogicSnapshot::block_pre_edge(uint64_t *lbp, uint64_t &index, bool last_sam
     const uint64_t last = last_sample ? ~0ULL : 0ULL;
     uint64_t block_start = index & ~LeafMask;
 
+    assert(lbp);
+
     //----- Search Next Edge Within Current LeafBlock -----//
     if (level == 0)
     {
@@ -1262,38 +1275,22 @@ void LogicSnapshot::free_decode_lpb(void *lbp)
 }
 
 void LogicSnapshot::free_head_blocks(int count)
-{  
-    for (unsigned int i = 0; i < _channel_num; i++)
-    {  
-        for (int j=0; j<count; j++)
-        {
+{   
+    assert(count > 0);
+
+    for (int i = 0; i < (int)_channel_num; i++)
+    {
+        for (int j=_lst_free_block_index; j<count; j++){
             if (_ch_data[i][0].lbp[j] != NULL){
                 free(_ch_data[i][0].lbp[j]);
                 _ch_data[i][0].lbp[j] = NULL;
             }
-        }
 
-        int rnum = (int)_ch_data[i].size();
-
-        uint64_t lst_top = 0;
-        uint64_t lst_val = 0;
-
-        for (int r=0; r<rnum; r++)
-        {
-            
-        }
- 
-        _ch_data[i][0].tog = (_ch_data[i][0].tog) << count;
-        _ch_data[i][0].value = (_ch_data[i][0].value) << count;
-
-        for (int k=count; k < Scale; k++)
-        {
-
-        }
-
-        int len = (int)_ch_data[i].size();
-        
+            _ch_data[i][0].tog = (_ch_data[i][0].tog >> count) << count;
+            _ch_data[i][0].value = (_ch_data[i][0].value >> count) << count;
+        }      
     }
+    _lst_free_block_index = count;
 }
 
 } // namespace data

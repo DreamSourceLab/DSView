@@ -64,6 +64,7 @@ struct AppOptions
     bool  transDecoderDlg;
     bool  trigPosDisplayInMid;
     bool  displayProfileInBar;
+    bool  swapBackBufferAlways;
 
     std::vector<StringPair> m_protocolFormats;
 };

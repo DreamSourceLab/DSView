@@ -66,10 +66,14 @@ bool ApplicationParamDlg::ShowDlg(QWidget *parent)
     QCheckBox *ck_profileBar = new QCheckBox();
     ck_profileBar->setChecked(app._appOptions.displayProfileInBar);
 
+    QCheckBox *ck_abortData = new QCheckBox();
+    ck_abortData->setChecked(app._appOptions.swapBackBufferAlways);
+
     lay.setHorizontalSpacing(8);
 
     if (mode == LOGIC){
         lay.addRow(L_S(STR_PAGE_DLG, S_ID(IDS_DLG_QUICK_SCROLL), "Quick scroll"), ck_quickScroll);
+        lay.addRow(L_S(STR_PAGE_DLG, S_ID(IDS_DLG_USE_ABORT_DATA_REPEAT), "Used abort data"), ck_abortData);
     }
     else if (mode == DSO){
         lay.addRow(L_S(STR_PAGE_DLG, S_ID(IDS_DLG_TRIG_DISPLAY_MIDDLE), "Tig pos in middle"), ck_trigInMid);
@@ -88,6 +92,7 @@ bool ApplicationParamDlg::ShowDlg(QWidget *parent)
         app._appOptions.quickScroll = ck_quickScroll->isChecked();
         app._appOptions.trigPosDisplayInMid = ck_trigInMid->isChecked();
         app._appOptions.displayProfileInBar = ck_profileBar->isChecked();
+        app._appOptions.swapBackBufferAlways = ck_abortData->isChecked();
 
         app.SaveApp();
 
