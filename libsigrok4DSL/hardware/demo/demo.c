@@ -187,115 +187,126 @@ static int vdev_init(struct sr_dev_inst *sdi)
 
 static void dso_status_update(struct session_vdev *vdev)
 {
-//    struct sr_status *status = (struct sr_status*)&vdev->mstatus;
-//    struct session_packet_buffer *pack_buffer = vdev->packet_buffer;
+    struct sr_status *status = (struct sr_status*)&vdev->mstatus;
+    struct session_packet_buffer *pack_buffer = vdev->packet_buffer;
 
-//    uint8_t ch_max = DSO_MID_VAL;
-//    uint8_t ch_min = DSO_MID_VAL;
-//    uint16_t max_count = 0;
-//    int interval1 = 0;
-//    int interval2 = 0;
-//    for(int i = 0 ; i<20000 ; i+=2)
-//    {
-//        uint8_t val = *(uint8_t*)(pack_buffer->post_buf +i);
-//        if (val >  ch_max)
-//            ch_max = val;
-//        if (val <  ch_min)
-//            ch_min = val;
+    uint8_t ch_max = DSO_MID_VAL;
+    uint8_t ch_min = DSO_MID_VAL;
+    uint32_t total_val = 0;
 
-//        if(vdev->timebase == SR_US(200))
-//        {
-//            if(val == 177 && !interval1)
-//            {
-//                interval1 = i;
-//                continue;
-//            }
-//            if(val == 177 && !interval2)
-//            {
-//                interval2 = i;
-//                continue;
-//            }
-//        }
-//        else
-//        {
-//            if(val == 178 && !interval1)
-//            {
-//                interval1 = i;
-//            }
-//            if(val == 78 && !interval2)
-//            {
-//                interval2 = i;
-//            }
-//        }
-//    }
+    gboolean temp_plevel;
+    gboolean first_plevel = FALSE;
+    uint32_t temp_llen = 0;
 
-//    if(vdev->sample_generator != PATTERN_RANDOM)
-//    {
-//        status->ch0_cyc_tlen = (uint32_t)abs(interval1-interval2);
-//        status->ch1_cyc_tlen = (uint32_t)abs(interval1-interval2);
-//        if(vdev->timebase == SR_US(200))
-//        {
-//            status->ch0_cyc_tlen = status->ch0_cyc_tlen/2;
-//            status->ch1_cyc_tlen = status->ch1_cyc_tlen/2;
-//        }
-//        status->ch0_cyc_cnt = 1;
-//        status->ch1_cyc_cnt = 1;
-//    }
-
-//    //187,68
-//    status->ch0_max = status->ch1_max = ch_max;
-//    status->ch0_min = status->ch1_min = ch_min;
-    // status->ch0_cyc_plen = 170;
-    // status->ch1_cyc_plen = 170;
-    // status->ch0_cyc_llen = 0;
-    // status->ch1_cyc_llen = 0;
-    // status->ch0_level_valid = 0;
-    // status->ch1_level_valid = 0;
-    // status->ch0_plevel = 1;
-    // status->ch1_plevel = 1;
-    // status->ch0_low_level = 78;
-    // status->ch1_low_level = 78;
-    // status->ch0_high_level = 178;
-    // status->ch1_high_level = 178;
-    // status->ch0_cyc_rlen = 85;
-    // status->ch1_cyc_rlen = 85;
-    // status->ch0_cyc_flen = 85;
-    // status->ch1_cyc_flen = 85;
-    // status->ch0_acc_square = 12496225;
-    // status->ch1_acc_square = 12496225;
-    // status->ch0_acc_mean = 1280000;
-    // status->ch1_acc_mean = 1280000;
-}
-
-static int logic_adjust_probe(struct sr_dev_inst *sdi, int num_probes)
-{
-    uint16_t j;
-    struct sr_channel *probe;
-    struct DSL_context *devc = sdi->priv;
-    GSList *l;
-
-    assert(num_probes > 0);
-
-    j = g_slist_length(sdi->channels);
-    while(j < num_probes) {
-        if (!(probe = sr_channel_new(j, SR_CHANNEL_LOGIC,
-                                   TRUE, probe_names[j])))
-            return SR_ERR;
-        sdi->channels = g_slist_append(sdi->channels, probe);
-        j++;
+    for(int i = 0 ; i<DSO_PACKET_LEN ; i += 2)
+    {
+        uint8_t val = *(uint8_t*)(pack_buffer->post_buf +i);
+        if (val >  ch_max)
+            ch_max = val;
+        if (val <  ch_min)
+            ch_min = val;
     }
+    status->ch0_max = status->ch1_max = status->ch0_high_level = status->ch1_high_level = ch_max;
+    status->ch0_min = status->ch1_min = status->ch0_low_level = status->ch1_low_level = ch_min;
 
-    while(j > num_probes) {
-        sdi->channels = g_slist_delete_link(sdi->channels, g_slist_last(sdi->channels));
-        j--;
-    }
+    status->ch0_cyc_tlen = status->ch1_cyc_tlen = 0;
+    status->ch0_cyc_llen = status->ch1_cyc_llen = 0;
+    status->ch0_cyc_cnt = status->ch1_cyc_cnt = 0;
+    status->ch0_cyc_rlen =  status->ch1_cyc_rlen = 0;
+    status->ch0_cyc_flen =  status->ch1_cyc_flen = 0;
+    status->ch0_cyc_plen =  status->ch1_cyc_plen = 0;
 
-    for(l = sdi->channels; l; l = l->next) {
-        probe = (struct sr_channel *)l->data;
-        probe->enabled = TRUE;
-        probe->type = SR_CHANNEL_LOGIC;
+    status->ch0_level_valid = status->ch1_level_valid = 1;
+    status->ch0_acc_mean = status->ch1_acc_mean =  0;
+
+    for(uint16_t i = 0 ; i<DSO_PACKET_LEN ; i += 2)
+    {
+        if(i <= pack_buffer->post_len || vdev->instant)
+        {
+            uint8_t val = *(uint8_t*)(pack_buffer->post_buf +i);
+            if (first_plevel)
+            {
+                if(val <= DSO_MID_VAL)
+                {
+                    status->ch0_cyc_plen++;
+                    status->ch1_cyc_plen++;
+                }
+                temp_llen++;
+
+                if(temp_plevel)
+                {
+                    if(val >= DSO_MID_VAL)
+                    {
+                        status->ch0_cyc_flen++;
+                        status->ch1_cyc_flen++;
+                    }
+                    if(val == ch_max)
+                    {
+                        temp_plevel = !temp_plevel;
+                        if(status->ch0_plevel == temp_plevel)
+                        {
+                            status->ch0_cyc_cnt++;
+                            status->ch1_cyc_cnt++;
+                            status->ch0_cyc_tlen = status->ch1_cyc_tlen += temp_llen;
+                            status->ch0_cyc_llen = status->ch1_cyc_llen = 0;
+                            temp_llen = 0;
+                        }
+                        else
+                        {
+                            status->ch0_cyc_llen = status->ch1_cyc_llen = temp_llen;
+                        }
+                    }
+                }
+                else
+                {
+                    if(val <= DSO_MID_VAL)
+                    {
+                        status->ch0_cyc_rlen++;
+                        status->ch1_cyc_rlen++;
+                    }
+                    if(val == ch_min)
+                    {
+                        temp_plevel = !temp_plevel;
+                        if(status->ch0_plevel == temp_plevel)
+                        {
+                            status->ch0_cyc_cnt++;
+                            status->ch1_cyc_cnt++;
+                            status->ch0_cyc_tlen = status->ch1_cyc_tlen += temp_llen;
+                            status->ch0_cyc_llen = status->ch1_cyc_llen = 0;
+                            temp_llen = 0;
+                        }
+                        else
+                        {
+                            status->ch0_cyc_llen = status->ch1_cyc_llen = temp_llen;
+                        }
+                    }
+                }
+            }
+            else
+            {
+                if(val == ch_max || val == ch_min)
+                {
+                    if(val == ch_max)
+                        temp_plevel = status->ch0_plevel = status->ch1_plevel = FALSE;
+                    else
+                        temp_plevel = status->ch0_plevel = status->ch1_plevel = TRUE;
+                    first_plevel = TRUE;
+                }
+            }
+            total_val += val;
+        }
+        else
+            break;
     }
-    return SR_OK;
+    if(vdev->sample_generator != PATTERN_RANDOM)
+    {
+        status->ch0_acc_mean = status->ch1_acc_mean =  DSO_MID_VAL*pack_buffer->post_len/2;
+    }
+    else
+    {
+        status->ch0_acc_mean = status->ch1_acc_mean =  total_val;
+    }
+    status->ch0_acc_square = status->ch1_acc_square =  ch_max*pack_buffer->post_len/2*7;
 }
 
 static void logic_adjust_samplerate(struct session_vdev * vdev)
@@ -718,6 +729,7 @@ static int hw_dev_close(struct sr_dev_inst *sdi)
         safe_free(sdi->path);
         safe_free(packet_interval);
         safe_free(run_time);
+        safe_free(vdev->analog_post_buf);
 
         sdi->status = SR_ST_INACTIVE;
         return SR_OK;
@@ -1352,7 +1364,8 @@ static int hw_dev_acquisition_start(struct sr_dev_inst *sdi,
         if(vdev->sample_generator == PATTERN_RANDOM)
             init_analog_random_data(vdev);
             
-        vdev->analog_read_pos = 0;       
+        vdev->analog_read_pos = 0;
+        vdev->analog_post_buf_len = 0;
 
         sr_session_source_add(-1, 0, 0, receive_data_analog, sdi);
     }
@@ -1384,7 +1397,6 @@ static int hw_dev_status_get(const struct sr_dev_inst *sdi, struct sr_status *st
     if (sdi)
     {
         vdev = sdi->priv;
-        dso_status_update(vdev);
         *status = vdev->mstatus;
         return SR_OK;
     }
@@ -2080,45 +2092,7 @@ static int receive_data_dso(int fd, int revents, const struct sr_dev_inst *sdi)
 
         if(vdev->timebase_change || vdev->vdiv_change || vdev->offset_change)
         {
-            int index;
-            int bit = get_bit(vdev->timebase); 
-
-            if(vdev->sample_generator!= PATTERN_RANDOM)
-            {
-                void* tmp_buf = malloc(bit);
-                if(tmp_buf == NULL)
-                {
-                    sr_err("%s: tmp_buf malloc failed", __func__);
-                    return SR_ERR_MALLOC;
-                }
-                
-                for(int i = 0 ; i < bit ; i++)
-                {
-                    if(i%2 == 0)
-                    {
-                        if(bit == 10)
-                            index = i * 16;
-                        else
-                            index = i * 100 / (bit / 2);
-                    }
-                    else
-                    {
-                        
-                        if(bit == 10)
-                            index = (i-1) * 16 + 1;
-                        else
-                            index = (i-1) * 100 / (bit / 2) + 1;
-                    }
-                    *((uint8_t*)tmp_buf+ i) = *((uint8_t*)pack_buffer->post_buf + index + 30);
-                }
-
-                for(int i = 0 ; i < DSO_PACKET_LEN/bit ; i++)
-                {
-                    memcpy(pack_buffer->post_buf+i*bit,tmp_buf,bit);
-                }
-
-                safe_free(tmp_buf);
-            }
+            dso_wavelength_updata(vdev);
 
             uint16_t offset;
             uint16_t high_gate,low_gate;
@@ -2230,8 +2204,7 @@ static int receive_data_dso(int fd, int revents, const struct sr_dev_inst *sdi)
             *(uint8_t*)pack_buffer->post_buf = top0;
             *((uint8_t*)pack_buffer->post_buf + 1)= top1;
             pack_buffer->post_len = DSO_PACKET_LEN;
-        }
-        
+        }    
     }
     else
     {
@@ -2246,6 +2219,7 @@ static int receive_data_dso(int fd, int revents, const struct sr_dev_inst *sdi)
             vdev->instant = FALSE;
         }
     }
+
 
     if (pack_buffer->post_len >= byte_align * chan_num && !bToEnd)
     {
@@ -2263,8 +2237,8 @@ static int receive_data_dso(int fd, int revents, const struct sr_dev_inst *sdi)
         
         delay_time(vdev);
         g_timer_start(packet_interval);
-        // Send data back.
         ds_data_forward(sdi, &packet);
+        dso_status_update(vdev);
     }
 
     if (bToEnd || revents == -1)
@@ -2413,33 +2387,28 @@ static int receive_data_analog(int fd, int revents, const struct sr_dev_inst *sd
         vdev->load_data = FALSE;
     }
 
-    void* buf = malloc(vdev->packet_len);
-    if(buf == NULL)
-    {
-        sr_err("%s: buf malloc failed", __func__);
-        return SR_ERR_MALLOC;
+    if(vdev->analog_post_buf_len != vdev->packet_len){
+        safe_free(vdev->analog_post_buf);
+        vdev->analog_post_buf = malloc(vdev->packet_len);
+        if(vdev->analog_post_buf == NULL)
+        {
+            sr_err("%s: buf malloc failed", __func__);
+            return SR_ERR_MALLOC;
+        }
+        vdev->analog_post_buf_len = vdev->packet_len;
     }
 
     if(vdev->analog_read_pos + vdev->packet_len >= vdev->analog_buf_len - 1 )
     {
         uint64_t back_len = vdev->analog_buf_len - vdev->analog_read_pos;
-        for (int i = 0; i < back_len; i++)
-        {
-            uint8_t temp_val = *((uint8_t*)vdev->analog_buf + vdev->analog_read_pos + i);
-            memset(buf + i,temp_val,1);
-        }
-
         uint64_t front_len = vdev->packet_len - back_len;
-        for (int i = 0; i < front_len; i++)
-        {
-            uint8_t temp_val = *((uint8_t*)vdev->analog_buf + i);
-            memset(buf + back_len + i,temp_val,1);
-        }
+        memcpy(vdev->analog_post_buf , vdev->analog_buf + vdev->analog_read_pos , back_len);
+        memcpy(vdev->analog_post_buf+ back_len , vdev->analog_buf, front_len);
         vdev->analog_read_pos = front_len;
     }
     else
     {
-        memcpy(buf,vdev->analog_buf + vdev->analog_read_pos,vdev->packet_len);
+        memcpy(vdev->analog_post_buf,vdev->analog_buf + vdev->analog_read_pos,vdev->packet_len);
         vdev->analog_read_pos += vdev->packet_len;
     }
 
@@ -2451,11 +2420,11 @@ static int receive_data_analog(int fd, int revents, const struct sr_dev_inst *sd
     analog.mq = SR_MQ_VOLTAGE;
     analog.unit = SR_UNIT_VOLT;
     analog.mqflags = SR_MQFLAG_AC;
-    analog.data = buf;
+    analog.data = vdev->analog_post_buf;
 
     delay_time(vdev);
     ds_data_forward(sdi, &packet);
-    safe_free(buf);
+    
 
     return TRUE;
 }
@@ -2468,7 +2437,6 @@ static void send_error_packet(const struct sr_dev_inst *cb_sdi, struct session_v
     sr_session_source_remove(-1);
     close_archive(vdev);
 }
-
 
 static int close_archive(struct session_vdev *vdev)
 {
@@ -2744,6 +2712,106 @@ static int load_virtual_device_session(struct sr_dev_inst *sdi)
     return SR_OK;
 }
 
+int hw_cleanup()
+{
+    return SR_OK;
+}
+
+int dso_wavelength_updata(struct session_vdev *vdev)
+{
+    int index;
+    int bit = get_bit(vdev->timebase); 
+    struct session_packet_buffer *pack_buffer= vdev->packet_buffer;
+    uint8_t tmp_val;
+
+    int l = 0;
+    char* pattern_mode = demo_pattern_array[DSO].patterns[vdev->sample_generator];
+
+    if(vdev->sample_generator!= PATTERN_RANDOM)
+    {
+        if(!strcmp(pattern_mode,"triangle"))
+            l = 106;
+        else if(strcmp(pattern_mode,"square"))
+        {
+            for(int i = 0 ; i < DSO_PACKET_LEN/2 ; i += 2)
+            {
+                tmp_val = *((uint8_t*)pack_buffer->post_buf + i);
+                if(tmp_val == 78){
+                    l = i;
+                    break;
+                }
+            }
+        }
+
+
+        void* tmp_buf = g_try_malloc0(bit);
+        if(tmp_buf == NULL)
+        {
+            sr_err("%s: tmp_buf malloc failed", __func__);
+            return SR_ERR_MALLOC;
+        }
+        if(!strcmp(pattern_mode,"sawtooth"))
+        {
+            for(int i = 0 ; i< bit;i++)
+            {
+                if(i%2 == 0)
+                {
+                    if(i == bit -2)
+                    {
+                        index = 198;
+                    }
+                    else
+                    {
+                        index = i * 100 / (bit / 2);
+                    }
+                }
+                else
+                {
+                    if(i == bit -1)
+                    {
+                        index = 199;
+                    }
+                    else
+                    {
+                        index = (i-1) * 100 / (bit / 2) + 1;
+                    }
+
+                }
+                *((uint8_t*)tmp_buf+ i) = *((uint8_t*)pack_buffer->post_buf + index + l);
+            }
+        }
+        else {
+            for(int i = 0 ; i < bit ; i++)
+            {
+                if(i%2 == 0)
+                {
+                    if(bit == 10)
+                        index = i * 16;
+                    else
+                        index = i * 100 / (bit / 2);
+                }
+                else
+                {
+
+                    if(bit == 10)
+                        index = (i-1) * 16 + 1;
+                    else
+                        index = (i-1) * 100 / (bit / 2) + 1;
+                }
+
+                *((uint8_t*)tmp_buf+ i) = *((uint8_t*)pack_buffer->post_buf + index + l);
+            }
+        }
+
+
+        for(int i = 0 ; i < DSO_PACKET_LEN/bit ; i++)
+        {
+            memcpy(pack_buffer->post_buf+i*bit,tmp_buf,bit);
+        }
+
+        safe_free(tmp_buf);
+    }
+}
 
 SR_PRIV struct sr_dev_driver demo_driver_info = {
     .name = "virtual-demo",

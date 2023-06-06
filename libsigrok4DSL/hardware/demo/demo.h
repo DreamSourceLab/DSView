@@ -182,7 +182,9 @@ struct session_vdev
     void *dso_buf;
 
     void *analog_buf;
+    void *analog_post_buf;
     uint64_t analog_buf_len;
+    uint64_t analog_post_buf_len;
     uint64_t analog_read_pos;
 
     int cur_block;
@@ -499,6 +501,10 @@ static int receive_data_analog(int fd, int revents, const struct sr_dev_inst *sd
 static void send_error_packet(const struct sr_dev_inst *cb_sdi, struct session_vdev *vdev, struct sr_datafeed_packet *packet);
 
 static int close_archive(struct session_vdev *vdev);
+
+static int hw_cleanup();
+
+static int dso_wavelength_updata(struct session_vdev *vdev);
 
 
 #endif
