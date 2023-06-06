@@ -546,10 +546,10 @@ void DecoderStack::decode_data(const uint64_t decode_start, const uint64_t decod
             if (!bCheckEnd){
                 bCheckEnd = true;
 
-                uint64_t mipmap_sample_count = _snapshot->get_ring_sample_count();
+                uint64_t align_sample_count = _snapshot->get_ring_sample_count();
 
-                if (end_index >= mipmap_sample_count){
-                    end_index = mipmap_sample_count - 1;
+                if (end_index >= align_sample_count){
+                    end_index = align_sample_count - 1;
                     dsv_info("Reset the decode end sample, new:%llu, old:%llu", end_index, decode_end);
                 }
             }
@@ -603,7 +603,7 @@ void DecoderStack::decode_data(const uint64_t decode_start, const uint64_t decod
         if (chunk_end - i > MaxChunkSize)
             chunk_end = i + MaxChunkSize;
 
-        bEndTime = chunk_end == end_index;
+        bEndTime = (chunk_end == end_index);
 
         if (srd_session_send(
                 session,
@@ -614,8 +614,12 @@ void DecoderStack::decode_data(const uint64_t decode_start, const uint64_t decod
                 chunk_end - i,
                 &error) != SRD_OK){
 
-            if (error)
-                 _error_message = QString::fromLocal8Bit(error);
+            if (error){
+                _error_message = QString::fromLocal8Bit(error);
+                dsv_err("Failed to call srd_session_send:%s", error);
+                g_free(error);
+                error = NULL;
+            }
 
             bError = true;
             break;
@@ -649,8 +653,10 @@ void DecoderStack::decode_data(const uint64_t decode_start, const uint64_t decod
     if (!bError && bEndTime){
        srd_session_end(session, &error);
 
-        if (error != NULL)
+        if (error != NULL){
             _error_message = QString::fromLocal8Bit(error);
+            dsv_err("Failed to call srd_session_end:%s", error);
+        }
     }
  
     dsv_info("%s%llu", "send to decoder times: ", entry_cnt);
