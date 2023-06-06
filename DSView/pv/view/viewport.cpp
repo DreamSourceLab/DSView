@@ -1395,6 +1395,9 @@ void Viewport::measure()
     if (_view.session().is_data_lock())
         return;
         
+    if (_view.session().is_loop_mode() && _view.session().is_working())
+        return;
+        
     _measure_type = NO_MEASURE;
     if (_type == TIME_VIEW) {
         const uint64_t sample_rate = _view.session().cur_snap_samplerate();
