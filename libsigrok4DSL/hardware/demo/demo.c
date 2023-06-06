@@ -182,19 +182,13 @@ static void dso_status_update(struct session_vdev *vdev)
 
     uint8_t ch_max = DSO_MID_VAL;
     uint8_t ch_min = DSO_MID_VAL;
-    uint16_t max_count = 0;
-    int interval1 = 0;
-    int interval2 = 0;
-    uint16_t cur_l = DSO_PACKET_LEN -1;
-    uint64_t tmp_val = 0;
-    uint32_t rlen = 0;
-    gboolean isrising = FALSE;
-    gboolean isfallng = FALSE;
-    uint8_t pre_val = 0;
-    uint16_t len = 0;
+    uint32_t total_val = 0;
 
-    status->ch0_cyc_tlen = status->ch1_cyc_tlen = DSO_PACKET_LEN/2;
-    for(int i = 0 ; i<DSO_PACKET_LEN ; i+=2)
+    gboolean temp_plevel;
+    gboolean first_plevel = FALSE;
+    uint32_t temp_llen = 0;
+
+    for(int i = 0 ; i<DSO_PACKET_LEN ; i += 2)
     {
         uint8_t val = *(uint8_t*)(pack_buffer->post_buf +i);
         if (val >  ch_max)
@@ -202,75 +196,107 @@ static void dso_status_update(struct session_vdev *vdev)
         if (val <  ch_min)
             ch_min = val;
     }
-    status->ch0_max = status->ch1_max = ch_max;
-    status->ch0_min = status->ch1_min = ch_min;
+    status->ch0_max = status->ch1_max = status->ch0_high_level = status->ch1_high_level = ch_max;
+    status->ch0_min = status->ch1_min = status->ch0_low_level = status->ch1_low_level = ch_min;
 
+    status->ch0_cyc_tlen = status->ch1_cyc_tlen = 0;
+    status->ch0_cyc_llen = status->ch1_cyc_llen = 0;
+    status->ch0_cyc_cnt = status->ch1_cyc_cnt = 0;
     status->ch0_cyc_rlen =  status->ch1_cyc_rlen = 0;
     status->ch0_cyc_flen =  status->ch1_cyc_flen = 0;
+    status->ch0_cyc_plen =  status->ch1_cyc_plen = 0;
 
-    for(int i = 0 ; i<DSO_PACKET_LEN ; i+=2)
+    status->ch0_level_valid = status->ch1_level_valid = 1;
+    status->ch0_acc_mean = status->ch1_acc_mean =  0;
+
+    for(uint16_t i = 0 ; i<DSO_PACKET_LEN ; i += 2)
     {
-        uint8_t val = *(uint8_t*)(pack_buffer->post_buf +i);
-//        sr_info("val:%d,pre_val:%d",val,pre_val);
-        if(pre_val != 0)
+        if(i <= pack_buffer->post_len || vdev->instant)
         {
-            if(isfallng || isrising)
+            uint8_t val = *(uint8_t*)(pack_buffer->post_buf +i);
+            if (first_plevel)
             {
-                if(isrising)
+                if(val <= DSO_MID_VAL)
                 {
-                    if(val == ch_min)
-                    {
-                        isrising = FALSE;
-                        status->ch0_cyc_rlen =  status->ch1_cyc_rlen +=len;
-                    }
-                    else
-                    {
-                        len++;
-                    }
+                    status->ch0_cyc_plen++;
+                    status->ch1_cyc_plen++;
                 }
-                else if(isfallng)
+                temp_llen++;
+
+                if(temp_plevel)
                 {
                     if(val >= DSO_MID_VAL)
                     {
-                        isfallng = FALSE;
-                        status->ch0_cyc_flen =  status->ch1_cyc_flen +=len;
+                        status->ch0_cyc_flen++;
+                        status->ch1_cyc_flen++;
                     }
-                    else
+                    if(val == ch_max)
                     {
-                        len++;
+                        temp_plevel = !temp_plevel;
+                        if(status->ch0_plevel == temp_plevel)
+                        {
+                            status->ch0_cyc_cnt++;
+                            status->ch1_cyc_cnt++;
+                            status->ch0_cyc_tlen = status->ch1_cyc_tlen += temp_llen;
+                            status->ch0_cyc_llen = status->ch1_cyc_llen = 0;
+                            temp_llen = 0;
+                        }
+                        else
+                        {
+                            status->ch0_cyc_llen = status->ch1_cyc_llen = temp_llen;
+                        }
+                    }
+                }
+                else
+                {
+                    if(val <= DSO_MID_VAL)
+                    {
+                        status->ch0_cyc_rlen++;
+                        status->ch1_cyc_rlen++;
+                    }
+                    if(val == ch_min)
+                    {
+                        temp_plevel = !temp_plevel;
+                        if(status->ch0_plevel == temp_plevel)
+                        {
+                            status->ch0_cyc_cnt++;
+                            status->ch1_cyc_cnt++;
+                            status->ch0_cyc_tlen = status->ch1_cyc_tlen += temp_llen;
+                            status->ch0_cyc_llen = status->ch1_cyc_llen = 0;
+                            temp_llen = 0;
+                        }
+                        else
+                        {
+                            status->ch0_cyc_llen = status->ch1_cyc_llen = temp_llen;
+                        }
                     }
                 }
             }
             else
             {
-                if(val <= DSO_MID_VAL && pre_val >= DSO_MID_VAL)
+                if(val == ch_max || val == ch_min)
                 {
-                    isrising = TRUE;
-                    len = 0;
-                }
-                else if(pre_val == ch_min && val > ch_min)
-                {
-                    isfallng = TRUE;
-                    len = 0;
+                    if(val == ch_max)
+                        temp_plevel = status->ch0_plevel = status->ch1_plevel = FALSE;
+                    else
+                        temp_plevel = status->ch0_plevel = status->ch1_plevel = TRUE;
+                    first_plevel = TRUE;
                 }
             }
+            total_val += val;
         }
-        pre_val = val;
+        else
+            break;
     }
-
-
-    status->ch0_level_valid = status->ch1_level_valid = 1;
-    status->ch0_high_level = status->ch1_high_level = ch_max;
-    status->ch0_low_level = status->ch1_low_level = ch_min;
-
-    status->ch0_cyc_plen = status->ch1_cyc_plen = 5000;
-    status->ch0_cyc_llen = status->ch1_cyc_llen = 0;
-
-    status->ch0_cyc_cnt = status->ch1_cyc_cnt =DSO_PACKET_LEN/get_bit(vdev->timebase);
-    status->ch0_plevel = 1;
-    status->ch1_plevel = 1;
-    status->ch0_acc_mean = 10;
-    status->ch1_acc_mean = 100;
+    if(vdev->sample_generator != PATTERN_RANDOM)
+    {
+        status->ch0_acc_mean = status->ch1_acc_mean =  DSO_MID_VAL*pack_buffer->post_len/2;
+    }
+    else
+    {
+        status->ch0_acc_mean = status->ch1_acc_mean =  total_val;
+    }
+    status->ch0_acc_square = status->ch1_acc_square =  ch_max*pack_buffer->post_len/2*7;
 }
 
 static void logic_adjust_samplerate(struct session_vdev * vdev)
@@ -2689,44 +2715,87 @@ int dso_wavelength_updata(struct session_vdev *vdev)
     int index;
     int bit = get_bit(vdev->timebase); 
     struct session_packet_buffer *pack_buffer= vdev->packet_buffer;
+    uint8_t tmp_val;
 
     int l = 0;
     char* pattern_mode = demo_pattern_array[DSO].patterns[vdev->sample_generator];
-    if(!strcmp(pattern_mode,"sine"))
-        l = 30;
-    if(!strcmp(pattern_mode,"triangle"))
-        l = 106;
-    
+
     if(vdev->sample_generator!= PATTERN_RANDOM)
     {
+        if(!strcmp(pattern_mode,"triangle"))
+            l = 106;
+        else if(strcmp(pattern_mode,"square"))
+        {
+            for(int i = 0 ; i < DSO_PACKET_LEN/2 ; i += 2)
+            {
+                tmp_val = *((uint8_t*)pack_buffer->post_buf + i);
+                if(tmp_val == 78){
+                    l = i;
+                    break;
+                }
+            }
+        }
+
+
         void* tmp_buf = g_try_malloc0(bit);
         if(tmp_buf == NULL)
         {
             sr_err("%s: tmp_buf malloc failed", __func__);
             return SR_ERR_MALLOC;
         }
-        
-
-        for(int i = 0 ; i < bit ; i++)
+        if(!strcmp(pattern_mode,"sawtooth"))
         {
-            if(i%2 == 0)
+            for(int i = 0 ; i< bit;i++)
             {
-                if(bit == 10)
-                    index = i * 16;
+                if(i%2 == 0)
+                {
+                    if(i == bit -2)
+                    {
+                        index = 198;
+                    }
+                    else
+                    {
+                        index = i * 100 / (bit / 2);
+                    }
+                }
                 else
-                    index = i * 100 / (bit / 2);
+                {
+                    if(i == bit -1)
+                    {
+                        index = 199;
+                    }
+                    else
+                    {
+                        index = (i-1) * 100 / (bit / 2) + 1;
+                    }
+
+                }
+                *((uint8_t*)tmp_buf+ i) = *((uint8_t*)pack_buffer->post_buf + index + l);
             }
-            else
-            {
-                
-                if(bit == 10)
-                    index = (i-1) * 16 + 1;
-                else
-                    index = (i-1) * 100 / (bit / 2) + 1;
-            }
-            
-            *((uint8_t*)tmp_buf+ i) = *((uint8_t*)pack_buffer->post_buf + index + l);
         }
+        else {
+            for(int i = 0 ; i < bit ; i++)
+            {
+                if(i%2 == 0)
+                {
+                    if(bit == 10)
+                        index = i * 16;
+                    else
+                        index = i * 100 / (bit / 2);
+                }
+                else
+                {
+
+                    if(bit == 10)
+                        index = (i-1) * 16 + 1;
+                    else
+                        index = (i-1) * 100 / (bit / 2) + 1;
+                }
+
+                *((uint8_t*)tmp_buf+ i) = *((uint8_t*)pack_buffer->post_buf + index + l);
+            }
+        }
+
 
         for(int i = 0 ; i < DSO_PACKET_LEN/bit ; i++)
         {
