@@ -306,7 +306,8 @@ SR_API int ds_get_device_list(struct ds_device_base_info **out_list, int *out_co
 
 	array = (struct ds_device_info *)malloc(sizeof(struct ds_device_base_info) * (num + 1));
 	if (array == NULL)
-	{
+	{	
+		sr_err("%s,ERROR:failed to alloc memory.", __func__);
 		pthread_mutex_unlock(&lib_ctx.mutext);
 		return SR_ERR_MALLOC;
 	}

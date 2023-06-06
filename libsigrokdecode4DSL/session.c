@@ -63,17 +63,26 @@ SRD_PRIV int max_session_id = -1;
  */
 SRD_API int srd_session_new(struct srd_session **sess)
 {
+	struct srd_session *se = NULL;
+
 	if (!sess)
 		return SRD_ERR_ARG;
 
-	*sess = g_malloc(sizeof(struct srd_session));
-	(*sess)->session_id = ++max_session_id;
-	(*sess)->di_list = (*sess)->callbacks = NULL;
+	se = malloc(sizeof(struct srd_session));
+	if (se == NULL){
+		srd_err("%s,ERROR:failed to alloc memory.", __func__);
+		return SRD_ERR;
+	}
+	memset(se, 0, sizeof(struct srd_session));
+
+	se->session_id = ++max_session_id;
 
 	/* Keep a list of all sessions, so we can clean up as needed. */
-	sessions = g_slist_append(sessions, *sess);
+	sessions = g_slist_append(sessions, se);
 
-	srd_info("Creating session %d.", (*sess)->session_id);
+	*sess = se;
+
+	//srd_info("Creating session %d.", (*sess)->session_id);
 
 	return SRD_OK;
 }
@@ -379,7 +388,13 @@ SRD_API int srd_pd_output_callback_add(struct srd_session *sess,
 	srd_dbg("Registering new callback for output type %s.",
 		output_type_name(output_type));
 
-	pd_cb = g_malloc(sizeof(struct srd_pd_callback));
+	pd_cb = malloc(sizeof(struct srd_pd_callback));
+	if (pd_cb == NULL){
+		srd_err("%s,ERROR:failed to alloc memory.", __func__);
+		return SRD_ERR;
+	}
+	memset(pd_cb, 0, sizeof(struct srd_pd_callback));
+	
 	pd_cb->output_type = output_type;
 	pd_cb->cb = cb;
 	pd_cb->cb_data = cb_data;

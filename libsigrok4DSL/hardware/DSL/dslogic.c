@@ -207,10 +207,11 @@ static struct DSL_context *DSLogic_dev_new(const struct DSL_profile *prof)
 
     assert(prof);
 
-    if (!(devc = g_try_malloc(sizeof(struct DSL_context)))) {
+    if (!(devc = malloc(sizeof(struct DSL_context)))) {
         sr_err("Device context malloc failed.");
 		return NULL;
 	}
+    memset(devc, 0, sizeof(struct DSL_context));
 
     for (i = 0; i < ARRAY_SIZE(channel_modes); i++){
         if(channel_modes[i].id != i)
@@ -439,7 +440,7 @@ static GSList *scan(GSList *options)
         else {
             char *firmware;
             char *res_path = DS_RES_PATH;
-            if (!(firmware = g_try_malloc(strlen(res_path)+strlen(prof->firmware) + 5))) {
+            if (!(firmware = malloc(strlen(res_path)+strlen(prof->firmware) + 5))) {
                 sr_err("Firmware path malloc error!");
                 return NULL;
             }
@@ -1067,7 +1068,7 @@ static int config_set(int id, GVariant *data, struct sr_dev_inst *sdi,
 
             char *fpga_bit;
             char *res_path = DS_RES_PATH;
-            if (!(fpga_bit = g_try_malloc(strlen(res_path) + strlen(devc->profile->fpga_bit33) + 5))) {
+            if (!(fpga_bit = malloc(strlen(res_path) + strlen(devc->profile->fpga_bit33) + 5))) {
                 sr_err("fpag_bit path malloc error!");
                 return SR_ERR_MALLOC;
             }
@@ -1485,8 +1486,12 @@ static int dev_acquisition_start(struct sr_dev_inst *sdi, void *cb_data)
     /* setup callback function for data transfer */
     lupfd = libusb_get_pollfds(drvc->sr_ctx->libusb_ctx);
     for (i = 0; lupfd[i]; i++);
-    if (!(devc->usbfd = g_try_malloc(sizeof(struct libusb_pollfd) * (i + 1))))
+
+    if (!(devc->usbfd = malloc(sizeof(struct libusb_pollfd) * (i + 1)))){
+        sr_err("%s,ERROR:failed to alloc memory.", __func__);
     	return SR_ERR;
+    }
+
     for (i = 0; lupfd[i]; i++) {
         sr_source_add(lupfd[i]->fd, lupfd[i]->events,
                   dsl_get_timeout(sdi), receive_data, sdi);

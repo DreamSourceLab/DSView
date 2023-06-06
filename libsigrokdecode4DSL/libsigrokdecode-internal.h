@@ -29,7 +29,7 @@
 #include "libsigrokdecode.h"
 #include <structmember.h>
 
-#define g_safe_free(p) if((p)){g_free((p)); (p) = NULL;}
+#define safe_free(p) if((p)){free((p)); (p) = NULL;}
 
 enum {
 	SRD_TERM_HIGH,

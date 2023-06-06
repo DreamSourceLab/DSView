@@ -24,6 +24,7 @@
 #include <string.h>
 #include <glib.h>
 #include "log.h"
+#include <assert.h>
 
 /* Message logging helpers with subsystem-specific prefix string. */
 
@@ -58,7 +59,6 @@ struct source {
 	 */
 	gintptr poll_object;
 };
- 
 
 /**
  * Create a new session.
@@ -75,11 +75,12 @@ SR_PRIV struct sr_session *sr_session_new(void)
 		sr_session_destroy(); // Destory the old.
 	}
 
-	session = g_try_malloc0(sizeof(struct sr_session));
+	session = malloc(sizeof(struct sr_session));
 	if (session == NULL) {
-		sr_err("%s", "Session malloc failed.");
+		sr_err("%s,ERROR:failed to alloc memory.", __func__);
 		return NULL;
 	}
+	memset(session, 0, sizeof(struct sr_session));
 
 	session->source_timeout = -1;
     session->running = FALSE;

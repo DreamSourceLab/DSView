@@ -150,19 +150,6 @@ enum DEMO_LOGIC_CHANNEL_INDEX {
     LOGIC1000x3 = 3,
 };
 
-static uint64_t samplerates_file[1];
-static uint64_t samplecounts_file[1];
-
-static GTimer *packet_interval = NULL;
-static GTimer *run_time = NULL;
-
-static int max_probe_num = 0;
-
-static int64_t analog_count = 0;
-static gboolean channel_mode_change = FALSE;
-static uint64_t packet_num;
-static void *logic_post_buf = NULL;
-
 
 struct session_packet_buffer;
 

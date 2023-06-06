@@ -22,6 +22,7 @@
 #include <glib.h>
 #include "config.h" /* Needed for HAVE_LIBUSB_1_0 and others. */
 #include "log.h"
+#include <assert.h>
 
 #undef LOG_PREFIX 
 #define LOG_PREFIX "backend: "
@@ -316,18 +317,13 @@ SR_PRIV int sr_init(struct sr_context **ctx)
 	}
 
 	/* + 1 to handle when struct sr_context has no members. */
-	context = g_try_malloc0(sizeof(struct sr_context) + 1);
-
+	context = malloc(sizeof(struct sr_context));
 	if (!context) {
+		sr_err("%s,ERROR:failed to alloc memory.", __func__);
 		ret = SR_ERR_MALLOC;
 		goto done;
 	}
-
-	context->libusb_ctx = NULL;
-	context->hotplug_handle = 0;
-    context->hotplug_callback = NULL;
-	context->hotplug_tv.tv_sec = 0;
-    context->hotplug_tv.tv_usec = 0;
+	memset(context, 0, sizeof(struct sr_context));
 
 	ret = libusb_init(&context->libusb_ctx);
 	if (LIBUSB_SUCCESS != ret) {

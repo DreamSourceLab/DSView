@@ -191,9 +191,13 @@ SR_API const struct sr_option **sr_output_options_get(const struct sr_output_mod
 
 	mod_opts = omod->options();
 
-	for (size = 0; mod_opts[size].id; size++)
-		;
-	opts = g_malloc((size + 1) * sizeof(struct sr_option *));
+	for (size = 0; mod_opts[size].id; size++);
+
+	opts = malloc((size + 1) * sizeof(struct sr_option *));
+	if (opts == NULL){
+		sr_err("%s,ERROR:failed to alloc memory.", __func__);
+		return NULL;
+	}
 
 	for (i = 0; i < size; i++)
 		opts[i] = &mod_opts[i];
@@ -253,7 +257,12 @@ SR_API const struct sr_output *sr_output_new(const struct sr_output_module *omod
 	gpointer key, value;
 	int i;
 
-	op = g_malloc(sizeof(struct sr_output));
+	op = malloc(sizeof(struct sr_output));
+	if (op == NULL){
+		sr_err("%s,ERROR:failed to alloc memory.", __func__);
+		return SR_ERR;
+	}
+
 	op->module = omod;
 	op->sdi = sdi;
 

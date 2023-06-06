@@ -24,6 +24,7 @@
 #include <string.h>
 #include <glib.h>
 #include "../config.h" /* Needed for PACKAGE_STRING and others. */
+#include "../log.h"
   
 struct context {
 	unsigned int num_enabled_channels;
@@ -68,7 +69,12 @@ static int init(struct sr_output *o, GHashTable *options)
 	if (!o || !o->sdi)
 		return SR_ERR_ARG;
 
-	ctx = g_malloc0(sizeof(struct context));
+	ctx = malloc(sizeof(struct context));
+    if (ctx == NULL){
+        sr_err("%s,ERROR:failed to alloc memory.", __func__);
+        return SR_ERR;
+    }
+
 	o->priv = ctx;
 	ctx->separator = ',';
     ctx->mask = 0;
@@ -84,12 +90,17 @@ static int init(struct sr_output *o, GHashTable *options)
 			continue;
 		ctx->num_enabled_channels++;
 	}
-	ctx->channel_index = g_malloc(sizeof(int) * ctx->num_enabled_channels);
-    ctx->channel_unit = g_malloc(sizeof(int) * ctx->num_enabled_channels);
-    ctx->channel_scale = g_malloc(sizeof(float) * ctx->num_enabled_channels);
-    ctx->channel_offset = g_malloc(sizeof(uint16_t) * ctx->num_enabled_channels);
-    ctx->channel_mmax = g_malloc(sizeof(double) * ctx->num_enabled_channels);
-    ctx->channel_mmin = g_malloc(sizeof(double) * ctx->num_enabled_channels);
+	ctx->channel_index = malloc(sizeof(int) * ctx->num_enabled_channels);
+    ctx->channel_unit = malloc(sizeof(int) * ctx->num_enabled_channels);
+    ctx->channel_scale = malloc(sizeof(float) * ctx->num_enabled_channels);
+    ctx->channel_offset = malloc(sizeof(uint16_t) * ctx->num_enabled_channels);
+    ctx->channel_mmax = malloc(sizeof(double) * ctx->num_enabled_channels);
+    ctx->channel_mmin = malloc(sizeof(double) * ctx->num_enabled_channels);
+
+    if (ctx->channel_index == NULL || ctx->channel_mmin == NULL){
+        sr_err("%s,ERROR:failed to alloc memory.", __func__);
+        return;
+    }
 
 	/* Once more to map the enabled channels. */
 	for (i = 0, l = o->sdi->channels; l; l = l->next) {

@@ -56,10 +56,11 @@ SR_PRIV int ds_trigger_init(void)
     int i, j;
 
     if (!trigger) {
-        if (!(trigger = g_try_malloc0(sizeof(struct ds_trigger)))) {
+        if (!(trigger = malloc(sizeof(struct ds_trigger)))) {
             sr_err("Trigger malloc failed.");
             return SR_ERR_MALLOC;
         }
+        memset(trigger, 0, sizeof(struct ds_trigger));
     }
 
     trigger->trigger_en = 0;
