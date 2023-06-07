@@ -121,6 +121,9 @@ namespace pv
             void enable_toggle(bool enable);
             void update_mode_icon();
 
+            bool action_run_stop();
+            bool action_instant_stop();
+
         private slots:
             void on_collect_mode();
             void on_run_stop();

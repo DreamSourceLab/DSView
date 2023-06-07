@@ -799,27 +799,31 @@ namespace pv
             }
         }
 
-        // start or stop capture
         void SamplingBar::on_run_stop()
         {
+            _run_stop_action->setEnabled(false);
+
+            if (action_run_stop() == false){
+                _run_stop_action->setEnabled(true);
+            }
+        }
+
+        // start or stop capture
+        bool SamplingBar::action_run_stop()
+        {    
             if (_session->is_doing_action()){
-                dsv_info("Task is busy.");
-                return;
+                dsv_info("Task is busy.");              
+                return false;
             }
 
-            if (_session->is_working())
-            {   
-                _run_stop_action->setEnabled(false);
-                if (_session->stop_capture() == false){
-                    _run_stop_action->setEnabled(true);
-                }
-                return;
+            if (_session->is_working()){
+                return _session->stop_capture();
             }
 
             if (_device_agent->have_instance() == false)
             {
                 dsv_info("%s", "Have no device, can't to collect data.");
-                return;
+                return false;
             }
 
             commit_settings();
@@ -844,7 +848,7 @@ namespace pv
                         _device_agent->set_config_bool(SR_CONF_ZERO, false);
                         update_view_status();
                     }
-                    return;                     
+                    return false;                    
                 }
             }
 
@@ -854,7 +858,9 @@ namespace pv
             }
 
             _is_run_as_instant = false;
-            _session->start_capture(false);
+            bool ret = _session->start_capture(false);
+
+            return ret;
         }
 
         void SamplingBar::on_instant_stop()
@@ -863,25 +869,28 @@ namespace pv
                 return;
             }
 
+            _instant_action->setEnabled(false);
+            
+            if (action_instant_stop() == false){
+                _instant_action->setEnabled(true);
+            }
+        }
+
+        bool SamplingBar::action_instant_stop()
+        { 
             if (_session->is_doing_action()){
                 dsv_info("Task is busy.");
-                return;
+                return false;
             }
 
-            if (_session->is_working())
-            {
-                _instant_action->setEnabled(false);
-                if (_session->stop_capture() == false){
-                    _instant_action->setEnabled(true);
-                }
-                return;
-            }
-            
+            if (_session->is_working()){ 
+                return _session->stop_capture();
+            }            
             
             if (_device_agent->have_instance() == false)
             {
                 dsv_info("%s", "Error! Have no device, can't to collect data.");
-                return;
+                return false;
             }
 
             commit_settings();
@@ -904,7 +913,7 @@ namespace pv
                         _device_agent->set_config_bool(SR_CONF_ZERO, false);
                         update_view_status();
                     }
-                    return;                    
+                    return false;            
                 }
             }
 
@@ -914,7 +923,9 @@ namespace pv
             }
             
             _is_run_as_instant = true;
-            _session->start_capture(true);        
+            bool ret = _session->start_capture(true);
+
+            return ret;  
         }
 
         void SamplingBar::on_device_selected()
