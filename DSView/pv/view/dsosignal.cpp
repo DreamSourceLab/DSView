@@ -1494,12 +1494,14 @@ double DsoSignal::get_voltage(uint64_t index)
 
     if (index >= _data->get_sample_count())
         return 1;
+    
+    assert(_data);
 
     const double value = *_data->get_samples(index, index, get_index());
     const int hw_offset = get_hw_offset();
+    uint64_t k = get_index() == 0 ? _data->get_measure_voltage_factor1() : _data->get_measure_voltage_factor2();
 
-    return (hw_offset - value) * _scale *
-            _vDial->get_value() * _vDial->get_factor() *
+    return (hw_offset - value) * _scale * k *
             DS_CONF_DSO_VDIVS / get_view_rect().height();
 }
 
@@ -1513,10 +1515,14 @@ QString DsoSignal::get_voltage(double v, int p, bool scaled)
         assert(false);
     }
 
+    assert(_data);
+
+    uint64_t k = get_index() == 0 ? _data->get_measure_voltage_factor1() : _data->get_measure_voltage_factor2();
+
     if (scaled)
-        v = v * _vDial->get_value() * _vDial->get_factor() * DS_CONF_DSO_VDIVS / get_view_rect().height();
+        v = v * k * DS_CONF_DSO_VDIVS / get_view_rect().height();
     else
-        v = v * _scale * _vDial->get_value() * _vDial->get_factor() * DS_CONF_DSO_VDIVS / get_view_rect().height();
+        v = v * _scale * k * DS_CONF_DSO_VDIVS / get_view_rect().height();
     
     return abs(v) >= 1000 ? QString::number(v/1000.0, 'f', p) + "V" : QString::number(v, 'f', p) + "mV";
 }

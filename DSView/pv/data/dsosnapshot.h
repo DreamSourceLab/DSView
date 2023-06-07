@@ -111,6 +111,22 @@ public:
         return _threshold;
     }
 
+    inline void set_measure_voltage_factor1(uint64_t v){
+        _measure_voltage_factor1 = v;
+    }
+
+    inline uint64_t get_measure_voltage_factor1(){
+        return _measure_voltage_factor1;
+    }
+
+    inline void set_measure_voltage_factor2(uint64_t v){
+        _measure_voltage_factor2 = v;
+    }
+
+    inline uint64_t get_measure_voltage_factor2(){
+        return _measure_voltage_factor2;
+    }
+
 private:
     void append_data(void *data, uint64_t samples, bool instant);
     void free_envelop();
@@ -126,6 +142,8 @@ private:
     bool    _instant; 
     std::vector<uint8_t*>   _ch_data;
     float   _threshold;
+    uint64_t _measure_voltage_factor1;
+    uint64_t _measure_voltage_factor2;
  
     friend class DsoSnapshotTest::Basic;
 };

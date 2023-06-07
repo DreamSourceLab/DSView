@@ -48,7 +48,9 @@ DsoSnapshot::DsoSnapshot() :
     _envelope_en = false;
     _envelope_done = false;
     _instant = false;
-    _threshold = 0; 
+    _threshold = 0;
+    _measure_voltage_factor1 = 0;
+    _measure_voltage_factor2 = 0;
 
 	memset(_envelope_levels, 0, sizeof(_envelope_levels));
 }

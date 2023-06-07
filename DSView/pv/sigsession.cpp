@@ -375,6 +375,21 @@ namespace pv
         _capture_data->get_logic()->set_samplerate(samplerate);
         _capture_data->get_analog()->set_samplerate(samplerate);
         _capture_data->get_dso()->set_samplerate(samplerate);
+
+        if (_device_agent.get_work_mode() == DSO)
+        {
+            for(auto s : _signals){
+                if (s->get_type() == SR_CHANNEL_DSO){
+                    view::DsoSignal *ch = (view::DsoSignal*)s;
+                    uint64_t k = ch->get_vDial()->get_value() * ch->get_vDial()->get_factor();
+
+                    if (ch->get_index() == 0)
+                        _capture_data->get_dso()->set_measure_voltage_factor1(k);
+                    else
+                        _capture_data->get_dso()->set_measure_voltage_factor2(k);                                                              
+                }
+            }
+        }
   
         // DecoderStack
         for (auto d : _decode_traces)
