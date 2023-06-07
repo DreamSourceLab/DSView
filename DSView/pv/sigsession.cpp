@@ -381,7 +381,7 @@ namespace pv
             for(auto s : _signals){
                 if (s->get_type() == SR_CHANNEL_DSO){
                     view::DsoSignal *ch = (view::DsoSignal*)s;
-                    uint64_t k = ch->get_vDial()->get_value() * ch->get_vDial()->get_factor();
+                    uint64_t k = ch->get_vDial()->get_value();
 
                     if (ch->get_index() == 0)
                         _capture_data->get_dso()->set_measure_voltage_factor1(k);
