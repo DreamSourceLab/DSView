@@ -325,7 +325,8 @@ void MeasureDock::goto_cursor()
 
 void MeasureDock::add_dist_measure()
 {
-    if (_dist_row_widget_vec.size() > Max_Measure_Limits)
+    int num = _dist_row_widget_vec.size();
+    if (num > Max_Measure_Limits)
         return;
 
     QWidget *row_widget = new QWidget(_widget);
@@ -384,7 +385,7 @@ void MeasureDock::del_dist_measure()
             _dist_s_btn_vec.remove(del_index);
             _dist_e_btn_vec.remove(del_index);
             _dist_r_label_vec.remove(del_index);
-            _dist_row_widget_vec.remove(del_index);
+            _dist_row_widget_vec.erase(_dist_row_widget_vec.begin() + del_index);
 
             break;
         }
@@ -394,7 +395,8 @@ void MeasureDock::del_dist_measure()
 
 void MeasureDock::add_edge_measure()
 {
-    if (_edge_row_widget_vec.size() > Max_Measure_Limits)
+    int num = _edge_row_widget_vec.size();
+    if (num > Max_Measure_Limits)
         return;
 
     QWidget *row_widget = new QWidget(_widget);
@@ -445,7 +447,6 @@ void MeasureDock::add_edge_measure()
     row_layout->addWidget(r_label, 100);
 
     _edge_layout->addWidget(row_widget, _edge_row_widget_vec.size(), 0, 1, 7);
-
 }
 
 void MeasureDock::del_edge_measure()
@@ -462,7 +463,7 @@ void MeasureDock::del_edge_measure()
             _edge_e_btn_vec.remove(del_index);
             _edge_r_label_vec.remove(del_index);
             _edge_ch_cmb_vec.remove(del_index);
-            _edge_row_widget_vec.remove(del_index);
+            _edge_row_widget_vec.erase(_edge_row_widget_vec.begin() + del_index);
 
             break;
         }

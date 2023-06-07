@@ -116,7 +116,7 @@ private:
     QGridLayout *_dist_layout;
     QGroupBox *_dist_groupBox;
     QToolButton *_dist_add_btn;
-    QVector<QWidget *> _dist_row_widget_vec;
+    std::vector<QWidget *> _dist_row_widget_vec;
     QVector<QToolButton *> _dist_del_btn_vec;
     QVector<QPushButton *> _dist_s_btn_vec;
     QVector<QPushButton *> _dist_e_btn_vec;
@@ -125,7 +125,7 @@ private:
     QGridLayout *_edge_layout;
     QGroupBox *_edge_groupBox;
     QToolButton *_edge_add_btn;
-    QVector<QWidget *> _edge_row_widget_vec;
+    std::vector<QWidget *> _edge_row_widget_vec;
     QVector<QToolButton *> _edge_del_btn_vec;
     QVector<QPushButton *> _edge_s_btn_vec;
     QVector<QPushButton *> _edge_e_btn_vec;
