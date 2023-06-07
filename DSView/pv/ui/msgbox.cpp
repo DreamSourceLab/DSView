@@ -85,10 +85,10 @@ void MsgBox::Show(const QString title, const QString text, const QString infoTex
 
 bool MsgBox::Confirm(const QString text, QWidget *parent)
 {
-    return MsgBox::Confirm(text, "", parent);
+    return MsgBox::Confirm(text, "", NULL, parent);
 }
 
-bool MsgBox::Confirm(const QString text, const QString infoText, QWidget *parent)
+bool MsgBox::Confirm(const QString text, const QString infoText, pv::dialogs::DSMessageBox **box, QWidget *parent)
 {
     assert(!text.isEmpty());
 
@@ -108,6 +108,10 @@ bool MsgBox::Confirm(const QString text, const QString infoText, QWidget *parent
 
     if (infoText != ""){
         msg.mBox()->setInformativeText(infoText);
+    }
+
+    if (box != NULL){
+        *box = &msg;
     }
 
     msg.exec();

@@ -1921,9 +1921,11 @@ namespace pv
                 {
                     QString msgText = L_S(STR_PAGE_MSG, S_ID(IDS_MSG_TO_SWITCH_DEVICE), "To switch the new device?");
                     
-                    if (MsgBox::Confirm(msgText) == false){ 
+                    if (MsgBox::Confirm(msgText, "", &_msg, NULL) == false){ 
+                        _msg = NULL;
                         return;
                     }
+                    _msg = NULL;
                 }
 
                 // The store confirm is not processed.
