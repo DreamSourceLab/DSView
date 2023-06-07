@@ -1457,8 +1457,12 @@ QString StoreSession::MakeExportFile(bool bDlg)
     }
 
     QString selfilter;
-    if (app._userHistory.exportFormat != ""){
+    if (app._userHistory.exportFormat != "" 
+            && _session->get_device()->get_work_mode() == LOGIC){
         selfilter.append(app._userHistory.exportFormat);
+    }
+    else{
+        selfilter.append(".csv");
     }
 
     if (bDlg)
@@ -1482,7 +1486,9 @@ QString StoreSession::MakeExportFile(bool bDlg)
             app._userHistory.exportDir = _dir_path;
             bChange = true;
         }
-        if (selfilter != app._userHistory.exportFormat){
+        
+        if (selfilter != app._userHistory.exportFormat 
+                && _session->get_device()->get_work_mode() == LOGIC){
             app._userHistory.exportFormat = selfilter;
              bChange = true;            
         }
