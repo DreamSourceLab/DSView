@@ -86,6 +86,8 @@ const char *LangResource::get_lang_key(int lang)
 
 bool LangResource::Load(int lang)
 {
+    std::lock_guard<std::mutex> lock(_mutex);
+
     int num = sizeof(lang_id_keys) / sizeof(lang_key_item);
     const char *lan_name = get_lang_key(lang);
 
@@ -99,7 +101,7 @@ bool LangResource::Load(int lang)
 
     _query_decoders.clear();
 
-    this->Release();
+    release_self();
 
     num = sizeof(lange_page_keys) / sizeof(lang_page_item);
 
@@ -117,6 +119,12 @@ bool LangResource::Load(int lang)
 
 void LangResource::Release()
 {
+    std::lock_guard<std::mutex> lock(_mutex);
+    release_self();
+}
+
+void LangResource::release_self()
+{ 
     for (Lang_resource_page *p : _pages)
     {
         p->Clear();
@@ -194,6 +202,8 @@ const char* LangResource::get_lang_text(int page_id, const char *str_id, const c
     assert(str_id);
     assert(default_str); 
 
+    std::lock_guard<std::mutex> lock(_mutex);
+
     if (*str_id == '\0' || *default_str == '\0'){
         dsv_err("%s", "LangResource::get_lang_text(), param is empty.");
         assert(false);
@@ -245,6 +255,8 @@ const char* LangResource::get_lang_text(int page_id, const char *str_id, const c
 
 bool LangResource::is_new_decoder(const char *decoder_id)
 {
+    std::lock_guard<std::mutex> lock(_mutex);
+
     std::string key(decoder_id);
     if (_query_decoders.find(key) == _query_decoders.end()){
         _query_decoders[key] = 1;
@@ -256,6 +268,8 @@ bool LangResource::is_new_decoder(const char *decoder_id)
 
 void LangResource::reload_dynamic()
 {
+    std::lock_guard<std::mutex> lock(_mutex);
+
     for (Lang_resource_page *p : _pages)
     {
         if (p->_is_dynamic){
@@ -268,6 +282,8 @@ void LangResource::reload_dynamic()
 
 void LangResource::release_dynamic()
 {
+    std::lock_guard<std::mutex> lock(_mutex);
+
     for (Lang_resource_page *p : _pages)
     {
         if (p->_is_dynamic){

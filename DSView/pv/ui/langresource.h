@@ -27,6 +27,7 @@
 #include <QString>
 #include <string>
 #include "string_ids.h"
+#include <mutex>
 
 struct lang_key_item
 {
@@ -92,6 +93,7 @@ public:
     }
    
 private:
+    void release_self();
     const char *get_lang_key(int lang);
 
     void load_page(Lang_resource_page &p);
@@ -103,6 +105,7 @@ private:
     Lang_resource_page    *_current_page;
     int     _cur_lang;
     std::map<std::string, int> _query_decoders;
+    mutable std::mutex  _mutex;  
 };
 
 #define S_ID(id) #id

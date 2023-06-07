@@ -430,6 +430,7 @@ void DecoderStack::do_decode_work()
 		if (!dec->have_required_probes()) {
 			_error_message = L_S(STR_PAGE_MSG, S_ID(IDS_MSG_DECODERSTACK_DECODE_WORK_ERROR),
                              "One or more required channels have not been specified");
+            dsv_err("ERROR:%s", _error_message.toStdString().c_str());
 			return;
 		}
     }
@@ -456,6 +457,7 @@ void DecoderStack::do_decode_work()
     {   
         _error_message = L_S(STR_PAGE_MSG, S_ID(IDS_MSG_DECODERSTACK_DECODE_WORK_ERROR),
                              "One or more required channels have not been specified");
+        dsv_err("ERROR:%s", _error_message.toStdString().c_str());
         return;
     }		
 
