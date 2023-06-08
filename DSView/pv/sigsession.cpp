@@ -495,7 +495,7 @@ namespace pv
             dsv_err("%s", "Error!No device selected");
             assert(false);
         }
-        if (_device_agent.is_collecting())
+        if (_device_status == ST_RUNNING || _device_agent.is_collecting())
         {
             dsv_err("%s", "Error!Device is running.");
             return false;
@@ -1329,6 +1329,8 @@ namespace pv
         }
         case SR_DF_END:
         {
+            dsv_info("------------SR_DF_END packet.");
+
             _capture_data->get_logic()->capture_ended();
             _capture_data->get_dso()->capture_ended();
             _capture_data->get_analog()->capture_ended();

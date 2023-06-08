@@ -566,7 +566,7 @@ private:
     int         _repeat_wait_prog_step;
     bool        _is_saving;
     bool        _is_instant;
-    int         _device_status;
+    volatile int  _device_status;
     int         _work_time_id;
     int         _capture_times; 
     int         _confirm_store_time_id;
