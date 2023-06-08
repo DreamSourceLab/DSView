@@ -99,7 +99,6 @@ void DsoSnapshot::clear()
     free_data();
     free_envelop();
     init_all();
-    _have_data  = false;
     _envelope_en = false;
 }
 
@@ -224,8 +223,6 @@ void DsoSnapshot::append_payload(const sr_datafeed_dso &dso)
         // Generate the first mip-map from the data
         if (_envelope_en)
             append_payload_to_envelope_levels(dso.samplerate_tog);
-
-        _have_data = true;
     }
 }
 

@@ -109,7 +109,6 @@ void LogicSnapshot::clear()
     std::lock_guard<std::mutex> lock(_mutex);
     free_data();
     init_all();
-    _have_data = false;
 }
 
 void LogicSnapshot::first_payload(const sr_datafeed_logic &logic, uint64_t total_sample_count, GSList *channels, bool able_free)
@@ -202,8 +201,6 @@ void LogicSnapshot::append_payload(const sr_datafeed_logic &logic)
     std::lock_guard<std::mutex> lock(_mutex);
 
     append_cross_payload(logic);
-
-    _have_data = true;
 }
 
 void LogicSnapshot::append_cross_payload(const sr_datafeed_logic &logic)

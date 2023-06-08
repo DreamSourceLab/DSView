@@ -521,6 +521,10 @@ QString DsoSignal::get_measure(enum DSO_MEASURE_TYPE type)
     const QString mNone = "--";
     QString mString;
 
+    if (_data->empty()){
+        return mNone;
+    }
+
     if (_mValid) {
         const int hw_offset = get_hw_offset();
 

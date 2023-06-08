@@ -67,7 +67,7 @@ public:
     }
 
     inline bool have_data(){
-        return _have_data;
+        return !empty();
     }
 
     inline double samplerate(){
@@ -106,7 +106,6 @@ protected:
     uint16_t    _unit_pitch;
     bool        _memory_failed;
     bool        _last_ended;
-    bool        _have_data;
     double      _samplerate;
 };
 

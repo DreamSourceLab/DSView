@@ -43,7 +43,6 @@ Snapshot::Snapshot(int unit_size, uint64_t total_sample_count, unsigned int chan
     _last_ended = true;
     _unit_bytes = 1;
     _unit_pitch = 0;
-    _have_data = false;
 }
 
 Snapshot::~Snapshot()
