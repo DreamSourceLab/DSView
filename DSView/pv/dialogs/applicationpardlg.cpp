@@ -59,8 +59,13 @@ void ApplicationParamDlg::bind_font_name_list(QComboBox *box, QString v)
     QString defName(L_S(STR_PAGE_DLG, S_ID(IDS_DLG_DEFAULT_FONT), "Default"));
     box->addItem(defName);
 
-    QFontDatabase fDataBase;
-    for (QString family : fDataBase.families()) {
+    if (_font_name_list.size() == 0)
+    {
+        QFontDatabase fDataBase;
+        _font_name_list = fDataBase.families();
+    }
+   
+    for (QString family : _font_name_list) {
         if (family.indexOf("[") == -1)
         {
             box->addItem(family);

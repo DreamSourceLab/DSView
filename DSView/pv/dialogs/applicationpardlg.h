@@ -23,6 +23,7 @@
 
 #include <QObject>
 #include <QWidget>
+#include <QStringList>
 
 class QComboBox;
 
@@ -57,7 +58,9 @@ namespace pv
         void bind_font_name_list(QComboBox *box, QString v);
 
         void bind_font_size_list(QComboBox *box, float size);
- 
+
+    private:
+        QStringList _font_name_list; 
     };
 
 }//
