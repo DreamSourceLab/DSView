@@ -702,5 +702,37 @@
     {
         "id": "IDS_DLG_USE_ABORT_DATA_REPEAT",
         "text": "重复模式下允许使用中途停止的数据"
+    },
+    {
+        "id": "IDS_DLG_FONT_GROUP",
+        "text": "字体设置"
+    },
+    {
+        "id": "IDS_DLG_TOOLBAR_FONT",
+        "text": "工具栏"
+    },
+    {
+        "id": "IDS_DLG_CHANNEL_NAME_FONT",
+        "text": "通道名称"
+    },
+    {
+        "id": "IDS_DLG_CHANNEL_BODY_FONT",
+        "text": "通道内容"
+    },
+    {
+        "id": "IDS_DLG_RULER_FONT",
+        "text": "刻度"
+    },
+    {
+        "id": "IDS_DLG_TITLE_FONT",
+        "text": "标题"
+    },
+    {
+        "id": "IDS_DLG_OTHER_FONT",
+        "text": "其它"
+    },
+    {
+        "id": "IDS_DLG_DEFAULT_FONT",
+        "text": "默认"
     }
 ]

@@ -198,13 +198,13 @@ bool bHighScale = true;
 	AppControl *control = AppControl::Instance();	
 	AppConfig &app = AppConfig::Instance(); 
 	app.LoadAll(); //load app config
-	LangResource::Instance()->Load(app._frameOptions.language);
+	LangResource::Instance()->Load(app.frameOptions.language);
 
-	if (app._appOptions.ableSaveLog){
-		dsv_log_enalbe_logfile(app._appOptions.appendLogMode);
+	if (app.appOptions.ableSaveLog){
+		dsv_log_enalbe_logfile(app.appOptions.appendLogMode);
 
-		if (app._appOptions.logLevel >= logLevel){
-			dsv_log_level(app._appOptions.logLevel);
+		if (app.appOptions.logLevel >= logLevel){
+			dsv_log_level(app.appOptions.logLevel);
 		}
 	}
 

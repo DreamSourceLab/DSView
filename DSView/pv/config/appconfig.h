@@ -106,6 +106,22 @@ struct UserHistory
   QString   exportFormat;
 };
 
+struct FontParam
+{
+  QString   name;
+  float     size;
+};
+
+struct FontOptions
+{
+  FontParam toolbar;
+  FontParam channelLabel;
+  FontParam channelBody;
+  FontParam ruler;
+  FontParam title;
+  FontParam other;
+};
+
 class AppConfig
 {
 private:
@@ -120,17 +136,19 @@ public:
   void SaveApp();  
   void SaveHistory();
   void SaveFrame();
+  void SaveFont();
   
   void SetProtocolFormat(const std::string &protocolName, const std::string &value);
   std::string GetProtocolFormat(const std::string &protocolName); 
 
   inline bool IsLangCn()
   {
-    return _frameOptions.language == LAN_CN;
+    return frameOptions.language == LAN_CN;
   }
 
 public:
-  AppOptions    _appOptions;
-  UserHistory   _userHistory;
-  FrameOptions  _frameOptions;
+  AppOptions    appOptions;
+  UserHistory   userHistory;
+  FrameOptions  frameOptions;
+  FontOptions   fontOptions;
 };

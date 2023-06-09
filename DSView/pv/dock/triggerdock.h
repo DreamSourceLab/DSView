@@ -39,10 +39,9 @@
 #include <QVBoxLayout>
 #include <QHBoxLayout>
 #include <QScrollArea>
-
 #include <vector>
-
-#include "../ui/dscombobox.h" 
+#include "../ui/dscombobox.h"
+#include "../interface/icallbacks.h"
 
 namespace pv {
 
@@ -50,7 +49,7 @@ class SigSession;
 
 namespace dock {
 
-class TriggerDock : public QScrollArea
+class TriggerDock : public QScrollArea, public IFontForm
 {
     Q_OBJECT
 
@@ -86,6 +85,9 @@ private:
      *        1: advanced trigger
      */
     bool commit_trigger();
+
+    //IFontForm
+    void update_font();
 
 private slots:
     void simple_trigger();

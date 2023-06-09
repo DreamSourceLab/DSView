@@ -112,6 +112,7 @@ namespace pv
         assert(title_bar);
 
         _title_bar = title_bar;
+        AppControl::Instance()->add_font_form(title_bar);
 
         _session = AppControl::Instance()->GetSession();
         _session->set_callback(this);
@@ -147,7 +148,7 @@ namespace pv
         setCentralWidget(_central_widget);
 
         // Setup the sampling bar
-        _sampling_bar = new toolbars::SamplingBar(_session, this);
+        _sampling_bar = new toolbars::SamplingBar(_session, this);        
         _sampling_bar->setObjectName("sampling_bar");
         _trig_bar = new toolbars::TrigBar(_session, this);
         _trig_bar->setObjectName("trig_bar");
@@ -162,7 +163,7 @@ namespace pv
         _trigger_dock->setFeatures(QDockWidget::DockWidgetMovable);
         _trigger_dock->setAllowedAreas(Qt::RightDockWidgetArea);
         _trigger_dock->setVisible(false);
-        _trigger_widget = new dock::TriggerDock(_trigger_dock, _session);
+        _trigger_widget = new dock::TriggerDock(_trigger_dock, _session);        
         _trigger_dock->setWidget(_trigger_widget);
 
         _dso_trigger_dock = new QDockWidget(L_S(STR_PAGE_DLG, S_ID(IDS_DLG_TRIGGER_DOCK_TITLE), "Trigger Setting..."), this);
@@ -182,6 +183,11 @@ namespace pv
         addToolBar(_trig_bar);
         addToolBar(_file_bar);
         addToolBar(_logo_bar);
+
+        AppControl::Instance()->add_font_form(_sampling_bar);
+        AppControl::Instance()->add_font_form(_trig_bar);
+        AppControl::Instance()->add_font_form(_file_bar);
+        AppControl::Instance()->add_font_form(_logo_bar);
 
         // Setup the dockWidget
         _protocol_dock = new QDockWidget(L_S(STR_PAGE_DLG, S_ID(IDS_DLG_PROTOCOL_DOCK_TITLE), "Decode Protocol"), this);
@@ -234,8 +240,8 @@ namespace pv
 
         // defaut language
         AppConfig &app = AppConfig::Instance();
-        switchLanguage(app._frameOptions.language);
-        switchTheme(app._frameOptions.style);
+        switchLanguage(app.frameOptions.language);
+        switchTheme(app.frameOptions.style);
 
         // UI initial
         _measure_widget->add_dist_measure();
@@ -243,6 +249,13 @@ namespace pv
         retranslateUi();
 
         _sampling_bar->set_view(_view);
+
+        // Add the font form
+        AppControl::Instance()->add_font_form(_protocol_widget);
+        AppControl::Instance()->add_font_form(_dso_trigger_widget);
+        AppControl::Instance()->add_font_form(_measure_widget);
+        AppControl::Instance()->add_font_form(_search_widget);
+        AppControl::Instance()->add_font_form(_trigger_widget);
 
         // event
         connect(&_event, SIGNAL(session_error()), this, SLOT(on_session_error()));
@@ -420,7 +433,7 @@ namespace pv
             save_config_to_file(sessionFile);
         }
 
-        app._frameOptions.windowState = saveState();
+        app.frameOptions.windowState = saveState();
         app.SaveFrame();
     }
 
@@ -440,7 +453,7 @@ namespace pv
         QString base_path = dir.absolutePath() + "/" + driver_name + mode_name;
 
         if (!isNewFormat){
-            lang_name = QString::number(app._frameOptions.language);           
+            lang_name = QString::number(app.frameOptions.language);           
         }
 
         return base_path + ".ses" + lang_name + ".dsc";
@@ -508,7 +521,7 @@ namespace pv
     void MainWindow::on_screenShot()
     {
         AppConfig &app = AppConfig::Instance();
-        QString default_name = app._userHistory.screenShotPath + "/" + APP_NAME + QDateTime::currentDateTime().toString("-yyMMdd-hhmmss");
+        QString default_name = app.userHistory.screenShotPath + "/" + APP_NAME + QDateTime::currentDateTime().toString("-yyMMdd-hhmmss");
 
         int x = parentWidget()->pos().x();
         int y = parentWidget()->pos().y();
@@ -560,9 +573,9 @@ namespace pv
 
             fileName = path::GetDirectoryName(fileName);
 
-            if (app._userHistory.screenShotPath != fileName)
+            if (app.userHistory.screenShotPath != fileName)
             {
-                app._userHistory.screenShotPath = fileName;
+                app.userHistory.screenShotPath = fileName;
                 app.SaveHistory();
             }
         }
@@ -667,7 +680,7 @@ namespace pv
         sessionVar["Version"] = QJsonValue::fromVariant(SESSION_FORMAT_VERSION);
         sessionVar["Device"] = QJsonValue::fromVariant(_device_agent->driver_name());
         sessionVar["DeviceMode"] = QJsonValue::fromVariant(_device_agent->get_work_mode());
-        sessionVar["Language"] = QJsonValue::fromVariant(app._frameOptions.language);
+        sessionVar["Language"] = QJsonValue::fromVariant(app.frameOptions.language);
         sessionVar["Title"] = QJsonValue::fromVariant(title);
 
         if (_device_agent->is_hardware() && _device_agent->get_work_mode() == LOGIC)
@@ -1173,7 +1186,7 @@ namespace pv
     { 
         // default dockwidget size
         AppConfig &app = AppConfig::Instance();
-        QByteArray st = app._frameOptions.windowState;
+        QByteArray st = app.frameOptions.windowState;
         if (!st.isEmpty())
         {
             try
@@ -1341,9 +1354,9 @@ namespace pv
         
         AppConfig &app = AppConfig::Instance();
 
-        if (app._frameOptions.language != language && language > 0)
+        if (app.frameOptions.language != language && language > 0)
         {
-            app._frameOptions.language = language;
+            app.frameOptions.language = language;
             app.SaveFrame();
             LangResource::Instance()->Load(language);     
         }        
@@ -1372,9 +1385,9 @@ namespace pv
     {
         AppConfig &app = AppConfig::Instance();
 
-        if (app._frameOptions.style != style)
+        if (app.frameOptions.style != style)
         {
-            app._frameOptions.style = style;
+            app.frameOptions.style = style;
             app.SaveFrame();
         }
 
@@ -1407,7 +1420,7 @@ namespace pv
     {
         QDir dir(GetAppDataDir());
         AppConfig &app = AppConfig::Instance();
-        int lan = app._frameOptions.language;
+        int lan = app.frameOptions.language;
         QDesktopServices::openUrl(
             QUrl("file:///" + dir.absolutePath() + "/ug" + QString::number(lan) + ".pdf"));
     }
@@ -2040,7 +2053,11 @@ namespace pv
 
         case DSV_MSG_APP_OPTIONS_CHANGED:
             update_title_bar_text();
-            break;                
+            break;
+
+        case DSV_MSG_FONT_OPTIONS_CHANGED:
+            AppControl::Instance()->update_font_forms();
+            break;          
         }
     }
 
@@ -2088,7 +2105,7 @@ namespace pv
         QString title = QApplication::applicationName() + " v" + QApplication::applicationVersion();
         AppConfig &app = AppConfig::Instance();
 
-        if (_title_ext_string != "" && app._appOptions.displayProfileInBar){
+        if (_title_ext_string != "" && app.appOptions.displayProfileInBar){
             title += " [" + _title_ext_string + "]";
         }
 

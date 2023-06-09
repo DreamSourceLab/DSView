@@ -94,6 +94,7 @@ public:
 #define DSV_MSG_CLEAR_DECODE_DATA       8001
 
 #define DSV_MSG_APP_OPTIONS_CHANGED     9001
+#define DSV_MSG_FONT_OPTIONS_CHANGED    9002
 
 class IMessageListener
 {
@@ -105,6 +106,12 @@ class IDecoderPannel
 {
 public:
     virtual void update_deocder_item_name(void *trace_handel, const char *name)=0;
+};
+
+class IFontForm
+{
+public:
+    virtual void update_font()=0;
 };
 
 #endif

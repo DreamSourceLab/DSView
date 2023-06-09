@@ -38,6 +38,8 @@
 #include "../ui/msgbox.h"
 #include <QObject>
 #include <QPainter> 
+#include "../appcontrol.h"
+#include "../ui/fun.h"
 
 using namespace boost;
 
@@ -144,6 +146,8 @@ MeasureDock::MeasureDock(QWidget *parent, View &view, SigSession *session) :
     _widget->setObjectName("measureWidget");
 
     retranslateUi();
+
+    update_font();
 }
 
 MeasureDock::~MeasureDock()
@@ -700,6 +704,16 @@ void MeasureDock::del_cursor()
 
     cursor_update();
     _view.update();
+}
+
+void MeasureDock::update_font()
+{
+    QFont font = this->font();
+    FontOptions &st = AppConfig::Instance().fontOptions;
+    ui::set_font_param(font, st.other);
+    ui::set_form_font(this, font);
+    
+    this->parentWidget()->setFont(font);
 }
 
 } // namespace dock

@@ -38,6 +38,8 @@
 #include <QPainter>
 #include <QStyleOption>
 #include "../appcontrol.h"
+#include "../config/appconfig.h"
+#include "../ui/fun.h"
  
  
 using namespace std;
@@ -193,6 +195,11 @@ void Ruler::paintEvent(QPaintEvent*)
     o.initFrom(this);
     QPainter p(this);
     style()->drawPrimitive(QStyle::PE_Widget, &o, &p, this);
+
+    QFont font = p.font();
+    FontOptions &st = AppConfig::Instance().fontOptions;
+    ui::set_font_param(font, st.ruler);
+    p.setFont(font);
 
     SigSession *session = AppControl::Instance()->GetSession();
 

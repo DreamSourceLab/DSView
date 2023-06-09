@@ -158,8 +158,8 @@ void StoreProgress::accept()
     if (_isExport && _store_session.IsLogicDataType()){
         bool ck  = _ckOrigin->isChecked();
         AppConfig &app = AppConfig::Instance();
-        if (app._appOptions.originalData != ck){
-            app._appOptions.originalData = ck;
+        if (app.appOptions.originalData != ck){
+            app.appOptions.originalData = ck;
             app.SaveApp();
         }
     }
@@ -223,7 +223,7 @@ void StoreProgress::export_run()
     { 
         QGridLayout *lay = new QGridLayout();
         lay->setContentsMargins(5, 0, 0, 0); 
-        bool isOrg = AppConfig::Instance()._appOptions.originalData;
+        bool isOrg = AppConfig::Instance().appOptions.originalData;
 
         _ckOrigin  = new QRadioButton();
         _ckOrigin->setText(L_S(STR_PAGE_DLG, S_ID(IDS_DLG_ORIGINAL_DATA), "Original data"));   

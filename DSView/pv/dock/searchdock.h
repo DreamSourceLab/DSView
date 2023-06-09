@@ -43,6 +43,7 @@
 
 #include "../widgets/fakelineedit.h"
 #include "../ui/dscombobox.h"
+#include "../interface/icallbacks.h"
 
 namespace pv {
 
@@ -58,7 +59,7 @@ namespace widgets {
 
 namespace dock {
 
-class SearchDock : public QWidget
+class SearchDock : public QWidget, public IFontForm
 {
     Q_OBJECT
 
@@ -72,6 +73,9 @@ private:
     void changeEvent(QEvent *event);
     void retranslateUi();
     void reStyle();
+
+    //IFontForm
+    void update_font();
 
 public slots:
     void on_previous();

@@ -33,6 +33,7 @@
 #include <QAction>
 #include <QMenu>
 #include "../ui/dscombobox.h"
+#include "../interface/icallbacks.h"
 #include <QDialog>
 
 struct st_dev_inst;
@@ -58,7 +59,7 @@ namespace pv
     namespace toolbars
     {
 
-        class SamplingBar : public QToolBar
+        class SamplingBar : public QToolBar, public IFontForm
         {
             Q_OBJECT
 
@@ -100,8 +101,6 @@ namespace pv
 
             void commit_settings();
 
-            void auto_resize();
-
         signals:
             void sig_store_session_data();
 
@@ -123,6 +122,9 @@ namespace pv
 
             bool action_run_stop();
             bool action_instant_stop();
+            
+            //IFontForm
+            void update_font();
 
         private slots:
             void on_collect_mode();

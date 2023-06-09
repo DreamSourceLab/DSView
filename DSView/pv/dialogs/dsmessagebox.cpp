@@ -29,8 +29,9 @@
 #include <QVBoxLayout>
 #include <QAbstractButton>
 #include "../dsvdef.h"
-
 #include "../ui/langresource.h"
+#include "../config/appconfig.h"
+#include "../ui/fun.h"
 
 namespace pv {
 namespace dialogs {
@@ -125,6 +126,20 @@ void DSMessageBox::on_button(QAbstractButton *btn)
     } 
     else
         reject();
+}
+
+int DSMessageBox::exec()
+{
+    FontOptions &st = AppConfig::Instance().fontOptions;
+    QFont font = this->font();
+    ui::set_font_param(font, st.other);
+    ui::set_form_font(this, font);
+
+    if (_titlebar != NULL){
+        _titlebar->update_font();
+    }
+
+    return QDialog::exec();
 }
 
 } // namespace dialogs

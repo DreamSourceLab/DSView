@@ -2122,7 +2122,7 @@ namespace pv
                     if (is_repeat_mode())
                     {
                         AppConfig &app = AppConfig::Instance();
-                        bool swapBackBufferAlways = app._appOptions.swapBackBufferAlways;
+                        bool swapBackBufferAlways = app.appOptions.swapBackBufferAlways;
                         if (!swapBackBufferAlways && !_is_working && _capture_times > 1){
                             bAddDecoder = false;
                             bSwapBuffer = false;

@@ -33,13 +33,12 @@
 #include "../sigsession.h"
 #include "../interface/icallbacks.h"
 
-
 namespace pv {
 namespace toolbars {
 
 //The tool button for help,is a ui class,referenced by MainWindow
 //TODO: switch language,submit bug descript,
-class LogoBar : public QToolBar
+class LogoBar : public QToolBar, public IFontForm
 {
     Q_OBJECT
 
@@ -59,6 +58,9 @@ private:
     void changeEvent(QEvent *event);
     void retranslateUi();
     void reStyle();
+
+    //IFontForm
+    void update_font();
 
 signals: 
     //post event message to open user help document, MainWindow class receive it

@@ -51,8 +51,8 @@
 #include "../ui/msgbox.h"
 #include "../appcontrol.h"
 #include "../dialogs/decoderoptionsdlg.h"
-
 #include "../ui/langresource.h"
+#include "../config/appconfig.h"
 
 using namespace boost;
 using namespace std;
@@ -208,11 +208,6 @@ void DecodeTrace::paint_back(QPainter &p, int left, int right, QColor fore, QCol
             QPointF(left, r.center().y() + ArrowSize)
         };
         p.drawPolygon(points, countof(points));
-
-        // Draw the outline
-        QFont font=p.font();
-        font.setPointSize(DefaultFontSize);
-        p.setFont(font);
 
         // Draw the text
         p.setPen(fore);
@@ -412,7 +407,7 @@ void DecodeTrace::draw_nodetail(QPainter &p,
     p.drawLine(info_left, y, info_left+5, y + height/2 + 0.5);
     p.drawLine(info_right, y, info_right-5, y - height/2 + 0.5);
     p.drawLine(info_right, y, info_right-5, y + height/2 + 0.5);
-
+    
     p.setPen(fore);
     p.drawText(nodetail_rect, Qt::AlignCenter | Qt::AlignVCenter, info);
 }
@@ -435,9 +430,6 @@ void DecodeTrace::draw_instant(const pv::data::decode::Annotation &a, QPainter &
 	p.drawRoundedRect(rect, h / 2, h / 2);
 
 	p.setPen(text_color);
-    QFont font=p.font();
-    font.setPointSize(DefaultFontSize);
-    p.setFont(font);
 	p.drawText(rect, Qt::AlignCenter | Qt::AlignVCenter, text);
 }
 
@@ -498,10 +490,6 @@ void DecodeTrace::draw_range(const pv::data::decode::Annotation &a, QPainter &p,
 	if (best_annotation.isEmpty())
 		best_annotation = annotations.back();
 
-	// If not ellide the last in the list
-    QFont font=p.font();
-    font.setPointSize(DefaultFontSize);
-    p.setFont(font);
     p.drawText(rect, Qt::AlignCenter, p.fontMetrics().elidedText(
         best_annotation, Qt::ElideRight, rect.width()));
 }
@@ -516,9 +504,7 @@ void DecodeTrace::draw_error(QPainter &p, const QString &message,
     const QRectF bounding_rect = p.boundingRect(text_rect,
             Qt::AlignCenter, message);
     p.setPen(Qt::red);
-    QFont font=p.font();
-    font.setPointSize(DefaultFontSize);
-    p.setFont(font);
+
     if (bounding_rect.width() < text_rect.width())
         p.drawText(text_rect, Qt::AlignCenter, L_S(STR_PAGE_DLG, S_ID(IDS_DLG_DECODETRACE_ERROR1), "Error:")+message);
     else

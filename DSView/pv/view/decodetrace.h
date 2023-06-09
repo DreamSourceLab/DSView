@@ -79,7 +79,6 @@ private:
 	static const QColor Colours[16];
 	static const QColor OutlineColours[16];
 
-    static const int DefaultFontSize = 10;
     static const int ControlRectWidth = 5;
     static const int MaxAnnType = 100;
 

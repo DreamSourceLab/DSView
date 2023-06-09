@@ -1,8 +1,8 @@
 /*
  * This file is part of the DSView project.
  * DSView is based on PulseView.
- * 
- * Copyright (C) 2021 DreamSourceLab <support@dreamsourcelab.com>
+ *
+ * Copyright (C) 2023 DreamSourceLab <support@dreamsourcelab.com>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -19,46 +19,24 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
  */
 
-#pragma once
+#ifndef _UI_FUN_H
+#define _UI_FUN_H
 
-#include <QObject>
-#include <QWidget>
+#include <QFont>
 
-class QComboBox;
+struct FontParam;
 
-struct FontBindInfo
-{
-    QComboBox   *name_box;
-    QComboBox   *size_box;
-    QString     lang_id;
-    char        *lang_def;
-    QString     *ptr_name;
-    float         *ptr_size;
-};
+class QToolBar;
+class QWidget;
 
-namespace pv
-{
- namespace dialogs
-{
+namespace ui
+{   
+    void set_font_param(QFont &font, struct FontParam &param);
 
-    class ApplicationParamDlg
-    { 
-    public:
-        ApplicationParamDlg();
-        ~ApplicationParamDlg();
+    void set_toolbar_font(QToolBar *bar, QFont &font);
 
-        bool ShowDlg(QWidget *parent);
+    void set_form_font(QWidget *wid, QFont &font);
 
- 
-    private:
-       //IDlgCallback
-        void OnDlgResult(bool bYes);
+} // namespace ui
 
-        void bind_font_name_list(QComboBox *box, QString v);
-
-        void bind_font_size_list(QComboBox *box, float size);
- 
-    };
-
-}//
-}//
+#endif

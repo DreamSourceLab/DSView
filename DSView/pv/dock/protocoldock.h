@@ -72,7 +72,8 @@ class ProtocolDock : public QScrollArea,
 public IProtocolItemLayerCallback, 
 public IKeywordActive,
 public ISearchItemClick,
-public IDecoderPannel
+public IDecoderPannel,
+public IFontForm
 {
     Q_OBJECT
 
@@ -114,6 +115,9 @@ private:
 
     //IDecoderPannel
     void update_deocder_item_name(void *trace_handel, const char *name);
+
+    //IFontForm
+    void update_font();
 
 signals:
     void protocol_updated();

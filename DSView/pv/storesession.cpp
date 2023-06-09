@@ -738,7 +738,7 @@ void StoreSession::export_proc(data::Snapshot *snapshot)
 
         //set export all data flag
     AppConfig &app = AppConfig::Instance();
-    int origin_flag = app._appOptions.originalData ? 1 : 0;
+    int origin_flag = app.appOptions.originalData ? 1 : 0;
 
     data::LogicSnapshot *logic_snapshot = NULL;
     data::AnalogSnapshot *analog_snapshot = NULL;
@@ -1368,9 +1368,9 @@ QString StoreSession::MakeSaveFile(bool bDlg)
     QString default_name;
 
     AppConfig &app = AppConfig::Instance(); 
-    if (app._userHistory.saveDir != "")
+    if (app.userHistory.saveDir != "")
     {
-        default_name = app._userHistory.saveDir + "/"  + _session->get_device()->name() + "-";
+        default_name = app.userHistory.saveDir + "/"  + _session->get_device()->name() + "-";
     } 
     else{
         QDir _dir;
@@ -1406,9 +1406,9 @@ QString StoreSession::MakeSaveFile(bool bDlg)
 
         QString _dir_path = path::GetDirectoryName(default_name);
 
-        if (_dir_path != app._userHistory.saveDir)
+        if (_dir_path != app.userHistory.saveDir)
         {
-            app._userHistory.saveDir = _dir_path;
+            app.userHistory.saveDir = _dir_path;
             app.SaveHistory();
         }
     }
@@ -1428,9 +1428,9 @@ QString StoreSession::MakeExportFile(bool bDlg)
     QString default_name;
     AppConfig &app = AppConfig::Instance();  
     
-    if (app._userHistory.exportDir != "")
+    if (app.userHistory.exportDir != "")
     {
-        default_name = app._userHistory.exportDir  + "/"  + _session->get_device()->name() + "-";
+        default_name = app.userHistory.exportDir  + "/"  + _session->get_device()->name() + "-";
     } 
     else{
         QDir _dir;
@@ -1457,9 +1457,9 @@ QString StoreSession::MakeExportFile(bool bDlg)
     }
 
     QString selfilter;
-    if (app._userHistory.exportFormat != "" 
+    if (app.userHistory.exportFormat != "" 
             && _session->get_device()->get_work_mode() == LOGIC){
-        selfilter.append(app._userHistory.exportFormat);
+        selfilter.append(app.userHistory.exportFormat);
     }
     else{
         selfilter.append(".csv");
@@ -1481,15 +1481,15 @@ QString StoreSession::MakeExportFile(bool bDlg)
 
         bool bChange = false;
         QString _dir_path = path::GetDirectoryName(default_name);
-        if (_dir_path != app._userHistory.exportDir)
+        if (_dir_path != app.userHistory.exportDir)
         {
-            app._userHistory.exportDir = _dir_path;
+            app.userHistory.exportDir = _dir_path;
             bChange = true;
         }
         
-        if (selfilter != app._userHistory.exportFormat 
+        if (selfilter != app.userHistory.exportFormat 
                 && _session->get_device()->get_work_mode() == LOGIC){
-            app._userHistory.exportFormat = selfilter;
+            app.userHistory.exportFormat = selfilter;
              bChange = true;            
         }
 

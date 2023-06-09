@@ -52,8 +52,9 @@
 #include "../data/decode/decoderstatus.h"
 #include "../data/decode/decoder.h"
 #include "../log.h"
-
 #include "../ui/langresource.h"
+#include "../appcontrol.h"
+#include "../ui/fun.h"
 
 using namespace std;
 
@@ -221,6 +222,8 @@ ProtocolDock::ProtocolDock(QWidget *parent, view::View &view, SigSession *sessio
     connect(_ann_search_edit, SIGNAL(editingFinished()), this, SLOT(search_changed()));
 
     connect(_pro_search_button, SIGNAL(clicked()), this, SLOT(show_protocol_select()));
+
+    update_font();
 }
 
 ProtocolDock::~ProtocolDock()
@@ -1026,6 +1029,16 @@ bool ProtocolDock::protocol_sort_callback(const DecoderInfoItem *o1, const Decod
             break;
         }
     }
+ }
+
+ void ProtocolDock::update_font()
+ {
+    QFont font = this->font();
+    FontOptions &st = AppConfig::Instance().fontOptions;
+    ui::set_font_param(font, st.other);
+    ui::set_form_font(this, font);
+    
+    this->parentWidget()->setFont(font);
  }
 
 } // namespace dock

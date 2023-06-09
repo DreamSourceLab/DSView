@@ -29,13 +29,14 @@
 #include <QMenu>
 
 #include "../sigsession.h" 
+#include "../interface/icallbacks.h"
 
 namespace pv {
 namespace toolbars {
 
 //toolbar button,referenced by MainWindow
 //TODO: load session file, sorte session, load log data file, sorte data, export data
-class FileBar : public QToolBar
+class FileBar : public QToolBar, public IFontForm
 {
     Q_OBJECT
 
@@ -46,12 +47,13 @@ public:
 
     QString genDefaultSessionFile();
 
-    void auto_resize();
-
 private:
     void changeEvent(QEvent *event);
     void retranslateUi();
     void reStyle(); 
+
+    //IFontForm
+    void update_font();
 
 signals:
     void sig_load_file(QString); 

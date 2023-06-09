@@ -86,7 +86,7 @@ About::About(QWidget *parent) :
 
     QDir dir(GetAppDataDir());
     AppConfig &app = AppConfig::Instance(); 
-    int lan = app._frameOptions.language;
+    int lan = app.frameOptions.language;
 
     QString filename = dir.absolutePath() + "/NEWS" + QString::number(lan);
     QFile news(filename);

@@ -43,12 +43,14 @@
 #include <QApplication>
 #include <QFile> 
 #include <QGuiApplication>
+#include <QFont>
 
 #include "dsvdef.h"
 #include "config/appconfig.h"
 #include "ui/msgbox.h"
 #include "appcontrol.h"
 #include "ui/langresource.h"
+#include "log.h"
 
 #include <algorithm>
 
@@ -402,16 +404,16 @@ bool MainFrame::eventFilter(QObject *object, QEvent *event)
  {
      AppConfig &app = AppConfig::Instance();    
      QRect rc = geometry();
-     app._frameOptions.left = rc.left();
-     app._frameOptions.top = rc.top();
-     app._frameOptions.right = rc.right();
-     app._frameOptions.bottom = rc.bottom();
+     app.frameOptions.left = rc.left();
+     app.frameOptions.top = rc.top();
+     app.frameOptions.right = rc.right();
+     app.frameOptions.bottom = rc.bottom();
  }
 
 void MainFrame::writeSettings()
 {  
     AppConfig &app = AppConfig::Instance();
-    app._frameOptions.isMax = isMaximized(); 
+    app.frameOptions.isMax = isMaximized(); 
 
     if (!isMaximized()){
           saveWindowRegion();
@@ -427,14 +429,14 @@ void MainFrame::readSettings()
 
     AppConfig &app = AppConfig::Instance(); 
    
-    if (app._frameOptions.language > 0){
-         _mainWindow->switchLanguage(app._frameOptions.language);
+    if (app.frameOptions.language > 0){
+         _mainWindow->switchLanguage(app.frameOptions.language);
     }
 
-      int left = app._frameOptions.left;
-      int top = app._frameOptions.top;
-      int right = app._frameOptions.right;
-      int bottom = app._frameOptions.bottom;
+      int left = app.frameOptions.left;
+      int top = app.frameOptions.top;
+      int right = app.frameOptions.right;
+      int bottom = app.frameOptions.bottom;
 
       int screen_width = QGuiApplication::primaryScreen()->availableGeometry().width();
       int screen_height = QGuiApplication::primaryScreen()->availableGeometry().height();
@@ -455,7 +457,7 @@ void MainFrame::readSettings()
           bReset = true;
       }
 
-      if (app._frameOptions.isMax)
+      if (app.frameOptions.isMax)
       {
           showMaximized(); // show max by system api
       }
@@ -474,7 +476,7 @@ void MainFrame::readSettings()
 
     // restore dockwidgets
     _mainWindow->restore_dock();
-    _titleBar->setRestoreButton(app._frameOptions.isMax);
+    _titleBar->setRestoreButton(app.frameOptions.isMax);
 }
 
 #ifdef _WIN32
@@ -506,9 +508,9 @@ void MainFrame::setTaskbarProgress(int progress)
 void MainFrame::show_doc()
 {
      AppConfig &app = AppConfig::Instance(); 
-     int lan = app._frameOptions.language;
+     int lan = app.frameOptions.language;
       
-    if (app._userHistory.showDocuments) {
+    if (app.userHistory.showDocuments) {
         dialogs::DSDialog dlg(this, true);
         dlg.setTitle(L_S(STR_PAGE_DLG, S_ID(IDS_DLG_DOCUMENT), "Document"));
 
@@ -542,7 +544,7 @@ void MainFrame::show_doc()
             _mainWindow->openDoc();
         }
         if (msg.clickedButton() == noMoreButton){
-            app._userHistory.showDocuments = false;
+            app.userHistory.showDocuments = false;
             app.SaveHistory();
         }   
     }

@@ -345,6 +345,7 @@ set(DSView_SOURCES
     DSView/pv/utility/array.cpp
     DSView/pv/deviceagent.cpp
     DSView/pv/ui/langresource.cpp
+    DSView/pv/ui/fun.cpp
 )
 
 set(DSView_HEADERS
@@ -437,6 +438,7 @@ set(DSView_HEADERS
     DSView/pv/utility/path.h
     DSView/pv/utility/array.h
     DSView/pv/deviceagent.h
+    DSView/pv/ui/fun.h
 )
  
 #===============================================================================

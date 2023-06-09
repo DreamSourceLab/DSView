@@ -37,6 +37,9 @@
 
 #include "../ui/langresource.h"
 #include "../log.h"
+#include "../config/appconfig.h"
+#include "../appcontrol.h"
+#include "../ui/fun.h"
 
  
 using namespace std;
@@ -65,6 +68,11 @@ void ViewStatus::paintEvent(QPaintEvent *)
     QPainter p(this);
     style()->drawPrimitive(QStyle::PE_Widget, &opt, &p, this);
     QColor fore(QWidget::palette().color(QWidget::foregroundRole()));
+
+    QFont font = p.font();
+    FontOptions &st = AppConfig::Instance().fontOptions;
+    ui::set_font_param(font, st.channelBody);
+    p.setFont(font);
 
     int mode = _session->get_device()->get_work_mode();
 

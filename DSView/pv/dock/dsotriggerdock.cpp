@@ -22,23 +22,21 @@
 #include "dsotriggerdock.h"
 #include "../sigsession.h"
 #include "../dialogs/dsmessagebox.h"
-#include "../view/dsosignal.h"
- 
-
+#include "../view/dsosignal.h" 
 #include <QObject>
 #include <QLabel>
 #include <QRadioButton>
 #include <QPainter>
 #include <QStyleOption>
-
 #include <QVector>
 #include <QVBoxLayout>
 #include <QHBoxLayout>
 #include <QEvent>
-
 #include "../ui/langresource.h"
 #include "../log.h"
 #include "../ui/msgbox.h"
+#include "../config/appconfig.h"
+#include "../ui/fun.h"
 
 using namespace boost;
 using namespace std;
@@ -173,6 +171,8 @@ DsoTriggerDock::DsoTriggerDock(QWidget *parent, SigSession *session) :
     _widget->setObjectName("dsoTriggerWidget");
 
     retranslateUi();
+
+    update_font();
 }
 
 DsoTriggerDock::~DsoTriggerDock()
@@ -489,6 +489,16 @@ void DsoTriggerDock::update_view()
         _margin_slider->setValue(margin);
     }
     connect(_margin_slider, SIGNAL(valueChanged(int)), this, SLOT(margin_changed(int)));
+}
+
+void DsoTriggerDock::update_font()
+{
+    QFont font = this->font();
+    FontOptions &st = AppConfig::Instance().fontOptions;
+    ui::set_font_param(font, st.other);
+    ui::set_form_font(this, font);
+    
+    this->parentWidget()->setFont(font);
 }
 
 } // namespace dock

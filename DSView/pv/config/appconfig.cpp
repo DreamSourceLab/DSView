@@ -37,7 +37,8 @@ StringPair::StringPair(const std::string &key, const std::string &value)
 }
 
 //------------function
-QString FormatArrayToString(std::vector<StringPair> &protocolFormats){
+static QString FormatArrayToString(std::vector<StringPair> &protocolFormats)
+{
     QString str;
 
     for (StringPair &o : protocolFormats){
@@ -52,7 +53,8 @@ QString FormatArrayToString(std::vector<StringPair> &protocolFormats){
     return str;
 }
 
-void StringToFormatArray(const QString &str, std::vector<StringPair> &protocolFormats){
+static void StringToFormatArray(const QString &str, std::vector<StringPair> &protocolFormats)
+{
     QStringList arr = str.split(";");
     for (int i=0; i<arr.size(); i++){
         QString line = arr[i];
@@ -65,31 +67,49 @@ void StringToFormatArray(const QString &str, std::vector<StringPair> &protocolFo
     }
 }
 
-//read write field
-
-void getFiled(const char *key, QSettings &st, QString &f, const char *dv){
+//----------------read write field
+static void getFiled(const char *key, QSettings &st, QString &f, const char *dv)
+{
     f = st.value(key, dv).toString();
 }
-void getFiled(const char *key, QSettings &st, int &f, int dv){
+
+static void setFiled(const char *key, QSettings &st, QString f)
+{
+    st.setValue(key, f);
+}
+
+static void getFiled(const char *key, QSettings &st, int &f, int dv)
+{
     f = st.value(key, dv).toInt();
 }
-void getFiled(const char *key, QSettings &st, bool &f, bool dv){
+
+static void setFiled(const char *key, QSettings &st, int f)
+{
+    st.setValue(key, f);
+}
+
+static void getFiled(const char *key, QSettings &st, bool &f, bool dv)
+{
     f = st.value(key, dv).toBool();
 }
- 
-void setFiled(const char *key, QSettings &st, QString f){
-    st.setValue(key, f);
-}
-void setFiled(const char *key, QSettings &st, int f){
-    st.setValue(key, f);
-}
-void setFiled(const char *key, QSettings &st, bool f){
+
+static void setFiled(const char *key, QSettings &st, bool f){
     st.setValue(key, f);
 }
 
+static void getFiled(const char *key, QSettings &st, float &f, float dv)
+{
+    f = st.value(key, dv).toInt();
+}
+
+static void setFiled(const char *key, QSettings &st, float f)
+{
+    st.setValue(key, f);
+}
 
 ///------ app
-void _loadApp(AppOptions &o, QSettings &st){
+static void _loadApp(AppOptions &o, QSettings &st)
+{
     st.beginGroup("Application"); 
     getFiled("quickScroll", st, o.quickScroll, true);
     getFiled("warnofMultiTrig", st, o.warnofMultiTrig, true);
@@ -111,7 +131,8 @@ void _loadApp(AppOptions &o, QSettings &st){
     st.endGroup();
 }
 
-void _saveApp(AppOptions &o, QSettings &st){
+static void _saveApp(AppOptions &o, QSettings &st)
+{
     st.beginGroup("Application");
     setFiled("quickScroll", st, o.quickScroll);
     setFiled("warnofMultiTrig", st, o.warnofMultiTrig);
@@ -131,7 +152,8 @@ void _saveApp(AppOptions &o, QSettings &st){
 
 //-----frame
 
-void _loadDockOptions(DockOptions &o, QSettings &st, const char *group){
+static void _loadDockOptions(DockOptions &o, QSettings &st, const char *group)
+{
     st.beginGroup(group);
     getFiled("decodeDoc", st, o.decodeDock, false);
     getFiled("triggerDoc", st, o.triggerDock, false);
@@ -140,7 +162,8 @@ void _loadDockOptions(DockOptions &o, QSettings &st, const char *group){
     st.endGroup();
 }
 
-void _saveDockOptions(DockOptions &o, QSettings &st, const char *group){
+static void _saveDockOptions(DockOptions &o, QSettings &st, const char *group)
+{
     st.beginGroup(group);
     setFiled("decodeDoc", st, o.decodeDock);
     setFiled("triggerDoc", st, o.triggerDock);
@@ -149,7 +172,8 @@ void _saveDockOptions(DockOptions &o, QSettings &st, const char *group){
     st.endGroup();
 }
 
-void _loadFrame(FrameOptions &o, QSettings &st){
+static void _loadFrame(FrameOptions &o, QSettings &st)
+{
     st.beginGroup("MainFrame"); 
     getFiled("style", st, o.style, THEME_STYLE_DARK);
     getFiled("language", st, o.language, -1);
@@ -177,7 +201,8 @@ void _loadFrame(FrameOptions &o, QSettings &st){
     }
 }
 
-void _saveFrame(FrameOptions &o, QSettings &st){
+static void _saveFrame(FrameOptions &o, QSettings &st)
+{
     st.beginGroup("MainFrame");
     setFiled("style", st, o.style);
     setFiled("language", st, o.language);
@@ -196,7 +221,8 @@ void _saveFrame(FrameOptions &o, QSettings &st){
 }
 
 //------history
-void _loadHistory(UserHistory &o, QSettings &st){
+static void _loadHistory(UserHistory &o, QSettings &st)
+{
     st.beginGroup("UserHistory");
     getFiled("exportDir", st, o.exportDir, ""); 
     getFiled("saveDir", st, o.saveDir, ""); 
@@ -209,7 +235,8 @@ void _loadHistory(UserHistory &o, QSettings &st){
     st.endGroup();
 }
  
-void _saveHistory(UserHistory &o, QSettings &st){
+static void _saveHistory(UserHistory &o, QSettings &st)
+{
     st.beginGroup("UserHistory");
     setFiled("exportDir", st, o.exportDir); 
     setFiled("saveDir", st, o.saveDir); 
@@ -219,6 +246,45 @@ void _saveHistory(UserHistory &o, QSettings &st){
     setFiled("openDir", st, o.openDir); 
     setFiled("protocolExportPath", st, o.protocolExportPath);
     setFiled("exportFormat", st, o.exportFormat); 
+    st.endGroup();
+}
+
+//------font
+static void _loadFont(FontOptions &o, QSettings &st)
+{
+    st.beginGroup("FontSetting");
+    getFiled("toolbarName", st, o.toolbar.name, "");
+    getFiled("toolbarSize", st, o.toolbar.size, 10);
+    getFiled("channelLabelName", st, o.channelLabel.name, "");
+    getFiled("channelLabelSize", st, o.channelLabel.size, 10);
+    getFiled("channelBodyName", st, o.channelBody.name, "");
+    getFiled("channelBodySize", st, o.channelBody.size, 9);
+    getFiled("rulerName", st, o.ruler.name, "");
+    getFiled("ruleSize", st, o.ruler.size, 9);
+    getFiled("titleName", st, o.title.name, "");
+    getFiled("titleSize", st, o.title.size, 10);
+    getFiled("otherName", st, o.other.name, "");
+    getFiled("otherSize", st, o.other.size, 10);
+
+    st.endGroup();
+}
+
+static void _saveFont(FontOptions &o, QSettings &st)
+{
+    st.beginGroup("FontSetting");
+    setFiled("toolbarName", st, o.toolbar.name);
+    setFiled("toolbarSize", st, o.toolbar.size);
+    setFiled("channelLabelName", st, o.channelLabel.name);
+    setFiled("channelLabelSize", st, o.channelLabel.size);
+    setFiled("channelBodyName", st, o.channelBody.name);
+    setFiled("channelBodySize", st, o.channelBody.size);
+    setFiled("rulerName", st, o.ruler.name);
+    setFiled("ruleSize", st, o.ruler.size);
+    setFiled("titleName", st, o.title.name);
+    setFiled("titleSize", st, o.title.size);
+    setFiled("otherName", st, o.other.name);
+    setFiled("otherSize", st, o.other.size);
+
     st.endGroup();
 }
 
@@ -249,36 +315,42 @@ AppConfig::~AppConfig()
 void AppConfig::LoadAll()
 {   
     QSettings st(QApplication::organizationName(), QApplication::applicationName());
-    _loadApp(_appOptions, st);
-    _loadHistory(_userHistory, st);
-    _loadFrame(_frameOptions, st);
+    _loadApp(appOptions, st);
+    _loadHistory(userHistory, st);
+    _loadFrame(frameOptions, st);
+    _loadFont(fontOptions, st);
 
     //dsv_dbg("Config file path:\"%s\"", st.fileName().toUtf8().data());
 }
 
-  void AppConfig::SaveApp()
-  {
-      QSettings st(QApplication::organizationName(), QApplication::applicationName());
-      _saveApp(_appOptions, st);
-  }
+void AppConfig::SaveApp()
+{
+    QSettings st(QApplication::organizationName(), QApplication::applicationName());
+    _saveApp(appOptions, st);
+}
 
-  void AppConfig::SaveHistory()
-  {
-      QSettings st(QApplication::organizationName(), QApplication::applicationName());
-       _saveHistory(_userHistory, st);
-  }
+void AppConfig::SaveHistory()
+{
+    QSettings st(QApplication::organizationName(), QApplication::applicationName());
+    _saveHistory(userHistory, st);
+}
 
-  void AppConfig::SaveFrame()
-  {
-      QSettings st(QApplication::organizationName(), QApplication::applicationName());
-      _saveFrame(_frameOptions, st);
-  }
- 
+void AppConfig::SaveFrame()
+{
+    QSettings st(QApplication::organizationName(), QApplication::applicationName());
+    _saveFrame(frameOptions, st);
+}
+
+void AppConfig::SaveFont()
+{
+    QSettings st(QApplication::organizationName(), QApplication::applicationName());
+    _saveFont(fontOptions, st);
+} 
 
 void AppConfig::SetProtocolFormat(const std::string &protocolName, const std::string &value)
 {
     bool bChange = false;
-    for (StringPair &o : _appOptions.m_protocolFormats){
+    for (StringPair &o : appOptions.m_protocolFormats){
         if (o.m_key == protocolName){
             o.m_value = value;
             bChange = true;
@@ -288,14 +360,14 @@ void AppConfig::SetProtocolFormat(const std::string &protocolName, const std::st
 
     if (!bChange)
     {
-        if (_appOptions.m_protocolFormats.size() > MAX_PROTOCOL_FORMAT_LIST)
+        if (appOptions.m_protocolFormats.size() > MAX_PROTOCOL_FORMAT_LIST)
         {
-            while (_appOptions.m_protocolFormats.size() < MAX_PROTOCOL_FORMAT_LIST)
+            while (appOptions.m_protocolFormats.size() < MAX_PROTOCOL_FORMAT_LIST)
             {
-                _appOptions.m_protocolFormats.erase(_appOptions.m_protocolFormats.begin());
+                appOptions.m_protocolFormats.erase(appOptions.m_protocolFormats.begin());
             }
         }
-        _appOptions.m_protocolFormats.push_back(StringPair(protocolName, value));
+        appOptions.m_protocolFormats.push_back(StringPair(protocolName, value));
         bChange = true;
     }
 
@@ -306,7 +378,7 @@ void AppConfig::SetProtocolFormat(const std::string &protocolName, const std::st
 
 std::string AppConfig::GetProtocolFormat(const std::string &protocolName)
 {
-     for (StringPair &o : _appOptions.m_protocolFormats){
+     for (StringPair &o : appOptions.m_protocolFormats){
         if (o.m_key == protocolName){ 
             return o.m_value;
         }
@@ -317,7 +389,7 @@ std::string AppConfig::GetProtocolFormat(const std::string &protocolName)
 //-------------api
 QString GetIconPath()
 {   
-    QString style = AppConfig::Instance()._frameOptions.style;
+    QString style = AppConfig::Instance().frameOptions.style;
     if (style == ""){
         style = THEME_STYLE_DARK;
     }

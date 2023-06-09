@@ -41,7 +41,8 @@
 
 #include <vector>
 
-#include "../ui/dscombobox.h" 
+#include "../ui/dscombobox.h"
+#include "../interface/icallbacks.h"
 
 namespace pv {
 
@@ -54,7 +55,7 @@ namespace view {
 
 namespace dock {
 
-class MeasureDock : public QScrollArea
+class MeasureDock : public QScrollArea, public IFontForm
 {
     Q_OBJECT
 
@@ -72,6 +73,9 @@ private:
     void changeEvent(QEvent *event);
     void retranslateUi();
     void reStyle();
+
+    //IFontForm
+    void update_font();
 
 private:
     DsComboBox* create_probe_selector(QWidget *parent);

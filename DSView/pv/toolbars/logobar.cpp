@@ -46,7 +46,7 @@
 #include "../log.h"
 #include "../ui/langresource.h"
 #include "../ui/msgbox.h"
-
+#include "../ui/fun.h"
 
 namespace pv {
 namespace toolbars {
@@ -123,6 +123,8 @@ LogoBar::LogoBar(SigSession *session, QWidget *parent) :
     connect(_issue, SIGNAL(triggered()), this, SLOT(on_actionIssue_triggered()));
     connect(_update, SIGNAL(triggered()), this, SLOT(on_action_update()));
     connect(_log, SIGNAL(triggered()), this, SLOT(on_action_setting_log()));
+
+    update_font();
 }
 
 void LogoBar::changeEvent(QEvent *event)
@@ -148,7 +150,7 @@ void LogoBar::retranslateUi()
     _log->setText(L_S(STR_PAGE_TOOLBAR, S_ID(IDS_TOOLBAR_HELP_LOG), "L&og Options"));
 
     AppConfig &app = AppConfig::Instance(); 
-    if (app._frameOptions.language == LAN_CN)
+    if (app.frameOptions.language == LAN_CN)
         _language->setIcon(QIcon(":/icons/Chinese.svg"));
     else
         _language->setIcon(QIcon(":/icons/English.svg"));
@@ -216,7 +218,7 @@ void LogoBar::on_actionIssue_triggered()
 
  void LogoBar::on_action_update()
  {
-     if (AppConfig::Instance()._frameOptions.language == LAN_CN){
+     if (AppConfig::Instance().frameOptions.language == LAN_CN){
          QDesktopServices::openUrl(QUrl(QLatin1String("https://dreamsourcelab.cn/download/")));
      }
      else{
@@ -250,14 +252,14 @@ void LogoBar::on_action_setting_log()
     for (int i=0; i<=5; i++){
         cbBox->addItem(QString::number(i));
     }
-    cbBox->setCurrentIndex(app._appOptions.logLevel);
+    cbBox->setCurrentIndex(app.appOptions.logLevel);
 
     QCheckBox *ckSave = new QCheckBox();
-    ckSave->setChecked(app._appOptions.ableSaveLog);
+    ckSave->setChecked(app.appOptions.ableSaveLog);
     lay->addRow(L_S(STR_PAGE_DLG, S_ID(IDS_DLG_SAVE_FILE), "Save To File"), ckSave);
 
     QCheckBox *ckRebuild = new QCheckBox();
-    ckRebuild->setChecked(app._appOptions.appendLogMode);
+    ckRebuild->setChecked(app.appOptions.appendLogMode);
     lay->addRow(L_S(STR_PAGE_DLG, S_ID(IDS_DLG_APPEND_MODE), "Append mode"), ckRebuild);
 
     QPushButton *btOpen = new QPushButton();
@@ -292,12 +294,12 @@ void LogoBar::on_action_setting_log()
         int level = cbBox->currentIndex();
         bool appendLogMode = ckRebuild->isChecked();
 
-        if (ableSave != app._appOptions.ableSaveLog 
-            || level != app._appOptions.logLevel
-            || appendLogMode != app._appOptions.appendLogMode){
-            app._appOptions.ableSaveLog = ableSave;
-            app._appOptions.logLevel = level;
-            app._appOptions.appendLogMode = appendLogMode;            
+        if (ableSave != app.appOptions.ableSaveLog 
+            || level != app.appOptions.logLevel
+            || appendLogMode != app.appOptions.appendLogMode){
+            app.appOptions.ableSaveLog = ableSave;
+            app.appOptions.logLevel = level;
+            app.appOptions.appendLogMode = appendLogMode;            
             app.SaveApp();
 
             dsv_log_level(level);
@@ -344,6 +346,14 @@ void LogoBar::on_clear_log_file()
         QString strMsg(L_S(STR_PAGE_MSG, S_ID(IDS_MSG_FILE_NOT_EXIST), "Not exist!"));
         MsgBox::Show(strMsg);
     }  
+}
+
+void LogoBar::update_font()
+{
+    FontOptions &st = AppConfig::Instance().fontOptions;
+    QFont font = this->font();
+    ui::set_font_param(font, st.toolbar);
+    ui::set_toolbar_font(this, font);
 }
 
 } // namespace toolbars

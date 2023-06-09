@@ -22,9 +22,11 @@
 #pragma once
 
 #include <string>
+#include <vector>
 
 struct sr_context;
 class QWidget;
+class IFontForm;
 
 namespace pv{ 
     class SigSession;
@@ -64,10 +66,15 @@ public:
 
     bool TopWindowIsMaximized();
 
+    void add_font_form(IFontForm *form);
+    void remove_font_form(IFontForm *form);
+    void update_font_forms();
+
 public:
     std::string        _open_file_name; 
 
 private: 
     pv::SigSession      *_session;
     QWidget             *_topWindow;
+    std::vector<IFontForm*> _font_forms;
 };

@@ -25,6 +25,9 @@
 #include <QPoint>
 #include <QLineEdit>
 #include <QScrollBar>
+#include "../config/appconfig.h"
+#include "../appcontrol.h"
+#include "../ui/fun.h"
 
 //----------------------ComboButtonItem
 
@@ -126,11 +129,16 @@ void SearchComboBox::ShowDlg(QWidget *editline)
     } 
 
     edit->setFocus();
-    this->show();
-
 
     connect(edit, SIGNAL(textEdited(const QString &)), 
                     this, SLOT(on_keyword_changed(const QString &)));
+
+    QFont font = this->font();
+    FontOptions &st = AppConfig::Instance().fontOptions;
+    ui::set_font_param(font, st.other);
+    ui::set_form_font(this, font);
+
+    this->show();
 }
 
 void SearchComboBox::AddDataItem(QString id, QString name, void *data_handle)

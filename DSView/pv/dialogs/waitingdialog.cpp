@@ -57,7 +57,7 @@ WaitingDialog::WaitingDialog(QWidget *parent, SigSession *session, int key) :
     this->setWindowOpacity(0.7);
 
     QFont font;
-    font.setPointSize(10);
+    font.setPointSize(9);
     font.setBold(true);
 
     QLabel *warning_tips = new QLabel(this);

@@ -42,9 +42,9 @@
 #include "../config/appconfig.h"
 #include "../dsvdef.h"
 #include "../appcontrol.h"
-#include "../log.h"
- 
+#include "../log.h" 
 #include "../ui/langresource.h"
+#include "../ui/fun.h"
 
 using namespace std;
 
@@ -154,6 +154,11 @@ void Viewport::doPaint()
     o.initFrom(this);
     QPainter p(this);
     style()->drawPrimitive(QStyle::PE_Widget, &o, &p, this);
+
+    QFont font = p.font();
+    FontOptions &st = AppConfig::Instance().fontOptions;
+    ui::set_font_param(font, st.channelBody);
+    p.setFont(font);
 
     _view.session().check_update();
     QColor fore(QWidget::palette().color(QWidget::foregroundRole()));
@@ -550,11 +555,14 @@ void Viewport::paintProgress(QPainter &p, QColor fore, QColor back)
         bool triggered;
          
         if (_view.session().get_capture_status(triggered, captured_progress)){
-            p.setPen(View::Blue);
-            QFont font=p.font();
-            font.setPointSize(10);
+            p.setPen(View::Blue); 
+
+            QFont font = p.font();
+            FontOptions &st = AppConfig::Instance().fontOptions;
+            ui::set_font_param(font, st.channelBody);
             font.setBold(true);
             p.setFont(font);
+
             QRect status_rect = QRect(cenPos.x() - radius, cenPos.y() + radius * 0.4, radius * 2, radius * 0.5);
             
             if (triggered) {
@@ -584,6 +592,7 @@ void Viewport::paintProgress(QPainter &p, QColor fore, QColor back)
         font.setPointSize(50);
         font.setBold(true);
         p.setFont(font);
+        
         p.drawText(_view.get_view_rect(), Qt::AlignCenter | Qt::AlignVCenter, QString::number(progress100)+"%");
         prgRate(progress100);
     }
@@ -874,7 +883,7 @@ void Viewport::mouseReleaseEvent(QMouseEvent *event)
 {
         assert(event);
 
-        bool quickScroll = AppConfig::Instance()._appOptions.quickScroll;
+        bool quickScroll = AppConfig::Instance().appOptions.quickScroll;
         bool isMaxWindow = AppControl::Instance()->TopWindowIsMaximized();
     
         if (_type != TIME_VIEW){

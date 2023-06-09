@@ -496,7 +496,7 @@ void View::receive_trigger(quint64 trig_pos)
         _show_trig_cursor = true;
 
         AppConfig &app = AppConfig::Instance();
-        if (app._appOptions.trigPosDisplayInMid){
+        if (app.appOptions.trigPosDisplayInMid){
             set_scale_offset(_scale,  (time / _scale) - (get_view_width() / 2));
         }
     }

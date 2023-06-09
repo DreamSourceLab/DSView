@@ -38,6 +38,7 @@
 #include "../ui/msgbox.h"
 #include "../ui/langresource.h"
 #include "../view/view.h"
+#include "../ui/fun.h"
 
 #define SINGLE_ACTION_ICON  "/once.svg"
 #define REPEAT_ACTION_ICON  "/repeat.svg"
@@ -124,9 +125,10 @@ namespace pv
             _run_stop_button.setToolButtonStyle(Qt::ToolButtonTextUnderIcon);
             _run_stop_action = addWidget(&_run_stop_button);
             _instant_button.setToolButtonStyle(Qt::ToolButtonTextUnderIcon);
-            _instant_action = addWidget(&_instant_button);
+            _instant_action = addWidget(&_instant_button); 
 
             update_view_status();
+            update_font();
 
             connect(&_device_selector, SIGNAL(currentIndexChanged(int)), this, SLOT(on_device_selected()));
             connect(&_configure_button, SIGNAL(clicked()), this, SLOT(on_configure()));
@@ -209,8 +211,6 @@ namespace pv
             _action_single->setText(L_S(STR_PAGE_TOOLBAR, S_ID(IDS_TOOLBAR_CAPTURE_MODE_SINGLE), "&Single"));
             _action_repeat->setText(L_S(STR_PAGE_TOOLBAR, S_ID(IDS_TOOLBAR_CAPTURE_MODE_REPEAT), "&Repetitive"));
             _action_loop->setText(L_S(STR_PAGE_TOOLBAR, S_ID(IDS_TOOLBAR_CAPTURE_MODE_LOOP), "&Loop"));
-
-            auto_resize();
         }
 
         void SamplingBar::reStyle()
@@ -1251,18 +1251,12 @@ namespace pv
             on_instant_stop();
         }
 
-        void SamplingBar::auto_resize()
-        {   
-            std::vector<QToolButton*> wids;
-            wids.push_back(&_configure_button);
-            wids.push_back(&_mode_button);
-            wids.push_back(&_run_stop_button);
-            wids.push_back(&_instant_button);
-            
-            for(auto bt : wids){
-                int w = bt->fontMetrics().boundingRect(bt->text()).width();
-                bt->setMinimumWidth(w+5);
-            }           
+        void SamplingBar::update_font()
+        {
+            FontOptions &st = AppConfig::Instance().fontOptions;
+            QFont font = this->font();
+            ui::set_font_param(font, st.toolbar);
+            ui::set_toolbar_font(this, font);
         }
 
     } // namespace toolbars

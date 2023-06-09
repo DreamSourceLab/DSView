@@ -33,6 +33,7 @@
 #include <vector>
 
 #include "../ui/dscombobox.h"
+#include "../interface/icallbacks.h"
 
 namespace pv {
 
@@ -40,7 +41,7 @@ class SigSession;
 
 namespace dock {
 
-class DsoTriggerDock : public QScrollArea
+class DsoTriggerDock : public QScrollArea, public IFontForm
 {
     Q_OBJECT
 
@@ -58,6 +59,9 @@ private:
     void retranslateUi();
     void reStyle();
     bool check_trig_channel();
+
+    //IFontForm
+    void update_font();
 
 signals:
     void set_trig_pos(int percent);

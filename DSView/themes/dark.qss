@@ -65,7 +65,6 @@ QWidget:item:selected
 QPushButton#flat{
     text-align:left;
     border:none;
-    /*font-size:14px;*/
 }
 
 QPushButton#flat:hover
@@ -1316,7 +1315,7 @@ QToolButton::menu-indicator
 }
 
 QToolButton{
-    /*font-size:14px;*/
+    
 }
 
 QToolButton#ModeButton::menu-indicator

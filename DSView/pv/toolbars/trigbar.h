@@ -27,6 +27,7 @@
 #include <QToolButton>
 #include <QAction>
 #include <QMenu>
+#include "../interface/icallbacks.h"
 
 class DockOptions;
 
@@ -38,7 +39,7 @@ namespace toolbars {
 
 //boolbar, referenced by MainWindow
 //TODO:show the property panel about protocol\trigger
-class TrigBar : public QToolBar
+class TrigBar : public QToolBar, public IFontForm
 {
     Q_OBJECT
 
@@ -46,7 +47,6 @@ public:
     explicit TrigBar(SigSession *session, QWidget *parent = 0);
     void reload();
     void update_view_status();
-    void auto_resize();
 
 private:
     void changeEvent(QEvent *event);
@@ -54,6 +54,9 @@ private:
     void reStyle();
     DockOptions* getDockOptions();
     void update_checked_status();
+
+    //IFontForm
+    void update_font();
 
 signals:
     void sig_setTheme(QString style);

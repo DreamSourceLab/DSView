@@ -45,6 +45,8 @@ public:
     ~DSMessageBox();
 
     QMessageBox *mBox(); 
+
+    int exec();
     
     inline int IsYes(){return _bClickYes;}
 

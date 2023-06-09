@@ -41,6 +41,8 @@
 #include "../config/appconfig.h"
 #include "../ui/langresource.h"
 #include "../ui/msgbox.h"
+#include "../appcontrol.h"
+#include "../ui/fun.h"
 
 namespace pv {
 namespace dock {
@@ -81,6 +83,8 @@ SearchDock::SearchDock(QWidget *parent, View &view, SigSession *session) :
     setLayout(layout);
 
     retranslateUi();
+
+    update_font();
 
     connect(&_pre_button, SIGNAL(clicked()), this, SLOT(on_previous()));
     connect(&_nxt_button, SIGNAL(clicked()),this, SLOT(on_next()));
@@ -247,6 +251,14 @@ void SearchDock::on_set()
             _pattern = new_pattern;
         }
     }
+}
+
+void SearchDock::update_font()
+{
+    QFont font = this->font();
+    FontOptions &st = AppConfig::Instance().fontOptions;
+    ui::set_font_param(font, st.other);
+    _search_value->setFont(font);
 }
 
 } // namespace dock

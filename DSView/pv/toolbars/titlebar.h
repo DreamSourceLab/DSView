@@ -23,6 +23,7 @@
 #define DSVIEW_PV_TOOLBARS_TITLEBAR_H
 
 #include <QWidget>
+ #include "../interface/icallbacks.h"
 
 class QToolButton;
 class QHBoxLayout;
@@ -31,7 +32,7 @@ class QLabel;
 namespace pv {
 namespace toolbars {
 
-class TitleBar : public QWidget
+class TitleBar : public QWidget, public IFontForm
 {
     Q_OBJECT
 
@@ -41,6 +42,9 @@ public:
     
     void setTitle(QString title); 
     QString title();
+
+    //IFontForm
+    void update_font();
 
 private:
     void changeEvent(QEvent *event);

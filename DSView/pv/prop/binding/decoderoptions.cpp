@@ -51,7 +51,7 @@ DecoderOptions::DecoderOptions(pv::data::DecoderStack* decoder_stack, data::deco
 	const srd_decoder *const dec = _decoder->decoder();
 	assert(dec);
 
-	bool bLang = AppConfig::Instance()._appOptions.transDecoderDlg;
+	bool bLang = AppConfig::Instance().appOptions.transDecoderDlg;
 
 	if (LangResource::Instance()->is_lang_en()){
         bLang = false;

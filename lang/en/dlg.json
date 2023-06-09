@@ -702,5 +702,37 @@
     {
         "id": "IDS_DLG_USE_ABORT_DATA_REPEAT",
         "text": "Allow use of the midway stopped data on repeat mode"
+    },
+    {
+        "id": "IDS_DLG_FONT_GROUP",
+        "text": "Font Setting"
+    },
+    {
+        "id": "IDS_DLG_TOOLBAR_FONT",
+        "text": "Toolbar"
+    },
+    {
+        "id": "IDS_DLG_CHANNEL_NAME_FONT",
+        "text": "Channel Name"
+    },
+    {
+        "id": "IDS_DLG_CHANNEL_BODY_FONT",
+        "text": "Channel Body"
+    },
+    {
+        "id": "IDS_DLG_RULER_FONT",
+        "text": "Ruler"
+    },
+    {
+        "id": "IDS_DLG_TITLE_FONT",
+        "text": "Title"
+    },
+    {
+        "id": "IDS_DLG_OTHER_FONT",
+        "text": "Other"
+    },
+    {
+        "id": "IDS_DLG_DEFAULT_FONT",
+        "text": "Default"
     }
 ]

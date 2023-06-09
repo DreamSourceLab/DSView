@@ -128,7 +128,7 @@ void ProtocolExp::accept()
 
     AppConfig &app = AppConfig::Instance();
     QString default_filter = _format_combobox->currentText();
-    QString default_name = app._userHistory.protocolExportPath + "/" + "decoder-";
+    QString default_name = app.userHistory.protocolExportPath + "/" + "decoder-";
     default_name += _session->get_session_time().toString("-yyMMdd-hhmmss");
 
     QString file_name = QFileDialog::getSaveFileName(
@@ -149,9 +149,9 @@ void ProtocolExp::accept()
         file_name += "." + ext;
 
     QString fname = path::GetDirectoryName(file_name);
-    if (fname != app._userHistory.openDir)
+    if (fname != app.userHistory.openDir)
     {
-        app._userHistory.protocolExportPath = fname;
+        app.userHistory.protocolExportPath = fname;
         app.SaveHistory();
     }
     _fileName = file_name;

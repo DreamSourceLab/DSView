@@ -33,6 +33,7 @@
 #include "../dialogs/applicationpardlg.h"
 #include "../ui/langresource.h"
 #include "../config/appconfig.h"
+#include "../ui/fun.h"
 
 namespace pv {
 namespace toolbars {
@@ -121,6 +122,8 @@ TrigBar::TrigBar(SigSession *session, QWidget *parent) :
     connect(_dark_style, SIGNAL(triggered()), this, SLOT(on_actionDark_triggered()));
     connect(_light_style, SIGNAL(triggered()), this, SLOT(on_actionLight_triggered()));
     connect(_action_dispalyOptions, SIGNAL(triggered()), this, SLOT(on_display_setting()));
+
+    update_font();
 }
 
 //语言变化
@@ -153,8 +156,6 @@ void TrigBar::retranslateUi()
     _action_math->setText(L_S(STR_PAGE_TOOLBAR, S_ID(IDS_TOOLBAR_FUNCTION_MATH), "Math"));
 
     _action_dispalyOptions->setText(L_S(STR_PAGE_TOOLBAR, S_ID(IDS_TOOLBAR_DISPLAY_OPTIONS), "Options"));
-
-    auto_resize();
 }
 
 void TrigBar::reStyle()
@@ -177,7 +178,7 @@ void TrigBar::reStyle()
     _action_dispalyOptions->setIcon(QIcon(iconPath+"/gear.svg"));
 
      AppConfig &app = AppConfig::Instance();
-     QString icon_fname = iconPath +"/"+ app._frameOptions.style +".svg";  
+     QString icon_fname = iconPath +"/"+ app.frameOptions.style +".svg";  
     _themes->setIcon(QIcon(icon_fname));
 }
 
@@ -326,11 +327,11 @@ void TrigBar::on_actionLissajous_triggered()
     int mode = _session->get_device()->get_work_mode();
 
     if (mode == LOGIC)
-        return &app._frameOptions._logicDock;
+        return &app.frameOptions._logicDock;
      else if (mode == DSO)
-        return &app._frameOptions._dsoDock;
+        return &app.frameOptions._dsoDock;
     else
-        return &app._frameOptions._analogDock;
+        return &app.frameOptions._analogDock;
  }
 
  void TrigBar::update_view_status()
@@ -354,36 +355,29 @@ void TrigBar::on_actionLissajous_triggered()
     }
  }
 
-   void TrigBar::auto_resize()
-    {   
-        std::vector<QToolButton*> wids;
-        wids.push_back(&_trig_button);
-        wids.push_back(&_protocol_button);
-        wids.push_back(&_measure_button);
-        wids.push_back(&_search_button);
-        wids.push_back(&_setting_button);
-        
-        for(auto bt : wids){
-            int w = bt->fontMetrics().boundingRect(bt->text()).width();
-            bt->setMinimumWidth(w+5);
-        }           
-    }
+void TrigBar::update_checked_status()
+{
+    DockOptions *opt = getDockOptions();
+    assert(opt);
 
-    void TrigBar::update_checked_status()
-    {
-        DockOptions *opt = getDockOptions();
-        assert(opt);
+    _trig_button.setCheckable(true); 
+    _protocol_button.setCheckable(true); 
+    _measure_button.setCheckable(true);
+    _search_button.setCheckable(true);
 
-        _trig_button.setCheckable(true); 
-        _protocol_button.setCheckable(true); 
-        _measure_button.setCheckable(true);
-        _search_button.setCheckable(true);
+    _trig_button.setChecked(opt->triggerDock);
+    _protocol_button.setChecked(opt->decodeDock);
+    _measure_button.setChecked(opt->measureDock);
+    _search_button.setChecked(opt->searchDock);
+}
 
-        _trig_button.setChecked(opt->triggerDock);
-        _protocol_button.setChecked(opt->decodeDock);
-        _measure_button.setChecked(opt->measureDock);
-        _search_button.setChecked(opt->searchDock);
-    }
+void TrigBar::update_font()
+{
+    FontOptions &st = AppConfig::Instance().fontOptions;
+    QFont font = this->font();
+    ui::set_font_param(font, st.toolbar);
+    ui::set_toolbar_font(this, font);
+}
 
 } // namespace toolbars
 } // namespace pv

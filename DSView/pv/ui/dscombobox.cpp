@@ -74,7 +74,7 @@ DsComboBox::DsComboBox(QWidget *parent) : QComboBox(parent)
          popup->setMaximumHeight(750); 
     }
     
-    if (AppConfig::Instance()._frameOptions.style == THEME_STYLE_DARK){       
+    if (AppConfig::Instance().frameOptions.style == THEME_STYLE_DARK){       
         popup->setStyleSheet("background-color:#262626;");
     }
     else{

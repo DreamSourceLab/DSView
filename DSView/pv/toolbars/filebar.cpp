@@ -29,10 +29,9 @@
 #include "../ui/msgbox.h"
 #include "../config/appconfig.h"
 #include "../utility/path.h"
-
 #include "../ui/langresource.h"
-#include "../log.h"
-#include "../interface/icallbacks.h"
+#include "../log.h" 
+#include "../ui/fun.h"
 
 namespace pv {
 namespace toolbars {
@@ -94,6 +93,8 @@ FileBar::FileBar(SigSession *session, QWidget *parent) :
     connect(_action_save, SIGNAL(triggered()), this, SIGNAL(sig_save()));
     connect(_action_export, SIGNAL(triggered()), this, SIGNAL(sig_export()));
     connect(_action_capture, SIGNAL(triggered()), this, SLOT(on_actionCapture_triggered()));
+
+    update_font();
 }
 
 void FileBar::changeEvent(QEvent *event)
@@ -116,8 +117,6 @@ void FileBar::retranslateUi()
     _action_save->setText(L_S(STR_PAGE_TOOLBAR, S_ID(IDS_TOOLBAR_FILE_SAVE), "&Save..."));
     _action_export->setText(L_S(STR_PAGE_TOOLBAR, S_ID(IDS_TOOLBAR_FILE_EXPORT), "&Export..."));
     _action_capture->setText(L_S(STR_PAGE_TOOLBAR, S_ID(IDS_TOOLBAR_FILE_CAPTURE), "&Capture..."));
-
-    auto_resize();
 }
 
 void FileBar::reStyle()
@@ -151,13 +150,13 @@ void FileBar::on_actionOpen_triggered()
     const QString file_name = QFileDialog::getOpenFileName(
         this, 
         L_S(STR_PAGE_DLG, S_ID(IDS_DLG_OPEN_FILE), "Open File"), 
-        app._userHistory.openDir,
+        app.userHistory.openDir,
         "DSView Data (*.dsl)");
 
     if (!file_name.isEmpty()) { 
         QString fname = path::GetDirectoryName(file_name);
-        if (fname != app._userHistory.openDir){
-            app._userHistory.openDir = fname;
+        if (fname != app.userHistory.openDir){
+            app.userHistory.openDir = fname;
             app.SaveHistory();
         }
 
@@ -172,13 +171,13 @@ void FileBar::on_actionLoad_triggered()
     const QString file_name = QFileDialog::getOpenFileName(
         this, 
         L_S(STR_PAGE_DLG, S_ID(IDS_DLG_OPEN_SEESION), "Open Session"), 
-        app._userHistory.sessionDir, 
+        app.userHistory.sessionDir, 
         "DSView Session (*.dsc)");
 
     if (!file_name.isEmpty()) {
         QString fname = path::GetDirectoryName(file_name);
-        if (fname != app._userHistory.sessionDir){
-            app._userHistory.sessionDir = fname;
+        if (fname != app.userHistory.sessionDir){
+            app.userHistory.sessionDir = fname;
             app.SaveHistory();
         }
          
@@ -220,7 +219,7 @@ void FileBar::on_actionStore_triggered()
     QString file_name = QFileDialog::getSaveFileName(
                 this, 
                 L_S(STR_PAGE_DLG, S_ID(IDS_DLG_SAVE_SEESION), "Save Session"),
-                app._userHistory.sessionDir,
+                app.userHistory.sessionDir,
                 "DSView Session (*.dsc)");
 
     if (!file_name.isEmpty()) {
@@ -229,8 +228,8 @@ void FileBar::on_actionStore_triggered()
             file_name.append(".dsc");
 
         QString fname = path::GetDirectoryName(file_name);
-        if (fname != app._userHistory.sessionDir){
-            app._userHistory.sessionDir = fname;
+        if (fname != app.userHistory.sessionDir){
+            app.userHistory.sessionDir = fname;
             app.SaveHistory();
         }
 
@@ -255,15 +254,12 @@ void FileBar::update_view_status()
     _menu_session->setEnabled(bEnable && is_hardware); 
 }
 
-void FileBar::auto_resize()
-{   
-    std::vector<QToolButton*> wids;
-    wids.push_back(&_file_button);
-    
-    for(auto bt : wids){
-        int w = bt->fontMetrics().boundingRect(bt->text()).width();
-        bt->setMinimumWidth(w+5);
-    }           
+void FileBar::update_font()
+{
+    FontOptions &st = AppConfig::Instance().fontOptions;
+    QFont font = this->font();
+    ui::set_font_param(font, st.toolbar);
+    ui::set_toolbar_font(this, font);
 }
 
 } // namespace toolbars

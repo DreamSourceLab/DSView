@@ -29,6 +29,8 @@
 #include <QVBoxLayout>
 #include <QAbstractButton>
 #include "../dsvdef.h"
+#include "../config/appconfig.h"
+#include "../ui/fun.h"
 
 namespace pv {
 namespace dialogs {
@@ -125,6 +127,8 @@ int DSDialog::exec()
         connect(_base_button, SIGNAL(rejected()), this, SLOT(reject()));
         connect(_base_button, SIGNAL(accepted()), this, SLOT(accept()));
     }
+
+    update_font();
  
     return QDialog::exec();
 }
@@ -156,7 +160,7 @@ void DSDialog::build_base(bool hasClose)
     this->setGraphicsEffect(_shadow);
 
     _titlebar = new toolbars::TitleBar(false, this, hasClose);
-     _main_layout->addWidget(_titlebar);
+    _main_layout->addWidget(_titlebar);
 
     _titleSpaceLine = new QWidget(this);
     _titleSpaceLine->setFixedHeight(15);
@@ -169,6 +173,25 @@ void DSDialog::build_base(bool hasClose)
     _main_layout->setAlignment(Qt::AlignCenter | Qt::AlignTop);
     _main_layout->setContentsMargins(10,5,10,10);   
 } 
+
+void DSDialog::update_font()
+{
+    FontOptions &st = AppConfig::Instance().fontOptions;
+    QFont font = this->font();
+    ui::set_font_param(font, st.other);
+    ui::set_form_font(this, font);
+
+    if (_titlebar != NULL){
+        _titlebar->update_font();
+    }
+}
+
+void DSDialog::show()
+{
+    update_font();
+    
+    QWidget::show();
+}
 
 } // namespace dialogs
 } // namespace pv

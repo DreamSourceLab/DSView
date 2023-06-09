@@ -33,8 +33,8 @@
 #include <assert.h>
 #include "../config/appconfig.h"
 #include "../appcontrol.h"
-
 #include "../dsvdef.h"
+#include "../ui/fun.h"
 
 namespace pv {
 namespace toolbars {
@@ -89,7 +89,9 @@ TitleBar::TitleBar(bool top, QWidget *parent, bool hasClose) :
     lay1->setContentsMargins(0,0,0,0);
     lay1->setSpacing(0);
 
-    setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);  
+    setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed); 
+
+    update_font();
 }
 
 TitleBar::~TitleBar(){ 
@@ -234,6 +236,13 @@ void TitleBar::mouseDoubleClickEvent(QMouseEvent *event)
     QWidget::mouseDoubleClickEvent(event);
 }
 
+void TitleBar::update_font()
+{ 
+    FontOptions &st = AppConfig::Instance().fontOptions;
+    QFont font = this->font();
+    ui::set_font_param(font, st.title);
+    _title->setFont(font);
+}
  
 } // namespace toolbars
 } // namespace pv

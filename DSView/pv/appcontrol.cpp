@@ -27,6 +27,7 @@
 #include <QCoreApplication>
 #include <QWidget>
 #include <string>
+#include <assert.h>
 #include "sigsession.h"
 #include "dsvdef.h"
 #include "config/appconfig.h"
@@ -145,10 +146,36 @@ void AppControl::UnInit()
     _session->uninit();
 }
 
- bool AppControl::TopWindowIsMaximized()
- {
-     if (_topWindow != NULL){
-         return _topWindow->isMaximized();
-     }
-     return false;
- }
+bool AppControl::TopWindowIsMaximized()
+{
+    if (_topWindow != NULL){
+        return _topWindow->isMaximized();
+    }
+    return false;
+}
+
+void AppControl::add_font_form(IFontForm *form)
+{
+    assert(form);
+    _font_forms.push_back(form);
+}
+
+void AppControl::remove_font_form(IFontForm *form)
+{
+    assert(form);
+    
+    for (auto it = _font_forms.begin(); it != _font_forms.end(); it++)
+    {
+        if ( *(it) == form){
+            _font_forms.erase(it);
+            break;
+        }
+    }
+}
+
+void AppControl::update_font_forms()
+{
+    for (auto f : _font_forms){
+        f->update_font();
+    }
+}

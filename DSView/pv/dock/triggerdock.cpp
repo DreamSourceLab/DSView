@@ -44,6 +44,8 @@
 #include "../ui/msgbox.h"
 #include "../log.h"
 #include "../data/decode/annotationrestable.h"
+#include "../appcontrol.h"
+#include "../ui/fun.h"
 
 namespace pv {
 namespace dock {
@@ -123,6 +125,8 @@ TriggerDock::TriggerDock(QWidget *parent, SigSession *session) :
     _widget->setObjectName("triggerWidget");
 
     retranslateUi();
+
+    update_font();
 }
 
 TriggerDock::~TriggerDock()
@@ -966,7 +970,7 @@ void TriggerDock::try_commit_trigger()
             }
         }
 
-        if (app._appOptions.warnofMultiTrig && num > 1) {
+        if (app.appOptions.warnofMultiTrig && num > 1) {
             dialogs::DSMessageBox msg(this);
             msg.mBox()->setText(L_S(STR_PAGE_MSG, S_ID(IDS_MSG_TRIGGER), "Trigger"));
             msg.mBox()->setInformativeText(L_S(STR_PAGE_MSG, S_ID(IDS_MSG_SET_TRI_MULTI_CHANNEL), 
@@ -991,7 +995,7 @@ void TriggerDock::try_commit_trigger()
 
             if (msg.mBox()->clickedButton() == noMoreButton)
             {
-                app._appOptions.warnofMultiTrig  = false;
+                app.appOptions.warnofMultiTrig  = false;
                 app.SaveApp();                
             }
         }
@@ -1062,6 +1066,16 @@ void TriggerDock::on_serial_hex_changed()
     }
 
     _is_serial_val_setting = false;
+}
+
+void TriggerDock::update_font()
+{
+    QFont font = this->font();
+    FontOptions &st = AppConfig::Instance().fontOptions;
+    ui::set_font_param(font, st.other);
+    ui::set_form_font(this, font);
+    
+    this->parentWidget()->setFont(font);
 }
 
 } // namespace dock

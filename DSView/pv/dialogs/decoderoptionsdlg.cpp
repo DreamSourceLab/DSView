@@ -168,7 +168,7 @@ void DecoderOptionsDlg::load_options_view()
     update_decode_range(); // set default sample range
 
     int h_ex2 = 0;
-    bool bLang = AppConfig::Instance()._appOptions.transDecoderDlg;
+    bool bLang = AppConfig::Instance().appOptions.transDecoderDlg;
 
     if (LangResource::Instance()->is_lang_en() == false){
         QWidget *sp1 = new QWidget();
@@ -390,7 +390,7 @@ void DecoderOptionsDlg::create_decoder_form(
     decoder_form->setLabelAlignment(Qt::AlignLeft);
     decoder_form->setFieldGrowthPolicy(QFormLayout::AllNonFixedFieldsGrow);
 
-    bool bLang = AppConfig::Instance()._appOptions.transDecoderDlg;
+    bool bLang = AppConfig::Instance().appOptions.transDecoderDlg;
     if (LangResource::Instance()->is_lang_en()){
         bLang = false;
     }
@@ -527,7 +527,7 @@ void DecoderOptionsDlg::on_trans_pramas()
     QCheckBox *ck_box = dynamic_cast<QCheckBox*>(sender());
     assert(ck_box);
 
-    AppConfig::Instance()._appOptions.transDecoderDlg = ck_box->isChecked();
+    AppConfig::Instance().appOptions.transDecoderDlg = ck_box->isChecked();
     AppConfig::Instance().SaveApp();
     _is_reload_form = true;
     this->accept();

@@ -32,6 +32,7 @@
 #include <QApplication>
 #include <assert.h>
 #include <algorithm>
+#include <QFont>
 
 #include "view.h"
 #include "trace.h"
@@ -43,7 +44,9 @@
 #include "../sigsession.h"
 #include "../dsvdef.h"
 #include "../ui/langresource.h"
-
+#include "../appcontrol.h"
+#include "../config/appconfig.h"
+#include "../ui/fun.h"
  
 using namespace std;
 
@@ -123,6 +126,11 @@ void Header::paintEvent(QPaintEvent*)
     const bool dragging = !_drag_traces.empty();
     QColor fore(QWidget::palette().color(QWidget::foregroundRole()));
     fore.setAlpha(View::ForeAlpha);
+
+    FontOptions &st = AppConfig::Instance().fontOptions;
+    QFont font(painter.font());    
+    ui::set_font_param(font, st.channelLabel);
+    painter.setFont(font);
 
     for(auto t : traces)
 	{
