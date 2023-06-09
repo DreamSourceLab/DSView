@@ -254,17 +254,17 @@ static void _loadFont(FontOptions &o, QSettings &st)
 {
     st.beginGroup("FontSetting");
     getFiled("toolbarName", st, o.toolbar.name, "");
-    getFiled("toolbarSize", st, o.toolbar.size, 10);
+    getFiled("toolbarSize", st, o.toolbar.size, 9);
     getFiled("channelLabelName", st, o.channelLabel.name, "");
-    getFiled("channelLabelSize", st, o.channelLabel.size, 10);
+    getFiled("channelLabelSize", st, o.channelLabel.size, 9);
     getFiled("channelBodyName", st, o.channelBody.name, "");
     getFiled("channelBodySize", st, o.channelBody.size, 9);
     getFiled("rulerName", st, o.ruler.name, "");
     getFiled("ruleSize", st, o.ruler.size, 9);
     getFiled("titleName", st, o.title.name, "");
-    getFiled("titleSize", st, o.title.size, 10);
+    getFiled("titleSize", st, o.title.size, 9);
     getFiled("otherName", st, o.other.name, "");
-    getFiled("otherSize", st, o.other.size, 10);
+    getFiled("otherSize", st, o.other.size, 9);
 
     st.endGroup();
 }
