@@ -67,6 +67,10 @@ DsComboBox::DsComboBox(QWidget *parent) : QComboBox(parent)
     x += 6;
 #endif
 
+#ifndef _WIN32
+    w += 3;
+#endif
+
     popup->setGeometry(x, y, w, h);
 
     int sy = QGuiApplication::primaryScreen()->size().height(); 
