@@ -65,11 +65,15 @@ private:
     static const uint64_t LevelMask[ScaleLevel];
     static const uint64_t LevelOffset[ScaleLevel];
 
+    static const uint64_t MSB =  (1ULL << (Scale - 1));
+    static const uint64_t LSB =  (1ULL);
+
 private:
     struct RootNode
     {
         uint64_t tog;
-        uint64_t value; 
+        uint64_t first;
+        uint64_t last;
         void *lbp[Scale];
     };
 
@@ -163,15 +167,21 @@ private:
 
     void append_cross_payload(const sr_datafeed_logic &logic);
 
+    bool lbp_nxt_edge(uint64_t &index, uint64_t root_index, uint64_t lbp_tog, uint8_t lbp_tog_pos,
+                      bool aft_tog, uint8_t aft_pos, bool last_sample, int sig_index);
+
     bool block_nxt_edge(uint64_t *lbp, uint64_t &index, uint64_t block_end, bool last_sample,
                         unsigned int min_level);
+
+    bool lbp_pre_edge(uint64_t &index, uint64_t root_index, uint64_t lbp_tog, uint8_t &lbp_tog_pos,
+                      bool pre_tog, uint8_t pre_pos, bool last_sample, int sig_index);
 
     bool block_pre_edge(uint64_t *lbp, uint64_t &index, bool last_sample,
                         unsigned int min_level, int sig_index);
 
-    inline uint64_t bsf_folded (uint64_t bb)
+    inline uint8_t bsf_folded (uint64_t bb)
     {
-        static const int lsb_64_table[64] = {
+        static const uint8_t lsb_64_table[64] = {
             63, 30,  3, 32, 59, 14, 11, 33,
             60, 24, 50,  9, 55, 19, 21, 34,
             61, 29,  2, 53, 51, 23, 41, 18,
@@ -187,9 +197,9 @@ private:
         return lsb_64_table[folded * 0x78291ACF >> 26];
     }
 
-    inline int bsr32(uint32_t bb)
+    inline uint8_t bsr32(uint32_t bb)
     {
-        static const char msb_256_table[256] = {
+        static const uint8_t msb_256_table[256] = {
             0, 0, 1, 1, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3,
             4, 4, 4, 4, 4, 4, 4, 4,4, 4, 4, 4,4, 4, 4, 4,
             5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5,
@@ -200,7 +210,7 @@ private:
             7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7,
             7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7,
        };
-       int result = 0;
+       uint8_t result = 0;
 
        if (bb > 0xFFFF) {
           bb >>= 16;
@@ -214,7 +224,7 @@ private:
        return (result + msb_256_table[bb]);
     }
 
-    inline uint64_t bsr64(uint64_t bb)
+    inline uint8_t bsr64(uint64_t bb)
     {
         const uint32_t hb = bb >> 32;
         return hb ? 32 + bsr32((uint32_t)hb) : bsr32((uint32_t)bb);

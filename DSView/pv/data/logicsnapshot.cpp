@@ -156,7 +156,8 @@ void LogicSnapshot::first_payload(const sr_datafeed_logic &logic, uint64_t total
                 for (uint64_t j = 0; j < rootnode_size; j++) {
                     struct RootNode rn;
                     rn.tog = 0;
-                    rn.value = 0; 
+                    rn.first = 0;
+                    rn.last = 0;
                     memset(rn.lbp, 0, sizeof(rn.lbp));
                     root_vector.push_back(rn);
                 }
@@ -170,7 +171,8 @@ void LogicSnapshot::first_payload(const sr_datafeed_logic &logic, uint64_t total
         for(auto& iter : _ch_data) {
             for(auto& iter_rn : iter) {
                 iter_rn.tog = 0;
-                iter_rn.value = 0;
+                iter_rn.first = 0;
+                iter_rn.last = 0;
 
                 for (int j=0; j<64; j++){
                     if (iter_rn.lbp[j] != NULL)
@@ -471,8 +473,7 @@ void LogicSnapshot::capture_ended()
 }
 
 void LogicSnapshot::calc_mipmap(unsigned int order, uint8_t index0, uint8_t index1, uint64_t samples, bool isEnd)
-{  
-    const uint64_t mask =  1ULL << (Scale - 1);
+{
     void *lbp = _ch_data[order][index0].lbp[index1];
     void *level1_ptr = (uint8_t*)lbp + LeafBlockSamples / 8;
     void *level2_ptr = (uint8_t*)level1_ptr + LeafBlockSamples / Scale / 8;
@@ -492,12 +493,16 @@ void LogicSnapshot::calc_mipmap(unsigned int order, uint8_t index0, uint8_t inde
         dest_ptr += i / Scale;
     }
 
-    for(; i < samples / Scale; i++) 
+    if (i == 0) {
+        _last_sample[order] = (*src_ptr & LSB) ? ~0ULL : 0ULL;
+    }
+
+    for(; i < samples / Scale; i++)
     {
         if (_last_sample[order] ^ *src_ptr)
             *dest_ptr |= (1ULL << offset);
 
-        _last_sample[order] = *src_ptr & mask ? ~0ULL : 0ULL;
+        _last_sample[order] = *src_ptr & MSB ? ~0ULL : 0ULL;
         src_ptr++;
         offset++;
 
@@ -545,9 +550,12 @@ void LogicSnapshot::calc_mipmap(unsigned int order, uint8_t index0, uint8_t inde
         src_ptr++;
     }  
 
-    if (*((uint64_t*)lbp) != 0)
-        _ch_data[order][index0].value |= 1ULL << index1;
-            
+    if ((*((uint64_t*)lbp) & LSB) != 0)
+        _ch_data[order][index0].first |= 1ULL << index1;
+
+    if ((*((uint64_t*)lbp + LeafBlockSamples / Scale - 1) & MSB) != 0)
+        _ch_data[order][index0].last |= 1ULL << index1;
+
     if (*((uint64_t*)level3_ptr) != 0){
         _ch_data[order][index0].tog |= 1ULL << index1;
     }
@@ -642,7 +650,7 @@ bool LogicSnapshot::get_sample_self(uint64_t index, int sig_index)
         uint64_t root_pos_mask = 1ULL << index1;
 
         if ((_ch_data[order][index0].tog & root_pos_mask) == 0) {
-            return (_ch_data[order][index0].value & root_pos_mask) != 0;
+            return (_ch_data[order][index0].first & root_pos_mask) != 0;
         }
         else {
             uint64_t *lbp = (uint64_t*)_ch_data[order][index0].lbp[index1];
@@ -750,6 +758,8 @@ bool LogicSnapshot::get_nxt_edge_self(uint64_t &index, bool last_sample, uint64_
     const unsigned int min_level = max((int)(log2f(min_length) - 1) / (int)ScalePower, 0);
     uint64_t root_index = index >> (LeafBlockPower + RootScalePower);
     uint8_t root_pos = (index & RootMask) >> LeafBlockPower;
+    bool root_last = (root_index != 0) ? _ch_data[order][root_index-1].last & MSB :
+                                         _ch_data[order][0].first & LSB;
     bool edge_hit = false;
 
     // linear search for the next transition on the root level
@@ -758,37 +768,59 @@ bool LogicSnapshot::get_nxt_edge_self(uint64_t &index, bool last_sample, uint64_
         uint64_t cur_mask = (~0ULL << root_pos);
 
         do {
-            uint64_t cur_tog = _ch_data[order][i].tog & cur_mask; 
+            uint64_t inner_tog = _ch_data[order][i].tog & cur_mask;
+            uint64_t lbp_tog = (((_ch_data[order][i].last << 1) + root_last) & cur_mask) ^ (_ch_data[order][i].first & cur_mask);
+            uint8_t inner_tog_pos = bsf_folded(inner_tog);
+            uint8_t lbp_tog_pos = bsf_folded(lbp_tog);
 
-            if (cur_tog != 0) {
-                uint64_t first_edge_pos = bsf_folded(cur_tog);                
-                uint64_t *lbp = (uint64_t*)_ch_data[order][i].lbp[first_edge_pos];
-
-                uint64_t blk_start = (i << (LeafBlockPower + RootScalePower)) + (first_edge_pos << LeafBlockPower);
-                index = max(blk_start, index);
-
-                if (min_level < ScaleLevel) {
-                    uint64_t block_end = min(index | LeafMask, end);
-                    edge_hit = block_nxt_edge(lbp, index, block_end, last_sample, min_level);
-                }
-                else {
-                    edge_hit = true;
+            if (inner_tog != 0)
+            {
+                if (lbp_tog != 0) {
+                    // lbp tog before inner tog
+                    edge_hit = lbp_nxt_edge(index, i, lbp_tog, lbp_tog_pos, true, inner_tog_pos, last_sample, sig_index);
                 }
 
-                if (first_edge_pos == RootScale - 1)
-                    break;
-                cur_mask = (~0ULL << (first_edge_pos + 1));
+                if (!edge_hit) {
+                    uint64_t *lbp = (uint64_t*)_ch_data[order][i].lbp[inner_tog_pos];
+                    uint64_t blk_start = (i << (LeafBlockPower + RootScalePower)) + (inner_tog_pos << LeafBlockPower);
+                    index = max(blk_start, index);
+
+                    if (min_level < ScaleLevel) {
+                        uint64_t block_end = min(index | LeafMask, end);
+                        edge_hit = block_nxt_edge(lbp, index, block_end, last_sample, min_level);
+                    }
+                    else {
+                        edge_hit = true;
+                    }
+
+                    if (inner_tog_pos == RootScale - 1)
+                        break;
+                    cur_mask = (~0ULL << (inner_tog_pos + 1));
+                }
+            }
+            else if (lbp_tog != 0) {
+                // lbp tog
+                edge_hit = lbp_nxt_edge(index, i, lbp_tog, lbp_tog_pos, false, Scale - 1, last_sample, sig_index);
             }
             else {
-                index = (index + (1 << (LeafBlockPower + RootScalePower))) &
-                        (~0ULL << (LeafBlockPower + RootScalePower));
+                //index = (index + (1 << (LeafBlockPower + RootScalePower))) &
+                //        (~0ULL << (LeafBlockPower + RootScalePower));
+                index = (((i + 1) << (LeafBlockPower + RootScalePower)) - 1);
                 break;
             }
         }
-        while (!edge_hit && index < end);
+        //while (!edge_hit && index < end);
+        while (!edge_hit && index < (((i + 1) << (LeafBlockPower + RootScalePower)) - 1));
 
         root_pos = 0;
+        root_last = _ch_data[order][i].last & MSB;
     }
+
+    if (index > end) {
+        // skip edges over right
+        edge_hit = false;
+    }
+
     return edge_hit;
 }
 
@@ -820,32 +852,108 @@ bool LogicSnapshot::get_pre_edge_self(uint64_t &index, bool last_sample,
     const unsigned int min_level = max((int)(log2f(min_length) - 1) / (int)ScalePower, 0);
     int root_index = index >> (LeafBlockPower + RootScalePower);
     uint8_t root_pos = (index & RootMask) >> LeafBlockPower;
+    bool root_first = _ch_data[order][root_index].last & MSB;
     bool edge_hit = false;
 
     // linear search for the previous transition on the root level
-    for (int64_t i = root_index; !edge_hit && i >= 0; i--) {
+    for (int64_t i = root_index; !edge_hit && i >= 0; i--)
+    {
         uint64_t cur_mask = (~0ULL >> (RootScale - root_pos - 1));
+
         do {
-            uint64_t cur_tog = _ch_data[order][i].tog & cur_mask;
-            if (cur_tog != 0) {
-                uint64_t first_edge_pos = bsr64(cur_tog);
-                uint64_t *lbp = (uint64_t*)_ch_data[order][i].lbp[first_edge_pos];
-                uint64_t blk_end = ((i << (LeafBlockPower + RootScalePower)) +
-                                   (first_edge_pos << LeafBlockPower)) | LeafMask;
-                index = min(blk_end, index);
-                if (min_level < ScaleLevel) {
-                    edge_hit = block_pre_edge(lbp, index, last_sample, min_level, sig_index);
-                } else {
-                    edge_hit = true;
+            uint64_t inner_tog = _ch_data[order][i].tog & cur_mask;
+            uint64_t lbp_tog = (_ch_data[order][i].last & cur_mask) ^ ((((uint64_t)root_first << (RootScale - 1)) + (_ch_data[order][i].first >> 1)) & cur_mask);
+            uint8_t inner_tog_pos = bsr64(inner_tog);
+            uint8_t lbp_tog_pos = bsr64(lbp_tog);
+
+            if (inner_tog != 0)
+            {
+                if (lbp_tog != 0) {
+                    // lbp tog before inner tog
+                    edge_hit = lbp_pre_edge(index, i, lbp_tog, lbp_tog_pos, true, inner_tog_pos, last_sample, sig_index);
                 }
-                if (first_edge_pos == 0)
+
+                if (!edge_hit) {
+                    uint64_t *lbp = (uint64_t*)_ch_data[order][i].lbp[inner_tog_pos];
+                    uint64_t blk_end = ((i << (LeafBlockPower + RootScalePower)) +
+                                    (inner_tog_pos << LeafBlockPower)) | LeafMask;
+                    index = min(blk_end, index);
+                    if (min_level < ScaleLevel) {
+                        edge_hit = block_pre_edge(lbp, index, last_sample, min_level, sig_index);
+                    } else {
+                        edge_hit = true;
+                    }
+                    if (inner_tog_pos == 0)
+                        break;
+                    cur_mask = (~0ULL >> (RootScale - inner_tog_pos));
+                }
+            }
+            else if (lbp_tog != 0) {
+                // lbp tog
+                edge_hit = lbp_pre_edge(index, i, lbp_tog, lbp_tog_pos, false, 0, last_sample, sig_index);
+                if (lbp_tog_pos == 0)
                     break;
-                cur_mask = (~0ULL >> (RootScale - first_edge_pos));
-            } else {
+            }
+            else {
                 break;
             }
-        } while (!edge_hit);
+        }
+        while (!edge_hit);
+
         root_pos = RootScale - 1;
+        root_first = _ch_data[order][i].first & LSB;
+    }
+
+    return edge_hit;
+}
+
+bool LogicSnapshot::lbp_nxt_edge(uint64_t &index, uint64_t root_index, uint64_t lbp_tog, uint8_t lbp_tog_pos,
+                  bool aft_tog, uint8_t aft_pos, bool last_sample, int sig_index)
+{
+    assert(lbp_tog != 0);
+
+    // check last_sample with current index
+    bool sample = get_sample_self(index, sig_index);
+    if (sample ^ last_sample)
+    {
+        return true;
+    }
+
+    // find edge between lbp
+    bool edge_hit = false;
+    uint64_t aft_lbp_start = (root_index << (LeafBlockPower + RootScalePower)) + (aft_pos << LeafBlockPower);
+
+    while(lbp_tog_pos <= aft_pos)
+    {
+        uint64_t lbp_tog_index = (root_index << (LeafBlockPower + RootScalePower)) + (lbp_tog_pos << LeafBlockPower);
+        if (lbp_tog_index > aft_lbp_start)
+        {
+            edge_hit = false;
+            break;
+        }
+        else if (lbp_tog_index > index)
+        {
+            index = lbp_tog_index;
+            edge_hit = true;
+            break;
+        }
+
+        lbp_tog_pos++;
+        lbp_tog &= (~0ULL << lbp_tog_pos);
+        if ((lbp_tog_pos < Scale) && (lbp_tog != 0))
+        {
+            lbp_tog_pos = bsf_folded(lbp_tog);
+        }
+        else
+        {
+            break;
+        }
+    }
+
+    uint64_t lbp_edge_index = aft_tog ? aft_lbp_start : aft_lbp_start + (1ULL << LeafBlockPower) - 1;
+    if (!edge_hit && lbp_edge_index > index)
+    {
+        index = lbp_edge_index;
     }
 
     return edge_hit;
@@ -932,6 +1040,60 @@ bool LogicSnapshot::block_nxt_edge(uint64_t *lbp, uint64_t &index, uint64_t bloc
     }
 
     return (index <= block_end);
+}
+
+bool LogicSnapshot::lbp_pre_edge(uint64_t &index, uint64_t root_index, uint64_t lbp_tog, uint8_t &lbp_tog_pos,
+                  bool pre_tog, uint8_t pre_pos, bool last_sample, int sig_index)
+{
+    assert(lbp_tog != 0);
+
+    // check last_sample with current index
+    bool sample = get_sample_self(index, sig_index);
+    if (sample ^ last_sample)
+    {
+        index++;
+        return true;
+    }
+
+    // find edge between lbp
+    bool edge_hit = false;
+    uint64_t pre_lbp_end = (root_index << (LeafBlockPower + RootScalePower)) + (pre_pos << LeafBlockPower) + (1ULL << LeafBlockPower) - 1;
+
+    do
+    {
+        uint64_t lbp_tog_index = (root_index << (LeafBlockPower + RootScalePower)) + (lbp_tog_pos << LeafBlockPower)  + (1ULL << LeafBlockPower) - 1;
+        if (lbp_tog_index < pre_lbp_end)
+        {
+            edge_hit = false;
+            break;
+        }
+        else if (lbp_tog_index < index)
+        {
+            index = lbp_tog_index + 1;
+            edge_hit = true;
+            break;
+        }
+
+        if (lbp_tog_pos > 0)
+        {
+            lbp_tog_pos--;
+            lbp_tog &= (~0ULL >> (Scale - lbp_tog_pos - 1));
+            lbp_tog_pos = (lbp_tog != 0) ? bsr64(lbp_tog) : 0;
+        }
+        else
+        {
+            lbp_tog = 0;
+        }
+    }
+    while (lbp_tog != 0 && lbp_tog_pos >= pre_pos);
+
+    uint64_t lbp_edge_index = pre_tog ? pre_lbp_end : pre_lbp_end + 1 - (1ULL << LeafBlockPower);
+    if (!edge_hit && lbp_edge_index < index)
+    {
+        index = lbp_edge_index;
+    }
+
+    return edge_hit;
 }
 
 bool LogicSnapshot::block_pre_edge(uint64_t *lbp, uint64_t &index, bool last_sample,
@@ -1203,7 +1365,7 @@ uint8_t *LogicSnapshot::get_block_buf(int block_index, int sig_index, bool &samp
     uint8_t *lbp = (uint8_t*)_ch_data[order][index].lbp[pos];
 
     if (lbp == NULL)
-        sample = (_ch_data[order][index].value & 1ULL << pos) != 0;
+        sample = (_ch_data[order][index].first & 1ULL << pos) != 0;
 
     return lbp;
 }
@@ -1238,7 +1400,8 @@ void LogicSnapshot::move_first_node_to_last()
         }
 
         rn.tog = 0;
-        rn.value = 0;
+        rn.first = 0;
+        rn.last = 0;
 
         _ch_data[i].push_back(rn);                        
     }
@@ -1271,7 +1434,8 @@ void LogicSnapshot::free_decode_lpb(void *lbp)
 }
 
 void LogicSnapshot::free_head_blocks(int count)
-{   
+{
+    assert(count < Scale);
     assert(count > 0);
 
     for (int i = 0; i < (int)_channel_num; i++)
@@ -1283,8 +1447,9 @@ void LogicSnapshot::free_head_blocks(int count)
             }
 
             _ch_data[i][0].tog = (_ch_data[i][0].tog >> count) << count;
-            _ch_data[i][0].value = (_ch_data[i][0].value >> count) << count;
-        }      
+            _ch_data[i][0].first = (_ch_data[i][0].first >> count) << count;
+            _ch_data[i][0].last = (_ch_data[i][0].last >> count) << count;
+        }
     }
     _lst_free_block_index = count;
 }
