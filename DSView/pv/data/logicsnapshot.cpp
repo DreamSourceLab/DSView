@@ -834,7 +834,7 @@ bool LogicSnapshot::get_pre_edge(uint64_t &index, bool last_sample,
 
     bool flag = get_pre_edge_self(index, last_sample, min_length, sig_index);
 
-    index -= _loop_offset;
+    index = (index < _loop_offset) ? 0 : index - _loop_offset;
     _ring_sample_count -= _loop_offset;
     return flag;
 }
