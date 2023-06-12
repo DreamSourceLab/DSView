@@ -126,10 +126,9 @@ void Header::paintEvent(QPaintEvent*)
     const bool dragging = !_drag_traces.empty();
     QColor fore(QWidget::palette().color(QWidget::foregroundRole()));
     fore.setAlpha(View::ForeAlpha);
-
-    FontOptions &st = AppConfig::Instance().fontOptions;
+ 
     QFont font(painter.font());    
-    ui::set_font_param(font, st.channelLabel);
+    font.setPointSizeF(9);
     painter.setFont(font);
 
     for(auto t : traces)

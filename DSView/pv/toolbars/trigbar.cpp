@@ -254,7 +254,7 @@ void TrigBar::reload()
         _search_action->setVisible(false);
         _function_action->setVisible(false);
         _action_lissajous->setVisible(false);
-        _action_dispalyOptions->setVisible(false);
+        _action_dispalyOptions->setVisible(true);
 
     } else if (mode == DSO) {
         _trig_action->setVisible(true);
@@ -372,10 +372,9 @@ void TrigBar::update_checked_status()
 }
 
 void TrigBar::update_font()
-{
-    FontOptions &st = AppConfig::Instance().fontOptions;
+{ 
     QFont font = this->font();
-    ui::set_font_param(font, st.toolbar);
+    font.setPointSizeF(AppConfig::Instance().appOptions.fontSize);
     ui::set_toolbar_font(this, font);
 }
 

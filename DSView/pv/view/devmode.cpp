@@ -34,8 +34,9 @@
 #include "../config/appconfig.h"
 #include "../ui/msgbox.h"
 #include "../log.h"
-
 #include "../ui/langresource.h"
+#include "../appcontrol.h"
+#include "../ui/fun.h"
 
 
 static const struct dev_mode_name dev_mode_name_list[] =
@@ -88,6 +89,8 @@ DevMode::DevMode(QWidget *parent, SigSession *session) :
 
     layout->setStretch(1, 100); 
     setLayout(layout);
+
+    update_font();
 
     connect(_close_button, SIGNAL(clicked()), this, SLOT(on_close()));
 }
@@ -174,7 +177,8 @@ void DevMode::set_device()
         _bFile = true;
     }
 
-    update();
+    update_font();
+    update();    
 }
 
 void DevMode::paintEvent(QPaintEvent*)
@@ -233,6 +237,8 @@ void DevMode::on_mode_change()
             break;                
         }      
     }
+
+    update_font();
 }
 
 void DevMode::on_close()
@@ -278,6 +284,23 @@ const struct dev_mode_name* DevMode::get_mode_name(int mode)
             return &o;
     }
     assert(false);
+}
+
+void DevMode::update_font()
+{
+    QFont font = this->font();
+    font.setPointSizeF(AppConfig::Instance().appOptions.fontSize);
+    
+    auto buttons = this->findChildren<QToolButton*>();
+    for(auto o : buttons)
+    { 
+        o->setFont(font);
+    }
+
+    for (auto it = _mode_list.begin(); it != _mode_list.end(); it++)
+    { 
+        (*it).first->setFont(font);
+    }
 }
 
 } // namespace view

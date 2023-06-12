@@ -65,6 +65,7 @@ struct AppOptions
     bool  trigPosDisplayInMid;
     bool  displayProfileInBar;
     bool  swapBackBufferAlways;
+    float fontSize;
 
     std::vector<StringPair> m_protocolFormats;
 };
@@ -136,7 +137,6 @@ public:
   void SaveApp();  
   void SaveHistory();
   void SaveFrame();
-  void SaveFont();
   
   void SetProtocolFormat(const std::string &protocolName, const std::string &value);
   std::string GetProtocolFormat(const std::string &protocolName); 
@@ -150,5 +150,4 @@ public:
   AppOptions    appOptions;
   UserHistory   userHistory;
   FrameOptions  frameOptions;
-  FontOptions   fontOptions;
 };

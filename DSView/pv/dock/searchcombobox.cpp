@@ -134,8 +134,7 @@ void SearchComboBox::ShowDlg(QWidget *editline)
                     this, SLOT(on_keyword_changed(const QString &)));
 
     QFont font = this->font();
-    FontOptions &st = AppConfig::Instance().fontOptions;
-    ui::set_font_param(font, st.other);
+    font.setPointSizeF(AppConfig::Instance().appOptions.fontSize);
     ui::set_form_font(this, font);
 
     this->show();

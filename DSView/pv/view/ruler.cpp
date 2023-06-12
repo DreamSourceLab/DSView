@@ -197,8 +197,7 @@ void Ruler::paintEvent(QPaintEvent*)
     style()->drawPrimitive(QStyle::PE_Widget, &o, &p, this);
 
     QFont font = p.font();
-    FontOptions &st = AppConfig::Instance().fontOptions;
-    ui::set_font_param(font, st.ruler);
+    font.setPointSizeF(9);
     p.setFont(font);
 
     SigSession *session = AppControl::Instance()->GetSession();

@@ -27,14 +27,14 @@
 #include <utility>
 #include <map>
 #include <set>
-
 #include <QWidget>
 #include <QPushButton>
 #include <QVector>
 #include <QToolButton>
 #include <QLabel>
-
 #include <libsigrok.h> 
+
+#include "../interface/icallbacks.h"
 
 struct dev_mode_name{
     int _mode;
@@ -50,7 +50,7 @@ class SigSession;
 namespace view {
 
 //devece work mode select list
-class DevMode : public QWidget
+class DevMode : public QWidget, public IFontForm
 {
 	Q_OBJECT
 
@@ -70,6 +70,9 @@ private:
 	void leaveEvent(QEvent *event);
     void changeEvent(QEvent *event);
     const dev_mode_name* get_mode_name(int mode);
+
+    //IFontForm
+    void update_font();
 
 public slots:
     void set_device();

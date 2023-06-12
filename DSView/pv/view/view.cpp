@@ -49,6 +49,7 @@
 #include "../dsvdef.h"
 #include "../log.h"
 #include "../config/appconfig.h"
+#include "../appcontrol.h"
 
 
 using namespace std;
@@ -120,6 +121,8 @@ View::View(SigSession *session, pv::toolbars::SamplingBar *sampling_bar, QWidget
     _ruler = new Ruler(*this);
     _header = new Header(*this);
     _devmode = new DevMode(this, session);
+    
+    AppControl::Instance()->add_font_form(_devmode);
 
     setViewportMargins(headerWidth(), RulerHeight, 0, 0);
 

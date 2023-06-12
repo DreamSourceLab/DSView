@@ -1034,10 +1034,9 @@ bool ProtocolDock::protocol_sort_callback(const DecoderInfoItem *o1, const Decod
  void ProtocolDock::update_font()
  {
     QFont font = this->font();
-    FontOptions &st = AppConfig::Instance().fontOptions;
-    ui::set_font_param(font, st.other);
+    font.setPointSizeF(AppConfig::Instance().appOptions.fontSize);
     ui::set_form_font(this, font);
-    
+    font.setPointSizeF(font.pointSizeF() + 1);
     this->parentWidget()->setFont(font);
  }
 

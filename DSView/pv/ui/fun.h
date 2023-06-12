@@ -33,9 +33,9 @@ namespace ui
 {   
     void set_font_param(QFont &font, struct FontParam &param);
 
-    void set_toolbar_font(QToolBar *bar, QFont &font);
+    void set_toolbar_font(QToolBar *bar, QFont font);
 
-    void set_form_font(QWidget *wid, QFont &font);
+    void set_form_font(QWidget *wid, QFont font);
 
 } // namespace ui
 

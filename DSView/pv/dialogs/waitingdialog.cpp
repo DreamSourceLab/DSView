@@ -32,8 +32,8 @@
 #include "../view/trace.h"
 #include "../view/dsosignal.h"
 #include "../config/appconfig.h"
-
 #include "../ui/langresource.h"
+#include "../appcontrol.h"
 
 using namespace boost;
 using namespace std;
@@ -57,7 +57,7 @@ WaitingDialog::WaitingDialog(QWidget *parent, SigSession *session, int key) :
     this->setWindowOpacity(0.7);
 
     QFont font;
-    font.setPointSize(9);
+    font.setPointSizeF(AppConfig::Instance().appOptions.fontSize);
     font.setBold(true);
 
     QLabel *warning_tips = new QLabel(this);

@@ -156,8 +156,7 @@ void Viewport::doPaint()
     style()->drawPrimitive(QStyle::PE_Widget, &o, &p, this);
 
     QFont font = p.font();
-    FontOptions &st = AppConfig::Instance().fontOptions;
-    ui::set_font_param(font, st.channelBody);
+    font.setPointSizeF(9);
     p.setFont(font);
 
     _view.session().check_update();
@@ -558,8 +557,7 @@ void Viewport::paintProgress(QPainter &p, QColor fore, QColor back)
             p.setPen(View::Blue); 
 
             QFont font = p.font();
-            FontOptions &st = AppConfig::Instance().fontOptions;
-            ui::set_font_param(font, st.channelBody);
+            font.setPointSizeF(9);
             font.setBold(true);
             p.setFont(font);
 

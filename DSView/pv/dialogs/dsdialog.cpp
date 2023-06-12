@@ -176,9 +176,8 @@ void DSDialog::build_base(bool hasClose)
 
 void DSDialog::update_font()
 {
-    FontOptions &st = AppConfig::Instance().fontOptions;
     QFont font = this->font();
-    ui::set_font_param(font, st.other);
+    font.setPointSizeF(AppConfig::Instance().appOptions.fontSize);
     ui::set_form_font(this, font);
 
     if (_titlebar != NULL){

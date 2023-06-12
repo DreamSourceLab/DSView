@@ -29,10 +29,11 @@
 #include <QToolBar>
 #include <QWidget>
 #include <QLineEdit>
-#include <QTableWidget>
+#include <QTabWidget>
 #include <QGroupBox>
 #include <QTextEdit>
 #include <QRadioButton>
+#include <QCheckBox>
 
 #include "../config/appconfig.h"
 
@@ -48,7 +49,7 @@ namespace ui
         }
     }
 
-    void set_toolbar_font(QToolBar *bar, QFont &font)
+    void set_toolbar_font(QToolBar *bar, QFont font)
     {
         assert(bar);
 
@@ -83,7 +84,7 @@ namespace ui
         }
     }
     
-    void set_form_font(QWidget *wid, QFont &font)
+    void set_form_font(QWidget *wid, QFont font)
     {
         assert(wid);
 
@@ -97,6 +98,9 @@ namespace ui
         for(auto o : comboxs)
         { 
             o->setFont(font);
+
+           // int h =  o->sizeHint().height() + 50;
+            //o->setMinimumHeight(h);
         }
 
         auto labels = wid->findChildren<QLabel*>();
@@ -123,13 +127,19 @@ namespace ui
             o->setFont(font);
         }
 
+        auto checks = wid->findChildren<QCheckBox*>();
+        for(auto o : checks)
+        { 
+            o->setFont(font);
+        }
+
         // Magnify the size.
         font.setPointSizeF(font.pointSizeF() + 1);
 
-        auto tabs = wid->findChildren<QTableWidget*>();
+        auto tabs = wid->findChildren<QTabWidget*>();
         for(auto o : tabs)
         { 
-            o->setFont(font);
+            o->setFont(font); 
         }
 
         auto groups = wid->findChildren<QGroupBox*>();

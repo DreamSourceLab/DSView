@@ -23,11 +23,8 @@
 #include "dscombobox.h"
 #include <QFontMetrics>
 #include <QString>
-
-#ifdef Q_OS_DARWIN
 #include <QGuiApplication>
 #include <QScreen>
-#endif
 
 #include "../config/appconfig.h"
 
@@ -59,19 +56,22 @@ DsComboBox::DsComboBox(QWidget *parent) : QComboBox(parent)
 	QComboBox::showPopup();
     _bPopup = true;
 
-#ifdef Q_OS_DARWIN
-
     QWidget *popup = this->findChild<QFrame*>();
     auto rc = popup->geometry();
-    int x = rc.left() + 6;
+    int x = rc.left();
     int y = rc.top();
-    int w = rc.right() - rc.left();
+    int w = rc.right() - rc.left() + 2;
     int h = rc.bottom() - rc.top() + 20;
+
+#ifdef Q_OS_DARWIN
+    x += 6;
+#endif
+
     popup->setGeometry(x, y, w, h);
 
     int sy = QGuiApplication::primaryScreen()->size().height(); 
     if (sy <= 1080){
-         popup->setMaximumHeight(750); 
+        popup->setMaximumHeight(750); 
     }
     
     if (AppConfig::Instance().frameOptions.style == THEME_STYLE_DARK){       
@@ -80,7 +80,6 @@ DsComboBox::DsComboBox(QWidget *parent) : QComboBox(parent)
     else{
         popup->setStyleSheet("background-color:#white;");
     }
-#endif
  }
 
  void DsComboBox::hidePopup()

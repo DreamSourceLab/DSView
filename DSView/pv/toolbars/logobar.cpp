@@ -349,10 +349,9 @@ void LogoBar::on_clear_log_file()
 }
 
 void LogoBar::update_font()
-{
-    FontOptions &st = AppConfig::Instance().fontOptions;
+{ 
     QFont font = this->font();
-    ui::set_font_param(font, st.toolbar);
+    font.setPointSizeF(AppConfig::Instance().appOptions.fontSize);
     ui::set_toolbar_font(this, font);
 }
 

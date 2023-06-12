@@ -121,6 +121,7 @@ static void _loadApp(AppOptions &o, QSettings &st)
     getFiled("trigPosDisplayInMid", st, o.trigPosDisplayInMid, true);
     getFiled("displayProfileInBar", st, o.displayProfileInBar, false);
     getFiled("swapBackBufferAlways", st, o.swapBackBufferAlways, false);
+    getFiled("fontSize", st, o.fontSize, 9.0);
 
     QString fmt;
     getFiled("protocalFormats", st, fmt, "");
@@ -144,6 +145,7 @@ static void _saveApp(AppOptions &o, QSettings &st)
     setFiled("trigPosDisplayInMid", st, o.trigPosDisplayInMid);
     setFiled("displayProfileInBar", st, o.displayProfileInBar);
     setFiled("swapBackBufferAlways", st, o.swapBackBufferAlways);
+    setFiled("fontSize", st, o.fontSize);
 
     QString fmt =  FormatArrayToString(o.m_protocolFormats);
     setFiled("protocalFormats", st, fmt);
@@ -318,7 +320,6 @@ void AppConfig::LoadAll()
     _loadApp(appOptions, st);
     _loadHistory(userHistory, st);
     _loadFrame(frameOptions, st);
-    _loadFont(fontOptions, st);
 
     //dsv_dbg("Config file path:\"%s\"", st.fileName().toUtf8().data());
 }
@@ -340,12 +341,6 @@ void AppConfig::SaveFrame()
     QSettings st(QApplication::organizationName(), QApplication::applicationName());
     _saveFrame(frameOptions, st);
 }
-
-void AppConfig::SaveFont()
-{
-    QSettings st(QApplication::organizationName(), QApplication::applicationName());
-    _saveFont(fontOptions, st);
-} 
 
 void AppConfig::SetProtocolFormat(const std::string &protocolName, const std::string &value)
 {

@@ -70,8 +70,7 @@ void ViewStatus::paintEvent(QPaintEvent *)
     QColor fore(QWidget::palette().color(QWidget::foregroundRole()));
 
     QFont font = p.font();
-    FontOptions &st = AppConfig::Instance().fontOptions;
-    ui::set_font_param(font, st.channelBody);
+    font.setPointSizeF(9);
     p.setFont(font);
 
     int mode = _session->get_device()->get_work_mode();

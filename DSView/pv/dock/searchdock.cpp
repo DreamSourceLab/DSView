@@ -256,8 +256,7 @@ void SearchDock::on_set()
 void SearchDock::update_font()
 {
     QFont font = this->font();
-    FontOptions &st = AppConfig::Instance().fontOptions;
-    ui::set_font_param(font, st.other);
+    font.setPointSizeF(AppConfig::Instance().appOptions.fontSize);
     _search_value->setFont(font);
 }
 
