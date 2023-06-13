@@ -39,9 +39,8 @@
 #include "../log.h"
 #include "../config/appconfig.h"
 #include "../appcontrol.h"
-#include "../ui/fun.h"
+#include "../ui/fn.h"
 
- 
 using namespace std;
 
 namespace pv {

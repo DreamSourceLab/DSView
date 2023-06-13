@@ -46,7 +46,7 @@
 #include "../ui/langresource.h"
 #include "../appcontrol.h"
 #include "../config/appconfig.h"
-#include "../ui/fun.h"
+#include "../ui/fn.h"
  
 using namespace std;
 

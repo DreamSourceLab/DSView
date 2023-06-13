@@ -39,7 +39,7 @@
 #include <QObject>
 #include <QPainter> 
 #include "../appcontrol.h"
-#include "../ui/fun.h"
+#include "../ui/fn.h"
 
 using namespace boost;
 

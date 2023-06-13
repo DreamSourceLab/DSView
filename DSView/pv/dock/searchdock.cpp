@@ -42,7 +42,7 @@
 #include "../ui/langresource.h"
 #include "../ui/msgbox.h"
 #include "../appcontrol.h"
-#include "../ui/fun.h"
+#include "../ui/fn.h"
 
 namespace pv {
 namespace dock {

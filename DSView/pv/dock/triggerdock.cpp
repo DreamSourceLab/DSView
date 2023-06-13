@@ -45,7 +45,7 @@
 #include "../log.h"
 #include "../data/decode/annotationrestable.h"
 #include "../appcontrol.h"
-#include "../ui/fun.h"
+#include "../ui/fn.h"
 
 namespace pv {
 namespace dock {

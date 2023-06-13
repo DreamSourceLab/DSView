@@ -31,7 +31,7 @@
 #include "../utility/path.h"
 #include "../ui/langresource.h"
 #include "../log.h" 
-#include "../ui/fun.h"
+#include "../ui/fn.h"
 
 namespace pv {
 namespace toolbars {

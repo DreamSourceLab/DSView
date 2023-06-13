@@ -36,7 +36,7 @@
 #include "../log.h"
 #include "../ui/msgbox.h"
 #include "../config/appconfig.h"
-#include "../ui/fun.h"
+#include "../ui/fn.h"
 
 using namespace boost;
 using namespace std;

@@ -36,7 +36,7 @@
 #include "../log.h"
 #include "../ui/langresource.h"
 #include "../appcontrol.h"
-#include "../ui/fun.h"
+#include "../ui/fn.h"
 
 
 static const struct dev_mode_name dev_mode_name_list[] =

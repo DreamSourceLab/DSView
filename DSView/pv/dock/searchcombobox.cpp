@@ -27,7 +27,7 @@
 #include <QScrollBar>
 #include "../config/appconfig.h"
 #include "../appcontrol.h"
-#include "../ui/fun.h"
+#include "../ui/fn.h"
 
 //----------------------ComboButtonItem
 

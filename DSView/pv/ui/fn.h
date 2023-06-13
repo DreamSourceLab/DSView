@@ -19,8 +19,8 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
  */
 
-#ifndef _UI_FUN_H
-#define _UI_FUN_H
+#ifndef _UI_FN_H
+#define _UI_FN_H
 
 #include <QFont>
 

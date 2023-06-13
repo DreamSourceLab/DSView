@@ -19,7 +19,7 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
  */
 
-#include "fun.h"
+#include "fn.h"
 #include <assert.h>
 #include <QPushButton>
 #include <QToolButton>

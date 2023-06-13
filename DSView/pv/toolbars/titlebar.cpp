@@ -34,7 +34,7 @@
 #include "../config/appconfig.h"
 #include "../appcontrol.h"
 #include "../dsvdef.h"
-#include "../ui/fun.h"
+#include "../ui/fn.h"
 
 namespace pv {
 namespace toolbars {

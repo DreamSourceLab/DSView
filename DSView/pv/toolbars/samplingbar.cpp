@@ -38,7 +38,7 @@
 #include "../ui/msgbox.h"
 #include "../ui/langresource.h"
 #include "../view/view.h"
-#include "../ui/fun.h"
+#include "../ui/fn.h"
 
 #define SINGLE_ACTION_ICON  "/once.svg"
 #define REPEAT_ACTION_ICON  "/repeat.svg"

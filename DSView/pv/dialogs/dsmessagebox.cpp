@@ -31,7 +31,7 @@
 #include "../dsvdef.h"
 #include "../ui/langresource.h"
 #include "../config/appconfig.h"
-#include "../ui/fun.h"
+#include "../ui/fn.h"
 
 namespace pv {
 namespace dialogs {
