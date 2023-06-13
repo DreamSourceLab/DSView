@@ -1171,22 +1171,56 @@ bool LogicSnapshot::has_data(int sig_index)
 
 int LogicSnapshot::get_block_num()
 {
-    return (_ring_sample_count >> LeafBlockPower) +
-           ((_ring_sample_count & LeafMask) != 0);
+   // return (_ring_sample_count >> LeafBlockPower) +
+    //     ((_ring_sample_count & LeafMask) != 0);
+    
+    int block = _ring_sample_count / LeafBlockSamples;
+    if (_ring_sample_count % LeafBlockSamples != 0){
+        block++;
+    }
+    if (_loop_offset % LeafBlockSamples != 0){
+        block++;
+    }
+
+    return block;
 }
 
 uint64_t LogicSnapshot::get_block_size(int block_index)
 {
-    assert(block_index < get_block_num());
+    int block_num = get_block_num();
 
-    if (block_index < get_block_num() - 1) {
-        return LeafBlockSamples / 8;
-    } else {
-        if (_ring_sample_count % LeafBlockSamples == 0)
+    assert(block_index < block_num);
+
+    if (_loop_offset > 0)
+    {
+        if (block_index > 0 && block_index < block_num - 1) {
             return LeafBlockSamples / 8;
-        else
-            return (_ring_sample_count % LeafBlockSamples) / 8;
+        }
+        else if (block_index == 0){
+            if (_loop_offset % LeafBlockSamples == 0)
+                return LeafBlockSamples / 8;
+            else
+                return (LeafBlockSamples - _loop_offset % LeafBlockSamples) / 8;
+        }
+        else{
+            uint64_t ring_sample_count = _ring_sample_count + _loop_offset;
+            if (ring_sample_count % LeafBlockSamples == 0)
+                return LeafBlockSamples / 8;
+            else
+                return (ring_sample_count % LeafBlockSamples) / 8;
+        }
     }
+    else{
+        if (block_index < block_num - 1) {
+            return LeafBlockSamples / 8;
+        }
+        else {
+            if (_ring_sample_count % LeafBlockSamples == 0)
+                return LeafBlockSamples / 8;
+            else
+                return (_ring_sample_count % LeafBlockSamples) / 8;
+        }
+    }    
 }
 
 uint8_t *LogicSnapshot::get_block_buf(int block_index, int sig_index, bool &sample)
@@ -1198,12 +1232,21 @@ uint8_t *LogicSnapshot::get_block_buf(int block_index, int sig_index, bool &samp
         sample = 0;
         return NULL;
     }
+
+    int block_index0 = block_index;
+    block_index += _loop_offset / LeafBlockSamples;
+
     uint64_t index = block_index / RootScale;
     uint8_t pos = block_index % RootScale;
     uint8_t *lbp = (uint8_t*)_ch_data[order][index].lbp[pos];
 
     if (lbp == NULL)
         sample = (_ch_data[order][index].value & 1ULL << pos) != 0;
+
+    if (lbp != NULL && _loop_offset > 0 && block_index0 == 0)
+    {
+        lbp += (_loop_offset % LeafBlockSamples) / 8;
+    }
 
     return lbp;
 }

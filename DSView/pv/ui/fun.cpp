@@ -98,9 +98,6 @@ namespace ui
         for(auto o : comboxs)
         { 
             o->setFont(font);
-
-           // int h =  o->sizeHint().height() + 50;
-            //o->setMinimumHeight(h);
         }
 
         auto labels = wid->findChildren<QLabel*>();

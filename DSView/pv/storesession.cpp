@@ -225,6 +225,7 @@ void StoreSession::save_logic(pv::data::LogicSnapshot *logic_snapshot)
 
     _unit_count = logic_snapshot->get_sample_count() / 8 * to_save_probes;
     num = logic_snapshot->get_block_num();
+    dsv_info("total bytes:%llu", _unit_count);
 
     for(auto s : _session->get_signals()) 
     {
@@ -238,6 +239,7 @@ void StoreSession::save_logic(pv::data::LogicSnapshot *logic_snapshot)
                 uint8_t *buf = logic_snapshot->get_block_buf(i, ch_index, sample);
                 uint64_t size = logic_snapshot->get_block_size(i);
                 bool need_malloc = (buf == NULL);
+                
                 if (need_malloc) {
                     buf = (uint8_t *)malloc(size);
                     if (buf == NULL) {
@@ -264,6 +266,8 @@ void StoreSession::save_logic(pv::data::LogicSnapshot *logic_snapshot)
                     return;
                 }
                 _units_stored += size;
+                dsv_info("read bytes:%llu, size:%llu,block:%d", _units_stored, size, i);
+
                 if (need_malloc)
                     free(buf);
                 progress_updated();
