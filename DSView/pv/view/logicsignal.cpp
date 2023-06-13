@@ -139,7 +139,7 @@ void LogicSignal::paint_mid_align(QPainter &p, int left, int right, QColor fore,
     uint16_t width = right - left;
     const double start = offset * samples_per_pixel;
     const double end = (offset + width + 1) * samples_per_pixel;
-    const uint64_t end_index = min(max((int64_t)ceil(end), (int64_t)0), last_sample);
+    const uint64_t end_index = min(max((int64_t)floor(end), (int64_t)0), last_sample);
     const uint64_t start_index = max((uint64_t)floor(start), (uint64_t)0);
     
     if (start_index > end_index)
