@@ -34,25 +34,27 @@
 
 void MsgBox::Show(const QString text)
 {
-    MsgBox::Show("", text, "", NULL, NULL, true);
+    MsgBox::Show("", text, "", NULL, NULL);
 }
 
 void MsgBox::Show(const QString title, const QString text, QWidget *parent)
 {
-    MsgBox::Show(title, text, "", parent,NULL, true);
+    MsgBox::Show(title, text, "", parent,NULL);
 }
 
 void Show(const QString title, const QString text, const QString infoText)
 {
-    MsgBox::Show(title, text, infoText, NULL, NULL, true);
+    MsgBox::Show(title, text, infoText, NULL, NULL);
 }
 
-void MsgBox::Show(const QString title, const QString text, QWidget *parent, pv::dialogs::DSMessageBox **box)
+void MsgBox::Show(const QString title, const QString text, 
+        QWidget *parent, pv::dialogs::DSMessageBox **box)
 {
-    MsgBox::Show(title, text, "", parent, box, true);
+    MsgBox::Show(title, text, "", parent, box);
 }
 
-void MsgBox::Show(const QString title, const QString text, const QString infoText, QWidget *parent, pv::dialogs::DSMessageBox **box, bool bExecute)
+void MsgBox::Show(const QString title, const QString text, const QString infoText, 
+        QWidget *parent, pv::dialogs::DSMessageBox **box)
 {
     assert(!text.isEmpty());
 
@@ -78,9 +80,7 @@ void MsgBox::Show(const QString title, const QString text, const QString infoTex
         msg.mBox()->setInformativeText(infoText);
     }
 
-    if (bExecute){
-        msg.exec();
-    }       
+    msg.exec();     
 }
 
 bool MsgBox::Confirm(const QString text, QWidget *parent)
@@ -88,7 +88,8 @@ bool MsgBox::Confirm(const QString text, QWidget *parent)
     return MsgBox::Confirm(text, "", NULL, parent);
 }
 
-bool MsgBox::Confirm(const QString text, const QString infoText, pv::dialogs::DSMessageBox **box, QWidget *parent)
+bool MsgBox::Confirm(const QString text, const QString infoText, 
+        pv::dialogs::DSMessageBox **box, QWidget *parent)
 {
     assert(!text.isEmpty());
 
