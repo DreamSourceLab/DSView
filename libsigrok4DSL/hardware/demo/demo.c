@@ -235,11 +235,9 @@ static void dso_status_update(struct session_vdev *vdev)
 
                 if(temp_plevel)
                 {
-                    if(val >= DSO_MID_VAL)
-                    {
-                        status->ch0_cyc_flen++;
-                        status->ch1_cyc_flen++;
-                    }
+                    //rlen and flen err?
+                    status->ch0_cyc_rlen++;
+                    status->ch1_cyc_rlen++;
                     if(val == ch_max)
                     {
                         temp_plevel = !temp_plevel;
@@ -259,14 +257,12 @@ static void dso_status_update(struct session_vdev *vdev)
                 }
                 else
                 {
-                    if(val <= DSO_MID_VAL)
-                    {
-                        status->ch0_cyc_rlen++;
-                        status->ch1_cyc_rlen++;
-                    }
+                    status->ch0_cyc_flen++;
+                    status->ch1_cyc_flen++;
                     if(val == ch_min)
                     {
                         temp_plevel = !temp_plevel;
+
                         if(status->ch0_plevel == temp_plevel)
                         {
                             status->ch0_cyc_cnt++;
@@ -298,6 +294,9 @@ static void dso_status_update(struct session_vdev *vdev)
         else
             break;
     }
+    status->ch0_cyc_rlen = status->ch1_cyc_rlen /=2;
+    status->ch0_cyc_flen = status->ch1_cyc_flen /=2;
+
     if(vdev->sample_generator != PATTERN_RANDOM)
     {
         status->ch0_acc_mean = status->ch1_acc_mean =  DSO_MID_VAL*pack_buffer->post_len/2;
@@ -1478,7 +1477,7 @@ static int receive_data_logic(int fd, int revents, const struct sr_dev_inst *sdi
                 for(uint16_t j = 0 ; j< vdev->packet_len/8;j++)
                 {
                     uint64_t cur_index = (probe_index*8) + (j*vdev->enabled_probes*8);
-                    memcpy(logic_post_buf+cur_index,vdev->logic_buf,8);
+                    memset(logic_post_buf+cur_index,LOGIC_HIGH_LEVEL,8);
                 }
             }
         }
@@ -1509,7 +1508,7 @@ static int receive_data_logic(int fd, int revents, const struct sr_dev_inst *sdi
             if(vdev->logci_cur_packet_num % target_packet == 0)
             {
                 vdev->logic_sel_probe_num = rand()%vdev->enabled_probes+1;
-                memset(vdev->logic_sel_probe_list,LOGIC_HIGH_LEVEL,vdev->enabled_probes);
+                memset(vdev->logic_sel_probe_list,0,vdev->enabled_probes);
                 for(int i = 0; i< vdev->logic_sel_probe_num;i++)
                 {
                     vdev->logic_sel_probe_list[i] = rand()%vdev->enabled_probes;
