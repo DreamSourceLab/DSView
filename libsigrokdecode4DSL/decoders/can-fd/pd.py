@@ -39,12 +39,12 @@ class Decoder(srd.Decoder):
     outputs = ['can']
     tags = ['Automotive']
     channels = (
-        {'id': 'can_rx', 'name': 'CAN', 'desc': 'CAN bus line', 'idn':'dec_can_chan_can_rx'},
+        {'id': 'can_rx', 'name': 'CAN FD', 'desc': 'CAN FD bus line', 'idn':'dec_can_fd_chan_can_rx'},
     )
     options = (
-        {'id': 'nominal_bitrate', 'desc': 'Nominal bitrate (bits/s)', 'default': 1000000, 'idn':'dec_can_opt_bitrate'},
-        {'id': 'fast_bitrate', 'desc': 'Fast bitrate (bits/s)', 'default': 2000000},
-        {'id': 'sample_point', 'desc': 'Sample point (%)', 'default': 70.0},
+        {'id': 'nominal_bitrate', 'desc': 'Nominal bitrate (bits/s)', 'default': 1000000, 'idn':'dec_can_fd_opt_nominal_bitrate'},
+        {'id': 'fast_bitrate', 'desc': 'Fast bitrate (bits/s)', 'default': 2000000, 'idn':'dec_can_fd_opt_fast_bitrate'},
+        {'id': 'sample_point', 'desc': 'Sample point (%)', 'default': 70.0, 'idn':'dec_can_fd_opt_sample_point'},
     )
     annotations = (
         ('data', 'CAN payload data'),

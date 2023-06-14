@@ -39,11 +39,11 @@ class Decoder(srd.Decoder):
     outputs = ['can']
     tags = ['Automotive']
     channels = (
-        {'id': 'can_rx', 'name': 'CAN', 'desc': 'CAN bus line'},
+        {'id': 'can_rx', 'name': 'CAN', 'desc': 'CAN bus line', 'idn':'dec_can_chan_can_rx'},
     )
     options = (
-        {'id': 'bitrate', 'desc': 'bitrate (bits/s)', 'default': 1000000},
-        {'id': 'sample_point', 'desc': 'Sample point (%)', 'default': 70.0},
+        {'id': 'bitrate', 'desc': 'bitrate (bits/s)', 'default': 1000000，'idn':'dec_can_opt_bitrate'},
+        {'id': 'sample_point', 'desc': 'Sample point (%)', 'default': 70.0，'idn':'dec_can_opt_sample_point'},
     )
     annotations = (
         ('data', 'CAN payload data'),
