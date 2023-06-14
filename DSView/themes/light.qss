@@ -587,7 +587,6 @@ QToolBar
 {
     border: 1px transparent;
     background: transparent;
-    font-weight: bold;
     padding: 0px;
 }
 
