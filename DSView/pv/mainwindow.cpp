@@ -412,9 +412,10 @@ namespace pv
         }
 
         dialogs::DSMessageBox *box = NULL;
-        MsgBox::Show("", title, details, this, &box, false);
-        connect(_session->device_event_object(), SIGNAL(device_updated()), box, SLOT(accept()));
-        box->exec(); 
+        MsgBox::Show("", title, details, this, &box, true);
+      //  auto evo = _session->device_event_object();
+        //connect(evo, SIGNAL(device_updated()), box, SLOT(accept()));
+      //  box->exec();
         _session->clear_error();
     }
 
