@@ -127,8 +127,11 @@ void Header::paintEvent(QPaintEvent*)
     QColor fore(QWidget::palette().color(QWidget::foregroundRole()));
     fore.setAlpha(View::ForeAlpha);
  
-    QFont font(painter.font());    
-    font.setPointSizeF(9);
+    QFont font(painter.font());
+    float fSize = AppConfig::Instance().appOptions.fontSize;
+    if (fSize > 10)
+        fSize = 10;
+    font.setPointSizeF(fSize);
     painter.setFont(font);
 
     for(auto t : traces)

@@ -156,7 +156,10 @@ void Viewport::doPaint()
     style()->drawPrimitive(QStyle::PE_Widget, &o, &p, this);
 
     QFont font = p.font();
-    font.setPointSizeF(9);
+    float fSize = AppConfig::Instance().appOptions.fontSize;
+    if (fSize > 10)
+        fSize = 10;
+    font.setPointSizeF(fSize);
     p.setFont(font);
 
     _view.session().check_update();
@@ -557,8 +560,10 @@ void Viewport::paintProgress(QPainter &p, QColor fore, QColor back)
             p.setPen(View::Blue); 
 
             QFont font = p.font();
-            font.setPointSizeF(9);
-            font.setBold(true);
+            float fSize = AppConfig::Instance().appOptions.fontSize;
+            if (fSize > 10)
+                fSize = 10;
+            font.setPointSizeF(fSize);
             p.setFont(font);
 
             QRect status_rect = QRect(cenPos.x() - radius, cenPos.y() + radius * 0.4, radius * 2, radius * 0.5);

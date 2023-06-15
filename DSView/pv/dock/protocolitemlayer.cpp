@@ -27,7 +27,8 @@
 namespace pv {
 namespace dock {
   
-ProtocolItemLayer::ProtocolItemLayer(QWidget *parent, QString protocolName, IProtocolItemLayerCallback *callback){
+ProtocolItemLayer::ProtocolItemLayer(QWidget *parent, QString protocolName, IProtocolItemLayerCallback *callback)
+{
         assert(parent);
         assert(callback);
 
@@ -68,6 +69,8 @@ ProtocolItemLayer::ProtocolItemLayer(QWidget *parent, QString protocolName, IPro
         connect(_del_button, SIGNAL(clicked()),this, SLOT(on_del_protocol()));        
         connect(_set_button, SIGNAL(clicked()),this, SLOT(on_set_protocol()));
         connect(_format_combox, SIGNAL(currentIndexChanged(int)),this, SLOT(on_format_select_changed(int)));
+
+        update_font();
 }
 
 ProtocolItemLayer::~ProtocolItemLayer(){ 
@@ -159,6 +162,13 @@ void ProtocolItemLayer::LoadFormatSelect(bool bSingle)
  void ProtocolItemLayer::set_label_name(QString name)
  {
     _protocol_label->setText(name);
+ }
+
+ void ProtocolItemLayer::update_font()
+ {
+    QFont font = _protocol_label->font();
+    font.setPointSizeF(AppConfig::Instance().appOptions.fontSize);
+    _protocol_label->setFont(font);
  }
 
 } //dock

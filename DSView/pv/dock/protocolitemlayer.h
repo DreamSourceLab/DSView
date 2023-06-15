@@ -66,6 +66,8 @@ public:
     void enable_format(bool flag);
 
     void set_label_name(QString name);
+
+    void update_font();
   
 private slots: 
     void on_set_protocol(); 

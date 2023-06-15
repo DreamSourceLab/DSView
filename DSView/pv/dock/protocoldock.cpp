@@ -46,6 +46,7 @@
 #include <string>
 #include <QToolButton>
 #include <algorithm>
+#include <QTableWidgetItem>
 #include "../ui/msgbox.h"
 #include "../dsvdef.h"
 #include "../config/appconfig.h"
@@ -1036,8 +1037,15 @@ bool ProtocolDock::protocol_sort_callback(const DecoderInfoItem *o1, const Decod
     QFont font = this->font();
     font.setPointSizeF(AppConfig::Instance().appOptions.fontSize);
     ui::set_form_font(this, font);
+    _table_view->setFont(font);
+
+    for(auto lay : _protocol_lay_items){
+        lay->update_font();
+    }
+
     font.setPointSizeF(font.pointSizeF() + 1);
     this->parentWidget()->setFont(font);
+    _table_view->horizontalHeader()->setFont(font);
  }
 
 } // namespace dock
