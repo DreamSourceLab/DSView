@@ -550,7 +550,7 @@ class Decoder(srd.Decoder):
             # State machine.
             if self.state == 'IDLE':
                 # Wait for a dominant state (logic 0) on the bus.
-                (can_rx,) = self.wait({0: 'l'})
+                (can_rx,) = self.wait({0: 'f'})
                 self.sof = self.samplenum
                 self.dom_edge_seen(force = True)
                 self.state = 'GET BITS'

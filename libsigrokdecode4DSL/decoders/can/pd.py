@@ -42,8 +42,8 @@ class Decoder(srd.Decoder):
         {'id': 'can_rx', 'name': 'CAN', 'desc': 'CAN bus line', 'idn':'dec_can_chan_can_rx'},
     )
     options = (
-        {'id': 'bitrate', 'desc': 'bitrate (bits/s)', 'default': 1000000，'idn':'dec_can_opt_bitrate'},
-        {'id': 'sample_point', 'desc': 'Sample point (%)', 'default': 70.0，'idn':'dec_can_opt_sample_point'},
+        {'id': 'bitrate', 'desc': 'bitrate (bits/s)', 'default': 1000000, 'idn':'dec_can_opt_bitrate'},
+        {'id': 'sample_point', 'desc': 'Sample point (%)', 'default': 70.0, 'idn':'dec_can_opt_sample_point'},
     )
     annotations = (
         ('data', 'CAN payload data'),
@@ -85,7 +85,7 @@ class Decoder(srd.Decoder):
     def metadata(self, key, value):
         if key == srd.SRD_CONF_SAMPLERATE:
             self.samplerate = value
-            self.bit_width = float(self.samplerate) / float(self.options['nominal_bitrate'])
+            self.bit_width = float(self.samplerate) / float(self.options['bitrate'])
             self.sample_point = (self.bit_width / 100.0) * self.options['sample_point']
 
     # Generic helper for CAN bit annotations.
@@ -448,7 +448,7 @@ class Decoder(srd.Decoder):
             # State machine.
             if self.state == 'IDLE':
                 # Wait for a dominant state (logic 0) on the bus.
-                (can_rx,) = self.wait({0: 'l'})
+                (can_rx,) = self.wait({0: 'f'})
                 self.sof = self.samplenum
                 self.dom_edge_seen(force = True)
                 self.state = 'GET BITS'
