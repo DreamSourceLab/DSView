@@ -141,7 +141,15 @@
     },
     {
         "id": "dec_can_opt_bitrate",
-        "text": "比特率"
+        "text": "波特率"
+    },
+    {
+        "id": "dec_can_opt_nominal_bitrate",
+        "text": "低波特率"
+    },
+    {
+        "id": "dec_can_opt_fast_bitrate",
+        "text": "高波特率"
     },
     {
         "id": "dec_can_opt_sample_point",

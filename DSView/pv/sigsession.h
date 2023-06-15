@@ -316,7 +316,7 @@ public:
     }
 
     inline bool is_working(){
-        return _is_working;
+        return _is_working || _device_status == ST_RUNNING;
     }
 
     inline bool is_init_status(){
@@ -555,12 +555,12 @@ private:
     SESSION_ERROR_STATUS _error;
     uint64_t    _error_pattern;
     int         _map_zoom;  
-    float       _stop_scale; 
+    float       _stop_scale;
     bool        _bClose;  
  
     uint64_t    _save_start;
     uint64_t    _save_end; 
-    bool        _is_working;
+    volatile bool  _is_working;
     double      _repeat_intvl; // The progress wait timer interval.
     int         _repeat_hold_prg; // The time sleep progress
     int         _repeat_wait_prog_step;

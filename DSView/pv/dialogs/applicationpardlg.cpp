@@ -30,6 +30,7 @@
 #include <QGroupBox>
 #include <QLabel>
 #include <vector>
+#include <QGridLayout>
 
 #include "../config/appconfig.h"
 #include "../ui/langresource.h"
@@ -103,12 +104,13 @@ bool ApplicationParamDlg::ShowDlg(QWidget *parent)
     DSDialog dlg(parent, true, true);
     dlg.setTitle(L_S(STR_PAGE_DLG, S_ID(IDS_DLG_DISPLAY_OPTIONS), "Display options"));
     dlg.setMinimumSize(300, 230);
-    QFormLayout &lay = *(new QFormLayout());
-    lay.setContentsMargins(0,20,0,30);
+
+    QVBoxLayout *lay = new QVBoxLayout();
+    lay->setContentsMargins(0,10,0,20);
+    lay->setSpacing(8);
 
     //show config
     AppConfig &app = AppConfig::Instance();
-
     int mode = AppControl::Instance()->GetSession()->get_device()->get_work_mode();
 
     QCheckBox *ck_quickScroll = new QCheckBox();
@@ -123,27 +125,43 @@ bool ApplicationParamDlg::ShowDlg(QWidget *parent)
     QCheckBox *ck_abortData = new QCheckBox();
     ck_abortData->setChecked(app.appOptions.swapBackBufferAlways);
 
-    lay.setHorizontalSpacing(8);
-
-    if (mode == LOGIC){
-        lay.addRow(L_S(STR_PAGE_DLG, S_ID(IDS_DLG_QUICK_SCROLL), "Quick scroll"), ck_quickScroll);
-        lay.addRow(L_S(STR_PAGE_DLG, S_ID(IDS_DLG_USE_ABORT_DATA_REPEAT), "Used abort data"), ck_abortData);
-    }
-    else if (mode == DSO){
-        lay.addRow(L_S(STR_PAGE_DLG, S_ID(IDS_DLG_TRIG_DISPLAY_MIDDLE), "Tig pos in middle"), ck_trigInMid);
-    }
-
-    lay.addRow(L_S(STR_PAGE_DLG, S_ID(IDS_DLG_DISPLAY_PROFILE_IN_BAR), "Profile in bar"), ck_profileBar);
-
     QComboBox *ftCbSize = new DsComboBox();
     ftCbSize->setFixedWidth(50);
     bind_font_size_list(ftCbSize, app.appOptions.fontSize);
-    lay.addRow(L_S(STR_PAGE_DLG, S_ID(IDS_DLG_FONT_SIZE), "Font size"), ftCbSize);
+   
+    // Logic group
+    QGroupBox *logicGroup = new QGroupBox(L_S(STR_PAGE_DLG, S_ID(IDS_DLG_GROUP_LOGIC), "Logic"));
+    QGridLayout *logicLay = new QGridLayout();
+    logicLay->setContentsMargins(10,15,15,10);
+    logicGroup->setLayout(logicLay);
+    logicLay->addWidget(new QLabel(L_S(STR_PAGE_DLG, S_ID(IDS_DLG_QUICK_SCROLL), "Quick scroll")), 0, 0, Qt::AlignLeft); 
+    logicLay->addWidget(ck_quickScroll, 0, 1, Qt::AlignRight);
+    logicLay->addWidget(new QLabel(L_S(STR_PAGE_DLG, S_ID(IDS_DLG_USE_ABORT_DATA_REPEAT), "Used abort data")), 1, 0, Qt::AlignLeft); 
+    logicLay->addWidget(ck_abortData, 1, 1, Qt::AlignRight);
+    lay->addWidget(logicGroup);
 
-    dlg.layout()->addLayout(&lay);  
-     
+    //Scope group
+    QGroupBox *dsoGroup = new QGroupBox(L_S(STR_PAGE_DLG, S_ID(IDS_DLG_GROUP_DSO), "Scope"));
+    QGridLayout *dsoLay = new QGridLayout();
+    dsoLay->setContentsMargins(10,15,15,10);
+    dsoGroup->setLayout(dsoLay);
+    dsoLay->addWidget(new QLabel(L_S(STR_PAGE_DLG, S_ID(IDS_DLG_TRIG_DISPLAY_MIDDLE), "Tig pos in middle")), 0, 0, Qt::AlignLeft);
+    dsoLay->addWidget(ck_trigInMid, 0, 1, Qt::AlignRight);
+    lay->addWidget(dsoGroup);
+
+    //UI
+    QGroupBox *uiGroup = new QGroupBox(L_S(STR_PAGE_DLG, S_ID(IDS_DLG_GROUP_UI), "UI"));
+    QGridLayout *uiLay = new QGridLayout();
+    uiLay->setContentsMargins(10,15,15,10);
+    uiGroup->setLayout(uiLay);
+    uiLay->addWidget(new QLabel(L_S(STR_PAGE_DLG, S_ID(IDS_DLG_DISPLAY_PROFILE_IN_BAR), "Profile in bar")), 0, 0, Qt::AlignLeft);
+    uiLay->addWidget(ck_profileBar, 0, 1, Qt::AlignRight);
+    uiLay->addWidget(new QLabel(L_S(STR_PAGE_DLG, S_ID(IDS_DLG_FONT_SIZE), "Font size")), 1, 0, Qt::AlignLeft);
+    uiLay->addWidget(ftCbSize, 1, 1, Qt::AlignRight);
+    lay->addWidget(uiGroup);
+
+    dlg.layout()->addLayout(lay);      
     dlg.exec();
-
     bool ret = dlg.IsClickYes();
 
     //save config

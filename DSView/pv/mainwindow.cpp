@@ -411,10 +411,15 @@ namespace pv
             break;
         }
 
-        dialogs::DSMessageBox *box = NULL;
-        MsgBox::Show("", title, details, this, &box, false);
-        connect(_session->device_event_object(), SIGNAL(device_updated()), box, SLOT(accept()));
-        box->exec(); 
+        pv::dialogs::DSMessageBox msg(this, title);
+        msg.mBox()->setText(details);
+        msg.mBox()->setStandardButtons(QMessageBox::Ok);
+        msg.mBox()->setIcon(QMessageBox::Warning);
+        connect(_session->device_event_object(), SIGNAL(device_updated()), &msg, SLOT(accept()));
+        _msg = &msg;
+        msg.exec();
+        _msg = NULL;
+
         _session->clear_error();
     }
 

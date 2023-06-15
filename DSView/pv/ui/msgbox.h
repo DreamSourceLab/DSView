@@ -38,7 +38,7 @@ public:
     static void Show(const QString title, const QString text, QWidget *parent=0);
     static void Show(const QString title, const QString text, const QString infoText); 
     static void Show(const QString title, const QString text, QWidget *parent, pv::dialogs::DSMessageBox **box);
-    static void Show(const QString title, const QString text, const QString infoText, QWidget *parent, pv::dialogs::DSMessageBox **box, bool bExecute=true);
+    static void Show(const QString title, const QString text, const QString infoText, QWidget *parent, pv::dialogs::DSMessageBox **box);
 
     static bool Confirm(const QString text, QWidget *parent=0);
     static bool Confirm(const QString text, const QString infoText, pv::dialogs::DSMessageBox **box=0, QWidget *parent=0);
