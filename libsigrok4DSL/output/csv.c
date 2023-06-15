@@ -99,7 +99,7 @@ static int init(struct sr_output *o, GHashTable *options)
 
     if (ctx->channel_index == NULL || ctx->channel_mmin == NULL){
         sr_err("%s,ERROR:failed to alloc memory.", __func__);
-        return;
+        return SR_ERR;
     }
 
 	/* Once more to map the enabled channels. */

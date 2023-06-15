@@ -397,7 +397,7 @@ SRD_API struct srd_decoder_inst *srd_inst_new(struct srd_session *sess,
 		if (di->dec_channelmap == NULL){
 			PyGILState_Release(gstate);
 			srd_err("%s,ERROR:failed to alloc memory.", __func__);
-			return;
+			return NULL;
 		}
 
 		for (i = 0; i < di->dec_num_channels; i++)
