@@ -801,10 +801,10 @@ namespace pv
 
         void SamplingBar::on_run_stop()
         {
-            _run_stop_action->setEnabled(false);
+            _run_stop_button.setEnabled(false);
 
             if (action_run_stop() == false){
-                _run_stop_action->setEnabled(true);
+                _run_stop_button.setEnabled(true);
             }
         }
 
@@ -869,10 +869,10 @@ namespace pv
                 return;
             }
 
-            _instant_action->setEnabled(false);
+            _instant_button.setEnabled(false);
             
             if (action_instant_stop() == false){
-                _instant_action->setEnabled(true);
+                _instant_button.setEnabled(true);
             }
         }
 
