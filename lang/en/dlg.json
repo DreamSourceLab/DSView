@@ -706,5 +706,17 @@
     {
         "id": "IDS_DLG_FONT_SIZE",
         "text": "Font Size"
+    },
+    {
+        "id": "IDS_DLG_GROUP_LOGIC",
+        "text": "Logic"
+    },
+    {
+        "id": "IDS_DLG_GROUP_DSO",
+        "text": "Scope"
+    },
+    {
+        "id": "IDS_DLG_GROUP_UI",
+        "text": "UI"
     }
 ]
