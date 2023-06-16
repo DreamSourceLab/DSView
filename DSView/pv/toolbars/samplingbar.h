@@ -103,6 +103,8 @@ namespace pv
 
         signals:
             void sig_store_session_data();
+            void sig_run_stop_action();
+            void sig_instant_stop_action();
 
         private: 
             void changeEvent(QEvent *event);
@@ -135,7 +137,8 @@ namespace pv
             void on_samplecount_sel(int index);
             void on_configure();
             void zero_adj();
-           
+            void on_run_stop_action();
+            void on_instant_stop_action();    
 
         private:
             SigSession          *_session;
