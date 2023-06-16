@@ -993,6 +993,11 @@ bool ProtocolDock::protocol_sort_callback(const DecoderInfoItem *o1, const Decod
           srd_decoder *dec = (srd_decoder *)(info->_data_handle);
           panel->AddDataItem(QString(dec->id), QString(dec->name), info);
       }
+
+      QFont font = this->font();
+      font.setPointSizeF(AppConfig::Instance().appOptions.fontSize);
+      ui::set_form_font(panel, font);
+
       panel->SetItemClickHandle(this);
       panel->ShowDlg(_pro_keyword_edit);
   }
