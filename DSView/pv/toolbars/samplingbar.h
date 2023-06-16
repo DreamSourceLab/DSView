@@ -103,8 +103,6 @@ namespace pv
 
         signals:
             void sig_store_session_data();
-            void sig_run_stop_action();
-            void sig_instant_stop_action();
 
         private: 
             void changeEvent(QEvent *event);

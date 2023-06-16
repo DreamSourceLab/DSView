@@ -75,13 +75,13 @@ static char* demo_mode_names[3] = {"logic", "dso", "analog"};
 
 static struct DEMO_channels logic_channel_modes[] = {
     {DEMO_LOGIC125x16,  LOGIC,  SR_CHANNEL_LOGIC,  16, 1, SR_MHZ(1), SR_Mn(1),
-     SR_KHZ(10), SR_MHZ(125), "Use 16 Channels (Max 125MHz)"},
+     SR_KHZ(50), SR_MHZ(125), "Use 16 Channels (Max 125MHz)"},
     {DEMO_LOGIC250x12,  LOGIC,  SR_CHANNEL_LOGIC,  12, 1, SR_MHZ(1), SR_Mn(1),
-     SR_KHZ(10), SR_MHZ(250), "Use 12 Channels (Max 250MHz)"},
+     SR_KHZ(50), SR_MHZ(250), "Use 12 Channels (Max 250MHz)"},
     {DEMO_LOGIC500x6,  LOGIC,  SR_CHANNEL_LOGIC,  6, 1, SR_MHZ(1), SR_Mn(1),
-     SR_KHZ(10), SR_MHZ(500), "Use 6 Channels (Max 500MHz)"},
+     SR_KHZ(50), SR_MHZ(500), "Use 6 Channels (Max 500MHz)"},
     {DEMO_LOGIC1000x3,  LOGIC,  SR_CHANNEL_LOGIC,  3, 1, SR_MHZ(1), SR_Mn(1),
-     SR_KHZ(10), SR_GHZ(1), "Use 3 Channels (Max 1GHz)"},
+     SR_KHZ(50), SR_GHZ(1), "Use 3 Channels (Max 1GHz)"},
 };
 
 static struct sr_list_item logic_channel_mode_list[ARRAY_SIZE(logic_channel_modes)+1];
@@ -89,7 +89,7 @@ static struct sr_list_item logic_channel_mode_list[ARRAY_SIZE(logic_channel_mode
 static struct DEMO_channels channel_modes[] = {
     // LA Stream
     {DEMO_LOGIC100x16,  LOGIC,  SR_CHANNEL_LOGIC,  16, 1, SR_MHZ(1), SR_Mn(1),
-     SR_KHZ(10), SR_GHZ(1), "Use 16 Channels (Max 20MHz)"},
+     SR_KHZ(50), SR_GHZ(1), "Use 16 Channels (Max 20MHz)"},
 
     // DAQ
     {DEMO_ANALOG10x2,   ANALOG, SR_CHANNEL_ANALOG,  2,  8, SR_MHZ(1), SR_Mn(1),
