@@ -253,6 +253,7 @@ namespace pv
         AppControl::Instance()->add_font_form(_measure_widget);
         AppControl::Instance()->add_font_form(_search_widget);
         AppControl::Instance()->add_font_form(_trigger_widget);
+        AppControl::Instance()->add_font_form(_view->get_time_view());
 
         // event
         connect(&_event, SIGNAL(session_error()), this, SLOT(on_session_error()));
@@ -335,6 +336,7 @@ namespace pv
         _protocol_dock->setWindowTitle(L_S(STR_PAGE_DLG, S_ID(IDS_DLG_PROTOCOL_DOCK_TITLE), "Decode Protocol"));
         _measure_dock->setWindowTitle(L_S(STR_PAGE_DLG, S_ID(IDS_DLG_MEASURE_DOCK_TITLE), "Measurement"));
         _search_dock->setWindowTitle(L_S(STR_PAGE_DLG, S_ID(IDS_DLG_SEARCH_DOCK_TITLE), "Search..."));
+        _view->get_time_view()->update_lang();
     }
 
     void MainWindow::on_load_file(QString file_name)
@@ -2058,7 +2060,7 @@ namespace pv
             break;
 
         case DSV_MSG_FONT_OPTIONS_CHANGED:
-            AppControl::Instance()->update_font_forms();
+            AppControl::Instance()->update_font_forms(); 
             break;          
         }
     }

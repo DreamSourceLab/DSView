@@ -315,6 +315,10 @@ public:
         signals_changed();
     }
 
+    inline Viewport* get_time_view(){
+        return _time_viewport;
+    }
+
 signals:
 	void hover_point_changed();
     void cursor_update();

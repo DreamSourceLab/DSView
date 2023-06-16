@@ -102,12 +102,14 @@ Viewport::Viewport(View &parent, View_type type) :
     _cmenu = new QMenu(this);
     QAction *yAction = _cmenu->addAction(L_S(STR_PAGE_DLG, S_ID(IDS_DLG_ADD_Y_CURSOR), "Add Y-cursor"));
     QAction *xAction = _cmenu->addAction(L_S(STR_PAGE_DLG, S_ID(IDS_DLG_ADD_X_CURSOR), "Add X-cursor"));
+    _yAction = yAction;
+    _xAction = xAction;
  
     setContextMenuPolicy(Qt::CustomContextMenu);
+    this->update_font();
 
     connect(&_trigger_timer, SIGNAL(timeout()),this, SLOT(on_trigger_timer()));
     connect(&_drag_timer, SIGNAL(timeout()),this, SLOT(on_drag_timer())); 
-
     connect(yAction, SIGNAL(triggered(bool)), this, SLOT(add_cursor_y()));
     connect(xAction, SIGNAL(triggered(bool)), this, SLOT(add_cursor_x()));
     connect(this, SIGNAL(customContextMenuRequested(const QPoint&)),this, SLOT(show_contextmenu(const QPoint&)));
@@ -1948,6 +1950,19 @@ void Viewport::add_cursor_x()
     _view.show_xcursors(true);
 }
 
+void Viewport::update_font()
+{
+    QFont font = this->font();
+    font.setPointSizeF(AppConfig::Instance().appOptions.fontSize);
+    _yAction->setFont(font);
+    _xAction->setFont(font);
+}
+
+void Viewport::update_lang()
+{
+    _yAction->setText(L_S(STR_PAGE_DLG, S_ID(IDS_DLG_ADD_Y_CURSOR), "Add Y-cursor"));
+    _xAction->setText(L_S(STR_PAGE_DLG, S_ID(IDS_DLG_ADD_X_CURSOR), "Add X-cursor"));
+}
 
 } // namespace view
 } // namespace pv

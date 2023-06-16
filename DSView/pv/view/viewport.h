@@ -35,10 +35,12 @@
 
 #include "../view/view.h"
 #include "../dsvdef.h"
+#include "../interface/icallbacks.h"
 
 class QPainter;
 class QPaintEvent;
 class SigSession;
+class QAction;
 
 using std::chrono::high_resolution_clock;
 using std::chrono::milliseconds;
@@ -52,7 +54,7 @@ class View;
 //main graph view port, in the middle region
 //draw the left and right rule scale
 //created by View
-class Viewport : public QWidget
+class Viewport : public QWidget, public IFontForm
 {
 	Q_OBJECT
 
@@ -106,6 +108,11 @@ public:
     void set_receive_len(quint64 length);
     void unshow_wait_trigger();
     void show_wait_trigger();
+
+    void update_lang();
+
+    //IFontForm
+    void update_font();
 
 protected:
     bool event(QEvent *event) override;
@@ -217,6 +224,8 @@ private:
 
     high_resolution_clock::time_point _lst_wait_tigger_time;
     int             _tigger_wait_times;
+    QAction         *_yAction;
+    QAction         *_xAction;
 };
 
 } // namespace view
