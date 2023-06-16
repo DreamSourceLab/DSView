@@ -102,6 +102,9 @@ void SearchComboBox::ShowDlg(QWidget *editline)
     listLay->setSpacing(0);
     listLay->setAlignment(Qt::AlignTop);
 
+    QFont font = this->font();
+    font.setPointSizeF(AppConfig::Instance().appOptions.fontSize);
+
     for(auto o : _items)
     { 
         ComboButtonItem *bt = new ComboButtonItem(panel, this, o);
@@ -110,7 +113,9 @@ void SearchComboBox::ShowDlg(QWidget *editline)
         bt->setMaximumWidth(w - 20);
         bt->setMinimumWidth(w - 20);
         o->_control = bt;
-        listLay->addWidget(bt);
+        bt->setFont(font);
+
+        listLay->addWidget(bt);        
     } 
  
     _scroll = new QScrollArea(panel);
@@ -132,10 +137,6 @@ void SearchComboBox::ShowDlg(QWidget *editline)
 
     connect(edit, SIGNAL(textEdited(const QString &)), 
                     this, SLOT(on_keyword_changed(const QString &)));
-
-    QFont font = this->font();
-    font.setPointSizeF(AppConfig::Instance().appOptions.fontSize);
-    ui::set_form_font(this, font);
 
     this->show();
 }
