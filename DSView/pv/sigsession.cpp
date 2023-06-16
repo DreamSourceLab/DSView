@@ -724,7 +724,7 @@ namespace pv
 
             data_unlock();
 
-            if (is_repeat_mode() && _device_status == ST_RUNNING){
+            if (is_repeat_mode() && _device_status != ST_RUNNING){
                 _callback->trigger_message(DSV_MSG_END_COLLECT_WORK);
             }
 
