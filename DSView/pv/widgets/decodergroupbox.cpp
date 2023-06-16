@@ -31,8 +31,6 @@
 #include <QPushButton>
 #include <QVBoxLayout>
 #include <QVariant>
-//#include <QScrollBar>
-//#include <QScreen>
 #include <QApplication>
  
 #include "../config/appconfig.h"
@@ -45,10 +43,11 @@ namespace widgets {
 DecoderGroupBox::DecoderGroupBox(data::DecoderStack *decoder_stack,
                                  data::decode::Decoder *dec,
                                  QLayout *dec_layout,
-                                 QWidget *parent) :
+                                 QWidget *parent, QFont font):
     QWidget(parent)
 {
     _row_num = 0;
+    _content_width = 0;
 
     _dec = dec;
     _decoder_stack = decoder_stack;
@@ -98,7 +97,9 @@ DecoderGroupBox::DecoderGroupBox(data::DecoderStack *decoder_stack,
             connect(show_button, SIGNAL(clicked()), this, SLOT(tog_icon()));
 
             _row_show_button.push_back(show_button);
-            _layout->addWidget(new QLabel((*i).first.title(), _widget), _row_show_button.size(), 0);
+            QLabel *lb = new QLabel((*i).first.title(), _widget);
+            lb->setFont(font);
+            _layout->addWidget(lb, _row_show_button.size(), 0);
             _layout->addWidget(show_button, _row_show_button.size(), 2);
         }
         index++;
@@ -107,10 +108,11 @@ DecoderGroupBox::DecoderGroupBox(data::DecoderStack *decoder_stack,
     }
 
     _layout->addLayout(dec_layout, _row_show_button.size()+1, 0, 1, 3);
-
     _widget->setLayout(_layout);
-    parent->layout()->addWidget(_widget);
- 
+
+    _content_width = _widget->sizeHint().width();
+
+    parent->layout()->addWidget(_widget); 
 }
 
 DecoderGroupBox::~DecoderGroupBox()

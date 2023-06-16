@@ -23,6 +23,7 @@
 #define DSVIEW_PV_PROP_BINDING_DECODEROPTIONS_H
 
 #include "binding.h"
+#include <QFont>
 
 #include "../property.h"
 

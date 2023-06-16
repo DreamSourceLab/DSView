@@ -26,8 +26,7 @@
  
 #include <QPushButton>
 #include <QGridLayout>
-//#include <QToolBar>
-//#include <QScrollArea> 
+#include <QFont>
 #include <QWidget>
 
 namespace pv {
@@ -48,7 +47,7 @@ class DecoderGroupBox : public QWidget
 public:
     DecoderGroupBox(pv::data::DecoderStack *decoder_stack,
                     data::decode::Decoder *dec, QLayout *dec_layout,
-                    QWidget *parent = NULL);
+                    QWidget *parent, QFont font);
     ~DecoderGroupBox();
     bool eventFilter(QObject *o, QEvent *e);
 
@@ -77,6 +76,9 @@ private:
     QPushButton *_show_button;
     std::list <QPushButton *> _row_show_button;
     int _row_num;
+    
+public:
+    int _content_width;
 };
 
 } // widgets

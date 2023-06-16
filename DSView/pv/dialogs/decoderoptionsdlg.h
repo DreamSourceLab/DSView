@@ -122,6 +122,7 @@ private:
     
     std::vector<ProbeSelector> _probe_selectors;
     bool        _is_reload_form;
+    int         _content_width;
 };
 
 }//dialogs

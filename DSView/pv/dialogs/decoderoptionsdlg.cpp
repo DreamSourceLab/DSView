@@ -61,6 +61,7 @@ DecoderOptionsDlg::DecoderOptionsDlg(QWidget *parent)
     _cursor2 = 0;
     _contentHeight = 0;
     _is_reload_form = false;
+    _content_width = 0;
 }
 
 DecoderOptionsDlg::~DecoderOptionsDlg()
@@ -90,15 +91,14 @@ void DecoderOptionsDlg::load_options_view()
 {   
     DSDialog *dlg = this;   
 
+    dlg->setTitle(L_S(STR_PAGE_DLG, S_ID(IDS_DLG_DECODER_OPTIONS), "Decoder Options"));   
+
     QFormLayout *form = new QFormLayout();
     form->setContentsMargins(0, 0, 0, 0);
     form->setVerticalSpacing(5);
     form->setFormAlignment(Qt::AlignLeft);
     form->setLabelAlignment(Qt::AlignLeft);
-    form->setFieldGrowthPolicy(QFormLayout::AllNonFixedFieldsGrow); 
     dlg->layout()->addLayout(form);
-
-    dlg->setTitle(L_S(STR_PAGE_DLG, S_ID(IDS_DLG_DECODER_OPTIONS), "Decoder Options"));   
     
     //scroll pannel
     QWidget *scroll_pannel  = new QWidget();
@@ -114,14 +114,9 @@ void DecoderOptionsDlg::load_options_view()
     decoder_lay->setContentsMargins(0, 0, 0, 0);
     decoder_lay->setDirection(QBoxLayout::TopToBottom);
     container_panel->setLayout(decoder_lay);
-   // form->addRow(container_panel); 
     scroll_lay->addWidget(container_panel);
   
     load_decoder_forms(container_panel);
- 
-    if (_trace->decoder()->stack().size() > 0){
-
-    } 
  
     //Add region combobox
     _start_comboBox = new DsComboBox(dlg);
@@ -132,7 +127,7 @@ void DecoderOptionsDlg::load_options_view()
     _end_comboBox->setMinimumContentsLength(7);
     _start_comboBox->setMinimumWidth(30);
     _end_comboBox->setMinimumWidth(30);
-
+    
     // Add cursor list
     auto view = _trace->get_view();
     int dex1 = 0;
@@ -145,10 +140,10 @@ void DecoderOptionsDlg::load_options_view()
         
         for (auto c : cursor_list){
             //tr
-            QString curCursor = L_S(STR_PAGE_DLG, S_ID(IDS_DLG_CURSOR), "Cursor") + 
+            QString cursor_name = L_S(STR_PAGE_DLG, S_ID(IDS_DLG_CURSOR), "Cursor") + 
                                 QString::number(num);
-            _start_comboBox->addItem(curCursor, QVariant((quint64)c->get_key()));
-            _end_comboBox->addItem(curCursor, QVariant((quint64)c->get_key()));
+            _start_comboBox->addItem(cursor_name, QVariant((quint64)c->get_key()));
+            _end_comboBox->addItem(cursor_name, QVariant((quint64)c->get_key()));
 
             if (c->get_key() == _cursor1)
                 dex1 = num;
@@ -196,10 +191,13 @@ void DecoderOptionsDlg::load_options_view()
     }  
 
   //tr
-    form->addRow(_start_comboBox, new QLabel(
-                     L_S(STR_PAGE_DLG, S_ID(IDS_DLG_CURSOR_FOR_DECODE_START), "The cursor for decode start time")));
-    form->addRow(_end_comboBox, new QLabel(
-                     L_S(STR_PAGE_DLG, S_ID(IDS_DLG_CURSOR_FOR_DECODE_END), "The cursor for decode end time")));
+    QLabel *lb1 = new QLabel(
+                     L_S(STR_PAGE_DLG, S_ID(IDS_DLG_CURSOR_FOR_DECODE_START), "The cursor for decode start time"));
+    QLabel *lb2 = new QLabel(
+                     L_S(STR_PAGE_DLG, S_ID(IDS_DLG_CURSOR_FOR_DECODE_END), "The cursor for decode end time"));
+
+    form->addRow(_start_comboBox, lb1);
+    form->addRow(_end_comboBox, lb2);
  
     // Add ButtonBox (OK/Cancel)
     QDialogButtonBox *button_box = new QDialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel,
@@ -211,21 +209,33 @@ void DecoderOptionsDlg::load_options_view()
 
     this->update_font();
 
+    int real_content_width = _content_width;
+    int content_height = _contentHeight;
+
      // scroll     
     QSize tsize = dlg->sizeHint();
     int w = tsize.width(); 
     int other_height = 190 + h_ex2; 
-    _contentHeight += 20;
+    content_height += 20;
+
+    int cursor_line_width = lb1->sizeHint().width() + _start_comboBox->sizeHint().width();
+
+    if (w < real_content_width){
+        w = real_content_width;
+    }
+    if (w < cursor_line_width){
+        w = cursor_line_width;
+    }
 
 #ifdef Q_OS_DARWIN
-        other_height += 40;
+    other_height += 40;
 #endif
 
-    int dlgHeight = _contentHeight + other_height; 
+    int dlgHeight = content_height + other_height; 
      
     float sk = QGuiApplication::primaryScreen()->logicalDotsPerInch() / 96;
     int srcHeight = 600;
-    container_panel->setFixedHeight(_contentHeight);
+    container_panel->setFixedHeight(content_height);
 
     if (dlgHeight * sk > srcHeight)
     { 
@@ -382,6 +392,9 @@ void DecoderOptionsDlg::create_decoder_form(
 	const srd_decoder *const decoder = dec->decoder();
 	assert(decoder);
 
+    QFont font = this->font();
+    font.setPointSizeF(AppConfig::Instance().appOptions.fontSize);
+
     QFormLayout *const decoder_form = new QFormLayout();
     decoder_form->setContentsMargins(0,0,0,0);
     decoder_form->setVerticalSpacing(4);
@@ -456,13 +469,16 @@ void DecoderOptionsDlg::create_decoder_form(
 
 	// Add the options
     auto binding = new prop::binding::DecoderOptions(_trace->decoder(), dec);
-    binding->add_properties_to_form(decoder_form, true);
+    binding->add_properties_to_form(decoder_form, true, font);
 	_bindings.push_back(binding);
   
     auto group = new pv::widgets::DecoderGroupBox(_trace->decoder(), 
                             dec, 
                             decoder_form, 
-                            parent);
+                            parent, font);
+
+    if (group->_content_width > _content_width)
+        _content_width = group->_content_width;
 
 	form->addRow(group); 
 }

@@ -28,7 +28,7 @@
 
 #include <vector>
 #include <map> 
-
+#include <QFont>
 #include <QString>
 
 class QFormLayout;
@@ -51,10 +51,7 @@ public:
     void commit();
 
     void add_properties_to_form(QFormLayout *layout,
-        bool auto_commit = false);
-
-    QWidget* get_property_form(QWidget *parent,
-        bool auto_commit = false);
+        bool auto_commit, QFont font);
 
     std::map<Property*,GVariant*> get_property_value();
 

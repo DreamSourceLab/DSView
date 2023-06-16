@@ -22,6 +22,7 @@
  
 
 #include <QFormLayout>
+#include <QLabel>
 
 #include "../property.h"
 #include "binding.h"
@@ -47,8 +48,7 @@ void Binding::commit()
     }
 }
 
-void Binding::add_properties_to_form(QFormLayout *layout,
-    bool auto_commit)
+void Binding::add_properties_to_form(QFormLayout *layout, bool auto_commit, QFont font)
 {
     assert(layout);
 
@@ -58,6 +58,7 @@ void Binding::add_properties_to_form(QFormLayout *layout,
 
         if (p->labeled_widget()){
             layout->addRow(widget);
+            widget->setFont(font);
             _row_num++;
         }
         else{
@@ -66,24 +67,13 @@ void Binding::add_properties_to_form(QFormLayout *layout,
             if (lbstr == "Data format"){
                 continue;                
             }   
-            layout->addRow(p->label(), widget); 
+            QLabel *lb = new QLabel(p->label());
+            lb->setFont(font);
+            widget->setFont(font);
+            layout->addRow(lb, widget);
             _row_num++;
         } 
     }
-}
-
-QWidget* Binding::get_property_form(QWidget *parent,
-    bool auto_commit)
-{
-    QWidget *const form = new QWidget(parent);
-    QFormLayout *const layout = new QFormLayout(form);
-    layout->setVerticalSpacing(5);
-    layout->setFormAlignment(Qt::AlignLeft);
-    layout->setLabelAlignment(Qt::AlignLeft);
-    layout->setFieldGrowthPolicy(QFormLayout::AllNonFixedFieldsGrow);
-    form->setLayout(layout);
-    add_properties_to_form(layout, auto_commit);
-    return form;
 }
 
 std::map<Property*,GVariant*> Binding::get_property_value()
