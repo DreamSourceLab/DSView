@@ -87,7 +87,7 @@ void ApplicationParamDlg::bind_font_size_list(QComboBox *box, float size)
 {   
     int selDex = -1;
 
-    for(int i=7; i<=13; i++)
+    for(int i=7; i<=12; i++)
     {
         box->addItem(QString::number(i));
         if (i == size){

@@ -134,7 +134,7 @@ DeviceOptions::DeviceOptions(QWidget *parent) :
 
     QWidget *minWid = new QWidget();
     minWid->setFixedHeight(1);
-    minWid->setMinimumWidth(250);
+    minWid->setMinimumWidth(230);
     _container_lay->addWidget(minWid);
 
     // chnnels group box
@@ -256,6 +256,7 @@ QLayout * DeviceOptions::get_property_form(QWidget * parent)
         i++;
 	}
 
+    this->update_font();
     _groupHeight1 = parent->sizeHint().height(); 
     parent->setFixedHeight(_groupHeight1); 
 
@@ -364,6 +365,7 @@ void DeviceOptions::logic_probes(QVBoxLayout &layout)
     enable_all_probes->setMaximumHeight(30);
     disable_all_probes->setMaximumHeight(30);
 
+    this->update_font();
     contentHeight += enable_all_probes->sizeHint().height();
     contentHeight += row2 * 40;
 
@@ -692,6 +694,7 @@ void DeviceOptions::analog_probes(QGridLayout &layout)
 
     layout.addWidget(tabWidget, 0, 0, 1, 1);
 
+    this->update_font();
     _groupHeight2 = tabWidget->sizeHint().height() + 10;
     _dynamic_panel->setFixedHeight(_groupHeight2); 
 
@@ -783,8 +786,10 @@ void DeviceOptions::build_dynamic_panel()
 int bb = 0;
 void DeviceOptions::try_resize_scroll()
 {
+    this->update_font();
+
     // content area height
-    int contentHeight = _groupHeight1 + _groupHeight2 + 15; // +space
+    int contentHeight = _groupHeight1 + _groupHeight2 + 20; // +space
     //dialog height
     int dlgHeight = contentHeight + 100; // +bottom buttton
 
