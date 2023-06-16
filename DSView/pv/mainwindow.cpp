@@ -243,9 +243,6 @@ namespace pv
         switchLanguage(app.frameOptions.language);
         switchTheme(app.frameOptions.style);
 
-        // UI initial
-        _measure_widget->add_dist_measure();
-
         retranslateUi();
 
         _sampling_bar->set_view(_view);

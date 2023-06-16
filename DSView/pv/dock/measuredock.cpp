@@ -40,6 +40,7 @@
 #include <QPainter> 
 #include "../appcontrol.h"
 #include "../ui/fn.h"
+#include "../log.h"
 
 using namespace boost;
 
@@ -87,8 +88,7 @@ MeasureDock::MeasureDock(QWidget *parent, View &view, SigSession *session) :
     /* cursor distance group */
     _dist_groupBox = new QGroupBox(_widget);
     _dist_groupBox->setMinimumWidth(300);
-    _dist_add_btn = new QToolButton(_widget);
-    connect(_dist_add_btn, SIGNAL(clicked()), this, SLOT(add_dist_measure()));
+    _dist_add_btn = new QToolButton(_widget);   
 
     _dist_layout = new QGridLayout(_widget);
     _dist_layout->setVerticalSpacing(5);
@@ -105,7 +105,6 @@ MeasureDock::MeasureDock(QWidget *parent, View &view, SigSession *session) :
     _edge_groupBox = new QGroupBox(_widget);
     _edge_groupBox->setMinimumWidth(300);
     _edge_add_btn = new QToolButton(_widget);
-    connect(_edge_add_btn, SIGNAL(clicked()), this, SLOT(add_edge_measure()));
 
     _channel_label = new QLabel(_widget);
     _edge_label = new QLabel(_widget);
@@ -116,8 +115,7 @@ MeasureDock::MeasureDock(QWidget *parent, View &view, SigSession *session) :
     _edge_layout->addWidget(_channel_label, 0, 5);
     _edge_layout->addWidget(_edge_label, 0, 6);
     _edge_layout->setColumnStretch(1, 50);
-    //_edge_layout->setColumnStretch(6, 100);
-    //add_edge_measure();
+
     _edge_groupBox->setLayout(_edge_layout);
 
     /* cursors group */
@@ -138,14 +136,18 @@ MeasureDock::MeasureDock(QWidget *parent, View &view, SigSession *session) :
     layout->addStretch(1);
     _widget->setLayout(layout);
 
-    connect(_fen_checkBox, SIGNAL(stateChanged(int)), &_view, SLOT(set_measure_en(int)));
-    connect(&_view, SIGNAL(measure_updated()), this, SLOT(measure_updated()));
-
     this->setWidget(_widget);
     _widget->setGeometry(0, 0, sizeHint().width(), 2000);
     _widget->setObjectName("measureWidget");
 
     retranslateUi();
+
+    add_dist_measure();
+
+    connect(_dist_add_btn, SIGNAL(clicked()), this, SLOT(add_dist_measure()));
+    connect(_edge_add_btn, SIGNAL(clicked()), this, SLOT(add_edge_measure()));
+    connect(_fen_checkBox, SIGNAL(stateChanged(int)), &_view, SLOT(set_measure_en(int)));
+    connect(&_view, SIGNAL(measure_updated()), this, SLOT(measure_updated()));
 
     update_font();
 }
@@ -189,20 +191,20 @@ void MeasureDock::reStyle()
     _dist_add_btn->setIcon(QIcon(iconPath+"/add.svg"));
     _edge_add_btn->setIcon(QIcon(iconPath+"/add.svg"));
 
-    for (QVector <QToolButton *>::const_iterator i = _dist_del_btn_vec.begin();
-         i != _dist_del_btn_vec.end(); i++)
-        (*i)->setIcon(QIcon(iconPath+"/del.svg"));
-    for (QVector <QToolButton *>::const_iterator i = _edge_del_btn_vec.begin();
-         i != _edge_del_btn_vec.end(); i++)
-        (*i)->setIcon(QIcon(iconPath+"/del.svg"));
-}
+    for (auto it = _cursor_disdance_list.begin(); it != _cursor_disdance_list.end(); it++)
+    {
+        (*it).del_bt->setIcon(QIcon(iconPath+"/del.svg"));
+    }
 
-void MeasureDock::paintEvent(QPaintEvent *)
-{
-//    QStyleOption opt;
-//    opt.init(this);
-//    QPainter p(this);
-//    style()->drawPrimitive(QStyle::PE_Widget, &opt, &p, this);
+    for (auto it = _cursor_edge_list.begin(); it != _cursor_edge_list.end(); it++)
+    {
+        (*it).del_bt->setIcon(QIcon(iconPath+"/del.svg"));
+    }
+
+    for (auto it = _cursor_opt_list.begin(); it != _cursor_opt_list.end(); it++)
+    {
+        (*it).del_bt->setIcon(QIcon(iconPath+"/del.svg"));
+    }
 }
 
 void MeasureDock::refresh()
@@ -217,10 +219,10 @@ void MeasureDock::reload()
     else
         _edge_groupBox->setVisible(false);
 
-    for (QVector <DsComboBox *>::const_iterator i = _edge_ch_cmb_vec.begin();
-         i != _edge_ch_cmb_vec.end(); i++) {
-        update_probe_selector(*i);
+    for (auto &o : _cursor_edge_list){
+        update_probe_selector(o.box);
     }
+
     reCalc();
 }
 
@@ -228,54 +230,48 @@ void MeasureDock::cursor_update()
 {
     using namespace pv::data;
 
-    if (!_cursor_pushButton_list.empty()) {
-        for (QVector <QToolButton *>::const_iterator i = _cursor_del_btn_vec.begin();
-             i != _cursor_del_btn_vec.end(); i++)
-            (*i)->deleteLater();
-        for (QVector<QPushButton *>::Iterator i = _cursor_pushButton_list.begin();
-             i != _cursor_pushButton_list.end(); i++)
-            (*i)->deleteLater();
-        for (QVector<QLabel *>::Iterator i = _curpos_label_list.begin();
-             i != _curpos_label_list.end(); i++)
-            (*i)->deleteLater();
-
-        _cursor_del_btn_vec.clear();
-        _cursor_pushButton_list.clear();
-        _curpos_label_list.clear();
-    }
+   for(auto it = _cursor_opt_list.begin(); it != _cursor_opt_list.end(); it++)
+   {
+        (*it).del_bt->deleteLater();
+        (*it).goto_bt->deleteLater();
+        (*it).info_lable->deleteLater();
+   }
+   _cursor_opt_list.clear();
 
     update_dist();
     update_edge();
+
+    QFont font = this->font();
+    font.setPointSizeF(AppConfig::Instance().appOptions.fontSize);
 
     int index = 1;
     QString iconPath = GetIconPath();
     auto &cursor_list = _view.get_cursorList();
 
-    for(auto i = cursor_list.begin();i != cursor_list.end(); i++) {
+    for(auto it = cursor_list.begin(); it != cursor_list.end(); it++) {
         QString curCursor = QString::number(index);
 
         QToolButton *del_btn = new QToolButton(_widget);
         del_btn->setIcon(QIcon(iconPath+"/del.svg"));
         del_btn->setCheckable(true);
-        QPushButton *_cursor_pushButton = new QPushButton(curCursor, _widget);
-        set_cursor_btn_color(_cursor_pushButton);
+        QPushButton *cursor_pushButton = new QPushButton(curCursor, _widget);
+        set_cursor_btn_color(cursor_pushButton);
         QString _cur_text = _view.get_cm_time(index - 1) + "/" + QString::number(_view.get_cursor_samples(index - 1));
-        QLabel *_curpos_label = new QLabel(_cur_text, _widget);
-        _cursor_del_btn_vec.push_back(del_btn);
-        _cursor_pushButton_list.push_back(_cursor_pushButton);
-        _curpos_label_list.push_back(_curpos_label);
+        QLabel *curpos_label = new QLabel(_cur_text, _widget); 
 
         _cursor_layout->addWidget(del_btn, 1+index, 0);
-        _cursor_layout->addWidget(_cursor_pushButton, 1 + index, 1);
-        _cursor_layout->addWidget(_curpos_label, 1 + index, 2);
+        _cursor_layout->addWidget(cursor_pushButton, 1 + index, 1);
+        _cursor_layout->addWidget(curpos_label, 1 + index, 2);
+        curpos_label->setFont(font);
 
         connect(del_btn, SIGNAL(clicked()), this, SLOT(del_cursor()));
-        connect(_cursor_pushButton, SIGNAL(clicked()), this, SLOT(goto_cursor()));
+        connect(cursor_pushButton, SIGNAL(clicked()), this, SLOT(goto_cursor()));
+
+        cursor_opt_info inf = {del_btn, cursor_pushButton, curpos_label, (*it)};
+        _cursor_opt_list.push_back(inf);
 
         index++;
     }
-
-    update();
 }
 
 void MeasureDock::measure_updated()
@@ -288,15 +284,13 @@ void MeasureDock::measure_updated()
 
 void MeasureDock::cursor_moving()
 {
-    //TimeMarker* grabbed_marker = _view.get_ruler()->get_grabbed_cursor();
     if (_view.cursors_shown()) {
         int index = 0;
         auto &cursor_list = _view.get_cursorList();
 
         for(auto i = cursor_list.begin(); i != cursor_list.end(); i++) {
             QString _cur_text = _view.get_cm_time(index) + "/" + QString::number(_view.get_cursor_samples(index));
-            _curpos_label_list.at(index)->setText(_cur_text);
-            //_curvalue_label_list.at(index)->setText(_view.get_cm_value(index));
+            _cursor_opt_list[index].info_lable->setText(_cur_text);
             index++;
         }
     }
@@ -310,16 +304,16 @@ void MeasureDock::reCalc()
     update_dist();
     update_edge();
 }
- 
 
 void MeasureDock::goto_cursor()
 {
     int index = 0;
+    QPushButton *src = qobject_cast<QPushButton *>(sender());
+    assert(src);
 
-    for (QVector<QPushButton *>::Iterator i = _cursor_pushButton_list.begin();
-         i != _cursor_pushButton_list.end(); i++) {
-        QPushButton *button = qobject_cast<QPushButton *>(sender());
-        if ((*i) == button) {
+    for (auto it = _cursor_opt_list.begin(); it != _cursor_opt_list.end(); it++)
+    {
+        if ( (*it).goto_bt == src){
             _view.set_cursor_middle(index);
             break;
         }
@@ -328,10 +322,12 @@ void MeasureDock::goto_cursor()
 }
 
 void MeasureDock::add_dist_measure()
-{
-    int num = _dist_row_widget_vec.size();
-    if (num > Max_Measure_Limits)
+{ 
+    if (_cursor_disdance_list.size() > Max_Measure_Limits)
         return;
+
+    QFont font = this->font();
+    font.setPointSizeF(AppConfig::Instance().appOptions.fontSize);
 
     QWidget *row_widget = new QWidget(_widget);
     row_widget->setContentsMargins(0,0,0,0);
@@ -339,7 +335,6 @@ void MeasureDock::add_dist_measure()
     row_layout->setContentsMargins(0,0,0,0);
     row_layout->setSpacing(0);
     row_widget->setLayout(row_layout);
-    _dist_row_widget_vec.push_back(row_widget);
 
     QString iconPath = GetIconPath();
     QToolButton *del_btn = new QToolButton(row_widget);
@@ -355,14 +350,6 @@ void MeasureDock::add_dist_measure()
     //tr
     QLabel *g_label = new QLabel("-", row_widget);
     g_label->setContentsMargins(0,0,0,0);
-    _dist_del_btn_vec.push_back(del_btn);
-    _dist_s_btn_vec.push_back(s_btn);
-    _dist_e_btn_vec.push_back(e_btn);
-    _dist_r_label_vec.push_back(r_label);
-
-    connect(del_btn, SIGNAL(clicked()), this, SLOT(del_dist_measure()));
-    connect(s_btn, SIGNAL(clicked()), this, SLOT(show_all_coursor()));
-    connect(e_btn, SIGNAL(clicked()), this, SLOT(show_all_coursor()));
 
     row_layout->addWidget(del_btn);
     row_layout->addSpacing(5);
@@ -371,37 +358,41 @@ void MeasureDock::add_dist_measure()
     row_layout->addWidget(e_btn);
     row_layout->addSpacing(5);
     row_layout->addWidget(r_label, 100);
+    r_label->setFont(font);
 
-    _dist_layout->addWidget(row_widget, _dist_row_widget_vec.size(), 0, 1, 7);
+    cursor_distance_info inf = {row_widget, del_btn, s_btn, e_btn, r_label};
+    _cursor_disdance_list.push_back(inf);
 
+    _dist_layout->addWidget(row_widget, _cursor_disdance_list.size(), 0, 1, 7);
+
+    connect(del_btn, SIGNAL(clicked()), this, SLOT(del_dist_measure()));
+    connect(s_btn, SIGNAL(clicked()), this, SLOT(show_all_coursor()));
+    connect(e_btn, SIGNAL(clicked()), this, SLOT(show_all_coursor()));
 }
 
 void MeasureDock::del_dist_measure()
 {
-    int del_index = 0;
-    for (QVector <QToolButton *>::const_iterator i = _dist_del_btn_vec.begin();
-         i != _dist_del_btn_vec.end(); i++) {
-        if ((*i)->isChecked()) {
-            _dist_layout->removeWidget(_dist_row_widget_vec.at(del_index));
-            _dist_row_widget_vec.at(del_index)->deleteLater();
+    QToolButton* src = dynamic_cast<QToolButton *>(sender());
+    assert(src); 
 
-            _dist_del_btn_vec.remove(del_index);
-            _dist_s_btn_vec.remove(del_index);
-            _dist_e_btn_vec.remove(del_index);
-            _dist_r_label_vec.remove(del_index);
-            _dist_row_widget_vec.erase(_dist_row_widget_vec.begin() + del_index);
-
+    for (auto it =_cursor_disdance_list.begin(); it != _cursor_disdance_list.end(); it++)
+    {
+        if ((*it).del_bt == src){
+            _dist_layout->removeWidget((*it).row_pannel);
+            (*it).row_pannel->deleteLater();
+            _cursor_disdance_list.erase(it);
             break;
         }
-        del_index++;
     }
 }
 
 void MeasureDock::add_edge_measure()
 {
-    int num = _edge_row_widget_vec.size();
-    if (num > Max_Measure_Limits)
+    if (_cursor_edge_list.size() > Max_Measure_Limits)
         return;
+
+    QFont font = this->font();
+    font.setPointSizeF(AppConfig::Instance().appOptions.fontSize);
 
     QWidget *row_widget = new QWidget(_widget);
     row_widget->setContentsMargins(0,0,0,0);
@@ -409,7 +400,6 @@ void MeasureDock::add_edge_measure()
     row_layout->setContentsMargins(0,0,0,0);
     row_layout->setSpacing(0);
     row_widget->setLayout(row_layout);
-    _edge_row_widget_vec.push_back(row_widget);
 
     QString iconPath = GetIconPath();
     QToolButton *del_btn = new QToolButton(row_widget);
@@ -428,17 +418,7 @@ void MeasureDock::add_edge_measure()
      //tr
     QLabel *a_label = new QLabel("@", row_widget);
     a_label->setContentsMargins(0,0,0,0);
-    DsComboBox *ch_cmb = create_probe_selector(row_widget);
-    _edge_del_btn_vec.push_back(del_btn);
-    _edge_s_btn_vec.push_back(s_btn);
-    _edge_e_btn_vec.push_back(e_btn);
-    _edge_ch_cmb_vec.push_back(ch_cmb);
-    _edge_r_label_vec.push_back(r_label);
-
-    connect(del_btn, SIGNAL(clicked()), this, SLOT(del_edge_measure()));
-    connect(s_btn, SIGNAL(clicked()), this, SLOT(show_all_coursor()));
-    connect(e_btn, SIGNAL(clicked()), this, SLOT(show_all_coursor()));
-    connect(ch_cmb, SIGNAL(currentIndexChanged(int)), this, SLOT(update_edge()));
+    QComboBox *ch_cmb = create_probe_selector(row_widget);
 
     row_layout->addWidget(del_btn);
     row_layout->addSpacing(5);
@@ -450,28 +430,35 @@ void MeasureDock::add_edge_measure()
     row_layout->addSpacing(5);
     row_layout->addWidget(r_label, 100);
 
-    _edge_layout->addWidget(row_widget, _edge_row_widget_vec.size(), 0, 1, 7);
+    g_label->setFont(font);
+    a_label->setFont(font);
+    s_btn->setFont(font);
+    e_btn->setFont(font);
+
+    cursor_edge_info inf = {row_widget, del_btn, s_btn, e_btn, r_label, ch_cmb};
+    _cursor_edge_list.push_back(inf);
+
+    _edge_layout->addWidget(row_widget, _cursor_edge_list.size(), 0, 1, 7);
+
+    connect(del_btn, SIGNAL(clicked()), this, SLOT(del_edge_measure()));
+    connect(s_btn, SIGNAL(clicked()), this, SLOT(show_all_coursor()));
+    connect(e_btn, SIGNAL(clicked()), this, SLOT(show_all_coursor()));
+    connect(ch_cmb, SIGNAL(currentIndexChanged(int)), this, SLOT(update_edge()));
 }
 
 void MeasureDock::del_edge_measure()
 {
-    int del_index = 0;
-    for (QVector <QToolButton *>::const_iterator i = _edge_del_btn_vec.begin();
-         i != _edge_del_btn_vec.end(); i++) {
-        if ((*i)->isChecked()) {
-            _edge_layout->removeWidget(_edge_row_widget_vec.at(del_index));
-            _edge_row_widget_vec.at(del_index)->deleteLater();
+    QToolButton* src = dynamic_cast<QToolButton *>(sender());
+    assert(src); 
 
-            _edge_del_btn_vec.remove(del_index);
-            _edge_s_btn_vec.remove(del_index);
-            _edge_e_btn_vec.remove(del_index);
-            _edge_r_label_vec.remove(del_index);
-            _edge_ch_cmb_vec.remove(del_index);
-            _edge_row_widget_vec.erase(_edge_row_widget_vec.begin() + del_index);
-
+    for (auto it =_cursor_edge_list.begin(); it != _cursor_edge_list.end(); it++)
+    {
+        if ((*it).del_bt == src){
+            _dist_layout->removeWidget((*it).row_pannel);
+            (*it).row_pannel->deleteLater();
+            _cursor_edge_list.erase(it);
             break;
         }
-        del_index++;
     }
 }
 
@@ -492,12 +479,17 @@ void MeasureDock::show_all_coursor()
     cursor_dlg.setWindowFlags(Qt::FramelessWindowHint | Qt::Popup | Qt::WindowSystemMenuHint |
                               Qt::WindowMinimizeButtonHint | Qt::WindowMaximizeButtonHint);
 
+    QFont font = this->font();
+    font.setPointSizeF(AppConfig::Instance().appOptions.fontSize);
+
     int index = 0;
     QGridLayout *glayout = new QGridLayout(&cursor_dlg);
 
     for(auto i = cursor_list.begin(); i != cursor_list.end(); i++) {
-        QPushButton *cursor_btn = new QPushButton(QString::number(index+1), &cursor_dlg);
+        QPushButton *cursor_btn = new QPushButton(&cursor_dlg);
+        cursor_btn->setText(QString::number(index+1));
         set_cursor_btn_color(cursor_btn);
+        cursor_btn->setFont(font);
         glayout->addWidget(cursor_btn, index/4, index%4, 1, 1);
 
         connect(cursor_btn, SIGNAL(clicked()), &cursor_dlg, SLOT(accept()));
@@ -514,9 +506,9 @@ void MeasureDock::show_all_coursor()
 
 void MeasureDock::set_se_cursor()
 {
-    QPushButton *sc = qobject_cast<QPushButton *>(sender());
+    QPushButton *sel_cursor_index_bt = qobject_cast<QPushButton *>(sender());
     if (_sel_btn)
-        _sel_btn->setText(sc->text());
+        _sel_btn->setText(sel_cursor_index_bt->text());
 
     set_cursor_btn_color(_sel_btn);
 
@@ -546,23 +538,23 @@ void MeasureDock::update_dist()
 
     auto &cursor_list = _view.get_cursorList();
 
-    for (QVector<QPushButton *>::Iterator i = _dist_s_btn_vec.begin();
-         i != _dist_s_btn_vec.end(); i++) {
+    for (auto it = _cursor_disdance_list.begin(); it != _cursor_disdance_list.end(); it++) {
+        cursor_distance_info inf = (*it);
         bool start_ret, end_ret;
-        const unsigned int start = (*i)->text().toInt(&start_ret) - 1;
-        const unsigned int end = _dist_e_btn_vec[dist_index]->text().toInt(&end_ret) - 1;
+        const unsigned int start = inf.start_bt->text().toInt(&start_ret) - 1;
+        const unsigned int end = inf.end_bt->text().toInt(&end_ret) - 1;
 
         if (start_ret) {
             if (start + 1 > cursor_list.size()) {
-                (*i)->setText(" ");
-                set_cursor_btn_color((*i));
+                inf.start_bt->setText(" ");
+                set_cursor_btn_color(inf.start_bt);
                 start_ret = false;
             }
         }
         if (end_ret) {
             if (end + 1 > cursor_list.size()) {
-                _dist_e_btn_vec[dist_index]->setText(" ");
-                set_cursor_btn_color(_dist_e_btn_vec[dist_index]);
+                inf.end_bt->setText(" ");
+                set_cursor_btn_color(inf.end_bt);
                 end_ret = false;
             }
         }
@@ -574,9 +566,10 @@ void MeasureDock::update_dist()
                                  "/" + QString::number(delta);
             if (delta < 0)
                 delta_text.replace('+', '-');
-            _dist_r_label_vec[dist_index]->setText(delta_text);
-        } else {
-            _dist_r_label_vec[dist_index]->setText(" ");
+            inf.r_lable->setText(delta_text);
+        }
+        else {
+            inf.r_lable->setText(" ");
         }
 
         dist_index++;
@@ -584,27 +577,26 @@ void MeasureDock::update_dist()
 }
 
 void MeasureDock::update_edge()
-{
-    int edge_index = 0;
+{ 
     auto &cursor_list = _view.get_cursorList();
 
-    for (QVector<QPushButton *>::Iterator i = _edge_s_btn_vec.begin();
-         i != _edge_s_btn_vec.end(); i++) {
+    for (auto it = _cursor_edge_list.begin(); it != _cursor_edge_list.end(); it++) {
+        cursor_edge_info inf = (*it);
         bool start_ret, end_ret;
-        const unsigned int start = (*i)->text().toInt(&start_ret) - 1;
-        const unsigned int end = _edge_e_btn_vec[edge_index]->text().toInt(&end_ret) - 1;
+        const int start = inf.start_bt->text().toInt(&start_ret) - 1;
+        const int end =  inf.end_bt->text().toInt(&end_ret) - 1;
 
         if (start_ret) {
             if (start + 1 > cursor_list.size()) {
-                (*i)->setText(" ");
-                set_cursor_btn_color((*i));
+                inf.start_bt->setText(" ");
+                set_cursor_btn_color(inf.start_bt);
                 start_ret = false;
             }
         }
         if (end_ret) {
             if (end + 1 > cursor_list.size()) {
-                _edge_e_btn_vec[edge_index]->setText(" ");
-                set_cursor_btn_color(_edge_e_btn_vec[edge_index]);
+                inf.end_bt->setText(" ");
+                set_cursor_btn_color(inf.end_bt);
                 end_ret = false;
             }
         }
@@ -619,14 +611,17 @@ void MeasureDock::update_edge()
             for(auto s : _session->get_signals()) {
                 if (s->signal_type() == SR_CHANNEL_LOGIC
                         && s->enabled()
-                        && s->get_index() == _edge_ch_cmb_vec[edge_index]->currentText().toInt())
+                        && s->get_index() == inf.box->currentText().toInt())
                   {
                     view::LogicSignal *logicSig = (view::LogicSignal*)s;
-                    if (logicSig->edges(_view.get_cursor_samples(end), _view.get_cursor_samples(start), rising_edges, falling_edges)) {
+
+                    if (logicSig->edges(_view.get_cursor_samples(end), _view.get_cursor_samples(start),
+                             rising_edges, falling_edges)) 
+                    {
                         QString delta_text = QString::number(rising_edges) + "/" +
                                              QString::number(falling_edges) + "/" +
                                              QString::number(rising_edges + falling_edges);
-                        _edge_r_label_vec[edge_index]->setText(delta_text);
+                        inf.rising_edges_label->setText(delta_text);
                         mValid = true;
                         break;
                     }
@@ -635,9 +630,7 @@ void MeasureDock::update_edge()
         }
 
         if (!mValid)
-            _edge_r_label_vec[edge_index]->setText("-/-/-");
-
-        edge_index++;
+            inf.rising_edges_label->setText("-/-/-");
     }
 }
 
@@ -656,14 +649,14 @@ void MeasureDock::set_cursor_btn_color(QPushButton *btn)
     btn->setStyleSheet(style);
 }
 
-DsComboBox* MeasureDock::create_probe_selector(QWidget *parent)
+QComboBox* MeasureDock::create_probe_selector(QWidget *parent)
 {
     DsComboBox *selector = new DsComboBox(parent);
     update_probe_selector(selector);
     return selector;
 }
 
-void MeasureDock::update_probe_selector(DsComboBox *selector)
+void MeasureDock::update_probe_selector(QComboBox *selector)
 {
     selector->clear(); 
 
@@ -676,25 +669,19 @@ void MeasureDock::update_probe_selector(DsComboBox *selector)
 
 void MeasureDock::del_cursor()
 {
-    int del_index = 0;
+    QToolButton *src = qobject_cast<QToolButton *>(sender());
+    assert(src);
+    
     Cursor* cursor = NULL;
     auto &cursor_list = _view.get_cursorList();
-
-    for (auto i = _cursor_del_btn_vec.begin();
-         i != _cursor_del_btn_vec.end(); i++) 
+    
+    for (auto it = _cursor_opt_list.begin(); it != _cursor_opt_list.end(); it++)
     {
-
-        if ((*i)->isChecked()) {
-            int cur_index = 0;
-            auto ite = cursor_list.begin();
-
-            while (cur_index++ != del_index)
-                ite++;
-            
-            cursor = *ite;
+        if ((*it).del_bt == src)
+        {   
+            cursor = (*it).cursor;
             break;
         }
-        del_index++;
     }
 
     if (cursor)
