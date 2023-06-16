@@ -139,9 +139,6 @@ namespace pv
             connect(_action_repeat, SIGNAL(triggered()), this, SLOT(on_collect_mode()));
             connect(_action_loop, SIGNAL(triggered()), this, SLOT(on_collect_mode()));
             connect(&_sample_rate, SIGNAL(currentIndexChanged(int)), this, SLOT(on_samplerate_sel(int)));
-
-            connect(this, SIGNAL(sig_run_stop_action()), this, SLOT(on_run_stop_action()));
-            connect(this, SIGNAL(sig_instant_stop_action()), this, SLOT(on_instant_stop_action()));
         }
 
         void SamplingBar::changeEvent(QEvent *event)
@@ -805,14 +802,13 @@ namespace pv
         void SamplingBar::on_run_stop()
         {
             _run_stop_button.setEnabled(false);
-            sig_run_stop_action();
+            QTimer::singleShot(10, this, &SamplingBar::on_run_stop_action);
         }
 
         void SamplingBar::on_run_stop_action()
         {
-            if (action_run_stop() == false){
-                _run_stop_button.setEnabled(true);
-            }
+            action_run_stop();
+            _run_stop_button.setEnabled(true);
         }
       
         // start or stop capture
@@ -876,14 +872,13 @@ namespace pv
                 return;
             }
             _instant_button.setEnabled(false);
-            sig_instant_stop_action();
+            QTimer::singleShot(10, this, &SamplingBar::on_instant_stop_action);
         }
 
         void SamplingBar::on_instant_stop_action()
         {
-            if (action_instant_stop() == false){
-                _instant_button.setEnabled(true);
-            }
+            action_instant_stop();
+            _instant_button.setEnabled(true);
         }
 
         bool SamplingBar::action_instant_stop()
@@ -1197,10 +1192,11 @@ namespace pv
             }
 
             if (_session->is_working()){
-                _run_stop_button.setEnabled(_is_run_as_instant ? false : true);
-                _instant_button.setEnabled(_is_run_as_instant ? true : false);
-            }
-            else{
+                if (_is_run_as_instant)
+                    _run_stop_button.setEnabled(false);
+                else
+                    _instant_button.setEnabled(false);
+            } else {
                 _run_stop_button.setEnabled(true);
                 _instant_button.setEnabled(true);                
             }
