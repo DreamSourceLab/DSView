@@ -130,6 +130,8 @@ void DecoderOptionsDlg::load_options_view()
     _end_comboBox->addItem("End"); 
     _start_comboBox->setMinimumContentsLength(7);
     _end_comboBox->setMinimumContentsLength(7);
+    _start_comboBox->setMinimumWidth(30);
+    _end_comboBox->setMinimumWidth(30);
 
     // Add cursor list
     auto view = _trace->get_view();
@@ -166,7 +168,7 @@ void DecoderOptionsDlg::load_options_view()
     _end_comboBox->setCurrentIndex(dex2);
  
     update_decode_range(); // set default sample range
-
+ 
     int h_ex2 = 0;
     bool bLang = AppConfig::Instance().appOptions.transDecoderDlg;
 
@@ -198,11 +200,6 @@ void DecoderOptionsDlg::load_options_view()
                      L_S(STR_PAGE_DLG, S_ID(IDS_DLG_CURSOR_FOR_DECODE_START), "The cursor for decode start time")));
     form->addRow(_end_comboBox, new QLabel(
                      L_S(STR_PAGE_DLG, S_ID(IDS_DLG_CURSOR_FOR_DECODE_END), "The cursor for decode end time")));
-
-    //space 
-    QWidget *space = new QWidget();
-    space->setFixedHeight(5);
-    form->addRow(space);
  
     // Add ButtonBox (OK/Cancel)
     QDialogButtonBox *button_box = new QDialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel,
@@ -212,11 +209,13 @@ void DecoderOptionsDlg::load_options_view()
     confirm_button_box->addWidget(button_box, 0, Qt::AlignRight);
     form->addRow(confirm_button_box);
 
+    this->update_font();
+
      // scroll     
     QSize tsize = dlg->sizeHint();
     int w = tsize.width(); 
     int other_height = 190 + h_ex2; 
-    _contentHeight += 10;
+    _contentHeight += 20;
 
 #ifdef Q_OS_DARWIN
         other_height += 40;
