@@ -35,6 +35,7 @@ SR_PRIV int dsl_secuWrite(const struct sr_dev_inst *sdi, uint16_t cmd, uint16_t 
 SR_PRIV gboolean dsl_isSecuReady(const struct sr_dev_inst *sdi);
 SR_PRIV gboolean dsl_isSecuPass(const struct sr_dev_inst *sdi);
 SR_PRIV uint16_t dsl_secuRead(const struct sr_dev_inst *sdi);
+static unsigned int to_bytes_per_ms(struct DSL_context *devc);
 
 static const int32_t probeOptions[] = {
     SR_CONF_PROBE_COUPLING,
@@ -1057,6 +1058,7 @@ SR_PRIV int dsl_fpga_arm(const struct sr_dev_inst *sdi)
                    (((sdi->mode == ANALOG) || devc->is_loop) << ANALOG_MODE_BIT) +
                    ((devc->filter == SR_FILTER_1T) << FILTER_BIT) +
                    (devc->instant << INSTANT_BIT) +
+                   ((to_bytes_per_ms(devc) < 1024) << SLOW_ACQ_BIT) +
                    ((trigger->trigger_mode == SERIAL_TRIGGER) << STRIG_MODE_BIT) +
                    ((devc->stream) << STREAM_MODE_BIT) +
                    ((devc->test_mode == SR_TEST_LOOPBACK) << LPB_TEST_BIT) +

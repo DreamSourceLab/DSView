@@ -96,6 +96,7 @@
 #define ANALOG_MODE_BIT 7
 #define FILTER_BIT 8
 #define INSTANT_BIT 9
+#define SLOW_ACQ_BIT 10
 #define STRIG_MODE_BIT 11
 #define STREAM_MODE_BIT 12
 #define LPB_TEST_BIT 13
