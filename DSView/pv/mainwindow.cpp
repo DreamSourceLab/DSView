@@ -254,6 +254,7 @@ namespace pv
         AppControl::Instance()->add_font_form(_search_widget);
         AppControl::Instance()->add_font_form(_trigger_widget);
         AppControl::Instance()->add_font_form(_view->get_time_view());
+        AppControl::Instance()->add_font_form(_view);
 
         // event
         connect(&_event, SIGNAL(session_error()), this, SLOT(on_session_error()));

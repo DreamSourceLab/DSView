@@ -42,6 +42,7 @@
 #include "signal.h"
 #include "viewstatus.h"
 #include "../dsvdef.h" 
+#include "../interface/icallbacks.h"
 
 class DeviceAgent;
 
@@ -68,7 +69,7 @@ class Viewport;
 class LissajousFigure;
 
 //created by MainWindow
-class View : public QScrollArea {
+class View : public QScrollArea, public IFontForm{
 	Q_OBJECT
 
 private:
@@ -318,6 +319,9 @@ public:
     inline Viewport* get_time_view(){
         return _time_viewport;
     }
+
+    //IFontForm
+    void update_font();
 
 signals:
 	void hover_point_changed();

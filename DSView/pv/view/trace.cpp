@@ -31,6 +31,8 @@
 #include "view.h"
 #include "../sigsession.h"
 #include "../dsvdef.h"
+#include "../config/appconfig.h"
+#include "../appcontrol.h"
 
 
 namespace pv {
@@ -93,7 +95,9 @@ Trace::Trace(const Trace &t) :
 
 int Trace::get_name_width()
 {
-    QFont font = QApplication::font();
+    QFont font;
+    float fSize = AppConfig::Instance().appOptions.fontSize;
+    font.setPointSizeF(fSize <= 10 ? fSize : 10);
     QFontMetrics fm(font);
 
     return fm.boundingRect(get_name()).width();
@@ -362,8 +366,8 @@ int Trace::rows_size()
 QRectF Trace::get_rect(const char *s, int y, int right)
 {
     const QSizeF color_size(get_leftWidth() - Margin, SquareWidth);
+   // const QSizeF name_size(right - get_leftWidth() - get_rightWidth(), SquareWidth);
     const QSizeF name_size(right - get_leftWidth() - get_rightWidth(), SquareWidth);
-    //const QSizeF label_size(_text_size.width() + Margin, SquareWidth);
     const QSizeF label_size(SquareWidth, SquareWidth);
 
     if (!strcmp(s, "name"))
