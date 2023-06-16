@@ -439,12 +439,10 @@ class Decoder(srd.Decoder):
             self.last_databit = self.dlc_start + 3 + (dlc2len(self.dlc) * 8)
             #if rtr == remote then dlc = 0
             if self.dlc != 0 and self.rtr_type == 'remote':
-                self.putb([16, ['Data length code (DLC) != 0 is not allowed']])
                 self.dlc = 0
                 self.last_databit = self.dlc_start + 3 + (dlc2len(self.dlc) * 8)
             #if dlc > 8 then dlc = 8
             elif self.dlc > 8 and not self.fd:
-                self.putb([16, ['Data length code (DLC) > 8 is not allowed']])
                 self.dlc = 8
                 self.last_databit = self.dlc_start + 3 + (dlc2len(self.dlc) * 8)
 
