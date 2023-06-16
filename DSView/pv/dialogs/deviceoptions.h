@@ -128,7 +128,6 @@ private slots:
     
 private: 
     std::vector<QCheckBox *> _probes_checkBox_list;
-    std::vector<QLayout *> _sub_lays;
 
     QTimer      _mode_check_timer;
     int         _opt_mode;  

@@ -377,6 +377,11 @@ void Header::changeName(QMouseEvent *event)
         && event->button() == Qt::LeftButton) 
     {
         header_resize();
+        QFont font = this->font();
+        float fsize = AppConfig::Instance().appOptions.fontSize;
+        font.setPointSizeF(fsize <= 10 ? fsize: 10);
+        nameEdit->setFont(font);
+
         nameEdit->setText(_context_trace->get_name());
         nameEdit->selectAll();
         nameEdit->setFocus();

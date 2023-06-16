@@ -136,7 +136,7 @@ void ProtocolItemLayer::LoadFormatSelect(bool bSingle)
         _format_combox->addItem("oct");
         _format_combox->addItem("bin");
     }
-     _format_combox->addItem("ascii");
+    _format_combox->addItem("ascii");
     
     _format_combox->setCurrentIndex(0);
     m_bSetting = false;
@@ -149,14 +149,14 @@ void ProtocolItemLayer::LoadFormatSelect(bool bSingle)
      m_bSetting = true;
      int dex = DecoderDataFormat::Parse(format);
      if (dex < (int)_format_combox->count()){
-         _format_combox->setCurrentIndex(dex);
+        _format_combox->setCurrentIndex(dex);
      }
      m_bSetting = false;
  }
 
  void ProtocolItemLayer::enable_format(bool flag)
  {  
-     _format_combox->setDisabled(!flag);
+    _format_combox->setDisabled(!flag);
  }
 
  void ProtocolItemLayer::set_label_name(QString name)
@@ -169,6 +169,7 @@ void ProtocolItemLayer::LoadFormatSelect(bool bSingle)
     QFont font = _protocol_label->font();
     font.setPointSizeF(AppConfig::Instance().appOptions.fontSize);
     _protocol_label->setFont(font);
+    _format_combox->setFont(font);
  }
 
 } //dock

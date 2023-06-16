@@ -52,22 +52,26 @@ ChannelLabel::ChannelLabel(IChannelCheck *check, QWidget *parent, int chanIndex)
     _checked = check;
     _index = chanIndex;
 
-    this->setFixedSize(30, 40);
-   
-    QVBoxLayout *lay = new QVBoxLayout();
+    QGridLayout *lay = new QGridLayout();
     lay->setContentsMargins(0,0,0,0);
     lay->setSpacing(0);
     this->setLayout(lay);
-    QHBoxLayout *h1 = new QHBoxLayout();
-    QHBoxLayout *h2 = new QHBoxLayout();
-    h2->setAlignment(Qt::AlignCenter);
-    lay->addLayout(h1);
-    lay->addLayout(h2);
-    QLabel *lab = new QLabel(QString::number(chanIndex));
-    lab->setAlignment(Qt::AlignCenter);
-    h1->addWidget(lab);
+    QLabel *lb = new QLabel(QString::number(chanIndex));
+    lb->setAlignment(Qt::AlignCenter);
     _box = new QCheckBox();
-    h2->addWidget(_box);
+    _box->setFixedSize(20,20);
+    lay->addWidget(lb, 0, 0, Qt::AlignCenter);
+    lay->addWidget(_box, 1, 0, Qt::AlignCenter);
+
+    QFont font = this->font();
+    font.setPointSizeF(AppConfig::Instance().appOptions.fontSize);
+    lb->setFont(font);
+
+    int fh = lb->fontMetrics().height();
+    int w = lb->fontMetrics().width(lb->text()) + 5;
+    w = w < 30 ? 30 : w;
+    int h = fh + _box->height() + 2;
+    setFixedSize(w, h);
 
     connect(_box, SIGNAL(released()), this, SLOT(on_checked()));
 }
@@ -271,7 +275,6 @@ void DeviceOptions::logic_probes(QVBoxLayout &layout)
 
     int row1 = 0;
     int row2 = 0;
-    int index = 0;
     int vld_ch_num = 0;
     int cur_ch_num = 0;
     int contentHeight = 0;
@@ -317,36 +320,44 @@ void DeviceOptions::logic_probes(QVBoxLayout &layout)
     _device_agent->get_config_int16(SR_CONF_VLD_CH_NUM, vld_ch_num);
 
     // channels
-    QHBoxLayout *line_lay = NULL;
+    QWidget *channel_pannel = new QWidget();
+    QGridLayout *channel_grid = new QGridLayout();
+    channel_grid->setContentsMargins(0,0,0,0);
+    channel_grid->setSpacing(0);
+    channel_pannel->setLayout(channel_grid);
+
+    int channel_row = 0;
+    int channel_column = 0;
+    int channel_line_height = 0;
+    row2++;
 
     for (const GSList *l = _device_agent->get_channels(); l; l = l->next) {
 		sr_channel *const probe = (sr_channel*)l->data;
-		assert(probe);
-
+		 
         if (probe->enabled)
             cur_ch_num++;
 
         if (cur_ch_num > vld_ch_num)
             probe->enabled = false;
 
-        if (line_lay == NULL){
-            line_lay = new QHBoxLayout();
-            layout.addLayout(line_lay);
-            _sub_lays.push_back(line_lay);
-            row2++;                
-        }
+        ChannelLabel *ch_item = new ChannelLabel(this, NULL, probe->index);
+        channel_grid->addWidget(ch_item, channel_row, channel_column++, Qt::AlignCenter);
+        _probes_checkBox_list.push_back(ch_item->getCheckBox());
+        ch_item->getCheckBox()->setCheckState(probe->enabled ? Qt::Checked : Qt::Unchecked);
+        channel_line_height = ch_item->height();
 
-        ChannelLabel *lab = new ChannelLabel(this, NULL, probe->index);
-        line_lay->addWidget(lab);      
-        _probes_checkBox_list.push_back(lab->getCheckBox());
-        lab->getCheckBox()->setCheckState(probe->enabled ? Qt::Checked : Qt::Unchecked); 
 
-        index++;
-
-        if (index % 8 == 0){
-            line_lay = NULL;
-        } 
+         if (channel_column == 8){
+            channel_column = 0;
+            channel_row++;
+            
+            if (l->next != NULL){
+                row2++;
+            }
+         }
 	}
+
+    layout.addWidget(channel_pannel);
 
     // space
     QWidget *space = new QWidget();
@@ -355,9 +366,8 @@ void DeviceOptions::logic_probes(QVBoxLayout &layout)
     contentHeight += 10;
  
     // buttons
-     line_lay = new QHBoxLayout();
+    QHBoxLayout *line_lay = new QHBoxLayout();
     layout.addLayout(line_lay);
-    _sub_lays.push_back(line_lay);
     line_lay->setSpacing(10);
 
     QPushButton *enable_all_probes = new QPushButton(L_S(STR_PAGE_DLG, S_ID(IDS_DLG_ENABLE_ALL), "Enable All"));
@@ -365,9 +375,10 @@ void DeviceOptions::logic_probes(QVBoxLayout &layout)
     enable_all_probes->setMaximumHeight(30);
     disable_all_probes->setMaximumHeight(30);
 
-    this->update_font();
+    this->update_font(); 
+
     contentHeight += enable_all_probes->sizeHint().height();
-    contentHeight += row2 * 40;
+    contentHeight += channel_line_height * row2 + 50;
 
     connect(enable_all_probes, SIGNAL(clicked()),
             this, SLOT(enable_all_probes()));
