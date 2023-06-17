@@ -260,9 +260,14 @@ QJsonArray ViewStatus::get_session()
 
 void ViewStatus::load_session(QJsonArray measure_array)
 {
-    if (_session->get_device()->get_work_mode() != DSO ||
-        measure_array.empty()){
+    if (_session->get_device()->get_work_mode() != DSO){
         return;
+    }
+
+    for(int i = 0; i < (int)_mrects.size(); i++) 
+    {
+        std::get<1>(_mrects[i]) = -1;
+        std::get<2>(_mrects[i]) = DSO_MS_BEGIN;
     }
 
     for (const QJsonValue &measure_value : measure_array) {
