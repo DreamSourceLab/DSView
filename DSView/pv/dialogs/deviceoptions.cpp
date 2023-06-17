@@ -128,10 +128,13 @@ DeviceOptions::DeviceOptions(QWidget *parent) :
     _container_lay->setSpacing(5);
     _container_panel->setLayout(_container_lay);
     scroll_lay->addWidget(_container_panel);
-    //_container_panel->setStyleSheet("background-color:red");
-    
+
+    QFont font = this->font();
+    font.setPointSizeF(AppConfig::Instance().appOptions.fontSize);
+   
     // mode group box
     QGroupBox *props_box = new QGroupBox(L_S(STR_PAGE_DLG, S_ID(IDS_DLG_MODE), "Mode"), this);
+    props_box->setFont(font);
     QLayout *props_lay = get_property_form(props_box);
     props_box->setLayout(props_lay);
     _container_lay->addWidget(props_box);
@@ -238,6 +241,9 @@ QLayout * DeviceOptions::get_property_form(QWidget * parent)
     layout->setVerticalSpacing(2);
     const auto &properties =_device_options_binding.properties();
 
+    QFont font = this->font();
+    font.setPointSizeF(AppConfig::Instance().appOptions.fontSize);
+
     int i = 0;
     for(auto p : properties)
 	{ 
@@ -249,18 +255,25 @@ QLayout * DeviceOptions::get_property_form(QWidget * parent)
             const char *lang_str = LangResource::Instance()->get_lang_text(STR_PAGE_DSL, bytes.data(), bytes.data());
             lable_text = QString(lang_str);
         }
-   
-        layout->addWidget(new QLabel(lable_text, parent), i, 0);
+
+        QLabel *lb = new QLabel(lable_text, parent);
+        lb->setFont(font);
+        layout->addWidget(lb, i, 0);
         
-        if (label ==  QString("Operation Mode"))
-            layout->addWidget(p->get_widget(parent, true), i, 1);
-        else
-            layout->addWidget(p->get_widget(parent), i, 1);
+        if (label ==  QString("Operation Mode")){
+            QWidget *wid = p->get_widget(parent, true);
+            wid->setFont(font);
+            layout->addWidget(wid, i, 1);
+        }
+        else{
+            QWidget *wid = p->get_widget(parent);
+            wid->setFont(font);
+            layout->addWidget(wid, i, 1);
+        }
         layout->setRowMinimumHeight(i, 22);
         i++;
 	}
 
-    this->update_font();
     _groupHeight1 = parent->sizeHint().height(); 
     parent->setFixedHeight(_groupHeight1); 
 
@@ -280,6 +293,9 @@ void DeviceOptions::logic_probes(QVBoxLayout &layout)
     int contentHeight = 0;
  
     _probes_checkBox_list.clear();
+
+    QFont font = this->font();
+    font.setPointSizeF(AppConfig::Instance().appOptions.fontSize);
   
     //channel count checked
     if (_device_agent->get_work_mode()== LOGIC) {
@@ -297,8 +313,9 @@ void DeviceOptions::logic_probes(QVBoxLayout &layout)
             while (plist != NULL && plist->id >= 0)
             {
                 row1++;
-                QString text = LangResource::Instance()->get_lang_text(STR_PAGE_DSL, plist->name, plist->name);
-                QRadioButton *mode_button = new QRadioButton(text);
+                QString mode_bt_text = LangResource::Instance()->get_lang_text(STR_PAGE_DSL, plist->name, plist->name);
+                QRadioButton *mode_button = new QRadioButton(mode_bt_text);
+                mode_button->setFont(font);
                 ChannelModePair mode_index;
                 mode_index.key = mode_button;
                 mode_index.value = plist->id;
@@ -346,7 +363,6 @@ void DeviceOptions::logic_probes(QVBoxLayout &layout)
         ch_item->getCheckBox()->setCheckState(probe->enabled ? Qt::Checked : Qt::Unchecked);
         channel_line_height = ch_item->height();
 
-
          if (channel_column == 8){
             channel_column = 0;
             channel_row++;
@@ -374,6 +390,12 @@ void DeviceOptions::logic_probes(QVBoxLayout &layout)
     QPushButton *disable_all_probes = new QPushButton(L_S(STR_PAGE_DLG, S_ID(IDS_DLG_DISABLE_ALL), "Disable All"));
     enable_all_probes->setMaximumHeight(30);
     disable_all_probes->setMaximumHeight(30);
+    enable_all_probes->setFont(font);
+    disable_all_probes->setFont(font);
+
+    int bt_width = enable_all_probes->fontMetrics().width(enable_all_probes->text()) + 20;
+    enable_all_probes->setMaximumWidth(bt_width);
+    disable_all_probes->setMaximumWidth(bt_width);
 
     this->update_font(); 
 
@@ -639,6 +661,9 @@ void DeviceOptions::analog_probes(QGridLayout &layout)
     QTabWidget *tabWidget = new QTabWidget();
     tabWidget->setTabPosition(QTabWidget::North);
     tabWidget->setUsesScrollButtons(false);
+
+    QFont font = this->font();
+    font.setPointSizeF(AppConfig::Instance().appOptions.fontSize);
     
     for (const GSList *l = _device_agent->get_channels(); l; l = l->next) {
         sr_channel *const probe = (sr_channel*)l->data;
@@ -658,6 +683,7 @@ void DeviceOptions::analog_probes(QGridLayout &layout)
         _probes_checkBox_list.push_back(probe_checkBox);
 
         QLabel *en_label = new QLabel(L_S(STR_PAGE_DLG, S_ID(IDS_DLG_ENABLE), "Enable: "), this);
+        en_label->setFont(font);
         en_label->setProperty("Enable", true);
         probe_layout->addWidget(en_label, 0, 0, 1, 1);
         probe_layout->addWidget(probe_checkBox, 0, 1, 1, 3);
@@ -669,10 +695,13 @@ void DeviceOptions::analog_probes(QGridLayout &layout)
         for(auto p : properties)
         {
             const QString label = p->labeled_widget() ? QString() : p->label();
-            probe_layout->addWidget(new QLabel(label, probe_widget), i, 0, 1, 1);
+            QLabel *lb = new QLabel(label, probe_widget);
+            lb->setFont(font);
+            probe_layout->addWidget(lb, i, 0, 1, 1);
 
             QWidget * pow = p->get_widget(probe_widget);
             pow->setEnabled(probe_checkBox->isChecked());
+            pow->setFont(font);
 
             if (p->name().contains("Map Default")) {
                 pow->setProperty("index", probe->index);
@@ -736,12 +765,17 @@ QString DeviceOptions::dynamic_widget(QLayout *lay)
             QGridLayout *grid = dynamic_cast<QGridLayout*>(lay);
             assert(grid);
 
+            QFont font = this->font();
+            font.setPointSizeF(AppConfig::Instance().appOptions.fontSize);
+
             if (have_zero) {
                 auto config_button = new QPushButton(L_S(STR_PAGE_DLG, S_ID(IDS_DLG_AUTO_CALIBRATION), "Auto Calibration"), this);
+                config_button->setFont(font);
                 grid->addWidget(config_button, 0, 0, 1, 1);
                 connect(config_button, SIGNAL(clicked()), this, SLOT(zero_adj()));
 
                 auto cali_button = new QPushButton(L_S(STR_PAGE_DLG, S_ID(IDS_DLG_MANUAL_CALIBRATION), "Manual Calibration"), this);
+                cali_button->setFont(font);
                 grid->addWidget(cali_button, 1, 0, 1, 1);
                 connect(cali_button, SIGNAL(clicked()), this, SLOT(on_calibration()));
 
@@ -772,9 +806,13 @@ void DeviceOptions::build_dynamic_panel()
         _dynamic_panel = NULL;
     }
 
+    QFont font = this->font();
+    font.setPointSizeF(AppConfig::Instance().appOptions.fontSize);
+
     if (_dynamic_panel == NULL)
     {  
         _dynamic_panel = new QGroupBox("group", _dynamic_panel);
+        _dynamic_panel->setFont(font);
         _container_lay->addWidget(_dynamic_panel);
 
         if (_device_agent->get_work_mode() == LOGIC)
@@ -784,7 +822,8 @@ void DeviceOptions::build_dynamic_panel()
     }
  
     QString title = dynamic_widget(_dynamic_panel->layout());
-    QGroupBox *box = dynamic_cast<QGroupBox*>(_dynamic_panel);    
+    QGroupBox *box = dynamic_cast<QGroupBox*>(_dynamic_panel);
+    box->setFont(font);
     box->setTitle(title);
 
     if (title == ""){ 
