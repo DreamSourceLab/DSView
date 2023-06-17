@@ -26,6 +26,8 @@
 #include <minizip/unzip.h>
 
 #define DEFAULT_LOGIC_FILE "protocol"
+#define DEFAULT_ANALOG_FILE "sine"
+#define DEFAULT_DSO_FILE "sine"
 
 #define SEC 1
 #define LOGIC_POST_DATA_PER_SECOND(n) ((n)/(8))

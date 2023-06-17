@@ -924,26 +924,16 @@ static int config_set(int id, GVariant *data, struct sr_dev_inst *sdi,
         break;
     case SR_CONF_DEVICE_MODE:
         sdi->mode = g_variant_get_int16(data);
-        switch (sdi->mode)
-        {
-            case LOGIC:
-                nv = get_pattern_mode_index_by_string(LOGIC, DEFAULT_LOGIC_FILE);
-                if (nv != -1)
-                    vdev->sample_generator = nv;
-                else
-                    vdev->sample_generator = PATTERN_RANDOM;
 
-                reset_dsl_path(sdi,vdev->sample_generator);
-                break;
-            case DSO:
-                reset_dsl_path(sdi, PATTERN_RANDOM);
-                vdev->sample_generator = PATTERN_RANDOM;
-                break;
-            case ANALOG:
-                reset_dsl_path(sdi, PATTERN_RANDOM);
-                vdev->sample_generator = PATTERN_RANDOM;
-                break;
-        }
+        nv = get_pattern_mode_index_by_string(sdi->mode, (sdi->mode == LOGIC ? DEFAULT_LOGIC_FILE :
+                                                          sdi->mode == DSO ? DEFAULT_DSO_FILE : DEFAULT_ANALOG_FILE));
+        if (nv != -1)
+            vdev->sample_generator = nv;
+        else
+            vdev->sample_generator = PATTERN_RANDOM;
+
+        reset_dsl_path(sdi,vdev->sample_generator);
+
         load_virtual_device_session(sdi);
         break;
     case SR_CONF_PATTERN_MODE:
