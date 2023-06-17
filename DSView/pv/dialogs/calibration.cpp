@@ -117,7 +117,7 @@ void Calibration::changeEvent(QEvent *event)
 void Calibration::retranslateUi()
 {
     _save_btn->setText(L_S(STR_PAGE_DLG, S_ID(IDS_DLG_SAVE), "Save"));
-    _abort_btn->setText(L_S(STR_PAGE_DLG, S_ID(IDS_DLG_ABOUT), "About"));
+    _abort_btn->setText(L_S(STR_PAGE_DLG, S_ID(IDS_DLG_ABORT), "Abort"));
     _reset_btn->setText(L_S(STR_PAGE_DLG, S_ID(IDS_DLG_RESET), "Reset"));
     _exit_btn->setText(L_S(STR_PAGE_DLG, S_ID(IDS_DLG_EXIT), "Exit"));
 

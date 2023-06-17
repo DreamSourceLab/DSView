@@ -718,5 +718,9 @@
     {
         "id": "IDS_DLG_GROUP_UI",
         "text": "UI"
+    },
+    {
+        "id": "IDS_DLG_ABORT",
+        "text": "Abort"
     }
 ]
