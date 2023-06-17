@@ -216,9 +216,7 @@ namespace pv
         assert(_callback);
 
         ds_device_handle old_dev = _device_agent.handle();
-
-        set_collect_mode(COLLECT_SINGLE);
-
+ 
         _callback->trigger_message(DSV_MSG_CURRENT_DEVICE_CHANGE_PREV);
 
         // Release the old device.
@@ -233,6 +231,8 @@ namespace pv
         }
 
         _device_agent.update();
+
+        set_collect_mode(COLLECT_SINGLE);
 
         if (_device_agent.is_file()){
             std::string dev_name = pv::path::ToUnicodePath(_device_agent.name());

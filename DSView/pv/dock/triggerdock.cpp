@@ -186,16 +186,11 @@ void TriggerDock::retranslateUi()
 }
 
 void TriggerDock::reStyle()
-{
-     
+{     
 }
 
 void TriggerDock::paintEvent(QPaintEvent *)
 {
-//    QStyleOption opt;
-//    opt.init(this);
-//    QPainter p(this);
-//    style()->drawPrimitive(QStyle::PE_Widget, &opt, &p, this);
 }
 
 void TriggerDock::simple_trigger()
@@ -310,6 +305,8 @@ void TriggerDock::device_updated()
             retranslateUi();
         }
     }
+
+    this->setEnabled(_session->is_loop_mode() == false);
 }
 
 bool TriggerDock::commit_trigger()
@@ -581,7 +578,6 @@ void TriggerDock::setup_adv_tab()
 
     _stage_tabWidget = new QTabWidget(_widget);
     _stage_tabWidget->setTabPosition(QTabWidget::East);
-    //_stage_tabWidget->setDisabled(true);
     _stage_tabWidget->setUsesScrollButtons(false);
 
     const QString mask = "N N N N N N N N N N N N N N N N";

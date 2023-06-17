@@ -223,21 +223,31 @@ void LogicSignal::paint_type_options(QPainter &p, int right, const QPoint pt, QC
     const QRectF edgeTrig_rect = get_rect(EDGTRIG, y, right);
 
     p.setPen(Qt::NoPen);
-    p.setBrush(posTrig_rect.contains(pt) ? View::Blue.lighter() :
-               (_trig == POSTRIG) ? View::Blue : Qt::transparent);
-    p.drawRect(posTrig_rect);
-    p.setBrush(higTrig_rect.contains(pt) ? View::Blue.lighter() :
-               (_trig == HIGTRIG) ? View::Blue : Qt::transparent);
-    p.drawRect(higTrig_rect);
-    p.setBrush(negTrig_rect.contains(pt) ? View::Blue.lighter() :
-               (_trig == NEGTRIG) ? View::Blue : Qt::transparent);
-    p.drawRect(negTrig_rect);
-    p.setBrush(lowTrig_rect.contains(pt) ? View::Blue.lighter() :
-               (_trig == LOWTRIG) ? View::Blue : Qt::transparent);
-    p.drawRect(lowTrig_rect);
-    p.setBrush(edgeTrig_rect.contains(pt) ? View::Blue.lighter() :
-               (_trig == EDGTRIG) ? View::Blue : Qt::transparent);
-    p.drawRect(edgeTrig_rect);
+
+    if (true)
+    {   
+        QColor color = View::Blue;
+
+        if (session->is_loop_mode()){
+            color = QColor(0x70, 0x70, 0x70,  255);
+        }
+
+        p.setBrush(posTrig_rect.contains(pt) ? color.lighter() :
+                (_trig == POSTRIG) ? color : Qt::transparent);
+        p.drawRect(posTrig_rect);
+        p.setBrush(higTrig_rect.contains(pt) ? color.lighter() :
+                (_trig == HIGTRIG) ? color : Qt::transparent);
+        p.drawRect(higTrig_rect);
+        p.setBrush(negTrig_rect.contains(pt) ? color.lighter() :
+                (_trig == NEGTRIG) ? color : Qt::transparent);
+        p.drawRect(negTrig_rect);
+        p.setBrush(lowTrig_rect.contains(pt) ? color.lighter() :
+                (_trig == LOWTRIG) ? color : Qt::transparent);
+        p.drawRect(lowTrig_rect);
+        p.setBrush(edgeTrig_rect.contains(pt) ? color.lighter() :
+                (_trig == EDGTRIG) ? color : Qt::transparent);
+        p.drawRect(edgeTrig_rect);
+    }   
 
     p.setPen(QPen(fore, 1, Qt::DashLine));
     p.setBrush(Qt::transparent);

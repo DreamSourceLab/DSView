@@ -2039,6 +2039,10 @@ namespace pv
             if(_device_agent->is_demo()){
                 _pattern_mode = _device_agent->get_demo_operation_mode();
             }
+            if (msg == DSV_MSG_COLLECT_MODE_CHANGED){
+                _trigger_widget->device_updated();
+                _view->update();
+            }           
             break;  
 
         case DSV_MSG_END_DEVICE_OPTIONS:

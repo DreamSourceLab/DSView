@@ -202,6 +202,7 @@ void Trace::paint_label(QPainter &p, int right, const QPoint pt, QColor fore)
     p.setPen(Qt::transparent);
     p.setBrush(enabled() ? (_colour.isValid() ? _colour : fore) : foreBack);
     p.drawRect(color_rect);
+    
     if (_type == SR_CHANNEL_DSO ||
         _type == SR_CHANNEL_MATH) {
         p.setPen(enabled() ?  Qt::white: foreBack);
