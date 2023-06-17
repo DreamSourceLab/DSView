@@ -769,8 +769,13 @@ void StoreSession::export_proc(data::Snapshot *snapshot)
     output.module = (sr_output_module*) _outModule;
     output.sdi = _session->get_device()->inst();
     output.param = NULL;
-    if(_outModule->init)
-        _outModule->init(&output, params);
+
+    if(_outModule->init){
+       if(_outModule->init(&output, params) != SR_OK){
+        dsv_err("Failed to init export module.");
+        return;
+       }
+    }
 
     QFile file(_file_name);
     file.open(QIODevice::WriteOnly | QIODevice::Text);
@@ -836,7 +841,7 @@ void StoreSession::export_proc(data::Snapshot *snapshot)
     g_slist_free(meta.config);
 
     if (channel_type == SR_CHANNEL_LOGIC) {
-        _unit_count = logic_snapshot->get_sample_count();
+        _unit_count = logic_snapshot->get_ring_sample_count();
         int blk_num = logic_snapshot->get_block_num();
         bool sample;
         std::vector<uint8_t *> buf_vec;

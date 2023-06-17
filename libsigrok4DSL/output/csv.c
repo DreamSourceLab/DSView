@@ -25,6 +25,10 @@
 #include <glib.h>
 #include "../config.h" /* Needed for PACKAGE_STRING and others. */
 #include "../log.h"
+#include <stdio.h>
+
+#undef LOG_PREFIX
+#define LOG_PREFIX "csv: "
   
 struct context {
 	unsigned int num_enabled_channels;
@@ -60,7 +64,7 @@ struct context {
 
 static int init(struct sr_output *o, GHashTable *options)
 {
-	struct context *ctx;
+	struct context *ctx = NULL;
 	struct sr_channel *ch;
 	GSList *l;
 	int i;
@@ -74,6 +78,7 @@ static int init(struct sr_output *o, GHashTable *options)
         sr_err("%s,ERROR:failed to alloc memory.", __func__);
         return SR_ERR;
     }
+    memset(ctx, 0, sizeof(struct context));
 
 	o->priv = ctx;
 	ctx->separator = ',';
@@ -90,6 +95,7 @@ static int init(struct sr_output *o, GHashTable *options)
 			continue;
 		ctx->num_enabled_channels++;
 	}
+
 	ctx->channel_index = malloc(sizeof(int) * ctx->num_enabled_channels);
     ctx->channel_unit = malloc(sizeof(int) * ctx->num_enabled_channels);
     ctx->channel_scale = malloc(sizeof(float) * ctx->num_enabled_channels);

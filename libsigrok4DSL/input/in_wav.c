@@ -25,6 +25,7 @@
 #include <fcntl.h>
 #include <string.h>
 #include "../log.h"
+#include <stdlib.h>
 
 #undef LOG_PREFIX 
 #define LOG_PREFIX "input/wav: "
@@ -99,6 +100,7 @@ static int init(struct sr_input *in, const char *filename)
 		sr_err("%s,ERROR:failed to alloc memory.", __func__);
 		return SR_ERR_MALLOC;
 	}
+    memset(ctx, 0, sizeof(struct context));
 
 	/* Create a virtual device. */
 	in->sdi = sr_dev_inst_new(LOGIC, SR_ST_ACTIVE, NULL, NULL, NULL);

@@ -29,6 +29,10 @@
 #include <assert.h>
 #include "../log.h"
 #include "../version.h"
+#include <stdio.h>
+
+#undef LOG_PREFIX
+#define LOG_PREFIX "srzip: "
 
 struct out_context { 
 	uint64_t 	samplerate;
@@ -49,6 +53,7 @@ static int init(struct sr_output *o, GHashTable *options)
 		sr_err("%s,ERROR:failed to alloc memory.", __func__);
 		return SR_ERR;
 	}
+    memset(outc, 0, sizeof(struct out_context));
 
 	o->priv = outc;
 	outc->zipArchive = NULL;

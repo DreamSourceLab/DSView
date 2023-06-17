@@ -26,6 +26,10 @@
 #include <glib.h>
 #include "../config.h" /* Needed for PACKAGE_STRING and others. */
 #include "../log.h"
+#include <stdio.h>
+
+#undef LOG_PREFIX
+#define LOG_PREFIX "gnuplot: "
 
 struct context {
 	unsigned int num_enabled_channels;
@@ -61,6 +65,7 @@ static int init(struct sr_output *o, GHashTable *options)
 		sr_err("%s,ERROR:failed to alloc memory.", __func__);
 		return SR_ERR;
 	}
+    memset(ctx, 0, sizeof(struct context));
 
 	o->priv = ctx;
 	ctx->num_enabled_channels = 0;

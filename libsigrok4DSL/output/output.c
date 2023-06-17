@@ -21,7 +21,11 @@
 #include "../libsigrok-internal.h"
 #include <string.h>
 #include "../log.h"
+#include <stdio.h>
  
+
+#undef LOG_PREFIX
+#define LOG_PREFIX "output "
 
 /**
  * @file
@@ -262,6 +266,7 @@ SR_API const struct sr_output *sr_output_new(const struct sr_output_module *omod
 		sr_err("%s,ERROR:failed to alloc memory.", __func__);
 		return SR_ERR;
 	}
+    memset(op, 0, sizeof(struct sr_output));
 
 	op->module = omod;
 	op->sdi = sdi;

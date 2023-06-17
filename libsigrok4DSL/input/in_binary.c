@@ -25,6 +25,7 @@
 #include <unistd.h>
 #include <sys/time.h>
 #include "../log.h"
+#include <stdlib.h>
 
 /* Message logging helpers with subsystem-specific prefix string. */
 
@@ -60,6 +61,7 @@ static int init(struct sr_input *in, const char *filename)
 		sr_err("Input format context malloc failed.");
 		return SR_ERR_MALLOC;
 	}
+    memset(ctx, 0, sizeof(struct context));
 
 	num_probes = DEFAULT_NUM_PROBES;
 	ctx->samplerate = 0;
