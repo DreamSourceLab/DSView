@@ -124,11 +124,8 @@ static int vdev_init(struct sr_dev_inst *sdi)
     vdev->samplerates_min_index = 0;
     vdev->samplerates_max_index = 0;
 
-    vdev->logic_buf = NULL;
-    vdev->logic_buf_len = 0;
-    vdev->analog_buf = NULL;
-    vdev->logic_buf = NULL;
-    vdev->analog_buf_len = 0;
+    vdev->data_buf = NULL;
+    vdev->data_buf_len = 0;
     vdev->analog_read_pos = 0;
 
     vdev->cur_block = 0;
@@ -166,21 +163,6 @@ static int vdev_init(struct sr_dev_inst *sdi)
 
     vdev->is_loop = FALSE;
     vdev->unit_bits = (sdi->mode == LOGIC) ? 1 : 8;
-
-    vdev->logic_buf = malloc(LOGIC_BUF_LEN);
-    if(vdev->logic_buf == NULL)
-    {
-        sr_err("%s: vdev->logic_buf malloc failed", __func__);
-        return SR_ERR_MALLOC;  
-    }
-    vdev->logic_buf_len = LOGIC_BUF_LEN;
-
-    vdev->dso_buf = malloc(DSO_PACKET_LEN);
-    if(vdev->dso_buf == NULL)
-    {
-        sr_err("%s: vdev->dso_buf malloc failed", __func__);
-        return SR_ERR_MALLOC;  
-    }
     
     return SR_OK;
 }
@@ -332,24 +314,24 @@ static void logic_adjust_samplerate(struct session_vdev * vdev)
 
 static int init_analog_random_data(struct session_vdev * vdev)
 {
-    safe_free(vdev->analog_buf);
+    safe_free(vdev->data_buf);
 
-    vdev->analog_buf = malloc(DSO_BUF_LEN);
-    if (vdev->analog_buf == NULL)
+    vdev->data_buf = malloc(DSO_BUF_LEN);
+    if (vdev->data_buf == NULL)
     {
-        sr_err("%s: vdev->analog_buf malloc failed", __func__);
+        sr_err("%s: vdev->data_buf malloc failed", __func__);
         return SR_ERR_MALLOC;
     }
 
     for(int i = 0;i < DSO_BUF_LEN ;i++)
     {
         if(i % 2 == 0)
-            *(uint8_t*)(vdev->analog_buf + i) = ANALOG_RANDOM_DATA;
+            *(uint8_t*)(vdev->data_buf + i) = ANALOG_RANDOM_DATA;
         else
-            *(uint8_t*)(vdev->analog_buf + i) = *(uint8_t*)(vdev->analog_buf + i -1);
+            *(uint8_t*)(vdev->data_buf + i) = *(uint8_t*)(vdev->data_buf + i -1);
     }
 
-    vdev->analog_buf_len = DSO_BUF_LEN;
+    vdev->data_buf_len = DSO_BUF_LEN;
     return SR_OK;
 }
 
@@ -555,14 +537,16 @@ static void adjust_samplerate(struct sr_dev_inst *sdi)
 
 }
 
-static int init_random_data(struct session_vdev * vdev,struct sr_dev_inst *sdi)
+static int init_random_data(struct session_vdev *vdev,struct sr_dev_inst *sdi)
 {
     int cur_probe = 0;
     int probe_count[LOGIC_MAX_PROBE_NUM] = {0};
     uint8_t probe_status[LOGIC_MAX_PROBE_NUM] = {LOGIC_HIGH_LEVEL};
 
+    assert(vdev->data_buf);
+
     memset(probe_status,LOGIC_HIGH_LEVEL,16);
-    memset(vdev->logic_buf,0,LOGIC_BUF_LEN);
+    memset(vdev->data_buf,0,LOGIC_BUF_LEN);
 
     srand((unsigned)time(NULL));
 
@@ -570,7 +554,7 @@ static int init_random_data(struct session_vdev * vdev,struct sr_dev_inst *sdi)
         probe_count[i] = rand()%SR_KB(1);
     }
 
-    for(int i = 0 ; i < vdev->logic_buf_len ;i++)
+    for(int i = 0 ; i < vdev->data_buf_len ;i++)
     {
         if(i % 8 == 0 && i != 0)
         {
@@ -581,7 +565,7 @@ static int init_random_data(struct session_vdev * vdev,struct sr_dev_inst *sdi)
 
         if(probe_count[cur_probe]> 0)
         {
-            memset(vdev->logic_buf+i,probe_status[cur_probe],1);
+            memset(vdev->data_buf+i,probe_status[cur_probe],1);
             probe_count[cur_probe] -= 1;
         }
         else
@@ -591,7 +575,7 @@ static int init_random_data(struct session_vdev * vdev,struct sr_dev_inst *sdi)
             else
                 probe_status[cur_probe] = LOGIC_HIGH_LEVEL;
             probe_count[cur_probe] = rand()%SR_KB(1);
-            memset(vdev->logic_buf+i,probe_status[cur_probe],1);
+            memset(vdev->data_buf+i,probe_status[cur_probe],1);
             probe_count[cur_probe] -= 1;
         }
     }
@@ -723,8 +707,8 @@ static int hw_dev_close(struct sr_dev_inst *sdi)
         }
 
         safe_free(vdev->packet_buffer);
-        safe_free(vdev->logic_buf);
-        safe_free(vdev->analog_buf);
+        safe_free(vdev->data_buf);
+        safe_free(vdev->data_buf);
         safe_free(sdi->path);
         safe_free(packet_interval);
         safe_free(run_time);
@@ -1227,7 +1211,6 @@ static int hw_dev_acquisition_start(struct sr_dev_inst *sdi,
     assert(sdi);
     assert(sdi->priv);
 
-
     vdev = sdi->priv;
     vdev->enabled_probes = 0;
     packet.status = SR_PKT_OK;
@@ -1235,6 +1218,24 @@ static int hw_dev_acquisition_start(struct sr_dev_inst *sdi,
     vdev->cur_block = 0;
 
     sr_info("mode:%d, generator:%d", sdi->mode, vdev->sample_generator);
+
+    safe_free(vdev->data_buf);
+
+    if (sdi->mode == LOGIC)
+    {
+        vdev->data_buf = malloc(LOGIC_BUF_LEN);  
+        vdev->data_buf_len = LOGIC_BUF_LEN;
+    }
+    else{
+        vdev->data_buf = malloc(DSO_PACKET_LEN);
+        vdev->data_buf_len = DSO_PACKET_LEN;
+    }
+
+    if(vdev->data_buf == NULL)
+    {
+        sr_err("%s: vdev->data_buf malloc failed", __func__);
+        return SR_ERR_MALLOC;  
+    }
 
     if(vdev->sample_generator != PATTERN_RANDOM)
     {
@@ -1310,6 +1311,8 @@ static int hw_dev_acquisition_start(struct sr_dev_inst *sdi,
             }
 
             vdev->logic_mem_limit = (((vdev->total_samples/8)*vdev->enabled_probes) >= LOGIC_MEMORY_LIMIT) ? TRUE : FALSE;
+
+            assert(run_time);
 
             init_random_data(vdev,sdi);
             g_timer_start(run_time);
@@ -1475,11 +1478,11 @@ static int receive_data_logic(int fd, int revents, const struct sr_dev_inst *sdi
         }
         else
         {
-            uint64_t random = vdev->logic_buf_len - logic.length;
+            uint64_t random = vdev->data_buf_len - logic.length;
             random = rand() % random;
             int index = vdev->enabled_probes * 8;
             random = floor(random/index)*index;
-            memcpy(logic_post_buf,vdev->logic_buf + random,logic.length);
+            memcpy(logic_post_buf,vdev->data_buf + random,logic.length);
         }
         logic.data = logic_post_buf;
 
@@ -1518,6 +1521,35 @@ static int receive_data_logic(int fd, int revents, const struct sr_dev_inst *sdi
     }
 
     return TRUE;
+}
+
+static void free_temp_buffer(struct session_vdev *vdev)
+{   
+    struct session_packet_buffer *pack_buf;
+    int i;
+
+    assert(vdev);
+
+    pack_buf = vdev->packet_buffer;
+
+    if (pack_buf != NULL)
+    {
+        safe_free(pack_buf->post_buf);
+
+        for (i = 0; i < SESSION_MAX_CHANNEL_COUNT; i++){
+            if (pack_buf->block_bufs[i] != NULL){
+                free(pack_buf->block_bufs[i]);
+                pack_buf->block_bufs[i] = NULL;
+            }
+            else{
+                break;
+            }
+        }
+    }   
+
+    safe_free(vdev->packet_buffer);
+    safe_free(vdev->data_buf);
+    safe_free(vdev->analog_post_buf);
 }
 
 static int receive_data_logic_decoder(int fd, int revents, const struct sr_dev_inst *sdi)
@@ -1776,6 +1808,7 @@ static int receive_data_logic_decoder(int fd, int revents, const struct sr_dev_i
         ds_data_forward(sdi, &packet);
         sr_session_source_remove(-1);
         close_archive(vdev);
+        free_temp_buffer(vdev);
     }
 
     return TRUE;
@@ -2045,11 +2078,11 @@ static int receive_data_dso(int fd, int revents, const struct sr_dev_inst *sdi)
                         }
                     }
                 }
-                memcpy(vdev->dso_buf,pack_buffer->post_buf,DSO_PACKET_LEN);
+                memcpy(vdev->data_buf,pack_buffer->post_buf,DSO_PACKET_LEN);
                 vdev->load_data = FALSE;
             }
             else{
-                memcpy(pack_buffer->post_buf,vdev->dso_buf,DSO_PACKET_LEN);
+                memcpy(pack_buffer->post_buf,vdev->data_buf,DSO_PACKET_LEN);
                 pack_buffer->post_buf_len = DSO_PACKET_LEN;
             }
             
@@ -2245,7 +2278,7 @@ static int receive_data_analog(int fd, int revents, const struct sr_dev_inst *sd
     {
         if(vdev->sample_generator != PATTERN_RANDOM)
         {
-            vdev->analog_buf_len = 0;
+            vdev->data_buf_len = 0;
 
             void* analog_data = malloc(ANALOG_DATA_LEN_PER_CYCLE);
             if(analog_data == NULL)
@@ -2285,15 +2318,15 @@ static int receive_data_analog(int fd, int revents, const struct sr_dev_inst *sd
             }
 
             
-            safe_free(vdev->analog_buf);
-            vdev->analog_buf = malloc(total_buf_len);            
-            if (vdev->analog_buf == NULL)
+            safe_free(vdev->data_buf);
+            vdev->data_buf = malloc(total_buf_len);            
+            if (vdev->data_buf == NULL)
             {
-                sr_err("%s: vdev->analog_buf malloc failed", __func__);
+                sr_err("%s: vdev->data_buf malloc failed", __func__);
                 return SR_ERR_MALLOC;
             }
 
-            vdev->analog_buf_len = total_buf_len;
+            vdev->data_buf_len = total_buf_len;
             uint64_t per_block_after_expend = total_buf_len / ANALOG_DATA_LEN_PER_CYCLE;
 
             probe = g_slist_nth(sdi->channels, 0)->data;
@@ -2344,7 +2377,7 @@ static int receive_data_analog(int fd, int revents, const struct sr_dev_inst *sd
                     {
                         cur_l = 1 + (i - 1) * per_block_after_expend + j * 2;
                     }
-                    memset(vdev->analog_buf + cur_l,temp_value,1);
+                    memset(vdev->data_buf + cur_l,temp_value,1);
                 }
             }
             safe_free(analog_data);
@@ -2363,17 +2396,17 @@ static int receive_data_analog(int fd, int revents, const struct sr_dev_inst *sd
         vdev->analog_post_buf_len = vdev->packet_len;
     }
 
-    if(vdev->analog_read_pos + vdev->packet_len >= vdev->analog_buf_len - 1 )
+    if(vdev->analog_read_pos + vdev->packet_len >= vdev->data_buf_len - 1 )
     {
-        uint64_t back_len = vdev->analog_buf_len - vdev->analog_read_pos;
+        uint64_t back_len = vdev->data_buf_len - vdev->analog_read_pos;
         uint64_t front_len = vdev->packet_len - back_len;
-        memcpy(vdev->analog_post_buf , vdev->analog_buf + vdev->analog_read_pos , back_len);
-        memcpy(vdev->analog_post_buf+ back_len , vdev->analog_buf, front_len);
+        memcpy(vdev->analog_post_buf , vdev->data_buf + vdev->analog_read_pos , back_len);
+        memcpy(vdev->analog_post_buf+ back_len , vdev->data_buf, front_len);
         vdev->analog_read_pos = front_len;
     }
     else
     {
-        memcpy(vdev->analog_post_buf,vdev->analog_buf + vdev->analog_read_pos,vdev->packet_len);
+        memcpy(vdev->analog_post_buf,vdev->data_buf + vdev->analog_read_pos,vdev->packet_len);
         vdev->analog_read_pos += vdev->packet_len;
     }
 

@@ -175,17 +175,11 @@ struct session_vdev
 
     uint16_t samplerates_min_index;
     uint16_t samplerates_max_index;
-
     uint8_t sample_generator;
-
-    void *logic_buf;
-    uint64_t logic_buf_len;
-
-    void *dso_buf;
-
-    void *analog_buf;
+    void        *data_buf;
+    uint64_t    data_buf_len;
+    
     void *analog_post_buf;
-    uint64_t analog_buf_len;
     uint64_t analog_post_buf_len;
     uint64_t analog_read_pos;
 
