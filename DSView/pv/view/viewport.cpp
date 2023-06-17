@@ -45,6 +45,7 @@
 #include "../log.h" 
 #include "../ui/langresource.h"
 #include "../ui/fn.h"
+#include "lissajoustrace.h"
 
 using namespace std;
 
@@ -299,11 +300,28 @@ void Viewport::paintSignals(QPainter &p, QColor fore, QColor back)
             _pixmap.fill(Qt::transparent);
 
             QPainter dbp(&_pixmap);
+
+            bool isLissa = false;
+
+            if (_view.session().get_device()->get_work_mode() == DSO)
+            {
+                auto lis_trace = _view.session().get_lissajous_trace();
+                if (lis_trace && lis_trace->enabled()){
+                    isLissa = true;
+                }
+            }
            
             for(auto t : traces)
             {
                 if (t->enabled())
+                {   
+                    if (isLissa && t->signal_type() == SR_CHANNEL_DSO)
+                        continue;
+                    if (isLissa && t->signal_type() == SR_CHANNEL_MATH)
+                        continue;
+                    
                     t->paint_mid(dbp, 0, t->get_view_rect().right(), fore, back);
+                }                    
             }
             _need_update = false;
         }

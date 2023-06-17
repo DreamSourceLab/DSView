@@ -323,6 +323,7 @@ void MeasureDock::goto_cursor()
 
 void MeasureDock::add_dist_measure()
 { 
+  //  dsv_info("add_dist_measure:%d", _cursor_disdance_list.size());
     if (_cursor_disdance_list.size() > Max_Measure_Limits)
         return;
 
@@ -384,6 +385,8 @@ void MeasureDock::del_dist_measure()
             break;
         }
     }
+
+   // dsv_info("del_dist_measure:%d", _cursor_disdance_list.size());
 }
 
 void MeasureDock::add_edge_measure()
