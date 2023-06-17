@@ -146,6 +146,10 @@ public:
         return _able_free;
     } 
 
+    inline uint64_t get_loop_offset(){
+        return _loop_offset;
+    }
+
 private:
     bool get_sample_unlock(uint64_t index, int sig_index);
     bool get_sample_self(uint64_t index, int sig_index);

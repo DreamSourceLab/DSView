@@ -1351,7 +1351,7 @@ uint64_t LogicSnapshot::get_block_size(int block_index)
             return LeafBlockSamples / 8;
         }
         else if (block_index == 0){
-            samples = min(_ring_sample_count+_loop_offset,
+            samples = min(_ring_sample_count + (_loop_offset % (uint64_t)LeafBlockSamples),
                         (uint64_t)LeafBlockSamples) - (_loop_offset % (uint64_t)LeafBlockSamples);
             return samples/8;
         }

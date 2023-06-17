@@ -226,6 +226,15 @@ void StoreSession::save_logic(pv::data::LogicSnapshot *logic_snapshot)
     _unit_count = logic_snapshot->get_ring_sample_count() / 8 * to_save_probes;
     num = logic_snapshot->get_block_num();
 
+    /*
+    dsv_info("total-bytes:%llu, total-sample:%llu, loop-offset:%llu, blocks:%d",
+            _unit_count,
+            logic_snapshot->get_ring_sample_count(),
+            logic_snapshot->get_loop_offset(),       
+            num
+        );
+    */
+
     for(auto s : _session->get_signals()) 
     {
         int ch_type = s->get_type();
@@ -264,7 +273,14 @@ void StoreSession::save_logic(pv::data::LogicSnapshot *logic_snapshot)
                         QFile::remove(_file_name);
                     return;
                 }
-                _units_stored += size; 
+                _units_stored += size;
+
+                //dsv_info("read-bytes:%llu, block-size:%llu, block-index:%d-%d", _units_stored, size, ch_index, i);
+
+                if (_units_stored > _unit_count){
+                    dsv_err("Read block data error!");
+                    assert(false);
+                }
 
                 if (need_malloc)
                     free(buf);
