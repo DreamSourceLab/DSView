@@ -966,7 +966,8 @@ void TriggerDock::try_commit_trigger()
             }
         }
 
-        if (app.appOptions.warnofMultiTrig && num > 1) {
+        if (app.appOptions.warnofMultiTrig && num > 1)
+        {
             dialogs::DSMessageBox msg(this);
             msg.mBox()->setText(L_S(STR_PAGE_MSG, S_ID(IDS_MSG_TRIGGER), "Trigger"));
             msg.mBox()->setInformativeText(L_S(STR_PAGE_MSG, S_ID(IDS_MSG_SET_TRI_MULTI_CHANNEL), 
@@ -991,8 +992,7 @@ void TriggerDock::try_commit_trigger()
 
             if (msg.mBox()->clickedButton() == noMoreButton)
             {
-                app.appOptions.warnofMultiTrig  = false;
-                app.SaveApp();                
+                app.appOptions.warnofMultiTrig  = false;              
             }
         }
     }

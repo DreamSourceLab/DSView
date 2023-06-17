@@ -123,6 +123,8 @@ static void _loadApp(AppOptions &o, QSettings &st)
     getFiled("swapBackBufferAlways", st, o.swapBackBufferAlways, false);
     getFiled("fontSize", st, o.fontSize, 9.0);
 
+    o.warnofMultiTrig = true;
+
     QString fmt;
     getFiled("protocalFormats", st, fmt, "");
     if (fmt != ""){
