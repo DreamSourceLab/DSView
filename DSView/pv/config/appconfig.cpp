@@ -443,7 +443,7 @@ QString GetFirmwareDir()
     }
  
     dsv_err("%s%s", "Resource directory is not exists:", dir1.absolutePath().toUtf8().data());
-    assert(false);
+    return dir1.absolutePath();
 }
 
 QString GetUserDataDir()
