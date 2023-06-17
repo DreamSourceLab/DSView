@@ -1234,6 +1234,8 @@ static int hw_dev_acquisition_start(struct sr_dev_inst *sdi,
 
     vdev->cur_block = 0;
 
+    sr_info("mode:%d, generator:%d", sdi->mode, vdev->sample_generator);
+
     if(vdev->sample_generator != PATTERN_RANDOM)
     {
         if (vdev->archive != NULL)
@@ -1538,7 +1540,6 @@ static int receive_data_logic_decoder(int fd, int revents, const struct sr_dev_i
     uint8_t *p_wr;
     uint8_t *p_rd;
     int byte_align;
-    int dir_index;
     int bCheckFile;
     const int file_max_channel_count = 128;
 
@@ -1548,7 +1549,7 @@ static int receive_data_logic_decoder(int fd, int revents, const struct sr_dev_i
     (void)fd;
     (void)revents;
 
-    sr_detail("Feed chunk.");
+   // sr_info("load demo file.");
 
     ret = 0;
     bToEnd = 0;
@@ -1642,7 +1643,6 @@ static int receive_data_logic_decoder(int fd, int revents, const struct sr_dev_i
 
     // Make packet.
     read_chan_index = 0;
-    dir_index = 0;
 
     while (pack_buffer->post_len < pack_buffer->post_buf_len)
     {
@@ -1657,22 +1657,10 @@ static int receive_data_logic_decoder(int fd, int revents, const struct sr_dev_i
             {
                 bCheckFile = 0;
 
-                while (1)
-                {
-                    snprintf(file_name, sizeof(file_name)-1, "L-%d/%d", dir_index++, vdev->cur_block);
+                snprintf(file_name, sizeof(file_name)-1, "L-%d/%d", ch_index, vdev->cur_block);
 
-                    if (unzLocateFile(vdev->archive, file_name, 0) == UNZ_OK){
-                        bCheckFile = 1;
-                        break;
-                    }
-                    else if (dir_index > file_max_channel_count){
-                        break;
-                    }
-                }
-
-                if (!bCheckFile)
-                {
-                    sr_err("can't locate zip inner file:\"%s\"", file_name);
+                if (unzLocateFile(vdev->archive, file_name, 0) != UNZ_OK){
+                     sr_err("can't locate zip inner file:\"%s\"", file_name);
                     send_error_packet(sdi, vdev, &packet);
                     return FALSE;
                 }
@@ -1751,9 +1739,9 @@ static int receive_data_logic_decoder(int fd, int revents, const struct sr_dev_i
             read_chan_index++;
 
             if (pack_buffer->block_read_positions[read_chan_index] == pack_buffer->block_data_len){
-                sr_info("Block read end.");
+               // sr_info("Block read end.");
                 if (vdev->cur_block < vdev->num_blocks){
-                    sr_err("%s", "The block data is not align.");
+                   // sr_err("%s", "The block data is not align.");
                     break;
                 }
             }
@@ -1824,7 +1812,6 @@ static int receive_data_dso(int fd, int revents, const struct sr_dev_inst *sdi)
     uint8_t *p_wr;
     uint8_t *p_rd;
     int byte_align;
-    int dir_index;
     int bCheckFile;
     const int file_max_channel_count = 128;
 
@@ -1932,7 +1919,6 @@ static int receive_data_dso(int fd, int revents, const struct sr_dev_inst *sdi)
 
     // Make packet.
     read_chan_index = 0;
-    dir_index = 0;
 
     if(vdev->vdiv_change || vdev->timebase_change ||vdev->offset_change)
     {
@@ -1963,30 +1949,14 @@ static int receive_data_dso(int fd, int revents, const struct sr_dev_inst *sdi)
                         for (ch_index = 0; ch_index < chan_num; ch_index++)
                         {
                             bCheckFile = 0;
+                            snprintf(file_name, sizeof(file_name)-1, "O-%d/0", ch_index);
 
-                            while (1)
-                            {
-                                if (sdi->mode  == LOGIC)
-                                    snprintf(file_name, sizeof(file_name)-1, "L-%d/%d", dir_index++, vdev->cur_block);
-                                else if (sdi->mode == DSO)
-                                    snprintf(file_name, sizeof(file_name)-1, "O-%d/0", dir_index++);
-
-                                if (unzLocateFile(vdev->archive, file_name, 0) == UNZ_OK){
-                                    bCheckFile = 1;
-                                    break;
-                                }
-                                else if (dir_index > file_max_channel_count){
-                                    break;
-                                }
+                            if (unzLocateFile(vdev->archive, file_name, 0) != UNZ_OK){
+                                sr_err("cant't locate zip inner file:\"%s\"", file_name);
+                                send_error_packet(sdi, vdev, &packet);
+                                return FALSE;
                             }
-
-                        if (!bCheckFile)
-                        {
-                            sr_err("cant't locate zip inner file:\"%s\"", file_name);
-                            send_error_packet(sdi, vdev, &packet);
-                            return FALSE;
-                        }
-
+                     
                             if (unzGetCurrentFileInfo64(vdev->archive, &fileInfo, szFilePath,
                                                 sizeof(szFilePath), NULL, 0, NULL, 0) != UNZ_OK)
                             {
@@ -2061,9 +2031,9 @@ static int receive_data_dso(int fd, int revents, const struct sr_dev_inst *sdi)
                         read_chan_index++;
 
                         if (pack_buffer->block_read_positions[read_chan_index] == pack_buffer->block_data_len){
-                            sr_info("Block read end.");
+                           // sr_info("Block read end.");
                             if (vdev->cur_block < vdev->num_blocks){
-                                sr_err("%s", "The block data is not align.");
+                                //sr_err("%s", "The block data is not align.");
                                 break;
                             }
                         }

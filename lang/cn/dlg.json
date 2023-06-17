@@ -710,10 +710,9 @@
     {
         "id": "IDS_DLG_GROUP_UI",
         "text": "界面"
-    }
+    },
     {
         "id": "IDS_DLG_ABORT",
         "text": "放弃"
-    }
-    
+    }    
 ]
