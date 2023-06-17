@@ -1948,7 +1948,14 @@ namespace pv
 
                 // The store confirm is not processed.
                 if (_is_save_confirm_msg){
+                    dsv_info("New device attached:Waitting for the confirm box be closed.");
                     _is_auto_switch_device = true; 
+                    return;
+                }
+
+                if (_session->is_saving()){
+                    dsv_info("New device attached:Waitting for store the data. and will switch to new device.");
+                    _is_auto_switch_device = true;
                     return;
                 }
 
@@ -1983,6 +1990,12 @@ namespace pv
             _session->device_event_object()->device_updated();
             save_config();
             _view->hide_calibration();
+
+            if (_session->is_saving()){
+                dsv_info("Device detached:Waitting for store the data. and will switch to new device.");
+                _is_auto_switch_device = true;
+                return;
+            }
 
             if (confirm_to_store_data()){
                 _is_auto_switch_device = true;
