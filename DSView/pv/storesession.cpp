@@ -223,9 +223,8 @@ void StoreSession::save_logic(pv::data::LogicSnapshot *logic_snapshot)
             to_save_probes++;
     }
 
-    _unit_count = logic_snapshot->get_sample_count() / 8 * to_save_probes;
+    _unit_count = logic_snapshot->get_ring_sample_count() / 8 * to_save_probes;
     num = logic_snapshot->get_block_num();
-    dsv_info("total bytes:%llu", _unit_count);
 
     for(auto s : _session->get_signals()) 
     {
@@ -265,8 +264,7 @@ void StoreSession::save_logic(pv::data::LogicSnapshot *logic_snapshot)
                         QFile::remove(_file_name);
                     return;
                 }
-                _units_stored += size;
-                dsv_info("read bytes:%llu, size:%llu,block:%d", _units_stored, size, i);
+                _units_stored += size; 
 
                 if (need_malloc)
                     free(buf);

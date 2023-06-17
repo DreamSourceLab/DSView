@@ -1333,23 +1333,15 @@ bool LogicSnapshot::has_data(int sig_index)
 
 int LogicSnapshot::get_block_num()
 {
-   // return (_ring_sample_count >> LeafBlockPower) +
-    //     ((_ring_sample_count & LeafMask) != 0);
-    
-    int block = _ring_sample_count / LeafBlockSamples;
-    if (_ring_sample_count % LeafBlockSamples != 0){
-        block++;
-    }
-    if (_loop_offset % LeafBlockSamples != 0){
-        block++;
-    }
-
-    return block;
+   int block = ceil((_ring_sample_count+_loop_offset) * 1.0 / LeafBlockSamples) 
+            - floor(_loop_offset * 1.0 / LeafBlockSamples);
+   return block;
 }
 
 uint64_t LogicSnapshot::get_block_size(int block_index)
 {
     int block_num = get_block_num();
+    uint64_t samples = 0;
 
     assert(block_index < block_num);
 
@@ -1359,17 +1351,14 @@ uint64_t LogicSnapshot::get_block_size(int block_index)
             return LeafBlockSamples / 8;
         }
         else if (block_index == 0){
-            if (_loop_offset % LeafBlockSamples == 0)
-                return LeafBlockSamples / 8;
-            else
-                return (LeafBlockSamples - _loop_offset % LeafBlockSamples) / 8;
+            samples = min(_ring_sample_count+_loop_offset,
+                        (uint64_t)LeafBlockSamples) - (_loop_offset % (uint64_t)LeafBlockSamples);
+            return samples/8;
         }
         else{
-            uint64_t ring_sample_count = _ring_sample_count + _loop_offset;
-            if (ring_sample_count % LeafBlockSamples == 0)
-                return LeafBlockSamples / 8;
-            else
-                return (ring_sample_count % LeafBlockSamples) / 8;
+            samples = (_ring_sample_count + _loop_offset) - (_ring_sample_count + _loop_offset - 1)
+                    / LeafBlockSamples * LeafBlockSamples;
+            return samples/8;
         }
     }
     else{

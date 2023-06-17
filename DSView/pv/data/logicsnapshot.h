@@ -144,7 +144,7 @@ public:
 
     inline bool is_able_free(){
         return _able_free;
-    }
+    } 
 
 private:
     bool get_sample_unlock(uint64_t index, int sig_index);
