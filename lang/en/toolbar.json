@@ -121,15 +121,15 @@
     },
     {
         "id": "IDS_TOOLBAR_FILE_CONFIG_LOAD",
-        "text": "&Load Configuration"
+        "text": "&Load Session"
     },
     {
         "id": "IDS_TOOLBAR_FILE_CONFIG_STORE",
-        "text": "&Save Configuration"
+        "text": "&Save Session"
     },
     {
         "id": "IDS_TOOLBAR_FILE_CONFIG_DEFAULT",
-        "text": "Load &Default Configuration"
+        "text": "Load &Default Session"
     },
     {
         "id": "IDS_TOOLBAR_FILE_OPEN",

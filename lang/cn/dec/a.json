@@ -129,15 +129,15 @@
     },
     {
         "id": "dec_caliper_opt_unit",
-        "text": "反转单位"
+        "text": "转换单位"
     },
     {
         "id": "dec_caliper_opt_changes",
-        "text": "仅限修改"
+        "text": "仅关注变化"
     },
     {
         "id": "dec_can_chan_can_rx",
-        "text": "CAN总线"
+        "text": "CAN信号"
     },
     {
         "id": "dec_can_opt_bitrate",
@@ -157,11 +157,11 @@
     },
     {
         "id": "dec_cec_chan_cec",
-        "text": "CEC总线数据"
+        "text": "CEC信号"
     },
     {
         "id": "dec_1uart_chan_rxtx",
-        "text": "UART接收/发送线"
+        "text": "UART信号线"
     },
     {
         "id": "dec_cjtag_oscan0_chan_tdi",
@@ -205,7 +205,7 @@
     },
     {
         "id": "dec_counter_opt_divider",
-        "text": "计数分隔符(字宽)"
+        "text": "字计数长度(字宽)"
     },
     {
         "id": "dec_counter_opt_reset_edge",
@@ -213,15 +213,15 @@
     },
     {
         "id": "dec_counter_opt_edge_off",
-        "text": "启动/复位后的边沿计数器值"
+        "text": "重置后的边沿计数器值"
     },
     {
         "id": "dec_counter_opt_word_off",
-        "text": "启动/复位后的字计数器值"
+        "text": "重置后的字计数器值"
     },
     {
         "id": "dec_counter_opt_dead_cycles",
-        "text": "忽视重置后的边沿"
+        "text": "忽视重置后的边沿数"
     },
     {
         "id": "dec_counter_opt_start_with_reset",
@@ -241,7 +241,7 @@
     },
     {
         "id": "dec_dmx512_chan_dmx",
-        "text": "任意DMX数据线"
+        "text": "DMX数据线"
     },
     {
         "id": "dec_dmx512_opt_invert",
@@ -285,7 +285,7 @@
     },
     {
         "id": "dec_em4100_opt_coilfreq",
-        "text": "线圈频率"
+        "text": "工作频率"
     },
     {
         "id": "dec_em4305_chan_data",
@@ -293,27 +293,27 @@
     },
     {
         "id": "dec_em4305_opt_coilfreq",
-        "text": "线圈频率"
+        "text": "工作频率"
     },
     {
         "id": "dec_em4305_opt_first_field_stop",
-        "text": "第一场停止最小值"
+        "text": "第一字段停止位最小值"
     },
     {
         "id": "dec_em4305_opt_w_gap",
-        "text": "写入间隙最小值"
+        "text": "写间隔最小值"
     },
     {
         "id": "dec_em4305_opt_w_one_max",
-        "text": "最多写入一个"
+        "text": "写1最大值"
     },
     {
         "id": "dec_em4305_opt_w_zero_on_min",
-        "text": "最小值写零"
+        "text": "写0起始最小值"
     },
     {
         "id": "dec_em4305_opt_w_zero_off_max",
-        "text": "最大核销零"
+        "text": "写0关闭最大值"
     },
     {
         "id": "dec_em4305_opt_em4100_decode",

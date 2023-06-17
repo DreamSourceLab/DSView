@@ -17,7 +17,7 @@
     },
     {
         "id": "dec_lpc_chan_lframe",
-        "text": "数据镇"
+        "text": "帧"
     },
     {
         "id": "dec_lpc_chan_lclk",
@@ -49,7 +49,7 @@
     },
     {
         "id": "dec_lpc_opt_chan_serirq",
-        "text": "中断请求"
+        "text": "串行中断请求"
     },
     {
         "id": "dec_lpc_opt_chan_clkrun",
@@ -89,11 +89,11 @@
     },
     {
         "id": "dec_mcs48_chan_ale",
-        "text": "地址锁存启用"
+        "text": "地址锁存使能"
     },
     {
         "id": "dec_mcs48_chan_psen",
-        "text": "程序存储启用"
+        "text": "程序存储使能"
     },
     {
         "id": "dec_mdio_chan_mdc",
@@ -169,7 +169,7 @@
     },
     {
         "id": "dec_morse_opt_timeunit",
-        "text": "时间单位()"
+        "text": "时间单位"
     },
     {
         "id": "dec_nes_gamepad_opt_variant",
@@ -193,7 +193,7 @@
     },
     {
         "id": "dec_numbers_and_state_opt_interp",
-        "text": "解释方法"
+        "text": "解释格式"
     },
     {
         "id": "dec_numbers_and_state_opt_fracbits",
@@ -237,11 +237,11 @@
     },
     {
         "id": "dec_ook_opt_diffmanvar",
-        "text": "开始时的转换"
+        "text": "起始传输位"
     },
     {
         "id": "dec_ook_oregon_opt_unknown",
-        "text": "未知类型为"
+        "text": "未知类型"
     },
     {
         "id": "dec_ook_vis_opt_displayas",
@@ -261,6 +261,6 @@
     },
     {
         "id": "dec_ook_oregon_opt_unknown",
-        "text": "未知类型为"
+        "text": "未知类型"
     }
 ]

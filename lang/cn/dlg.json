@@ -17,15 +17,15 @@
     },
     {
         "id": "IDS_DLG_OPEN_SEESION",
-        "text": "打开会话"
+        "text": "打开配置"
     },
     {
         "id": "IDS_DLG_SAVE_SEESION",
-        "text": "保存会话"
+        "text": "保存配置"
     },
     {
         "id": "IDS_DLG_DOCUMENT",
-        "text": "文件"
+        "text": "文档"
     },
     {
         "id": "IDS_DLG_TRIGGER_DOCK_TITLE",
@@ -33,7 +33,7 @@
     },
     {
         "id": "IDS_DLG_PROTOCOL_DOCK_TITLE",
-        "text": "解码协议"
+        "text": "解码器"
     },
     {
         "id": "IDS_DLG_MEASURE_DOCK_TITLE",
@@ -49,11 +49,11 @@
     },
     {
         "id": "IDS_DLG_CHECK_USB_SPEED_ERROR",
-        "text": "将该设备插入USB 2.0端口会严重影响其性能.\n请重新插入USB 3.0端口."
+        "text": "当前设备插入USB 2.0端口会严重影响其性能.\n请重新插入USB 3.0端口."
     },
     {
         "id": "IDS_DLG_CHECK_SESSION_FILE_VERSION_ERROR",
-        "text": "当前加载文件具有旧格式 . \n这将导致加载速度变慢. \n请在加载后重新保存."
+        "text": "此文件为旧格式 . \n加载速度较慢. \n可在加载后重新保存."
     },
     {
         "id": "IDS_DLG_ABOUT",
@@ -65,7 +65,7 @@
     },
     {
         "id": "IDS_DLG_QUICK_SCROLL",
-        "text": "通过鼠标快速滚动波形"
+        "text": "基于鼠标拖拽的波形滚动"
     },
     {
         "id": "IDS_DLG_SAVE",
@@ -89,7 +89,7 @@
     },
     {
         "id": "IDS_DLG_SAVE_CALIBRATION_RESULTS",
-        "text": "保存校准结果...可能需要一段时间."
+        "text": "正在保存校准结果...请稍候"
     },
     {
         "id": "IDS_DLG_CANCEL",
@@ -97,11 +97,11 @@
     },
     {
         "id": "IDS_DLG_RELOAD_CALIBRATION_RESULTS",
-        "text": "重新加载上次校准...可能需要一段时间."
+        "text": "重新加载上次校准结果...请稍候"
     },
     {
         "id": "IDS_DLG_DECODER_OPTIONS",
-        "text": "解码选项"
+        "text": "解码器选项"
     },
     {
         "id": "IDS_DLG_CURSOR",
@@ -109,11 +109,11 @@
     },
     {
         "id": "IDS_DLG_CURSOR_FOR_DECODE_START",
-        "text": "位于解码起始时间的光标"
+        "text": "解码起始位置"
     },
     {
         "id": "IDS_DLG_CURSOR_FOR_DECODE_END",
-        "text": "位于解码结束时间的光标"
+        "text": "解码结束位置"
     },
     {
         "id": "IDS_DLG_DEVICE_OPTIONS",
@@ -121,11 +121,7 @@
     },
     {
         "id": "IDS_DLG_MODE",
-        "text": "模式"
-    },
-    {
-        "id": "IDS_DLG_OPERATION_MODE",
-        "text": "工作模式"
+        "text": "选项"
     },
     {
         "id": "IDS_DLG_ENABLE_ALL",
@@ -253,7 +249,7 @@
     },
     {
         "id": "IDS_DLG_EXPORT_PROTOCOL_LIST_RESULT",
-        "text": "导出协议列表结果...可能需要一段时间 ."
+        "text": "导出解码结果...请稍候"
     },
     {
         "id": "IDS_DLG_FIT_TO_WINDOW",
@@ -265,7 +261,7 @@
     },
     {
         "id": "IDS_DLG_MAP_ZOOM",
-        "text": "地图缩放 : "
+        "text": "跳转缩放 : "
     },
     {
         "id": "IDS_DLG_DECODED_PROTOCOLS",
@@ -273,7 +269,7 @@
     },
     {
         "id": "IDS_DLG_PROTOCOL_LIST_VIEWER",
-        "text": "协议列表查看"
+        "text": "解码结果"
     },
     {
         "id": "IDS_DLG_REGION",
@@ -286,10 +282,6 @@
     {
         "id": "IDS_DLG_SEARCH_OPTIONS",
         "text": "搜索选项"
-    },
-    {
-        "id": "IDS_DLG_CHANGE_FILE",
-        "text": "变更"
     },
     {
         "id": "IDS_DLG_SAVING",
@@ -317,11 +309,11 @@
     },
     {
         "id": "IDS_DLG_LOAD_CURRENT_SETTING",
-        "text": "加载当前设置... 可能需要一段时间."
+        "text": "加载当前设置...请稍候"
     },
     {
         "id": "IDS_DLG_WAITING",
-        "text": "等待"
+        "text": "请等待"
     },
     {
         "id": "IDS_DLG_FINISHED",
@@ -349,7 +341,7 @@
     },
     {
         "id": "IDS_DLG_NOISE_SENSITIVITY",
-        "text": "噪声灵敏度: "
+        "text": "触发灵敏度: "
     },
     {
         "id": "IDS_DLG_TRIGGER_SOURCES",
@@ -393,7 +385,7 @@
     },
     {
         "id": "IDS_DLG_TIME_SAMPLES",
-        "text": "时间/样本"
+        "text": "时间/采样点个数"
     },
     {
         "id": "IDS_DLG_MOUSE_MEASUREMENT",
@@ -513,7 +505,7 @@
     },
     {
         "id": "IDS_DLG_INV",
-        "text": "Inv"
+        "text": "取反"
     },
     {
         "id": "IDS_DLG_COUNTER",
@@ -597,11 +589,11 @@
     },
     {
         "id": "IDS_DLG_TRIGGERED",
-        "text": "触发! "
+        "text": "已触发! "
     },
     {
         "id": "IDS_DLG_CAPTURED",
-        "text": "% 捕获"
+        "text": "% 已采集"
     },
     {
         "id": "IDS_DLG_WAITING_FOR_TRIGGER",
@@ -617,7 +609,7 @@
     },   
     {
         "id": "IDS_DLG_Edges_1",
-        "text": "边沿: "
+        "text": "总边沿: "
     },
     {
         "id": "IDS_DLG_WIDTH",
@@ -645,7 +637,7 @@
     },
     {
         "id": "IDS_DLG_SAMPLES_CAPTURED",
-        "text": "捕获样本!"
+        "text": "点已采集!"
     },
     {
         "id": "IDS_DLG_FILE_THRESHOLD",
@@ -689,7 +681,7 @@
     },
     {
         "id": "IDS_DLG_DISPLAY_PROFILE_IN_BAR",
-        "text": "将配置文件名显示在标题栏上"
+        "text": "标题栏显示配置文件名"
     },
     {
         "id": "IDS_DLG_SERIAL_HEX",
@@ -701,7 +693,7 @@
     },
     {
         "id": "IDS_DLG_USE_ABORT_DATA_REPEAT",
-        "text": "重复模式下允许使用中途停止的数据"
+        "text": "重复模式下停止后更新最新数据"
     },
     {
         "id": "IDS_DLG_FONT_SIZE",
@@ -718,9 +710,10 @@
     {
         "id": "IDS_DLG_GROUP_UI",
         "text": "界面"
-    },
+    }
     {
         "id": "IDS_DLG_ABORT",
         "text": "放弃"
     }
+    
 ]

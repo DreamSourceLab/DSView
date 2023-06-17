@@ -61,7 +61,7 @@
     },    
     {
         "id": "dec_z80_chan_m1",
-        "text": "机器循环 1"
+        "text": "机器周期 1"
     },
     {
         "id": "dec_z80_chan_rd",

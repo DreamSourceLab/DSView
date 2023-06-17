@@ -28,7 +28,7 @@
     }, 
     {
         "id": "IDS_MSG_AUTO_CALIB_START",
-        "text": "自动校准程序将启动。不要连接任何探针。\n这可能需要一段时间!"
+        "text": "自动校准程序将启动。不要连接任何探头。\n这可能需要一段时间!"
     },
     {
         "id": "IDS_MSG_AUTO_CALIB",
@@ -68,7 +68,7 @@
     },
     {
         "id": "IDS_MSG_DECODER_REPEAT",
-        "text": "存在重复id或名字的解码器:"
+        "text": "存在重复id或name的解码器:"
     },
     {
         "id": "IDS_MSG_DECODER_LIST_EMPTY",
@@ -80,7 +80,7 @@
     },
     {
         "id": "IDS_MSG_FIND_BASE_DECODER_ERROR",
-        "text": "查找基础解码器错误!"
+        "text": "没有找到对应的底层解码器!"
     },
     {
         "id": "IDS_MSG_NO_DECODER_DEL",
@@ -100,7 +100,7 @@
     },
     {
         "id": "IDS_MSG_SET_DEF_CAL_SETTING",
-        "text": "所有校准设置将成为默认值!"
+        "text": "所有校准设置将保存为默认值!"
     },
     {
         "id": "IDS_MSG_ALL_CHANNEL_DISABLE",
@@ -116,15 +116,15 @@
     },
     {
         "id": "IDS_MSG_CHANGE_HOR_TRI_POS_FAIL",
-        "text": "更改水平触发器位置失败!"
+        "text": "更改水平触发位置失败!"
     },
     {
         "id": "IDS_MSG_CHANGE_TRI_HOLDOFF_TIME_FAIL",
-        "text": "更改触发器保持时间失败!"
+        "text": "更改触发释抑时间失败!"
     },
     {
         "id": "IDS_MSG_CHANGE_SENSITIVITY_FAIL",
-        "text": "更改触发值灵敏度失败!"
+        "text": "更改触发灵敏度失败!"
     },
     {
         "id": "IDS_MSG_CHANGE_SOURCE_FAIL",
@@ -132,15 +132,15 @@
     },
     {
         "id": "IDS_MSG_CHANGE_CHANNEL_FAIL",
-        "text": "更改触发器通道失败!"
+        "text": "更改触发通道失败!"
     },
     {
         "id": "IDS_MSG_CHANGE_TYPE_FAIL",
-        "text": "更改触发器类型失败!"
+        "text": "更改触发类型失败!"
     },
     {
         "id": "IDS_MSG_PLEASE_INSERT_CURSOR",
-        "text": "请在使用光标测量之前插入光标."
+        "text": "请在使用光标测量之前先插入光标."
     },
     {
         "id": "IDS_MSG_SEARCH",
@@ -148,7 +148,7 @@
     },
     {
         "id": "IDS_MSG_NO_SAMPLE_DATA",
-        "text": "无样本数据!"
+        "text": "无采样数据!"
     },
     {
         "id": "IDS_MSG_SEARCH_AT_START",
@@ -156,7 +156,7 @@
     },
     {
         "id": "IDS_MSG_PATTERN_NOT_FOUND",
-        "text": "找不到匹配模式!"
+        "text": "找不到匹配项!"
     },
     {
         "id": "IDS_MSG_SEARCH_AT_END",
@@ -168,15 +168,15 @@
     },
     {
         "id": "IDS_MSG_STREAM_NO_AD_TRIGGER",
-        "text": "流模式不支持高级触发模式!"
+        "text": "流模式不支持高级触发功能!"
     },
     {
         "id": "IDS_MSG_AD_TRIGGER_NEED_HARDWARE",
-        "text": "高级触发模式需要DSLogic硬件支持!"
+        "text": "高级触发需要DSLogic硬件支持!"
     },
     {
         "id": "IDS_MSG_SET_TRI_MULTI_CHANNEL",
-        "text": "触发设置在多个通道上!\n仅当所有设置的通道在一个样本中满足触发条件时才会触发"
+        "text": "同时有多个通道设置了触发条件!\n仅当所有通道在同一时刻同时满足触发条件时才会触发"
     },
     {
         "id": "IDS_MSG_NOT_SHOW_AGAIN",
@@ -212,7 +212,7 @@
     },
     {
         "id": "IDS_MSG_MALLOC_ERROR_DET",
-        "text": "内存不足，无法容纳此样本!\n请降低采样深度!"
+        "text": "内存不足，无法容纳此采样量!\n请降低采样深度!"
     },
     {
         "id": "IDS_MSG_PACKET_ERROR",
@@ -220,7 +220,7 @@
     },
     {
         "id": "IDS_MSG_PACKET_ERROR_DET",
-        "text": "接收到的数据包的内容不是预期的!"
+        "text": "接收到的数据包格式不正确!"
     },
     {
         "id": "IDS_MSG_DATA_OVERFLOW",
@@ -228,7 +228,7 @@
     },
     {
         "id": "IDS_MSG_DATA_OVERFLOW_DET",
-        "text": "USB带宽无法支持当前采样率!\n请降低采样深度!"
+        "text": "USB带宽无法支持当前采样设置!\n请降低采样率或者通道数!"
     },
     {
         "id": "IDS_MSG_UNDEFINED_ERROR",
@@ -316,11 +316,11 @@
     },
     {
         "id": "IDS_MSG_DECODERSTACK_DECODE_WORK_ERROR",
-        "text": "尚未指定一个或多个所需通道!"
+        "text": "没有设置需要解码哪些通道的数据!"
     },
     {
         "id": "IDS_MSG_DECODERSTACK_DECODE_DATA_ERROR",
-        "text": "至少有一个选定通道未启用."
+        "text": "至少有一个需要解码的通道未使能."
     },
     {
         "id": "IDS_MSG_DECODERSTACK_DECODE_STACK_ERROR",
@@ -340,7 +340,7 @@
     },
     {
         "id": "IDS_MSG_TO_SWITCH_DEVICE",
-        "text": "要切换到新设备?"
+        "text": "是否切换到新设备?"
     },
     {
         "id": "IDS_MSG_DISABLED_CHANNEL_TRIG",
@@ -348,11 +348,11 @@
     },
     {
         "id": "IDS_MSG_TO_RECONNECT_FOR_FIRMWARE",
-        "text": "固件版本不对，请重新连接设备!"
+        "text": "固件版本错误，请重新连接设备!"
     },
     {
         "id": "IDS_MSG_DEVICE_BUSY_SWITCH_FAILED",
-        "text": "设备在使用中，切换失败!"
+        "text": "设备被其它程序占用，切换失败!"
     },
     {
         "id": "IDS_MSG_NO_ENABLED_CHANNEL",
@@ -364,10 +364,10 @@
     },
     {
         "id": "IDS_MSG_TO_CLEAR_LOG",
-        "text": "您确定要清除日志文件?"
+        "text": "确定清除日志文件?"
     },
     {
         "id": "IDS_MSG_DEVICE_SPEED_TOO_LOW",
-        "text": "错误, 设备连接的USB端口速度太低!"
+        "text": "错误: 当前连接的USB端口速率过低(<480Mbps)!"
     }
 ]
