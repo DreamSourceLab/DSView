@@ -29,11 +29,11 @@
     },
     {
         "id": "IDS_DLG_TRIGGER_DOCK_TITLE",
-        "text": "Trigger Setting..."
+        "text": "Trigger Setting"
     },
     {
         "id": "IDS_DLG_PROTOCOL_DOCK_TITLE",
-        "text": "Decode Protocol"
+        "text": "Decoders"
     },
     {
         "id": "IDS_DLG_MEASURE_DOCK_TITLE",
@@ -41,7 +41,7 @@
     },
     {
         "id": "IDS_DLG_SEARCH_DOCK_TITLE",
-        "text": "Search..."
+        "text": "Search"
     },
     {
         "id": "IDS_DLG_SAVE_AS",
@@ -49,11 +49,11 @@
     },
     {
         "id": "IDS_DLG_CHECK_USB_SPEED_ERROR",
-        "text": "Plug the device into a USB 2.0 port will seriously affect its performance.\n Please replug it into a USB 3.0 port."
+        "text": "Plugging the current device into a USB 2.0 port will significantly impact its performance.\nPlease replug it into a USB 3.0 port."
     },
     {
         "id": "IDS_DLG_CHECK_SESSION_FILE_VERSION_ERROR",
-        "text": "Current loading file has an old format. \nThis will lead to a slow loading speed. \nPlease resave it after loaded."
+        "text": "This file is in an old format.\nIt loads slowly.\nYou can re-save it after loading."
     },
     {
         "id": "IDS_DLG_ABOUT",
@@ -65,7 +65,7 @@
     },
     {
         "id": "IDS_DLG_QUICK_SCROLL",
-        "text": "Quick scroll waveform by mouse"
+        "text": "Waveform Scroll with Mouse Drag"
     },
     {
         "id": "IDS_DLG_SAVE",
@@ -89,7 +89,7 @@
     },
     {
         "id": "IDS_DLG_SAVE_CALIBRATION_RESULTS",
-        "text": "Save calibration results... It can take a while."
+        "text": "Saving calibration results... Please wait a moment."
     },
     {
         "id": "IDS_DLG_CANCEL",
@@ -97,7 +97,7 @@
     },
     {
         "id": "IDS_DLG_RELOAD_CALIBRATION_RESULTS",
-        "text": "Reload last calibration results... It can take a while."
+        "text": "Reloading the previous calibration results... Please wait a moment."
     },
     {
         "id": "IDS_DLG_DECODER_OPTIONS",
@@ -109,11 +109,11 @@
     },
     {
         "id": "IDS_DLG_CURSOR_FOR_DECODE_START",
-        "text": "The cursor for decode start time"
+        "text": "Decoding Start Position"
     },
     {
         "id": "IDS_DLG_CURSOR_FOR_DECODE_END",
-        "text": "The cursor for decode end time"
+        "text": "Decoding End Position"
     },
     {
         "id": "IDS_DLG_DEVICE_OPTIONS",
@@ -121,11 +121,7 @@
     },
     {
         "id": "IDS_DLG_MODE",
-        "text": "Mode"
-    },
-    {
-        "id": "IDS_DLG_OPERATION_MODE",
-        "text": "Operation Mode"
+        "text": "Options"
     },
     {
         "id": "IDS_DLG_ENABLE_ALL",
@@ -253,11 +249,11 @@
     },
     {
         "id": "IDS_DLG_EXPORT_PROTOCOL_LIST_RESULT",
-        "text": "Export Protocol List Result... It can take a while."
+        "text": "Exporting decoding results... Please wait a moment."
     },
     {
         "id": "IDS_DLG_FIT_TO_WINDOW",
-        "text": "Fit to Window"
+        "text": "Adapting window size"
     },
     {
         "id": "IDS_DLG_FIXED",
@@ -265,7 +261,7 @@
     },
     {
         "id": "IDS_DLG_MAP_ZOOM",
-        "text": "Map Zoom: "
+        "text": "Jump Zoom: "
     },
     {
         "id": "IDS_DLG_DECODED_PROTOCOLS",
@@ -273,7 +269,7 @@
     },
     {
         "id": "IDS_DLG_PROTOCOL_LIST_VIEWER",
-        "text": "Protocol List Viewer"
+        "text": "Decoding Results"
     },
     {
         "id": "IDS_DLG_REGION",
@@ -286,10 +282,6 @@
     {
         "id": "IDS_DLG_SEARCH_OPTIONS",
         "text": "Search Options"
-    },
-    {
-        "id": "IDS_DLG_CHANGE_FILE",
-        "text": "change"
     },
     {
         "id": "IDS_DLG_SAVING",
@@ -317,7 +309,7 @@
     },
     {
         "id": "IDS_DLG_LOAD_CURRENT_SETTING",
-        "text": "Load current setting... It can take a while."
+        "text": "Loading current settings... Please wait a moment."
     },
     {
         "id": "IDS_DLG_WAITING",
@@ -349,7 +341,7 @@
     },
     {
         "id": "IDS_DLG_NOISE_SENSITIVITY",
-        "text": "Noise Sensitivity: "
+        "text": "Trigger Sensitivity: "
     },
     {
         "id": "IDS_DLG_TRIGGER_SOURCES",
@@ -701,7 +693,7 @@
     },
     {
         "id": "IDS_DLG_USE_ABORT_DATA_REPEAT",
-        "text": "Allow use of the midway stopped data on repeat mode"
+        "text": "Update latest data for repeat mode stop"
     },
     {
         "id": "IDS_DLG_FONT_SIZE",
@@ -709,16 +701,16 @@
     },
     {
         "id": "IDS_DLG_GROUP_LOGIC",
-        "text": "Logic"
+        "text": "Logic Analyzer"
     },
     {
         "id": "IDS_DLG_GROUP_DSO",
-        "text": "Scope"
+        "text": "Oscilloscope"
     },
     {
         "id": "IDS_DLG_GROUP_UI",
         "text": "UI"
-    },
+    }
     {
         "id": "IDS_DLG_ABORT",
         "text": "Abort"

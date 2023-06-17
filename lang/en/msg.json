@@ -17,7 +17,7 @@
     },   
     {
         "id": "IDS_MSG_ERROR",
-        "text": "error"
+        "text": "Error"
     },
     {
         "id": "IDS_MSG_INFORMATION",
@@ -29,7 +29,7 @@
     },
     {
         "id": "IDS_MSG_AUTO_CALIB_START",
-        "text": "Auto Calibration program will be started. Don't connect any probes. \nIt can take a while!"
+        "text": "Auto Calibration program will be initiated. Don't connect any probes. \nThis may take a while!"
     },
     {
         "id": "IDS_MSG_AUTO_CALIB",
@@ -37,7 +37,7 @@
     },
     {
         "id": "IDS_MSG_ADJUST_SAVE",
-        "text": "Please adjust zero skew and save the result"
+        "text": "Please adjust zero offset and save the result"
     },
     {
         "id": "IDS_MSG_SAVE_CAPDATE",
@@ -45,7 +45,7 @@
     },
     {
         "id": "IDS_MSG_NOT_FOND_DEFAULT_PROFILE",
-        "text": "Cannot find default profile for this device!"
+        "text": "Cannot find default session for this device!"
     },
     {
         "id": "IDS_MSG_OPEN_FILE_ERROR",
@@ -53,7 +53,7 @@
     },
     {
         "id": "IDS_MSG_PROFILE_NOT_COMPATIBLE",
-        "text": "Profile is not compatible with current device or mode!"
+        "text": "Session is not compatible with current device or mode!"
     },
     {
         "id": "IDS_MSG_RESTORE_WINDOW_ERROR",
@@ -69,7 +69,7 @@
     },
     {
         "id": "IDS_MSG_DECODER_REPEAT",
-        "text": "Any decoder have repeated id or name:"
+        "text": "Duplicate ID or name found in the decoders:"
     },
     {
         "id": "IDS_MSG_DECODER_LIST_EMPTY",
@@ -81,11 +81,11 @@
     },
     {
         "id": "IDS_MSG_FIND_BASE_DECODER_ERROR",
-        "text": "find the base decoder error!"
+        "text": "No corresponding base decoder found!"
     },
     {
         "id": "IDS_MSG_NO_DECODER_DEL",
-        "text": "Have no decoder to remove!"
+        "text": "Has no decoder to remove!"
     },
     {
         "id": "IDS_MSG_DECODER_CONFIRM_DEL_ALL",
@@ -101,7 +101,7 @@
     },
     {
         "id": "IDS_MSG_SET_DEF_CAL_SETTING",
-        "text": "All calibration settings will become the defualt values!"
+        "text": "All calibration settings will be saved as default!"
     },
     {
         "id": "IDS_MSG_ALL_CHANNEL_DISABLE",
@@ -221,7 +221,7 @@
     },
     {
         "id": "IDS_MSG_PACKET_ERROR_DET",
-        "text": "the content of received packet are not expected!"
+        "text": "The received packet format is incorrect!"
     },
     {
         "id": "IDS_MSG_DATA_OVERFLOW",
@@ -297,7 +297,7 @@
     },
     {
         "id": "IDS_MSG_STORESESS_EXPORTPROC_ERROR2",
-        "text": "xbuffer malloc failed."
+        "text": "buffer malloc failed."
     },
     {
         "id": "IDS_MSG_SAVE_FILE",
@@ -309,7 +309,7 @@
     },
     {
         "id": "IDS_MSG_STORESESS_EXPORTPROC_ERROR2",
-        "text": "xbuffer malloc failed."
+        "text": "buffer malloc failed."
     },
     {
         "id": "IDS_MSG_EXPORT_DATA",
@@ -337,23 +337,23 @@
     },
     {
         "id": "IDS_MSG_NO_DATA",
-        "text": "Have no data!"
+        "text": "Has no data!"
     },
     {
         "id": "IDS_MSG_TO_SWITCH_DEVICE",
-        "text": "To switch the new device?"
+        "text": "Switch to the new device?"
     },
     {
         "id": "IDS_MSG_DISABLED_CHANNEL_TRIG",
-        "text": "Disabled channels cannot be used for triggering!"
+        "text": "Disabled channels cannot be used for trigger!"
     },
     {
         "id": "IDS_MSG_TO_RECONNECT_FOR_FIRMWARE",
-        "text": "The firmware version is incorrect, please reconnect the device!"
+        "text": "The firmware version is incorrect, please replug the device!"
     },
     {
         "id": "IDS_MSG_DEVICE_BUSY_SWITCH_FAILED",
-        "text": "The device is busy,switch failed!"
+        "text": "The device is busy, switch failed!"
     },
     {
         "id": "IDS_MSG_NO_ENABLED_CHANNEL",
@@ -369,6 +369,6 @@
     },
     {
         "id": "IDS_MSG_DEVICE_SPEED_TOO_LOW",
-        "text": "Error, The speed of the USB port that \nthe device connected is too low!"
+        "text": "Error: USB port speed is too low (<480Mbps)!"
     }
 ]

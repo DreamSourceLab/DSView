@@ -33,11 +33,11 @@
     },
     {
         "id": "dec_ps2_opt_HtoD_Clock",
-        "text": "HtoD时钟"
+        "text": "主机到设备时钟"
     },
     {
         "id": "dec_ps2_opt_DtoH_Clock",
-        "text": "DtoH时钟"
+        "text": "设备到主机时钟"
     },
     {
         "id": "dec_pwm_chan_data",
@@ -53,7 +53,7 @@
     },
     {
         "id": "dec_qi_chan_qi",
-        "text": "解调Qi数据线"
+        "text": "解调后的Qi信号"
     },
     {
         "id": "dec_qspi_chan_clk",
@@ -93,7 +93,7 @@
     },
     {
         "id": "dec_qspi_opt_bitorder",
-        "text": "比特序"
+        "text": "位序"
     },
     {
         "id": "dec_qspi_opt_wordsize",
@@ -165,7 +165,7 @@
     },
     {
         "id": "dec_sdq_opt_bitrate",
-        "text": "比特率"
+        "text": "波特率"
     },
     {
         "id": "dec_seven_segment_chan_A",
@@ -333,7 +333,7 @@
     },
     {
         "id": "dec_swim_chan_swim",
-        "text": "SWIM数据线"
+        "text": "SWIM信号"
     },
     {
         "id": "dec_t55xx_chan_data",
@@ -341,7 +341,7 @@
     },
     {
         "id": "dec_t55xx_opt_coilfreq",
-        "text": "线圈频率"
+        "text": "工作频率"
     },
     {
         "id": "dec_t55xx_opt_start_gap",
