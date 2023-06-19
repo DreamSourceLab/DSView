@@ -1925,7 +1925,8 @@ SR_PRIV int dsl_dev_open(struct sr_dev_driver *di, struct sr_dev_inst *sdi, gboo
             }
 
             if (hw_info != DSL_HDL_VERSION) {
-               sr_err("%s: HDL verison incompatible!", __func__);
+               sr_err("%s: HDL verison incompatible! device:%02X, target:%02X", __func__, 
+                            hw_info, DSL_HDL_VERSION);
                ds_set_last_error(SR_ERR_DEVICE_FIRMWARE_VERSION_LOW);
                sdi->status = SR_ST_INCOMPATIBLE;
                return SR_ERR;
