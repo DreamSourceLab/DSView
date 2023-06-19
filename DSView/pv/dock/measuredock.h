@@ -53,30 +53,22 @@ namespace view {
 
 namespace dock {
 
-struct cursor_distance_info
+struct cursor_row_info
 {
-    QWidget         *row_pannel;
     QToolButton     *del_bt;
     QPushButton     *start_bt;
     QPushButton     *end_bt;
-    QLabel          *r_lable;
-};
-
-struct cursor_edge_info
-{
-    QWidget         *row_pannel;
-    QToolButton     *del_bt;
-    QPushButton     *start_bt;
-    QPushButton     *end_bt;
-    QLabel          *rising_edges_label;
+    QLabel          *r_label;
     QComboBox       *box;
+    int             cursor1;
+    int             cursor2;
 };
 
 struct cursor_opt_info
 { 
     QToolButton     *del_bt;
     QPushButton     *goto_bt;
-    QLabel          *info_lable;
+    QLabel          *info_label;
     view::Cursor    *cursor;
 };
 
@@ -85,7 +77,7 @@ class MeasureDock : public QScrollArea, public IFontForm
     Q_OBJECT
 
 private:
-    static const int Max_Measure_Limits = 16;
+    static const int Max_Measure_Limits = 15;
 
 public:
     MeasureDock(QWidget *parent, pv::view::View &view, SigSession *session);
@@ -101,6 +93,9 @@ private:
     //IFontForm
     void update_font();
 
+    void build_dist_pannel();
+    void build_edge_pannel();
+
 private:
     QComboBox* create_probe_selector(QWidget *parent);
     void update_probe_selector(QComboBox *selector);
@@ -111,8 +106,7 @@ private slots:
     void add_edge_measure();
     void del_edge_measure();
     void show_all_coursor();
-    void set_se_cursor();
-    const view::Cursor* find_cousor(int index);
+    void set_sel_cursor();
     void update_dist();
     void update_edge();
     void set_cursor_btn_color(QPushButton *btn);
@@ -146,12 +140,14 @@ private:
     QGroupBox *_edge_groupBox;
     QToolButton *_edge_add_btn;
     QPushButton *_sel_btn;
+    QWidget     *_dist_pannel;
+    QWidget     *_edge_pannel;
 
     QGridLayout *_cursor_layout;
     QGroupBox *_cursor_groupBox;
-    std::vector<cursor_distance_info>   _cursor_disdance_list;
-    std::vector<cursor_edge_info>       _cursor_edge_list;
-    std::vector<cursor_opt_info>        _cursor_opt_list;
+    std::vector<cursor_row_info>   _dist_row_list;
+    std::vector<cursor_row_info>   _edge_row_list;
+    std::vector<cursor_opt_info>   _opt_row_list;
 
     QLabel *_channel_label;
     QLabel *_edge_label;
