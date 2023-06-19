@@ -370,5 +370,9 @@
     {
         "id": "IDS_MSG_DEVICE_SPEED_TOO_LOW",
         "text": "Error: USB port speed is too low (<480Mbps)!"
+    },
+    {
+        "id": "IDS_MSG_FIRMWARE_NOT_EXIST",
+        "text": "Error: Firmware file is not exist!"
     }
 ]

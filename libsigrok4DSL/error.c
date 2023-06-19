@@ -81,7 +81,7 @@ SR_API const char *sr_error_str(int error_code)
 	case SR_ERR_NA:
 		str = "not applicable";
 		break;
-	case SR_ERR_DEV_CLOSED:
+	case SR_ERR_DEVICE_CLOSED:
 		str = "device closed but should be open";
 		break;
 	case SR_ERR_CALL_STATUS:
@@ -147,8 +147,8 @@ SR_API const char *sr_error_name(int error_code)
 	case SR_ERR_NA:
 		str = "SR_ERR_NA";
 		break;
-	case SR_ERR_DEV_CLOSED:
-		str = "SR_ERR_DEV_CLOSED";
+	case SR_ERR_DEVICE_CLOSED:
+		str = "SR_ERR_DEVICE_CLOSED";
 		break;
 	case SR_ERR_CALL_STATUS:
 		str = "SR_ERR_CALL_STATUS";

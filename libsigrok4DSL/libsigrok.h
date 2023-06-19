@@ -74,9 +74,12 @@ enum {
 	SR_ERR_BUG        =  4, /**< Errors hinting at internal bugs. */
 	SR_ERR_SAMPLERATE =  5, /**< Incorrect samplerate. */
 	SR_ERR_NA         =  6, /**< Not applicable. */
-	SR_ERR_DEV_CLOSED =  7, /**< Device is closed, but needs to be open. */
-	SR_ERR_CALL_STATUS = 8, /**< Function call status error. */
-	SR_ERR_HAVE_DONE  = 9, /**< The Function have called.*/
+	SR_ERR_DEVICE_CLOSED =  7, /**< Device is closed, but needs to be open. */
+	SR_ERR_CALL_STATUS 	 =  8, /**< Function call status error. */
+	SR_ERR_HAVE_DONE  	 =  9, /**< The Function have called.*/
+	SR_ERR_FIRMWARE_NOT_EXIST 	= 10, /**< The firmware file is not exist.*/
+	SR_ERR_DEVICE_IS_EXCLUSIVE 	= 11, /**< The device is exclusive by other process.*/
+	SR_ERR_DEVICE_FIRMWARE_VERSION_LOW = 12, /**< The firmware version is too low.*/
 
 	/*
 	 * Note: When adding entries here, don't forget to also update the
@@ -1469,6 +1472,8 @@ SR_API int ds_is_collecting();
  * Close the actived device, and stop collect.
  */
 SR_API int ds_release_actived_device();
+
+SR_API int ds_get_last_error();
 
 /*---config -----------------------------------------------*/
 SR_API int ds_get_actived_device_config(const struct sr_channel *ch,

@@ -218,10 +218,8 @@ namespace pv
         ds_device_handle old_dev = _device_agent.handle();
  
         _callback->trigger_message(DSV_MSG_CURRENT_DEVICE_CHANGE_PREV);
-
         // Release the old device.
         _device_agent.release();
-
         _device_status = ST_INIT;
 
         if (ds_active_device(dev_handle) != SR_OK)
@@ -231,7 +229,6 @@ namespace pv
         }
 
         _device_agent.update();
-
         set_collect_mode(COLLECT_SINGLE);
 
         if (_device_agent.is_file()){
@@ -255,16 +252,31 @@ namespace pv
         // The current device changed.
         _callback->trigger_message(DSV_MSG_CURRENT_DEVICE_CHANGED);
 
-        if (_device_agent.is_hardware() && _device_agent.check_firmware_version() == false)
+        if (ds_get_last_error() == SR_ERR_DEVICE_FIRMWARE_VERSION_LOW)
         {
-            QString strMsg = L_S(STR_PAGE_MSG, S_ID(IDS_MSG_TO_RECONNECT_FOR_FIRMWARE), "Please reconnect the device!");
+            QString strMsg = L_S(STR_PAGE_MSG, S_ID(IDS_MSG_TO_RECONNECT_FOR_FIRMWARE), 
+                    "Please reconnect the device!");
             _callback->delay_prop_msg(strMsg);
+            return false;
         }
 
-        if (_device_agent.handle() != dev_handle && old_dev != NULL_HANDLE)
+        if (ds_get_last_error() == SR_ERR_FIRMWARE_NOT_EXIST)
         {
-            QString strMsg = L_S(STR_PAGE_MSG, S_ID(IDS_MSG_DEVICE_BUSY_SWITCH_FAILED), "Device is busy!");
-            MsgBox::Show(strMsg);
+            QString strMsg = L_S(STR_PAGE_MSG, S_ID(IDS_MSG_FIRMWARE_NOT_EXIST), 
+                    "Firmware not exist!");
+            _callback->delay_prop_msg(strMsg);
+            return false;
+        }
+
+        if (ds_get_last_error() == SR_ERR_DEVICE_IS_EXCLUSIVE)
+        {
+            QString strMsg = L_S(STR_PAGE_MSG, S_ID(IDS_MSG_DEVICE_BUSY_SWITCH_FAILED), 
+                        "Device is busy!");
+            if (old_dev != NULL_HANDLE)
+                MsgBox::Show(strMsg);
+            else
+                _callback->delay_prop_msg(strMsg);
+            return false;
         }
 
         return true;

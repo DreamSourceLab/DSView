@@ -407,6 +407,8 @@ SR_PRIV int sr_new_virtual_device(const char *filename, struct sr_dev_inst **out
  */
 SR_PRIV int sr_usb_device_is_exists(libusb_device *usb_dev);
 
+SR_PRIV void ds_set_last_error(int error);
+
 /**
  * Forward the data.
  */

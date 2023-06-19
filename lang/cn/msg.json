@@ -369,5 +369,9 @@
     {
         "id": "IDS_MSG_DEVICE_SPEED_TOO_LOW",
         "text": "错误: 当前连接的USB端口速率过低(<480Mbps)!"
+    },
+    {
+        "id": "IDS_MSG_FIRMWARE_NOT_EXIST",
+        "text": "错误: 固件文件不存在!"
     }
 ]

@@ -69,6 +69,7 @@ struct sr_lib_context
 	int is_stop_by_detached;
 	int transaction_id;
 	int transaction_command;
+	int last_error;
 };
 
 static void hotplug_event_listen_callback(struct libusb_context *ctx, struct libusb_device *dev, int event);
@@ -104,6 +105,7 @@ static struct sr_lib_context lib_ctx = {
 	.is_stop_by_detached = 0,
 	.transaction_id = 0,
 	.transaction_command = DEV_TRANS_NONE,
+	.last_error = SR_OK,
 };
 
 /**
@@ -347,6 +349,8 @@ SR_API int ds_active_device(ds_device_handle handle)
 	int ret;
 	struct sr_dev_inst *old_dev;
 
+	lib_ctx.last_error = SR_OK;
+
 	if (handle == NULL_HANDLE)
 	{
 		return SR_ERR_ARG;
@@ -408,6 +412,7 @@ SR_API int ds_active_device(ds_device_handle handle)
 			}
 			else
 			{  
+				// Failed to switch new device.
 				if (old_dev != NULL && old_dev != dev){
 					sr_err("%s", "Open device error! the current device switch failed.");
 					lib_ctx.actived_device_instance = old_dev;
@@ -705,6 +710,8 @@ SR_API int ds_start_collect()
 	int ret;
 	struct sr_dev_inst *di;
 	di = lib_ctx.actived_device_instance;
+
+	lib_ctx.last_error = SR_OK;
 
 	sr_info("%s", "Start collect.");
 
@@ -1650,3 +1657,13 @@ SR_PRIV int post_message_callback(int msg)
 }
 
 /**-------------------private function end---------------*/
+
+SR_PRIV void ds_set_last_error(int error)
+{
+	lib_ctx.last_error = error;
+}
+
+SR_API int ds_get_last_error()
+{
+	return lib_ctx.last_error;
+}

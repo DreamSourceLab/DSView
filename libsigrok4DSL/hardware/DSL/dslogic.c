@@ -1415,8 +1415,10 @@ static int dev_acquisition_start(struct sr_dev_inst *sdi, void *cb_data)
     int ret;
     struct ctl_wr_cmd wr_cmd;
 
-    if (sdi->status != SR_ST_ACTIVE)
-        return SR_ERR_DEV_CLOSED;
+    if (sdi->status != SR_ST_ACTIVE){
+        ds_set_last_error(SR_ERR_DEVICE_CLOSED);
+        return SR_ERR_DEVICE_CLOSED;
+    }
 
     drvc = di->priv;
     devc = sdi->priv;

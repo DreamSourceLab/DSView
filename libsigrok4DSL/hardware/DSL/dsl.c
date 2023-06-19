@@ -362,6 +362,7 @@ static int hw_dev_open(struct sr_dev_driver *di, struct sr_dev_inst *sdi)
         sr_err("Expected firmware version %d.%d, "
                 "got %d.%d.", DSL_REQUIRED_VERSION_MAJOR, DSL_REQUIRED_VERSION_MINOR,
                 vi.major, vi.minor);
+        ds_set_last_error(SR_ERR_DEVICE_FIRMWARE_VERSION_LOW);
         sdi->status = SR_ST_INCOMPATIBLE;
     }
     else {
@@ -1300,6 +1301,7 @@ SR_PRIV int dsl_fpga_config(struct libusb_device_handle *hdl, const char *filena
     if ((fw = fopen(filename, "rb")) == NULL) {
         sr_err("Unable to open FPGA bit file %s for reading: %s",
                filename, strerror(errno));
+        ds_set_last_error(SR_ERR_FIRMWARE_NOT_EXIST);
         return SR_ERR;
     }
 	
@@ -1866,6 +1868,7 @@ SR_PRIV int dsl_dev_open(struct sr_dev_driver *di, struct sr_dev_inst *sdi, gboo
 
         if (ret != LIBUSB_SUCCESS){
             dsl_dev_close(sdi);
+            ds_set_last_error(SR_ERR_DEVICE_IS_EXCLUSIVE);
             return SR_ERR;
         } 
     }
@@ -1914,6 +1917,7 @@ SR_PRIV int dsl_dev_open(struct sr_dev_driver *di, struct sr_dev_inst *sdi, gboo
             ret = dsl_hdl_version(sdi, &hw_info);
             if ((ret != SR_OK) || (hw_info != DSL_HDL_VERSION)) {
                sr_err("%s: HDL verison incompatible!", __func__);
+               ds_set_last_error(SR_ERR_DEVICE_FIRMWARE_VERSION_LOW);
                sdi->status = SR_ST_INCOMPATIBLE;
                return SR_ERR;
             }
