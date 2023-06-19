@@ -373,5 +373,9 @@
     {
         "id": "IDS_MSG_FIRMWARE_NOT_EXIST",
         "text": "错误: 固件文件不存在!"
+    },
+    {
+        "id": "IDS_MSG_DEVICE_USB_IO_ERROR",
+        "text": "Error: USB读写错误!"
     }
 ]

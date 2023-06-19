@@ -374,5 +374,9 @@
     {
         "id": "IDS_MSG_FIRMWARE_NOT_EXIST",
         "text": "Error: Firmware file is not exist!"
+    },
+    {
+        "id": "IDS_MSG_DEVICE_USB_IO_ERROR",
+        "text": "Error: USB IO error!"
     }
 ]

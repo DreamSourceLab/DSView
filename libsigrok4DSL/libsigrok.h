@@ -80,6 +80,7 @@ enum {
 	SR_ERR_FIRMWARE_NOT_EXIST 	= 10, /**< The firmware file is not exist.*/
 	SR_ERR_DEVICE_IS_EXCLUSIVE 	= 11, /**< The device is exclusive by other process.*/
 	SR_ERR_DEVICE_FIRMWARE_VERSION_LOW = 12, /**< The firmware version is too low.*/
+	SR_ERR_DEVICE_USB_IO_ERROR = 13, /**< THe use io error.*/
 
 	/*
 	 * Note: When adding entries here, don't forget to also update the

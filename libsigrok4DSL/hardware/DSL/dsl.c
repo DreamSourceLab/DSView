@@ -327,7 +327,8 @@ static int hw_dev_open(struct sr_dev_driver *di, struct sr_dev_inst *sdi)
 
     sr_info("Open usb device instance, handle: %p", dev_handel);
 
-    if (libusb_open(dev_handel, &usb->devhdl) != 0){
+    ret = libusb_open(dev_handel, &usb->devhdl);
+    if (ret != LIBUSB_SUCCESS){
         sr_err("Failed to open device: %s, handle:%p",
                 libusb_error_name(ret), dev_handel);
         return SR_ERR;
@@ -1915,7 +1916,15 @@ SR_PRIV int dsl_dev_open(struct sr_dev_driver *di, struct sr_dev_inst *sdi, gboo
             ret = dsl_wr_reg(sdi, CTR0_ADDR, bmNONE); // dessert clear
             /* Check HDL version */
             ret = dsl_hdl_version(sdi, &hw_info);
-            if ((ret != SR_OK) || (hw_info != DSL_HDL_VERSION)) {
+
+            if ((ret != SR_OK)) {
+               sr_err("%s: Failed to get FPGA bin version!", __func__);
+               ds_set_last_error(SR_ERR_DEVICE_USB_IO_ERROR);
+               sdi->status = SR_ST_INACTIVE;
+               return SR_ERR;
+            }
+
+            if (hw_info != DSL_HDL_VERSION) {
                sr_err("%s: HDL verison incompatible!", __func__);
                ds_set_last_error(SR_ERR_DEVICE_FIRMWARE_VERSION_LOW);
                sdi->status = SR_ST_INCOMPATIBLE;

@@ -268,6 +268,14 @@ namespace pv
             return false;
         }
 
+        if (ds_get_last_error() == SR_ERR_DEVICE_USB_IO_ERROR)
+        {
+            QString strMsg = L_S(STR_PAGE_MSG, S_ID(IDS_MSG_DEVICE_USB_IO_ERROR), 
+                    "USB io error!");
+            _callback->delay_prop_msg(strMsg);
+            return false;
+        }
+
         if (ds_get_last_error() == SR_ERR_DEVICE_IS_EXCLUSIVE)
         {
             QString strMsg = L_S(STR_PAGE_MSG, S_ID(IDS_MSG_DEVICE_BUSY_SWITCH_FAILED), 
