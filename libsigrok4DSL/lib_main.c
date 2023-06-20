@@ -1362,6 +1362,7 @@ static void process_detach_event()
 	struct sr_dev_driver *driver_ins;
 	libusb_device *ev_dev;
 	int ev;
+	int bFind;
 
 	sr_info("Process device detach event.");
 
@@ -1375,6 +1376,7 @@ static void process_detach_event()
 	}
 	lib_ctx.detach_device_handle = NULL;
 
+	bFind = 0;
 	pthread_mutex_lock(&lib_ctx.mutext);
 
 	for (l = lib_ctx.device_list; l; l = l->next)
@@ -1397,13 +1399,16 @@ static void process_detach_event()
 				destroy_device_instance(dev);
 			}
 
+			bFind = 1;
 			break;
 		}
 	}
 	pthread_mutex_unlock(&lib_ctx.mutext);
 
 	// Tell user a new device detached, and the list is updated.
-	post_event_async(ev);
+	if (bFind){
+		post_event_async(ev);
+	}	
 }
 
 static void usb_hotplug_process_proc()

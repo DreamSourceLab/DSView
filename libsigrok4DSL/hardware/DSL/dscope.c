@@ -190,7 +190,7 @@ static GSList *scan(GSList *options)
 	struct libusb_device_descriptor des;
 	libusb_device **devlist;
     libusb_device *device_handle = NULL;
-    int devcnt, ret, i, j;
+    int ret, i, j;
 	const char *conn;
     enum libusb_speed usb_speed;
     struct sr_usb_dev_inst *usb_dev_info;
@@ -316,67 +316,63 @@ static GSList *scan(GSList *options)
         address = libusb_get_device_address(device_handle);
         sr_info("Found a new device,handle:%p", device_handle);
 
-        devc = DSCope_dev_new(prof);
-        if (!devc)
-            return NULL;
-        
-        sdi = sr_dev_inst_new(channel_modes[devc->ch_mode].mode, SR_ST_INITIALIZING,
-			prof->vendor, prof->model, prof->model_version);
-
-        if (!sdi) {
-            g_free(devc);
-            return NULL;
-        }
-
-        sdi->priv = devc;
-		sdi->driver = di;
-        sdi->dev_type = DEV_TYPE_USB;
-        sdi->handle = (ds_device_handle)device_handle;
-
-        /* Fill in probelist according to this device's profile. */
-        if (dsl_setup_probes(sdi, channel_modes[devc->ch_mode].num) != SR_OK){
-            sr_err("dsl_setup_probes() error");
-            dev_destroy(sdi); 
-            return NULL;
-        }
-        devices = g_slist_append(devices, sdi);
-        num++;
-
 		if (dsl_check_conf_profile(device_handle)) {
 			/* Already has the firmware, so fix the new address. */
             sr_info("Found a DSCope device,name:\"%s\",handle:%p", prof->model, device_handle);
 
+            devc = DSCope_dev_new(prof);
+            if (devc == NULL){
+                break;
+            }
+            
+            sdi = sr_dev_inst_new(channel_modes[devc->ch_mode].mode, SR_ST_INITIALIZING,
+                prof->vendor, prof->model, prof->model_version);
+
+            if (sdi == NULL) {
+                free(devc);
+                break;
+            }
+
+            sdi->priv = devc;
+            sdi->driver = di;
+            sdi->dev_type = DEV_TYPE_USB;
+            sdi->handle = (ds_device_handle)device_handle;
+
+            /* Fill in probelist according to this device's profile. */
+            if (dsl_setup_probes(sdi, channel_modes[devc->ch_mode].num) != SR_OK){
+                sr_err("dsl_setup_probes() error");
+                dev_destroy(sdi); 
+                break;
+            }
+
             usb_dev_info = sr_usb_dev_inst_new(bus, address);
             usb_dev_info->usb_dev = device_handle;
             sdi->conn = usb_dev_info;
-            sdi->status = SR_ST_INACTIVE;          
+            sdi->status = SR_ST_INACTIVE;   
+
+            devices = g_slist_append(devices, sdi);
+            num++;       
 		}
         else {
             char *firmware;
             char *res_path = DS_RES_PATH;
             if (!(firmware = malloc(strlen(res_path)+strlen(prof->firmware) + 5))) {
                 sr_err("Firmware path malloc error!");
-                return NULL;
+                break;
             }
-
             strcpy(firmware, res_path);
             strcat(firmware, "/");
             strcat(firmware, prof->firmware);
 
             sr_info("Install firmware bin file, device:\"%s\", file:\"%s\"", prof->model, firmware);
 
-            if (ezusb_upload_firmware(device_handle, USB_CONFIGURATION,
-                firmware) == SR_OK)
-				/* Store when this device's FW was updated. */
-				devc->fw_updated = g_get_monotonic_time();
-			else
-                sr_err("Firmware upload failed for "
-				       "device %d.", devcnt);
+            if (ezusb_upload_firmware(device_handle, USB_CONFIGURATION,  firmware) != SR_OK){
+                sr_err("Firmware upload failed for device %s", prof->model);
+            }
+
             g_free(firmware);
-            
-            usb_dev_info = sr_usb_dev_inst_new(bus, 0xff);
-            usb_dev_info->usb_dev = device_handle;
-            sdi->conn = usb_dev_info;
+
+            sr_info("Waitting for device reconnect, name:\"%s\"", prof->model);            
 		}
 	}
 

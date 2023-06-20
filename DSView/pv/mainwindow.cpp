@@ -2007,6 +2007,8 @@ namespace pv
             break;
 
         case DSV_MSG_SAVE_COMPLETE:
+            _session->clear_store_confirm_flag();
+
             if (_is_auto_switch_device)
             {
                 _is_auto_switch_device = false;

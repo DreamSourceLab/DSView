@@ -199,6 +199,10 @@ public:
     bool is_first_store_confirm();
     bool get_capture_status(bool &triggered, int &progress);
 
+    inline void clear_store_confirm_flag(){
+        _confirm_store_time_id = _work_time_id;
+    }
+
 	std::vector<view::Signal*>& get_signals(); 
 
     bool add_decoder(srd_decoder *const dec, bool silent, DecoderStatus *dstatus, 

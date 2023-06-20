@@ -1824,14 +1824,7 @@ SR_PRIV int dsl_dev_open(struct sr_dev_driver *di, struct sr_dev_inst *sdi, gboo
      * Just wait for renumerate -> detach -> attach
      */
     ret = SR_ERR;
-    if (devc->fw_updated > 0) {
-        sr_info("%s: Firmware upload have done.", __func__);
-        return SR_ERR;
-    }
-    else {
-        sr_info("%s: Firmware upload was not needed.", __func__);
-        ret = hw_dev_open(di, sdi);
-    }
+    ret = hw_dev_open(di, sdi);
 
     if (ret != SR_OK) {
         sr_err("%s: Unable to open device.", __func__);
@@ -1963,7 +1956,15 @@ SR_PRIV int dsl_dev_close(struct sr_dev_inst *sdi)
 {
     struct sr_usb_dev_inst *usb;
 
+    assert(sdi);
+
     usb = sdi->conn;
+
+    if (usb == NULL){
+        sdi->status = SR_ST_INACTIVE;
+        return SR_OK;
+    }
+ 
     if (usb->devhdl == NULL){
         sr_detail("dsl_dev_close(),libusb_device_handle is null.");
         return SR_ERR;
