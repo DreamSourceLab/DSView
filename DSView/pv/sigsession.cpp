@@ -1023,8 +1023,8 @@ namespace pv
 
         spectrum_rebuild();
 
-        dsv_info("Rebuild channnel list, logic channel count:%d, dso channel count:%d, all:%d", 
-                    logic_chan_num, dso_chan_num, all_chann_num);
+        //dsv_info("Rebuild channnel list, logic channel count:%d, dso channel count:%d, all:%d", 
+        //            logic_chan_num, dso_chan_num, all_chann_num);
     }
 
     void SigSession::refresh(int holdtime)
@@ -1442,7 +1442,7 @@ namespace pv
 
         out_trace = NULL;
 
-        dsv_info("Create new decoder,name:\"%s\",id:\"%s\"", dec->name, dec->id);
+        //dsv_info("Create new decoder,name:\"%s\",id:\"%s\"", dec->name, dec->id);
 
         try
         {

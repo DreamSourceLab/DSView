@@ -603,8 +603,6 @@ static GSList *hw_scan(GSList *options)
     (void)options;
     devices = NULL;
 
-    sr_info("%s", "Scan demo device.");
-
     vdev = malloc(sizeof(struct session_vdev));
     if (vdev == NULL)
     {

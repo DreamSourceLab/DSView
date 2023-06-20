@@ -331,6 +331,7 @@ static int hw_dev_open(struct sr_dev_driver *di, struct sr_dev_inst *sdi)
     if (ret != LIBUSB_SUCCESS){
         sr_err("Failed to open device: %s, handle:%p",
                 libusb_error_name(ret), dev_handel);
+        ds_set_last_error(SR_ERR_DEVICE_USB_IO_ERROR);
         return SR_ERR;
     }
     //sr_info("------------Open returns the libusb_device_handle: %p, struct:%p", usb->devhdl, usb);
@@ -349,6 +350,7 @@ static int hw_dev_open(struct sr_dev_driver *di, struct sr_dev_inst *sdi)
 
     if ((ret = command_ctl_rd(usb->devhdl, rd_cmd)) != SR_OK) {
         sr_err("Failed to get firmware version.");
+        ds_set_last_error(SR_ERR_DEVICE_USB_IO_ERROR);
         return ret;
     }
 
@@ -377,7 +379,7 @@ static int hw_dev_open(struct sr_dev_driver *di, struct sr_dev_inst *sdi)
 
     if ((sdi->status != SR_ST_ACTIVE) &&
         (sdi->status != SR_ST_INCOMPATIBLE)){
-        return SR_ERR;
+        assert(0);
     }
     
     return SR_OK;
@@ -1823,7 +1825,7 @@ SR_PRIV int dsl_dev_open(struct sr_dev_driver *di, struct sr_dev_inst *sdi, gboo
      */
     ret = SR_ERR;
     if (devc->fw_updated > 0) {
-        sr_info("%s: Firmware upload have done.");
+        sr_info("%s: Firmware upload have done.", __func__);
         return SR_ERR;
     }
     else {
@@ -1881,6 +1883,7 @@ SR_PRIV int dsl_dev_open(struct sr_dev_driver *di, struct sr_dev_inst *sdi, gboo
 
     if ((ret = command_ctl_rd(usb->devhdl, rd_cmd)) != SR_OK) {
         sr_err("Failed to get hardware infos.");
+        ds_set_last_error(SR_ERR_DEVICE_USB_IO_ERROR);
         return SR_ERR;
     }
     *fpga_done = (hw_info & bmFPGA_DONE) != 0;
@@ -1889,6 +1892,7 @@ SR_PRIV int dsl_dev_open(struct sr_dev_driver *di, struct sr_dev_inst *sdi, gboo
         if (!(*fpga_done)) {
             char *fpga_bit;
             char *res_path = DS_RES_PATH;
+
             if (!(fpga_bit = malloc(strlen(res_path)+strlen(devc->profile->fpga_bit33) + 5))) {
                 sr_err("fpag_bit path malloc error!");
                 return SR_ERR_MALLOC;
@@ -1906,13 +1910,17 @@ SR_PRIV int dsl_dev_open(struct sr_dev_driver *di, struct sr_dev_inst *sdi, gboo
             default:
                 return SR_ERR;
             }
+
             ret = dsl_fpga_config(usb->devhdl, fpga_bit);
             g_free(fpga_bit);
+
             if (ret != SR_OK) {
                 sr_err("%s: Configure FPGA failed!", __func__);
+                ds_set_last_error(SR_ERR_DEVICE_USB_IO_ERROR);
                 return SR_ERR;
             }
-        } else {
+        }
+        else {
             ret = dsl_wr_reg(sdi, CTR0_ADDR, bmNONE); // dessert clear
             /* Check HDL version */
             ret = dsl_hdl_version(sdi, &hw_info);
@@ -1939,12 +1947,14 @@ SR_PRIV int dsl_dev_open(struct sr_dev_driver *di, struct sr_dev_inst *sdi, gboo
     ret = dsl_wr_reg(sdi, CTR0_ADDR, bmNONE); // dessert clear
     if (dsl_rd_nvm(sdi, (unsigned char *)encryption, SECU_EEP_ADDR, SECU_STEPS*2) != SR_OK) {
         sr_err("Read EEPROM content failed!");
+        ds_set_last_error(SR_ERR_DEVICE_USB_IO_ERROR);
         return SR_ERR;
     }
-    ret = dsl_secuCheck(sdi, encryption, SECU_STEPS);
-    if (ret != SR_OK)
-        sr_err("Security check failed!");
 
+    ret = dsl_secuCheck(sdi, encryption, SECU_STEPS);
+    if (ret != SR_OK){
+        sr_err("Security check failed!");
+    }
 
     return SR_OK;
 }

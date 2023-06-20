@@ -100,7 +100,7 @@ SR_PRIV struct sr_session *sr_session_new(void)
 SR_PRIV int sr_session_destroy(void)
 {
 	if (session == NULL) {
-		sr_detail("%s: session was NULL", __func__);
+		//sr_detail("%s: session was NULL", __func__);
 		return SR_ERR_BUG;
 	} 
 

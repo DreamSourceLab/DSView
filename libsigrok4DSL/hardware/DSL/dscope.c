@@ -207,7 +207,7 @@ static GSList *scan(GSList *options)
     if (options != NULL)
         sr_info("%s", "Scan DSCope device with options.");
     else 
-        sr_info("%s", "Scan DSCope device.");
+        sr_info("%s", "Scan DSCope device...");
 
 	conn = NULL;
 	for (l = options; l; l = l->next) {
@@ -314,7 +314,7 @@ static GSList *scan(GSList *options)
 
         bus = libusb_get_bus_number(device_handle);
         address = libusb_get_device_address(device_handle);
-        sr_info("Found a new device,handle:%p,bus:%d,address:%d", device_handle, bus, address);
+        sr_info("Found a new device,handle:%p", device_handle);
 
         devc = DSCope_dev_new(prof);
         if (!devc)
@@ -386,7 +386,7 @@ static GSList *scan(GSList *options)
         g_slist_free_full(conn_devices, (GDestroyNotify)sr_usb_dev_inst_free);
     }
 
-    sr_info("Fond new DSCope device count: %d", num);
+    sr_info("Found new DSCope device count: %d", num);
 
     if (is_speed_not_match){
         post_message_callback(DS_EV_DEVICE_SPEED_NOT_MATCH);

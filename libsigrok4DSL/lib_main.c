@@ -363,7 +363,7 @@ SR_API int ds_active_device(ds_device_handle handle)
 
 	if (ds_is_collecting())
 	{
-		sr_err("%s", "Error!The current device is collecting, can not switch it.");
+		sr_err("%s", "Error!The current device is collecting, can not switch to it.");
 		return SR_ERR_CALL_STATUS;
 	}
 
@@ -373,14 +373,17 @@ SR_API int ds_active_device(ds_device_handle handle)
 	{
 		if (lib_ctx.is_delay_destory_actived_device)
 		{
-			sr_info("The current device is delayed for destruction, handle:%p", lib_ctx.actived_device_instance->handle);
+			sr_info("The current device is delayed for destruction, name:\"%s\", handle:%p",
+				lib_ctx.actived_device_instance->name,
+				lib_ctx.actived_device_instance->handle);
 			destroy_device_instance(lib_ctx.actived_device_instance);
 			lib_ctx.actived_device_instance = NULL;
 			lib_ctx.is_delay_destory_actived_device = 0;
 		}
 		else
 		{
-			sr_info("Close the previous device \"%s\"", lib_ctx.actived_device_instance->name);
+			sr_info("Close the previous device, name:\"%s\"", 
+					lib_ctx.actived_device_instance->name);
 			close_device_instance(lib_ctx.actived_device_instance);
 			old_dev = lib_ctx.actived_device_instance;
 		}
@@ -399,9 +402,9 @@ SR_API int ds_active_device(ds_device_handle handle)
 			}
 
 			if (dev->dev_type == DEV_TYPE_FILELOG)
-				sr_info("virtual device name: \"%s\".", dev->name);
+				sr_info("Activating virtual device name: \"%s\".", dev->name);
 			else
-				sr_info("device name: \"%s\".", dev->name);
+				sr_info("Activating device name: \"%s\".", dev->name);
 
 			ret = open_device_instance(dev);
 
@@ -413,17 +416,24 @@ SR_API int ds_active_device(ds_device_handle handle)
 			else
 			{  
 				// Failed to switch new device.
-				if (old_dev != NULL && old_dev != dev){
-					sr_err("%s", "Open device error! the current device switch failed.");
-					lib_ctx.actived_device_instance = old_dev;
-					ret = open_device_instance(old_dev);
+				if(lib_ctx.device_list != NULL && old_dev == NULL){
+					old_dev = lib_ctx.device_list->data;					
 				}
-				else if(lib_ctx.device_list != NULL){
-					old_dev = lib_ctx.device_list->data;
-					sr_err("%s", "Open device error! the current device switch to demo.");
+
+				if (old_dev != NULL){
+					if (old_dev->dev_type == DEV_TYPE_USB){
+						sr_err("%s", "Open device error! Will switch to \"%s\", handle:%p.",
+							old_dev->name,
+							old_dev->handle);
+					}
+					else{
+						sr_err("%s", "Open device error! Will switch to \"%s\".",
+							old_dev->name);
+					}
+				
 					lib_ctx.actived_device_instance = old_dev;
 					ret = open_device_instance(old_dev);
-				}				
+				}	
 			}
 			break;
 		}
@@ -435,7 +445,7 @@ SR_API int ds_active_device(ds_device_handle handle)
 
 	if (!bFind)
 	{
-		sr_err("ds_active_device() error, can't find the device.");
+		sr_err("Active device error, can't find the device.");
 		return SR_ERR_CALL_STATUS;
 	}
 
@@ -858,11 +868,22 @@ SR_API int ds_release_actived_device()
 	if (lib_ctx.actived_device_instance == NULL){
 		return SR_ERR_CALL_STATUS;
 	}
+
 	if (ds_is_collecting()){
 		ds_stop_collect();
 	}
 
-	sr_info("%s", "Release current actived device.");
+	if (lib_ctx.actived_device_instance->dev_type == DEV_TYPE_USB)
+	{
+		sr_info("%s", "Release current actived device. name:\"%s\", handle:%p", 
+			lib_ctx.actived_device_instance->name,
+			lib_ctx.actived_device_instance->handle);
+	}
+	else
+	{
+		sr_info("%s", "Release current actived device. name:\"%s\"", 
+			lib_ctx.actived_device_instance->name);
+	}	
 
 	close_device_instance(lib_ctx.actived_device_instance);
 
@@ -1215,7 +1236,7 @@ static void hotplug_event_listen_callback(struct libusb_context *ctx, struct lib
 	}	
 
 	if (dev == NULL){
-		sr_err("%s", "hotplug_event_listen_callback(), no devices to process");
+		sr_err("%s", "hotplug_event_listen_callback(), the device handle is null.");
 		return;
 	}
 
@@ -1311,8 +1332,6 @@ static void process_attach_event(int isEvent)
 			dev_list = dr->scan(NULL);
 			if (dev_list != NULL)
 			{
-				sr_info("Get new device list by driver \"%s\"", dr->name);
-
 				pthread_mutex_lock(&lib_ctx.mutext);
 
 				for (l = dev_list; l; l = l->next)
@@ -1522,6 +1541,7 @@ static int open_device_instance(struct sr_dev_inst *dev)
 
 	if (driver_ins->dev_open)
 	{
+		sr_info("To open device, name:\"%s\"", dev->name);
 		return driver_ins->dev_open(dev);
 	}
 
@@ -1567,8 +1587,6 @@ static struct libusb_device* get_new_attached_usb_device()
 	struct libusb_device* dev;
 	struct sr_dev_inst *dev_ins;
 
-	sr_info("To find new attached device.");
-
 	dev = NULL;
 	num = 0;
 	ds_scan_all_device_list(lib_ctx.sr_ctx->libusb_ctx, &array, MAX_DEVCIE_LIST_LENGTH, &num);
@@ -1594,8 +1612,8 @@ static struct libusb_device* get_new_attached_usb_device()
 
 	pthread_mutex_unlock(&lib_ctx.mutext);
 
-	if (dev != NULL){
-		sr_info("Found new attached usb device:%p", dev);
+	if (dev == NULL){
+		sr_info("Not found attached device.");
 	}
 
 	return dev;
@@ -1610,8 +1628,6 @@ static struct libusb_device* get_new_detached_usb_device()
 	int bFind;
 	struct libusb_device* dev;
 	struct sr_dev_inst *dev_ins;
-
-	sr_info("To find new detached device.");
 
 	dev = NULL;
 	num = 0;
@@ -1643,8 +1659,8 @@ static struct libusb_device* get_new_detached_usb_device()
 
 	pthread_mutex_unlock(&lib_ctx.mutext);
 
-	if (dev != NULL){
-		sr_info("Found new detached usb device:%p", dev);
+	if (dev == NULL){
+		sr_info("Not found detached device.");
 	}
 
 	return dev;
