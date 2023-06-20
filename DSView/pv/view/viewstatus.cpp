@@ -258,7 +258,7 @@ QJsonArray ViewStatus::get_session()
     return measureVar;
 }
 
-void ViewStatus::load_session(QJsonArray measure_array)
+void ViewStatus::load_session(QJsonArray measure_array, int version)
 {
     if (_session->get_device()->get_work_mode() != DSO){
         return;
@@ -269,11 +269,28 @@ void ViewStatus::load_session(QJsonArray measure_array)
         std::get<1>(_mrects[i]) = -1;
         std::get<2>(_mrects[i]) = DSO_MS_BEGIN;
     }
-
-    for (const QJsonValue &measure_value : measure_array) {
+ 
+    for (const QJsonValue &measure_value : measure_array) 
+    { 
         QJsonObject m_obj = measure_value.toObject();
         int index = m_obj["site"].toInt();
         int sig_index = m_obj["index"].toInt();
+       
+        if (version >= 3){
+            Signal *trace = NULL;
+
+            for(auto s : _session->get_signals()){
+                if (s->get_name().toInt() == sig_index){
+                    trace = s;
+                    break;
+                }
+            }
+
+            if (trace == NULL)
+                continue;
+            sig_index = trace->get_index();
+        }
+
         enum DSO_MEASURE_TYPE ms_type = DSO_MEASURE_TYPE(m_obj["type"].toInt());
         set_measure(index, false, sig_index, ms_type);
     }

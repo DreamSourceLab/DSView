@@ -54,7 +54,7 @@ public:
                      int sig_index, enum DSO_MEASURE_TYPE ms_type);
 
     QJsonArray get_session();
-    void load_session(QJsonArray meausre_array);
+    void load_session(QJsonArray meausre_array, int version);
     void set_capture_status(bool triggered, int progess);
 
 public slots:

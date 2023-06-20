@@ -1096,7 +1096,7 @@ namespace pv
         if (sessionObj.contains("measure"))
         {
             auto *bottom_bar = _view->get_viewstatus();
-            bottom_bar->load_session(sessionObj["measure"].toArray());
+            bottom_bar->load_session(sessionObj["measure"].toArray(), format_ver);
         }
 
         if (gvar_opts != NULL)
