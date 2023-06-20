@@ -205,7 +205,7 @@ const char* LangResource::get_lang_text(int page_id, const char *str_id, const c
     std::lock_guard<std::mutex> lock(_mutex);
 
     if (*str_id == '\0' || *default_str == '\0'){
-        dsv_err("%s", "LangResource::get_lang_text(), param is empty.");
+        dsv_err("LangResource::get_lang_text(), param is empty.");
         assert(false);
     }
 

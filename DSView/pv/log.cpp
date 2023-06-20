@@ -71,7 +71,7 @@ void dsv_log_enalbe_logfile(bool append)
 
         int ret = xlog_add_receiver_from_file(log_ctx, log_file.c_str(), &log_file_index, append);
         if (ret != 0){
-            dsv_err("%s", "Create log file error!");
+            dsv_err("Create log file error!");
         }
     }
 }
@@ -85,7 +85,7 @@ void dsv_clear_log_file()
         int ret = xlog_reset_log_file(log_ctx, log_file_index, log_file.c_str());
 
         if (ret != 0){
-            dsv_err("%s", "Clear log file error!");
+            dsv_err("Clear log file error!");
         }
     }
     else{

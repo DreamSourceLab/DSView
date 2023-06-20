@@ -37,7 +37,7 @@ void ctrl()
     {   
        c = getchar();
        if (c == 'x'){    
-         sr_info("%s", "exit.");
+         sr_info("exit.");
          break;
        }
        qDebug()<<"b";

@@ -310,7 +310,7 @@ static int hw_dev_open(struct sr_dev_driver *di, struct sr_dev_inst *sdi)
     usb = sdi->conn;
   
     if (usb->usb_dev == NULL){
-        sr_err("%s", "hw_dev_open(), usb->usb_dev is null.");
+        sr_err("hw_dev_open(), usb->usb_dev is null.");
         return SR_ERR;
     }
 
@@ -321,7 +321,7 @@ static int hw_dev_open(struct sr_dev_driver *di, struct sr_dev_inst *sdi)
     }
 
     if (sdi->status == SR_ST_INITIALIZING) {
-        sr_info("%s", "The device instance is still boosting.");        
+        sr_info("The device instance is still boosting.");        
     }
     dev_handel = usb->usb_dev;
 
@@ -1047,7 +1047,7 @@ SR_PRIV int dsl_fpga_arm(const struct sr_dev_inst *sdi)
 
     if (trigger == NULL)
     {
-        sr_err("%s", "Trigger have'nt inited.");
+        sr_err("Trigger have'nt inited.");
         return SR_ERR_CALL_STATUS;
     }
 
@@ -1965,7 +1965,7 @@ SR_PRIV int dsl_dev_close(struct sr_dev_inst *sdi)
 
     usb = sdi->conn;
     if (usb->devhdl == NULL){
-        sr_detail("%s", "dsl_dev_close(),libusb_device_handle is null.");
+        sr_detail("dsl_dev_close(),libusb_device_handle is null.");
         return SR_ERR;
     }
 

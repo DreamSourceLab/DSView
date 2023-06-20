@@ -167,7 +167,7 @@ SR_API int ds_lib_init()
 #endif
 
 	// Scan the all hardware device.
-	sr_info("%s", "Scan all connected hardware device.");
+	sr_info("Scan all connected hardware device.");
 	process_attach_event(0);
 
 	sr_listen_hotplug(lib_ctx.sr_ctx, hotplug_event_listen_callback);
@@ -232,7 +232,7 @@ SR_API int ds_lib_exit()
 
 	if (sr_exit(lib_ctx.sr_ctx) != SR_OK)
 	{
-		sr_err("%s", "call sr_exit error");
+		sr_err("call sr_exit error");
 	}
 	lib_ctx.sr_ctx = NULL;
 
@@ -359,11 +359,11 @@ SR_API int ds_active_device(ds_device_handle handle)
 	ret = SR_OK;
 	old_dev = NULL;
 
-	sr_info("%s", "Start activating device.");
+	sr_info("Start activating device.");
 
 	if (ds_is_collecting())
 	{
-		sr_err("%s", "Error!The current device is collecting, can not switch to it.");
+		sr_err("Error!the current device is collecting,can not switch to it.");
 		return SR_ERR_CALL_STATUS;
 	}
 
@@ -398,7 +398,7 @@ SR_API int ds_active_device(ds_device_handle handle)
 			bFind = 1;
 
 			if (dev->dev_type == DEV_TYPE_USB && DS_RES_PATH[0] == '\0'){
-				sr_err("%s", "Please call ds_set_firmware_resource_dir() to set the firmware resource path.");
+				sr_err("Please call ds_set_firmware_resource_dir() to set the firmware resource path.");
 			}
 
 			if (dev->dev_type == DEV_TYPE_FILELOG)
@@ -422,12 +422,12 @@ SR_API int ds_active_device(ds_device_handle handle)
 
 				if (old_dev != NULL){
 					if (old_dev->dev_type == DEV_TYPE_USB){
-						sr_err("%s", "Open device error! Will switch to \"%s\", handle:%p.",
+						sr_err("Open device error! Will switch to \"%s\", handle:%p.",
 							old_dev->name,
 							old_dev->handle);
 					}
 					else{
-						sr_err("%s", "Open device error! Will switch to \"%s\".",
+						sr_err("Open device error! Will switch to \"%s\".",
 							old_dev->name);
 					}
 				
@@ -441,7 +441,7 @@ SR_API int ds_active_device(ds_device_handle handle)
 
 	pthread_mutex_unlock(&lib_ctx.mutext);
 
-	sr_info("%s", "Activating device end.");
+	sr_info("Activating device end.");
 
 	if (!bFind)
 	{
@@ -488,7 +488,7 @@ SR_API int ds_active_device_by_index(int index)
 
 	if (handle == NULL)
 	{
-		sr_err("%s", "ds_active_device_by_index(), index is error!");
+		sr_err("ds_active_device_by_index(), index is error!");
 		return SR_ERR_CALL_STATUS;
 	}
 
@@ -546,7 +546,7 @@ SR_API int ds_device_from_file(const char *file_path)
 	int ret;
 
 	if (file_path == NULL || *file_path == '\0'){
-		sr_err("%s", "Error!File name is empty.");
+		sr_err("Error!File name is empty.");
 		return SR_ERR_ARG;
 	}
 
@@ -577,11 +577,11 @@ SR_API const GSList *ds_get_actived_device_mode_list()
 
 	if (dev == NULL)
 	{
-		sr_err("%s", "Have no actived device.");
+		sr_err("Have no actived device.");
 	}
 	if (dev->driver == NULL || dev->driver->dev_mode_list == NULL)
 	{
-		sr_err("%s", "Module not implemented.");
+		sr_err("Module not implemented.");
 		return NULL;
 	}
 
@@ -603,7 +603,7 @@ SR_API int ds_remove_device(ds_device_handle handle)
 
 	if (lib_ctx.actived_device_instance != NULL && lib_ctx.actived_device_instance->handle == handle && ds_is_collecting())
 	{
-		sr_err("%s", "Device is collecting, can't remove it.");
+		sr_err("Device is collecting, can't remove it.");
 		return SR_ERR_CALL_STATUS;
 	}
 
@@ -723,16 +723,16 @@ SR_API int ds_start_collect()
 
 	lib_ctx.last_error = SR_OK;
 
-	sr_info("%s", "Start collect.");
+	sr_info("Start collect.");
 
 	if (ds_is_collecting())
 	{
-		sr_err("%s", "Error,it's collecting!");
+		sr_err("Error,it's collecting!");
 		return SR_ERR_CALL_STATUS;
 	}
 	if (di == NULL)
 	{
-		sr_err("%s", "Please set a current device first.");
+		sr_err("Please set a current device first.");
 		return SR_ERR_CALL_STATUS;
 	}
 	if (di->status == SR_ST_INITIALIZING)
@@ -742,12 +742,12 @@ SR_API int ds_start_collect()
 	}
 	if (ds_channel_is_enabled() == 0)
 	{
-		sr_err("%s", "There have no useable channel, unable to collect.");
+		sr_err("There have no useable channel, unable to collect.");
 		return SR_ERR_CALL_STATUS;
 	}
 	if (lib_ctx.data_forward_callback == NULL)
 	{
-		sr_err("%s", "Error! Data forwarding callback is not set, see \"ds_set_datafeed_callback()\".");
+		sr_err("Error! Data forwarding callback is not set, see \"ds_set_datafeed_callback()\".");
 		return SR_ERR_CALL_STATUS;
 	}
 
@@ -759,7 +759,7 @@ SR_API int ds_start_collect()
 		ret = open_device_instance(di); // open device
 		if (ret != SR_OK)
 		{
-			sr_err("%s", "Open device error!");
+			sr_err("Open device error!");
 			return ret;
 		}
 	}
@@ -781,11 +781,11 @@ static void collect_run_proc()
 
 	send_event(DS_EV_COLLECT_TASK_START);
 
-	sr_info("%s", "Collect thread start.");
+	sr_info("Collect thread start.");
 
 	if (di == NULL || di->driver == NULL || di->driver->dev_acquisition_start == NULL)
 	{
-		sr_err("%s", "The device cannot be used.");
+		sr_err("The device cannot be used.");
 		bError = 1;
 		goto END;
 	}
@@ -808,13 +808,13 @@ static void collect_run_proc()
 
 	if (ret != SR_OK)
 	{
-		sr_err("%s", "Run session error!");
+		sr_err("Run session error!");
 		bError = 1;
 		goto END;
 	}
 
 END:
-	sr_info("%s", "Collect thread end.");
+	sr_info("Collect thread end.");
 	lib_ctx.collect_thread = NULL;
 
 	if (bError)
@@ -832,11 +832,11 @@ END:
  */
 SR_API int ds_stop_collect()
 { 
-	sr_info("%s", "Stop collect.");
+	sr_info("Stop collect.");
 
 	if (!ds_is_collecting())
 	{
-		sr_err("%s", "It's not collecting now.");
+		sr_err("It's not collecting now.");
 		return SR_ERR_CALL_STATUS;
 	}
 
@@ -875,13 +875,13 @@ SR_API int ds_release_actived_device()
 
 	if (lib_ctx.actived_device_instance->dev_type == DEV_TYPE_USB)
 	{
-		sr_info("%s", "Release current actived device. name:\"%s\", handle:%p", 
+		sr_info("Release current actived device. name:\"%s\", handle:%p", 
 			lib_ctx.actived_device_instance->name,
 			lib_ctx.actived_device_instance->handle);
 	}
 	else
 	{
-		sr_info("%s", "Release current actived device. name:\"%s\"", 
+		sr_info("Release current actived device. name:\"%s\"", 
 			lib_ctx.actived_device_instance->name);
 	}	
 
@@ -933,7 +933,7 @@ SR_API int ds_get_actived_device_config(const struct sr_channel *ch,
 {
 	if (lib_ctx.actived_device_instance == NULL)
 	{
-		sr_err("%s", "Have no actived device.");
+		sr_err("Have no actived device.");
 		return SR_ERR_CALL_STATUS;
 	}
 
@@ -951,7 +951,7 @@ SR_API int ds_set_actived_device_config(const struct sr_channel *ch,
 {
 	if (lib_ctx.actived_device_instance == NULL)
 	{
-		sr_err("%s", "Have no actived device.");
+		sr_err("Have no actived device.");
 		return SR_ERR_CALL_STATUS;
 	}
 
@@ -968,7 +968,7 @@ SR_API int ds_get_actived_device_config_list(const struct sr_channel_group *cg,
 {
 	if (lib_ctx.actived_device_instance == NULL)
 	{
-		sr_err("%s", "Have no actived device.");
+		sr_err("Have no actived device.");
 		return SR_ERR_CALL_STATUS;
 	}
 
@@ -983,7 +983,7 @@ SR_API const struct sr_config_info *ds_get_actived_device_config_info(int key)
 {
 	if (lib_ctx.actived_device_instance == NULL)
 	{
-		sr_err("%s", "Have no actived device.");
+		sr_err("Have no actived device.");
 		return SR_ERR_CALL_STATUS;
 	}
 
@@ -994,7 +994,7 @@ SR_API int ds_get_actived_device_status(struct sr_status *status, gboolean prg)
 {
 	if (lib_ctx.actived_device_instance == NULL)
 	{
-		sr_err("%s", "Have no actived device.");
+		sr_err("Have no actived device.");
 		return SR_ERR_CALL_STATUS;
 	}
 
@@ -1109,7 +1109,7 @@ SR_PRIV int sr_usb_device_is_exists(libusb_device *usb_dev)
 
 	if (usb_dev == NULL)
 	{
-		sr_err("%s", "sr_usb_device_is_exists(), @usb_dev is null.");
+		sr_err("sr_usb_device_is_exists(), @usb_dev is null.");
 		return 0;
 	}
 
@@ -1190,7 +1190,7 @@ static int update_device_handle(struct libusb_device *old_dev, struct libusb_dev
 			// Release the old device and the resource.
 			if (dev == lib_ctx.actived_device_instance)
 			{
-				sr_info("%s", "To release the old device's resource.");
+				sr_info("To release the old device's resource.");
 				close_device_instance(dev);
 			}
 
@@ -1236,7 +1236,7 @@ static void hotplug_event_listen_callback(struct libusb_context *ctx, struct lib
 	}	
 
 	if (dev == NULL){
-		sr_err("%s", "hotplug_event_listen_callback(), the device handle is null.");
+		sr_err("hotplug_event_listen_callback(), the device handle is null.");
 		return;
 	}
 
@@ -1254,14 +1254,14 @@ static void hotplug_event_listen_callback(struct libusb_context *ctx, struct lib
 
 			if (lib_ctx.detach_device_handle == NULL)
 			{
-				sr_err("%s", "The detached device handle is null, but the status is waitting for reconnect.");
+				sr_err("The detached device handle is null, but the status is waitting for reconnect.");
 			}
 			else
 			{
 				if (update_device_handle(lib_ctx.detach_device_handle, dev) == SR_OK)
 				{
 					bDone = 1;
-					sr_info("%s", "----------One device loose contact, but it reconnect success.");
+					sr_info("----------One device loose contact, but it reconnect success.");
 				}
 				else
 				{
@@ -1291,7 +1291,7 @@ static void hotplug_event_listen_callback(struct libusb_context *ctx, struct lib
 			&& lib_ctx.actived_device_instance->handle == (ds_device_handle)dev 
 			&& ds_is_collecting())
 		{
-			sr_info("%s", "The collecting device is detached, will stop the collect thread.");
+			sr_info("The collecting device is detached, will stop the collect thread.");
 			lib_ctx.is_stop_by_detached = 1;
 			ds_release_actived_device();
 		}
@@ -1305,7 +1305,7 @@ static void hotplug_event_listen_callback(struct libusb_context *ctx, struct lib
 	}
 	else
 	{
-		sr_err("%s", "Unknown usb device event");
+		sr_err("Unknown usb device event");
 	}
 }
 
@@ -1318,7 +1318,7 @@ static void process_attach_event(int isEvent)
 	int num = 0;
 
 	if (isEvent){
-		sr_info("%s", "Process device attach event.");
+		sr_info("Process device attach event.");
 	}
 
 	drivers = sr_driver_list();
@@ -1363,14 +1363,14 @@ static void process_detach_event()
 	libusb_device *ev_dev;
 	int ev;
 
-	sr_info("%s", "Process device detach event.");
+	sr_info("Process device detach event.");
 
 	ev = DS_EV_INACTIVE_DEVICE_DETACH;
 	ev_dev = lib_ctx.detach_device_handle;
 
 	if (ev_dev == NULL)
 	{
-		sr_err("%s", "The detached device handle is null.");
+		sr_err("The detached device handle is null.");
 		return;
 	}
 	lib_ctx.detach_device_handle = NULL;
@@ -1408,7 +1408,7 @@ static void process_detach_event()
 
 static void usb_hotplug_process_proc()
 {
-	sr_info("%s", "Hotplug thread start!");
+	sr_info("Hotplug thread start!");
 
 	int cur_trans_id = 0;
 
@@ -1447,7 +1447,7 @@ static void usb_hotplug_process_proc()
 
 			if (lib_ctx.transaction_command == DEV_TRANS_OPEN){
 				if (lib_ctx.actived_device_instance != NULL){
-					sr_info("%s", "To reopen the current device.");
+					sr_info("To reopen the current device.");
 					open_device_instance(lib_ctx.actived_device_instance);
 				}
 			}
@@ -1465,7 +1465,7 @@ static void usb_hotplug_process_proc()
 		_sleep(100);
 	}
 
-	sr_info("%s", "Hotplug thread end!");
+	sr_info("Hotplug thread end!");
 }
 
 static void make_demo_device_to_list()
@@ -1503,7 +1503,7 @@ static void destroy_device_instance(struct sr_dev_inst *dev)
 {
 	if (dev == NULL || dev->driver == NULL)
 	{
-		sr_err("%s", "destroy_device_instance() argument error.");
+		sr_err("destroy_device_instance() argument error.");
 		return;
 	}
 	struct sr_dev_driver *driver_ins;
@@ -1519,7 +1519,7 @@ static void close_device_instance(struct sr_dev_inst *dev)
 {
 	if (dev == NULL || dev->driver == NULL)
 	{
-		sr_err("%s", "close_device_instance() argument error.");
+		sr_err("close_device_instance() argument error.");
 		return;
 	}
 	struct sr_dev_driver *driver_ins;
@@ -1533,7 +1533,7 @@ static int open_device_instance(struct sr_dev_inst *dev)
 {
 	if (dev == NULL || dev->driver == NULL)
 	{
-		sr_err("%s", "open_device_instance() argument error.");
+		sr_err("open_device_instance() argument error.");
 		return SR_ERR_ARG;
 	}
 	struct sr_dev_driver *driver_ins;

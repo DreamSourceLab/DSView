@@ -407,7 +407,7 @@ QString GetAppDataDir()
         return dir1.absolutePath();
     }
 
-    dsv_err("%s", "Data directory is not exists: ../share/DSView");
+    dsv_err("Data directory is not exists: ../share/DSView");
     assert(false);   
 #else
 

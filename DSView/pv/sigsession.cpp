@@ -157,7 +157,7 @@ namespace pv
 
         if (ds_lib_init() != SR_OK)
         {
-            dsv_err("%s", "DSView run ERROR: collect lib init failed.");
+            dsv_err("DSView run ERROR: collect lib init failed.");
             return false;
         }
 
@@ -184,16 +184,16 @@ namespace pv
         struct ds_device_base_info *array = NULL;
         int count = 0;
 
-        dsv_info("%s", "Set default device.");
+        dsv_info("Set default device.");
 
         if (ds_get_device_list(&array, &count) != SR_OK)
         {
-            dsv_err("%s", "Get device list error!");
+            dsv_err("Get device list error!");
             return false;
         }
         if (count < 1 || array == NULL)
         {
-            dsv_err("%s", "Error! Device list is empty, can't set default device.");
+            dsv_err("Error! Device list is empty, can't set default device.");
             return false;
         }
 
@@ -224,7 +224,7 @@ namespace pv
 
         if (ds_active_device(dev_handle) != SR_OK)
         {
-            dsv_err("%s", "Switch device error!");
+            dsv_err("Switch device error!");
             return false;
         }
 
@@ -302,7 +302,7 @@ namespace pv
 
         if (ds_device_from_file(file_str.c_str()) != SR_OK)
         {
-            dsv_err("%s", "Load file error!");
+            dsv_err("Load file error!");
             return false;
         }
 
@@ -315,14 +315,14 @@ namespace pv
 
         if (dev_handle == _device_agent.handle() && _is_working)
         {
-            dsv_err("%s", "The virtual device is running, can't remove it.");
+            dsv_err("The virtual device is running, can't remove it.");
             return;
         }
         bool isCurrent = dev_handle == _device_agent.handle();
 
         if (ds_remove_device(dev_handle) != SR_OK)
         {
-            dsv_err("%s", "Remove virtual deivice error!");
+            dsv_err("Remove virtual deivice error!");
         }
 
         if (isCurrent)
@@ -501,23 +501,23 @@ namespace pv
     {
         assert(_callback);
 
-        dsv_info("%s", "Start collect.");
+        dsv_info("Start collect.");
 
         if (_is_working)
         {
-            dsv_err("%s", "Error! Is working now.");
+            dsv_err("Error! Is working now.");
             return false;
         }
 
         // Check that a device instance has been selected.
         if (_device_agent.have_instance() == false)
         {
-            dsv_err("%s", "Error!No device selected");
+            dsv_err("Error!No device selected");
             assert(false);
         }
         if (_device_status == ST_RUNNING || _device_agent.is_collecting())
         {
-            dsv_err("%s", "Error!Device is running.");
+            dsv_err("Error!Device is running.");
             return false;
         }
 
@@ -598,7 +598,7 @@ namespace pv
     {
         if (_device_agent.is_collecting())
         {
-            dsv_err("%s", "Error!Device is running.");
+            dsv_err("Error!Device is running.");
             return false;
         }
 
@@ -677,7 +677,7 @@ namespace pv
         capture_init();
 
         if (_device_agent.start() == false){
-            dsv_err("%s", "Start collect error!");
+            dsv_err("Start collect error!");
             return false;
         }
 
@@ -1131,7 +1131,7 @@ namespace pv
     {  
         if (_capture_data->get_logic()->memory_failed())
         {
-            dsv_err("%s", "Unexpected logic packet");
+            dsv_err("Unexpected logic packet");
             return;
         }       
 
@@ -1174,7 +1174,7 @@ namespace pv
     {
         if (_capture_data->get_dso()->memory_failed())
         {
-            dsv_err("%s", "Unexpected dso packet");
+            dsv_err("Unexpected dso packet");
             return; // This dso packet was not expected.
         }
 
@@ -1255,7 +1255,7 @@ namespace pv
     {
         if (_capture_data->get_analog()->memory_failed())
         {
-            dsv_err("%s", "Unexpected analog packet");
+            dsv_err("Unexpected analog packet");
             return; // This analog packet was not expected.
         }
 
@@ -1436,7 +1436,7 @@ namespace pv
     {
         if (dec == NULL)
         {
-            dsv_err("%s", "Decoder instance is null!");
+            dsv_err("Decoder instance is null!");
             assert(false);
         }
 
@@ -1529,7 +1529,7 @@ namespace pv
         }
         catch (...)
         {
-            dsv_err("%s", "Error!add_decoder() throws an exception.");
+            dsv_err("Error!add_decoder() throws an exception.");
         }
 
         return false;
@@ -1786,7 +1786,7 @@ namespace pv
             {
                 (*it)->decoder()->stop_decode_work();
                 _decode_tasks.erase(it);
-                dsv_info("%s", "remove a waiting decode task");
+                dsv_info("remove a waiting decode task");
                 return;
             }
         }
@@ -1881,7 +1881,7 @@ namespace pv
     // the decode task thread proc
     void SigSession::decode_task_proc()
     {
-        dsv_info("%s", "------->decode thread start");
+        dsv_info("------->decode thread start");
         auto task = get_top_decode_task();
 
         while (task != NULL)
@@ -1893,7 +1893,7 @@ namespace pv
 
             if (task->_delete_flag)
             {
-                dsv_info("%s", "destroy a decoder in task thread");
+                dsv_info("destroy a decoder in task thread");
 
                 DESTROY_QT_LATER(task);
                 std::this_thread::sleep_for(std::chrono::milliseconds(100));
@@ -1908,7 +1908,7 @@ namespace pv
 
         _view_data->get_logic()->decode_end();
 
-        dsv_info("%s", "------->decode thread end");
+        dsv_info("------->decode thread end");
         _is_decoding = false;        
     }
 
@@ -1927,7 +1927,7 @@ namespace pv
     {
         if (_session == NULL)
         {
-            dsv_err("%s", "Error!Global variable \"_session\" is null.");
+            dsv_err("Error!Global variable \"_session\" is null.");
             return;
         }
         _session->on_device_lib_event(event);
@@ -1937,7 +1937,7 @@ namespace pv
     {
         if (_callback == NULL)
         {
-            dsv_detail("%s", "The callback is null, so the device event was ignored.");
+            dsv_detail("The callback is null, so the device event was ignored.");
             return;
         }
 
@@ -1955,7 +1955,7 @@ namespace pv
                 || !_capture_data->get_dso()->last_ended()
                 || !_capture_data->get_analog()->last_ended())
             {
-                dsv_err("%s", "Error!The data is not completed.");
+                dsv_err("Error!The data is not completed.");
                 assert(false);
             }
             break;
@@ -1971,13 +1971,13 @@ namespace pv
             _callback->trigger_message(DSV_MSG_COLLECT_END);
 
             if (_capture_data->get_logic()->last_ended() == false)
-                dsv_err("%s", "The collected data is error!");
+                dsv_err("The collected data is error!");
 
             if (_capture_data->get_dso()->last_ended() == false)
-                dsv_err("%s", "The collected data is error!");
+                dsv_err("The collected data is error!");
 
             if (_capture_data->get_analog()->last_ended() == false)
-                dsv_err("%s", "The collected data is error!");
+                dsv_err("The collected data is error!");
 
             // trig next collect
             if (is_repeat_mode() && _is_working && event == DS_EV_COLLECT_TASK_END)
@@ -2017,7 +2017,7 @@ namespace pv
             break;
 
         default:
-            dsv_err("%s", "Error!Unknown device event.");
+            dsv_err("Error!Unknown device event.");
             break;
         }
     }

@@ -143,7 +143,7 @@ void DsoSignal::set_enable(bool enable)
     ret = session->get_device()->get_config_bool(SR_CONF_PROBE_EN, cur_enable, _probe, NULL);
 
     if (!ret) { 
-        dsv_err("%s", "ERROR: config_get SR_CONF_PROBE_EN failed.");
+        dsv_err("ERROR: config_get SR_CONF_PROBE_EN failed.");
         _en_lock = false;
         return;
     }
@@ -290,13 +290,13 @@ bool DsoSignal::load_settings()
     uint64_t vfactor;
     ret = session->get_device()->get_config_uint64(SR_CONF_PROBE_VDIV, vdiv, _probe, NULL);
     if (!ret) {
-        dsv_err("%s", "ERROR: config_get SR_CONF_PROBE_VDIV failed.");
+        dsv_err("ERROR: config_get SR_CONF_PROBE_VDIV failed.");
         return false;
     }
 
     ret = session->get_device()->get_config_uint64(SR_CONF_PROBE_FACTOR, vfactor, _probe, NULL);
     if (!ret) {
-        dsv_err("%s", "ERROR: config_get SR_CONF_PROBE_FACTOR failed.");
+        dsv_err("ERROR: config_get SR_CONF_PROBE_FACTOR failed.");
         return false;
     }
 
@@ -309,14 +309,14 @@ bool DsoSignal::load_settings()
         _acCoupling = uint8_t(v);
     }
     else { 
-        dsv_err("%s", "ERROR: config_get SR_CONF_PROBE_COUPLING failed.");
+        dsv_err("ERROR: config_get SR_CONF_PROBE_COUPLING failed.");
         return false;
     }
  
     // -- vpos
     ret = session->get_device()->get_config_uint16(SR_CONF_PROBE_OFFSET, _zero_offset, _probe, NULL);
     if (!ret) {
-        dsv_err("%s", "ERROR: config_get SR_CONF_PROBE_OFFSET failed.");
+        dsv_err("ERROR: config_get SR_CONF_PROBE_OFFSET failed.");
         return false;
     }
 
@@ -326,7 +326,7 @@ bool DsoSignal::load_settings()
         _trig_delta = get_trig_vrate() - get_zero_ratio();
     }
     else {
-        dsv_err("%s", "ERROR: config_get SR_CONF_TRIGGER_VALUE failed.");
+        dsv_err("ERROR: config_get SR_CONF_TRIGGER_VALUE failed.");
 
         if (session->get_device()->is_hardware())
             return false;
@@ -488,7 +488,7 @@ void DsoSignal::set_factor(uint64_t factor)
 
         ret = session->get_device()->get_config_uint64(SR_CONF_PROBE_FACTOR, prefactor, _probe, NULL);
         if (!ret) { 
-            dsv_err("%s", "ERROR: config_get SR_CONF_PROBE_FACTOR failed.");
+            dsv_err("ERROR: config_get SR_CONF_PROBE_FACTOR failed.");
             return;
         }
 
@@ -511,7 +511,7 @@ uint64_t DsoSignal::get_factor()
         return factor;
     } 
     else { 
-        dsv_err("%s", "ERROR: config_get SR_CONF_PROBE_FACTOR failed.");
+        dsv_err("ERROR: config_get SR_CONF_PROBE_FACTOR failed.");
         return 1;
     }
 }
@@ -1123,7 +1123,7 @@ void DsoSignal::paint_type_options(QPainter &p, int right, const QPoint pt, QCol
 
     ret = session->get_device()->get_config_uint64(SR_CONF_PROBE_FACTOR, factor, _probe, NULL);
     if (!ret) {
-        dsv_err("%s", "ERROR: config_get SR_CONF_PROBE_FACTOR failed.");
+        dsv_err("ERROR: config_get SR_CONF_PROBE_FACTOR failed.");
         return;
     }
 

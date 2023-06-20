@@ -637,7 +637,7 @@ static int receive_data_logic_dso_v2(int fd, int revents, const struct sr_dev_in
 
             if ((pack_buffer->block_data_len - pack_buffer->block_read_len) % 8 != 0)
             {
-                sr_err("%s", "The block data is not align with 8 byte.");
+                sr_err("The block data is not align with 8 byte.");
                 break;
             }  
         }
@@ -773,7 +773,7 @@ static int dev_open(struct sr_dev_inst *sdi)
     ret = sr_load_virtual_device_session(sdi);
     if (ret != SR_OK)
     {
-        sr_err("%s", "Error!Load session file failed.");
+        sr_err("Error!Load session file failed.");
         return ret;
     }
 

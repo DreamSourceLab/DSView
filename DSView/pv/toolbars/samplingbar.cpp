@@ -258,7 +258,7 @@ namespace pv
 
             if (_device_agent->have_instance() == false)
             {
-                dsv_info("%s", "Have no device, can't to set device config.");
+                dsv_info("Have no device, can't to set device config.");
                 return;
             }
 
@@ -383,11 +383,11 @@ namespace pv
             const uint64_t *elements = NULL;
             gsize num_elements;
 
-            dsv_info("%s", "Update rate list.");
+            dsv_info("Update rate list.");
 
             if (_updating_sample_rate)
             {
-                dsv_err("%s", "Error! The rate list is updating.");
+                dsv_err("Error! The rate list is updating.");
                 return;
             }
 
@@ -396,7 +396,7 @@ namespace pv
 
             if (_device_agent->have_instance() == false)
             {
-                dsv_info("%s", "SamplingBar::update_sample_rate_selector, have no device.");
+                dsv_info("SamplingBar::update_sample_rate_selector, have no device.");
                 return;
             }
 
@@ -487,11 +487,11 @@ namespace pv
             double duration;
             bool rle_support = false;
 
-            dsv_info("%s", "Update sample count list.");
+            dsv_info("Update sample count list.");
 
             if (_updating_sample_count)
             {
-                dsv_err("%s", "Error! The sample count is updating.");
+                dsv_err("Error! The sample count is updating.");
                 return;
             }
 
@@ -644,7 +644,7 @@ namespace pv
                 }
                 else
                 {
-                    dsv_err("%s", "ERROR: config_get SR_CONF_TIMEBASE failed.");
+                    dsv_err("ERROR: config_get SR_CONF_TIMEBASE failed.");
                     return;
                 }
             }
@@ -656,7 +656,7 @@ namespace pv
                 }
                 else
                 {
-                    dsv_err("%s", "ERROR: config_get SR_CONF_TIMEBASE failed.");
+                    dsv_err("ERROR: config_get SR_CONF_TIMEBASE failed.");
                     return;
                 }
                 const uint64_t samplerate = _device_agent->get_sample_rate();
@@ -735,7 +735,7 @@ namespace pv
 
             if (_device_agent->get_config_uint64(SR_CONF_MAX_DSO_SAMPLERATE, max_sample_rate) == false)
             {
-                dsv_err("%s", "ERROR: config_get SR_CONF_MAX_DSO_SAMPLERATE failed.");
+                dsv_err("ERROR: config_get SR_CONF_MAX_DSO_SAMPLERATE failed.");
                 return -1;
             }
 
@@ -825,7 +825,7 @@ namespace pv
 
             if (_device_agent->have_instance() == false)
             {
-                dsv_info("%s", "Have no device, can't to collect data.");
+                dsv_info("Have no device, can't to collect data.");
                 return false;
             }
 
@@ -894,7 +894,7 @@ namespace pv
             
             if (_device_agent->have_instance() == false)
             {
-                dsv_info("%s", "Error! Have no device, can't to collect data.");
+                dsv_info("Error! Have no device, can't to collect data.");
                 return false;
             }
 
@@ -941,7 +941,7 @@ namespace pv
             }
             if (_device_selector.currentIndex() == -1)
             {
-                dsv_err("%s", "Have no selected device.");
+                dsv_err("Have no selected device.");
                 return;
             }
             _session->stop_capture();
@@ -1098,13 +1098,13 @@ namespace pv
             int dev_count = 0;
             int select_index = 0;
 
-            dsv_info("%s", "Update device list.");
+            dsv_info("Update device list.");
 
             array = _session->get_device_list(dev_count, select_index);
 
             if (array == NULL)
             {
-                dsv_err("%s", "Get deivce list error!");
+                dsv_err("Get deivce list error!");
                 return;
             }
 

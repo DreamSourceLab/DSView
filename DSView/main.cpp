@@ -218,7 +218,7 @@ bool bHighScale = true;
  
 	//init core
 	if (!control->Init()){ 
-		dsv_err("%s", "init error!"); 
+		dsv_err("init error!"); 
 		return 1;
 	}
 	
@@ -240,7 +240,7 @@ bool bHighScale = true;
 	}
 	catch (const std::exception &e)
 	{
-        dsv_err("%s", "main() catch a except!");
+        dsv_err("main() catch a except!");
 		const char *exstr = e.what();
 		dsv_err("%s", exstr);
 	}

@@ -368,13 +368,13 @@ void ProtocolDock::on_add_protocol()
 bool ProtocolDock::add_protocol_by_id(QString id, bool silent, std::list<pv::data::decode::Decoder*> &sub_decoders)
 {
     if (_session->get_device()->get_work_mode() != LOGIC) {
-        dsv_info("%s", "Protocol Analyzer\nProtocol Analyzer is only valid in Digital Mode!");
+        dsv_info("Protocol Analyzer\nProtocol Analyzer is only valid in Digital Mode!");
         return false;
     }
 
     int dex = this->get_protocol_index_by_id(id);
     if (dex == -1){
-        dsv_err("%s%s", "Protocol not exists! id:", id.toUtf8().data());
+        dsv_err("Protocol not exists! id:%s", id.toUtf8().data());
         return false;
     }
 
@@ -735,7 +735,7 @@ void ProtocolDock::search_nxt()
     auto decoder_stack = decoder_model->getDecoderStack();
 
     if (decoder_stack == NULL){ 
-        dsv_err("%s", "decoder_stack is null");
+        dsv_err("decoder_stack is null");
         return;
     }  
 

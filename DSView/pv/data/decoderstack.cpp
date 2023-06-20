@@ -519,7 +519,7 @@ void DecoderStack::decode_data(const uint64_t decode_start, const uint64_t decod
     //struct srd_push_param push_param;
 
     if( i >= decode_end){
-        dsv_info("%s", "decode data index have been to end");
+        dsv_info("decode data index have been to end");
     }
 
     std::vector<const uint8_t *> chunk;
@@ -774,7 +774,7 @@ void DecoderStack::annotation_callback(srd_proto_data *pdata, void *self)
         return;
     }
     if (d->_decoder_status == NULL){ 
-        dsv_err("%s", "decode task was deleted.");
+        dsv_err("decode task was deleted.");
         assert(false);
     }
   

@@ -71,7 +71,7 @@ struct source {
 SR_PRIV struct sr_session *sr_session_new(void)
 {
 	if (session != NULL){
-		sr_detail("%s", "Destroy the old session.");
+		sr_detail("Destroy the old session.");
 		sr_session_destroy(); // Destory the old.
 	}
 
@@ -147,7 +147,7 @@ static int sr_session_iteration(gboolean block)
 	int ret;
 
 	if (session == NULL){
-		sr_err("%s", "sr_session_iteration(), session is null.");
+		sr_err("sr_session_iteration(), session is null.");
 		return SR_ERR_CALL_STATUS;
 	}
 
@@ -174,7 +174,7 @@ static int sr_session_iteration(gboolean block)
 		 */
         g_mutex_lock(&session->stop_mutex);
 		if (session->abort_session) {
-			sr_info("%s", "Collection task aborted.");
+			sr_info("Collection task aborted.");
 			current_device_acquisition_stop();
 			/* But once is enough. */
 			session->abort_session = FALSE;
@@ -198,7 +198,7 @@ SR_PRIV int sr_session_run(void)
 		return SR_ERR_BUG;
 	}
 	if (session->running == TRUE){
-		sr_err("%s", "Session is running.");
+		sr_err("Session is running.");
 		return SR_ERR_CALL_STATUS;
 	}
  
@@ -272,7 +272,7 @@ static void datafeed_dump(const struct sr_datafeed_packet *packet)
     const struct sr_datafeed_analog *analog;
 
 	if (packet == NULL){
-		sr_err("%s", "datafeed_dump() Error! packet is null.");
+		sr_err("datafeed_dump() Error! packet is null.");
 		return;
 	}
 
@@ -342,7 +342,7 @@ static int _sr_session_source_add(GPollFD *pollfd, int timeout,
 		return SR_ERR_ARG;
 	}
 	if (session == NULL){
-		sr_err("%s", "_sr_session_source_add(), session is null.");
+		sr_err("_sr_session_source_add(), session is null.");
 		return SR_ERR_CALL_STATUS;
 	}
 
@@ -464,7 +464,7 @@ static int _sr_session_source_remove(gintptr poll_object)
 	unsigned int old;
 
 	if (session == NULL){
-		sr_err("%s", "_sr_session_source_remove(), session is null.");
+		sr_err("_sr_session_source_remove(), session is null.");
 		return SR_ERR_CALL_STATUS;
 	}
 

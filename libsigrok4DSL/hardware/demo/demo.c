@@ -671,7 +671,7 @@ static int hw_dev_open(struct sr_dev_inst *sdi)
     ret = load_virtual_device_session(sdi);
     if (ret != SR_OK)
     {
-        sr_err("%s", "Error!Load session file failed.");
+        sr_err("Error!Load session file failed.");
         return ret;
     }
 

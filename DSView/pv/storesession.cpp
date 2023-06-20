@@ -934,7 +934,7 @@ void StoreSession::export_proc(data::Snapshot *snapshot)
 
         uint8_t *ch_data_buffer = (uint8_t*)malloc(usize * dso_snapshot->get_channel_num() + 1);
         if (ch_data_buffer == NULL){
-            dsv_err("%s", "StoreSession::export_proc, malloc failed.");
+            dsv_err("StoreSession::export_proc, malloc failed.");
             return;
         }
 
@@ -1121,12 +1121,12 @@ bool StoreSession::load_decoders(dock::ProtocolDock *widget, QJsonArray &dec_arr
 {
     if (_session->get_device()->get_work_mode() != LOGIC)
     {
-        dsv_info("%s", "StoreSession::load_decoders(), is not LOGIC mode.");
+        dsv_info("StoreSession::load_decoders(), is not LOGIC mode.");
         return false;
     }
 
     if (dec_array.isEmpty()){
-        dsv_info("%s", "StoreSession::load_decoders(), json object array is empty.");
+        dsv_info("StoreSession::load_decoders(), json object array is empty.");
         return false;
     }
 

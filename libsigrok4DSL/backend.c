@@ -401,7 +401,7 @@ SR_PRIV int sr_listen_hotplug(struct sr_context *ctx, hotplug_event_callback cal
 		sr_err("%s(): callback was NULL.", __func__);
 		return SR_ERR;		
 	}
-	sr_info("%s", "Register hotplug callback.");
+	sr_info("Register hotplug callback.");
 
 	ctx->hotplug_callback = callback;
 
@@ -432,7 +432,7 @@ SR_PRIV int sr_close_hotplug(struct sr_context *ctx)
 		sr_err("%s(): libsigrok context was NULL.", __func__);
 		return SR_ERR;
 	}
-	sr_info("%s", "Unregister hotplug callback.");
+	sr_info("Unregister hotplug callback.");
 
 	// Call user custom function.
 	if (ctx->close_hotplug_ext != NULL){

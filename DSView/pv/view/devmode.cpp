@@ -108,7 +108,7 @@ void DevMode::changeEvent(QEvent *event)
 void DevMode::set_device()
 { 
      if (_device_agent->have_instance() == false){
-        dsv_detail("%s", "DevMode::set_device, Have no device.");   
+        dsv_detail("DevMode::set_device, Have no device.");   
         return;
      }
 
@@ -213,7 +213,7 @@ void DevMode::on_mode_change()
 
             int mode = (*i).second->mode;
             if (_device_agent->get_work_mode() == mode){
-                dsv_info("%s", "Current mode is set.");
+                dsv_info("Current mode is set.");
                 break;
             }
             

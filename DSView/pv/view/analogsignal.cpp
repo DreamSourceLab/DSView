@@ -79,7 +79,7 @@ AnalogSignal::AnalogSignal(data::AnalogSnapshot *data, sr_channel *probe) :
     // -- vpos
     ret = session->get_device()->get_config_uint16( SR_CONF_PROBE_OFFSET, _zero_offset, _probe, NULL);
     if (!ret) {
-        dsv_err("%s", "ERROR: config_get SR_CONF_PROBE_OFFSET failed.");
+        dsv_err("ERROR: config_get SR_CONF_PROBE_OFFSET failed.");
     }
 }
 
@@ -273,7 +273,7 @@ uint64_t AnalogSignal::get_factor()
         return factor;
     } 
     else { 
-        dsv_err("%s", "ERROR: config_get SR_CONF_PROBE_FACTOR failed.");
+        dsv_err("ERROR: config_get SR_CONF_PROBE_FACTOR failed.");
         return 1;
     }
 }

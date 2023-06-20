@@ -113,7 +113,7 @@ bool AppControl::Init()
     // Initialise libsigrokdecode
     if (srd_init(path) != SRD_OK)
     { 
-        dsv_err("%s", "ERROR: libsigrokdecode init failed.");
+        dsv_err("ERROR: libsigrokdecode init failed.");
         return false;
     }
 

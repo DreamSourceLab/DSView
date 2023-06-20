@@ -205,9 +205,9 @@ static GSList *scan(GSList *options)
     is_speed_not_match = 0;
 
     if (options != NULL)
-        sr_info("%s", "Scan DSCope device with options.");
+        sr_info("Scan DSCope device with options.");
     else 
-        sr_info("%s", "Scan DSCope device...");
+        sr_info("Scan DSCope device...");
 
 	conn = NULL;
 	for (l = options; l; l = l->next) {
@@ -219,7 +219,7 @@ static GSList *scan(GSList *options)
 		}
 	}
 	if (conn){
-        sr_info("%s", "Find usb device with connect config.");
+        sr_info("Find usb device with connect config.");
         conn_devices = sr_usb_find(drvc->sr_ctx->libusb_ctx, conn);
     }
 	else
@@ -335,7 +335,7 @@ static GSList *scan(GSList *options)
 
         /* Fill in probelist according to this device's profile. */
         if (dsl_setup_probes(sdi, channel_modes[devc->ch_mode].num) != SR_OK){
-            sr_err("%s", "dsl_setup_probes() error");
+            sr_err("dsl_setup_probes() error");
             dev_destroy(sdi); 
             return NULL;
         }

@@ -427,7 +427,7 @@ namespace pv
     { 
         if (_device_agent->have_instance() == false)
         {
-            dsv_info("%s", "There is no need to save the configuration");
+            dsv_info("There is no need to save the configuration");
             return;
         }
 
@@ -593,7 +593,7 @@ namespace pv
 
         if (_device_agent->have_instance() == false)
         {
-            dsv_info("%s", "Have no device, can't to save data.");
+            dsv_info("Have no device, can't to save data.");
             return;
         }
 
@@ -629,7 +629,7 @@ namespace pv
     bool MainWindow::load_config_from_file(QString file)
     {
         if (file == ""){
-            dsv_err("%s", "File name is empty.");
+            dsv_err("File name is empty.");
             assert(false);
         }
 
@@ -647,7 +647,7 @@ namespace pv
 
         if (!sf.open(QIODevice::ReadOnly))
         {
-            dsv_warn("%s", "Warning: Couldn't open device profile to load!");
+            dsv_warn("Warning: Couldn't open device profile to load!");
             return false;
         }
 
@@ -696,7 +696,7 @@ namespace pv
         gvar_opts = _device_agent->get_config_list(NULL, SR_CONF_DEVICE_SESSIONS);
         if (gvar_opts == NULL)
         {
-            dsv_warn("%s", "Device config list is empty. id:SR_CONF_DEVICE_SESSIONS");
+            dsv_warn("Device config list is empty. id:SR_CONF_DEVICE_SESSIONS");
             /* Driver supports no device instance sessions. */
             return false;
         }
@@ -810,7 +810,7 @@ namespace pv
         // check config file version
         if (!sessionObj.contains("Version"))
         {
-            dsv_dbg("%s", "Profile version is not exists!");
+            dsv_dbg("Profile version is not exists!");
             return false;
         }
 
@@ -818,7 +818,7 @@ namespace pv
 
         if (format_ver < 2)
         {
-            dsv_err("%s", "Profile version is error!");
+            dsv_err("Profile version is error!");
             return false;
         }
 
@@ -1145,7 +1145,7 @@ namespace pv
     bool MainWindow::save_config_to_file(QString name)
     {
         if (name == ""){
-            dsv_err("%s", "Session file name is empty.");
+            dsv_err("Session file name is empty.");
             assert(false);
         }
 
@@ -1155,7 +1155,7 @@ namespace pv
         QFile sf(name);
         if (!sf.open(QIODevice::WriteOnly | QIODevice::Text))
         {
-            dsv_warn("%s", "Warning: Couldn't open profile to write!");
+            dsv_warn("Warning: Couldn't open profile to write!");
             return false;
         }
 
@@ -1695,7 +1695,7 @@ namespace pv
         bSucesss = false;
 
         if (file == ""){
-            dsv_err("%s", "File name is empty.");
+            dsv_err("File name is empty.");
             assert(false);
         }
 
@@ -1733,7 +1733,7 @@ namespace pv
         bSucesss = false;
 
         if (file == ""){
-            dsv_err("%s", "File name is empty.");
+            dsv_err("File name is empty.");
             assert(false);
         }
 
@@ -2017,7 +2017,7 @@ namespace pv
                 ds_device_handle devh = _sampling_bar->get_next_device_handle();
                 if (devh != NULL_HANDLE)
                 {
-                    dsv_info("%s", "Auto switch to the selected device.");
+                    dsv_info("Auto switch to the selected device.");
                     _session->set_device(devh);
                 }
             }
