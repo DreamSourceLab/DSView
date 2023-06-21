@@ -459,6 +459,11 @@ static GSList *scan(GSList *options)
 
             free(firmware);
 
+            libusb_unref_device(device_handle);
+#ifdef _WIN32
+            libusb_unref_device(device_handle);
+#endif
+
             sr_info("Waitting for device reconnect, name:\"%s\"", prof->model);
 		}
 	}
