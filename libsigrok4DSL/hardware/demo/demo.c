@@ -323,7 +323,7 @@ static int init_analog_random_data(struct session_vdev * vdev)
         return SR_ERR_MALLOC;
     }
 
-    for(int i = 0;i < DSO_BUF_LEN ;i++)
+    for(uint64_t i = 0;i < DSO_BUF_LEN ;i++)
     {
         if(i % 2 == 0)
             *(uint8_t*)(vdev->data_buf + i) = ANALOG_RANDOM_DATA;
@@ -341,6 +341,31 @@ static int delay_time(struct session_vdev *vdev)
     gdouble waittime = vdev->packet_time - packet_elapsed;
     if(waittime > 0)
     {
+        g_usleep(SR_MS(waittime));
+    }
+    return SR_OK;
+}
+
+static int logic_delay_time(struct session_vdev *vdev)
+{
+    gdouble ideal_time = vdev->samplerate/8;
+    ideal_time = vdev->packet_len/(gdouble)ideal_time;
+    ideal_time = vdev->logci_cur_packet_num*ideal_time;
+    gdouble packet_elapsed = g_timer_elapsed(run_time, NULL);
+    gdouble waittime = ideal_time - packet_elapsed;
+    if(waittime > 0){
+        g_usleep(SR_MS(waittime));
+    }
+    return SR_OK;
+}
+
+static int instant_delay_time(struct session_vdev *vdev)
+{
+    uint16_t cur_packet_num = vdev->post_data_len/vdev->packet_len;
+    gdouble ideal_time = cur_packet_num * vdev->packet_time;
+    gdouble totol_time = g_timer_elapsed(run_time, NULL);
+    gdouble waittime = ideal_time - totol_time;
+    if(waittime > 0){
         g_usleep(SR_MS(waittime));
     }
     return SR_OK;
@@ -386,7 +411,6 @@ static int get_pattern_mode_from_file(const char *sub_dir, struct demo_mode_patt
 {
     const gchar * filename = NULL;
     char dir_path_buf[500];
-    int index = 1;
     int str_len;
     char *dir_path = dir_path_buf;
     char *file_path = NULL;
@@ -537,7 +561,7 @@ static void adjust_samplerate(struct sr_dev_inst *sdi)
 
 }
 
-static int init_random_data(struct session_vdev *vdev,struct sr_dev_inst *sdi)
+static int init_random_data(struct session_vdev *vdev)
 {
     int cur_probe = 0;
     int probe_count[LOGIC_MAX_PROBE_NUM] = {0};
@@ -588,7 +612,7 @@ static int hw_init(struct sr_context *sr_ctx)
     return std_hw_init(sr_ctx, di, LOG_PREFIX);
 }
 
-static int clean_up()
+static int hw_clean_up()
 {
     return SR_OK;
 }
@@ -1312,7 +1336,7 @@ static int hw_dev_acquisition_start(struct sr_dev_inst *sdi,
 
             assert(run_time);
 
-            init_random_data(vdev,sdi);
+            init_random_data(vdev);
             g_timer_start(run_time);
             sr_session_source_add(-1, 0, 0, receive_data_logic, sdi);
         }
@@ -1373,6 +1397,9 @@ static int hw_dev_acquisition_start(struct sr_dev_inst *sdi,
 
 static int hw_dev_acquisition_stop(const struct sr_dev_inst *sdi, void *cb_data)
 {
+
+    (void)cb_data;
+
     struct session_vdev *vdev = sdi->priv;
     struct sr_datafeed_packet packet;
     packet.status = SR_PKT_OK;
@@ -1484,15 +1511,7 @@ static int receive_data_logic(int fd, int revents, const struct sr_dev_inst *sdi
         }
         logic.data = logic_post_buf;
 
-        gdouble ideal_time = vdev->samplerate/8;
-        ideal_time = vdev->packet_len/(gdouble)ideal_time;
-        ideal_time = vdev->logci_cur_packet_num*ideal_time;
-        gdouble packet_elapsed = g_timer_elapsed(run_time, NULL);
-        gdouble waittime = ideal_time - packet_elapsed;
-        if(waittime > 0)
-        {
-            g_usleep(SR_MS(waittime));
-        }  
+        logic_delay_time(vdev);
         ds_data_forward(sdi, &packet);
 
         if(vdev->logic_mem_limit)
@@ -1555,23 +1574,19 @@ static int receive_data_logic_decoder(int fd, int revents, const struct sr_dev_i
     struct session_vdev *vdev = NULL;
     struct sr_datafeed_packet packet;
     struct sr_datafeed_logic logic;
-    struct sr_datafeed_dso dso;
 
     int ret;
     char file_name[32];
-    int channel;
     int ch_index, malloc_chan_index;
     struct session_packet_buffer *pack_buffer;
     unz_file_info64 fileInfo;
     char szFilePath[15];
     int bToEnd;
     int read_chan_index;
-    int chan_num;
+    uint8_t chan_num;
     uint8_t *p_wr;
     uint8_t *p_rd;
-    int byte_align;
-    int bCheckFile;
-    const int file_max_channel_count = 128;
+    uint8_t byte_align;
 
     assert(sdi);
     assert(sdi->priv);
@@ -1630,7 +1645,6 @@ static int receive_data_logic_decoder(int fd, int revents, const struct sr_dev_i
         }
 
         pack_buffer = vdev->packet_buffer;
-        pack_buffer->post_len;
         pack_buffer->block_buf_len = 0;
         pack_buffer->block_data_len = 0;
         pack_buffer->block_chan_read_pos = 0;
@@ -1685,8 +1699,6 @@ static int receive_data_logic_decoder(int fd, int revents, const struct sr_dev_i
 
             for (ch_index = 0; ch_index < chan_num; ch_index++)
             {
-                bCheckFile = 0;
-
                 snprintf(file_name, sizeof(file_name)-1, "L-%d/%d", ch_index, vdev->cur_block);
 
                 if (unzLocateFile(vdev->archive, file_name, 0) != UNZ_OK){
@@ -1839,12 +1851,10 @@ static int receive_data_dso(int fd, int revents, const struct sr_dev_inst *sdi)
     char szFilePath[15];
     int bToEnd;
     int read_chan_index;
-    int chan_num;
+    uint16_t chan_num;
     uint8_t *p_wr;
     uint8_t *p_rd;
-    int byte_align;
-    int bCheckFile;
-    const int file_max_channel_count = 128;
+    uint8_t byte_align;
 
     uint16_t tem;
     uint8_t val = 0;
@@ -1908,7 +1918,6 @@ static int receive_data_dso(int fd, int revents, const struct sr_dev_inst *sdi)
         }
 
         pack_buffer = vdev->packet_buffer;
-        pack_buffer->post_len;
         pack_buffer->block_buf_len = 0;
         pack_buffer->block_data_len = 0;
         pack_buffer->block_chan_read_pos = 0;
@@ -1955,7 +1964,7 @@ static int receive_data_dso(int fd, int revents, const struct sr_dev_inst *sdi)
     {
         if(vdev->sample_generator == PATTERN_RANDOM)
         {
-            for(int i = 0 ; i < pack_buffer->post_buf_len ;i++)
+            for(uint64_t i = 0 ; i < pack_buffer->post_buf_len ;i++)
             {
                 if(i % 2 == 0)
                     *(uint8_t*)(pack_buffer->post_buf + i) = DSO_RANDOM_DATA;
@@ -1979,7 +1988,6 @@ static int receive_data_dso(int fd, int revents, const struct sr_dev_inst *sdi)
 
                         for (ch_index = 0; ch_index < chan_num; ch_index++)
                         {
-                            bCheckFile = 0;
                             snprintf(file_name, sizeof(file_name)-1, "O-%d/0", ch_index);
 
                             if (unzLocateFile(vdev->archive, file_name, 0) != UNZ_OK){
@@ -2090,9 +2098,8 @@ static int receive_data_dso(int fd, int revents, const struct sr_dev_inst *sdi)
         {
             dso_wavelength_updata(vdev);
 
-            uint16_t offset;
             uint16_t high_gate,low_gate;
-            for(int i = 0 ; i < pack_buffer->post_buf_len; i++)
+            for(uint64_t i = 0 ; i < pack_buffer->post_buf_len; i++)
             {
                 if(i % 2 == 0)
                     probe = g_slist_nth(sdi->channels, 0)->data;
@@ -2105,7 +2112,6 @@ static int receive_data_dso(int fd, int revents, const struct sr_dev_inst *sdi)
                         probe = g_slist_nth(sdi->channels, 0)->data;
                 }
                 vdiv = probe->vdiv;
-                offset = probe->offset;
 
                 uint8_t temp_val = *((uint8_t*)pack_buffer->post_buf + i);
 
@@ -2230,10 +2236,18 @@ static int receive_data_dso(int fd, int revents, const struct sr_dev_inst *sdi)
             dso.data = pack_buffer->post_buf+vdev->post_data_len;
         else
             dso.data = pack_buffer->post_buf;
-        
-        delay_time(vdev);
-        g_timer_start(packet_interval);
         ds_data_forward(sdi, &packet);
+        if (vdev->instant)
+        {
+            instant_delay_time(vdev);
+        }
+        else
+        {
+            delay_time(vdev);
+            g_timer_start(packet_interval);
+        }
+
+        
         dso_status_update(vdev);
     }
 
@@ -2365,7 +2379,7 @@ static int receive_data_analog(int fd, int revents, const struct sr_dev_inst *sd
                         temp_value = ANALOG_MID_VAL - tem;
                 }
 
-                for(int j = 0 ; j <per_block_after_expend ;j++)
+                for(uint64_t j = 0 ; j <per_block_after_expend ;j++)
                 {
                     if(i % 2 == 0)
                     {
@@ -2467,13 +2481,11 @@ static int load_virtual_device_session(struct sr_dev_inst *sdi)
     unz_file_info64 fileInfo;
 
     struct sr_channel *probe;
-    int devcnt, i, j;
-    uint64_t tmp_u64, total_probes, enabled_probes;
+    int i, j;
+    uint64_t tmp_u64;
     char **sections, **keys, *metafile, *val,*probe_name;
     int mode = LOGIC;
     int channel_type = SR_CHANNEL_LOGIC;
-    int version = 1;
-
     struct session_vdev * vdev = sdi->priv;
 
     assert(sdi);
@@ -2535,27 +2547,12 @@ static int load_virtual_device_session(struct sr_dev_inst *sdi)
                 return SR_ERR;
             }
 
-            devcnt = 0;
             sections = g_key_file_get_groups(kf, NULL);
 
             for (i = 0; sections[i]; i++)
             {
-                if (!strcmp(sections[i], "version"))
-                {
-                    keys = g_key_file_get_keys(kf, sections[i], NULL, NULL);
-                    for (j = 0; keys[j]; j++)
-                    {
-                        val = g_key_file_get_string(kf, sections[i], keys[j], NULL);
-                        if (!strcmp(keys[j], "version"))
-                        {
-                            version = strtoull(val, NULL, 10); 
-                        }
-                    }
-                }
-
                 if (!strncmp(sections[i], "header", 6))
                 {
-                    enabled_probes = total_probes = 0;
                     keys = g_key_file_get_keys(kf, sections[i], NULL, NULL);
 
                     for (j = 0; keys[j]; j++)
@@ -2592,12 +2589,11 @@ static int load_virtual_device_session(struct sr_dev_inst *sdi)
                         else if (!strcmp(keys[j], "total probes"))
                         {
                             sr_dev_probes_free(sdi);
-                            total_probes = strtoull(val, NULL, 10);
-                            vdev->num_probes = total_probes;
+                            tmp_u64 = strtoull(val, NULL, 10);
+                            vdev->num_probes = tmp_u64;
                         }
                         else if (!strncmp(keys[j], "probe", 5))
                         {
-                            enabled_probes++;
                             tmp_u64 = strtoul(keys[j] + 5, NULL, 10);
                             channel_type = (mode == DSO) ? SR_CHANNEL_DSO : (mode == ANALOG) ? SR_CHANNEL_ANALOG
                                                                                             : SR_CHANNEL_LOGIC;
@@ -2614,7 +2610,6 @@ static int load_virtual_device_session(struct sr_dev_inst *sdi)
                     adjust_samplerate(sdi);
                     g_strfreev(keys);
                 }
-                devcnt++;
             }
 
             g_strfreev(sections);
@@ -2705,11 +2700,6 @@ static int load_virtual_device_session(struct sr_dev_inst *sdi)
     default:
         break;
     }
-    return SR_OK;
-}
-
-int hw_cleanup()
-{
     return SR_OK;
 }
 
@@ -2815,7 +2805,7 @@ SR_PRIV struct sr_dev_driver demo_driver_info = {
     .api_version = 1,
     .driver_type = DRIVER_TYPE_DEMO,
     .init = hw_init,
-    .cleanup = clean_up,
+    .cleanup = hw_clean_up,
     .scan = hw_scan,
     .dev_mode_list = hw_dev_mode_list,
     .config_get = config_get,

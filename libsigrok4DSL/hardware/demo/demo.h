@@ -452,7 +452,7 @@ static int reset_dsl_path(struct sr_dev_inst *sdi, uint8_t pattern_mode);
 
 static void adjust_samplerate(struct sr_dev_inst *sdi);
 
-static int init_random_data(struct session_vdev * vdev,struct sr_dev_inst *sdi);
+static int init_random_data(struct session_vdev * vdev);
 
 static int hw_init(struct sr_context *sr_ctx);
 
