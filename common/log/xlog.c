@@ -500,7 +500,7 @@ XLOG_API int xlog_set_domain(xlog_writer* wr, const char *domain)
     wr->_domain[0] = '\0';
 
     if (domain && *domain){
-        strncpy(wr->_domain, domain, sizeof(wr->_domain));
+        strncpy(wr->_domain, domain, sizeof(wr->_domain) - 1);
     }
     return 0;
 }

@@ -930,7 +930,7 @@ bool ProtocolDock::protocol_sort_callback(const DecoderInfoItem *o1, const Decod
          assert(false);
      }
      char buf[25];
-     strncpy(buf, id, sizeof(buf));
+     strncpy(buf, id, sizeof(buf)-1);
      char *rd = buf;
      char *start = NULL;
      int len = 0;

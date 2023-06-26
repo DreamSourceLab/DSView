@@ -202,7 +202,7 @@ SR_PRIV struct sr_dev_inst *sr_dev_inst_new(int mode, int status,
 	}
 
 	if (model && *model){
-		strncpy(sdi->name, model, sizeof(sdi->name));
+		strncpy(sdi->name, model, sizeof(sdi->name)-1);
 	}
 
 	return sdi;
