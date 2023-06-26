@@ -47,6 +47,7 @@ include(FindPkgConfig)
 include(GNUInstallDirs)
 
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/CMake") 
+#list(APPEND CMAKE_PREFIX_PATH "xxx.cmake find path") 
 
 find_package(PkgConfig)
 
@@ -206,7 +207,9 @@ if(Qt6Core_FOUND)
 endif()
 
 if(NOT Qt5Core_FOUND AND NOT Qt6Core_FOUND)
-	message(FATAL_ERROR  "Please install Qt5 or Qt6!")
+	message("Error!The qt5 or qt6 can't find, if them has been installed, please append the install path to CMAKE_PREFIX_PATH, the command as:")
+	message("list(APPEND CMAKE_PREFIX_PATH \"xxx install path\")" )
+	message(FATAL_ERROR  "Can't find Qt5 or Qt6!")
 endif()
 
 #===============================================================================
