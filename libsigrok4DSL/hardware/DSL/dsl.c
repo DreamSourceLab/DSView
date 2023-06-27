@@ -348,8 +348,8 @@ static int hw_dev_open(struct sr_dev_driver *di, struct sr_dev_inst *sdi)
 
     ret = libusb_open(dev_handel, &usb->devhdl);
     if (ret != LIBUSB_SUCCESS){
-        sr_err("%s: Failed to open device: %s, handle:%p",
-                __func__, libusb_error_name(ret), dev_handel);
+        sr_err("%s:%d, Failed to open device: %s, handle:%p",
+                __func__, __LINE__, libusb_error_name(ret), dev_handel);
         ds_set_last_error(SR_ERR_DEVICE_IS_EXCLUSIVE);
         return SR_ERR;
     }
