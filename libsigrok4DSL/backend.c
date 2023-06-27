@@ -325,8 +325,6 @@ SR_PRIV int sr_init(struct sr_context **ctx)
 	}
 	memset(context, 0, sizeof(struct sr_context));
 
-	sr_info("bbb:%s:%d", __func__, __LINE__);
-
 	ret = libusb_init(&context->libusb_ctx);
 	
 	if (LIBUSB_SUCCESS != ret) {
