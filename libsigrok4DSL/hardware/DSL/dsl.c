@@ -1968,9 +1968,13 @@ SR_PRIV int dsl_dev_open(struct sr_dev_driver *di, struct sr_dev_inst *sdi, gboo
         return SR_ERR;
     }
 
-    ret = dsl_secuCheck(sdi, encryption, SECU_STEPS);
-    if (ret != SR_OK){
-        sr_err("Security check failed!");
+    if (devc->profile->dev_caps.feature_caps & CAPS_FEATURE_MAX25_VTH) {
+        ret = dsl_secuCheck(sdi, encryption, SECU_STEPS);
+        if (ret != SR_OK){
+            sr_err("Security check failed!");
+        } else {
+            sr_err("Security check pass!");
+        }
     }
 
     return SR_OK;

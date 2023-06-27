@@ -75,6 +75,8 @@
 #define CAPS_FEATURE_AUTO_VGAIN (1 << 12)
 // max 2.5v fpga threshold
 #define CAPS_FEATURE_MAX25_VTH (1 << 13)
+// security check
+#define CAPS_FEATURE_SECURITY (1 << 14)
 /* end */
 
 
@@ -697,7 +699,7 @@ static const struct DSL_profile supported_DSLogic[] = {
      "DSLogicPlus-pgl12.bin",
      "DSLogicPlus-pgl12.bin",
      {CAPS_MODE_LOGIC,
-      CAPS_FEATURE_VTH | CAPS_FEATURE_BUF | CAPS_FEATURE_MAX25_VTH,
+      CAPS_FEATURE_VTH | CAPS_FEATURE_BUF | CAPS_FEATURE_MAX25_VTH | CAPS_FEATURE_SECURITY,
       (1 << DSL_STREAM20x16) | (1 << DSL_STREAM25x12) | (1 << DSL_STREAM50x6) | (1 << DSL_STREAM100x3) |
       (1 << DSL_BUFFER100x16) | (1 << DSL_BUFFER200x8) | (1 << DSL_BUFFER400x4),
       16,
@@ -724,7 +726,7 @@ static const struct DSL_profile supported_DSLogic[] = {
      "DSLogicU2Basic-pgl12.bin",
      "DSLogicU2Basic-pgl12.bin",
      {CAPS_MODE_LOGIC,
-      CAPS_FEATURE_VTH | CAPS_FEATURE_BUF | CAPS_FEATURE_MAX25_VTH,
+      CAPS_FEATURE_VTH | CAPS_FEATURE_BUF | CAPS_FEATURE_MAX25_VTH | CAPS_FEATURE_SECURITY,
       (1 << DSL_STREAM20x16) | (1 << DSL_STREAM25x12) | (1 << DSL_STREAM50x6) | (1 << DSL_STREAM100x3) |
       (1 << DSL_BUFFER100x16),
       16,
