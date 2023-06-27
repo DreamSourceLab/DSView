@@ -99,6 +99,7 @@ namespace pv
         _is_stream_mode = false;
         _is_action = false;
         _decoder_pannel = NULL;
+        _is_triged = false;
 
         _data_list.push_back(new SessionData());
         _data_list.push_back(new SessionData());
@@ -125,7 +126,8 @@ namespace pv
         _feed_timer.SetCallback(std::bind(&SigSession::feed_timeout, this));
         _repeat_timer.SetCallback(std::bind(&SigSession::repeat_capture_wait_timeout, this));
         _repeat_wait_prog_timer.SetCallback(std::bind(&SigSession::repeat_wait_prog_timeout, this));
-        _refresh_rt_timer.SetCallback(std::bind(&SigSession::realtime_refresh_timeout, this));        
+        _refresh_rt_timer.SetCallback(std::bind(&SigSession::realtime_refresh_timeout, this));       
+        _trig_check_timer.SetCallback(std::bind(&SigSession::trig_check_timeout, this));
     }
 
     SigSession::SigSession(SigSession &o)
@@ -534,6 +536,8 @@ namespace pv
         set_cur_snap_samplerate(_device_agent.get_sample_rate());
         set_cur_samplelimits(_device_agent.get_sample_limit());
 
+        set_session_time(QDateTime::currentDateTime());
+
         int mode = _device_agent.get_work_mode();
         if (mode == LOGIC)
         {
@@ -588,6 +592,7 @@ namespace pv
             if (is_realtime_refresh()){
                 _refresh_rt_timer.Start(1000 / 30);
             }
+
             return true;
         }
 
@@ -610,6 +615,7 @@ namespace pv
         }
         
         _capture_times++;
+        _is_triged = false;
 
         int mode = _device_agent.get_work_mode();
         bool bAddDecoder = false;
@@ -649,6 +655,12 @@ namespace pv
             {
                  
             }
+        }
+
+        if (mode == LOGIC && _device_agent.is_hardware() 
+            && _device_agent.get_hardware_operation_mode() == LO_OP_BUFFER)
+        {
+            _trig_check_timer.Start(200);
         }
 
         if (bAddDecoder){
@@ -1133,7 +1145,13 @@ namespace pv
         {
             dsv_err("Unexpected logic packet");
             return;
-        }       
+        }
+
+        if (!_is_triged && o.length > 0)
+        {
+            _is_triged = true;
+            _trig_time = QDateTime::currentDateTime();
+        }  
 
         if (_capture_data->get_logic()->last_ended())
         {
@@ -1179,6 +1197,13 @@ namespace pv
         }
 
         _dso_packet_count++;
+
+        if (!_is_triged && o.num_samples > 0)
+        {
+            _is_triged = true;
+            _trig_time = QDateTime::currentDateTime();
+            set_session_time(_trig_time);
+        }
 
         if (_capture_data->get_dso()->last_ended())
         { 
@@ -1372,7 +1397,6 @@ namespace pv
                     _callback->trigger_message(DSV_MSG_REV_END_PACKET);
                 }
                 else{
-                    set_session_time(QDateTime::currentDateTime());
                     _callback->frame_ended();
                 }                     
             }           
@@ -2158,6 +2182,8 @@ namespace pv
                         clear_decode_result();
                     }
 
+                    _trig_check_timer.Stop();
+
                     //Switch the caputrued data buffer to view.
                     if (bSwapBuffer)
                     {
@@ -2166,6 +2192,7 @@ namespace pv
                         
                         _view_data = _capture_data; 
                         attach_data_to_signal(_view_data); 
+                        set_session_time(_trig_time);
                     }
 
                     for (auto de : _decode_traces)
@@ -2397,6 +2424,24 @@ namespace pv
 
         for(auto t : _signals){
             t->set_view_index(index++);
+        }
+    }
+
+    void SigSession::trig_check_timeout()
+    {   
+        bool triged = false;
+        int pro;
+
+        if (_is_triged){
+            _trig_check_timer.Stop();
+            return;
+        }
+        
+        if (get_capture_status(triged, pro) && triged)
+        {
+            _trig_time = QDateTime::currentDateTime();
+            _is_triged = true;
+            _trig_check_timer.Stop();
         }
     }
 

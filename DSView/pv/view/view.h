@@ -375,13 +375,6 @@ public slots:
     // --
     void update_hori_res();
 
-    // --
-    void set_trig_time();
-
-    inline bool trig_time_setted(){
-        return _trig_time_setted;
-    }
-
     //
     void header_updated();
 
@@ -473,7 +466,6 @@ private:
     bool        _dso_auto;
     bool        _show_lissajous;
     bool        _back_ready;
-    bool        _trig_time_setted;
     DeviceAgent *_device_agent;
 };
 

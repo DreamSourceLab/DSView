@@ -195,6 +195,7 @@ private:
     QString     _em_edges;
 
     QTimer      _trigger_timer;
+    bool        _is_checked_trig;
     bool        _transfer_started;
     int         _timer_cnt;
     Signal      *_drag_sig;

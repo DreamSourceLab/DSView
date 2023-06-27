@@ -190,6 +190,7 @@ void ViewStatus::repeat_unshow()
 void ViewStatus::set_trig_time(QDateTime time)
 {
     _trig_time = L_S(STR_PAGE_DLG, S_ID(IDS_DLG_TRIGGER_TIME), "Trigger Time: ") + time.toString("yyyy-MM-dd hh:mm:ss");
+   // assert(0);
 }
 
 void ViewStatus::set_rle_depth(uint64_t depth)

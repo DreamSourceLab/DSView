@@ -226,7 +226,7 @@ void View::capture_init()
         set_scale_offset(_maxscale, 0);
     
     status_clear();
-    _trig_time_setted = false;
+
     _trig_hoff = 0;
 }
 
@@ -456,15 +456,6 @@ void View::frame_began()
     _search_hit = false;
     _search_pos = 0;
     set_search_pos(_search_pos, _search_hit);
-}
-
-void View::set_trig_time()
-{
-    if (!_trig_time_setted && _device_agent->get_work_mode() == LOGIC) {
-        _session->set_session_time(QDateTime::currentDateTime());
-        _viewbottom->set_trig_time(_session->get_session_time());
-    }
-    _trig_time_setted = true;
 }
 
 void View::receive_end()

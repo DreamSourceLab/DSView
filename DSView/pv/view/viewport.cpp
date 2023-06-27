@@ -92,6 +92,7 @@ Viewport::Viewport(View &parent, View_type type) :
     _timer_cnt = 0;
     _clickX = 0;
     _sample_received = 0;
+    _is_checked_trig = false;
 
     _lst_wait_tigger_time = high_resolution_clock::now();
     _tigger_wait_times = 0;
@@ -593,7 +594,6 @@ void Viewport::paintProgress(QPainter &p, QColor fore, QColor back)
                            Qt::AlignCenter | Qt::AlignVCenter,
                            L_S(STR_PAGE_DLG, S_ID(IDS_DLG_TRIGGERED), "Triggered! ") + QString::number(captured_progress) 
                            + L_S(STR_PAGE_DLG, S_ID(IDS_DLG_CAPTURED), "% Captured"));
-                _view.set_trig_time();
             }
             else {
                 p.drawText(status_rect,
@@ -606,10 +606,7 @@ void Viewport::paintProgress(QPainter &p, QColor fore, QColor back)
         }
 
     }
-    else {
-        if (!_view.trig_time_setted())
-            _view.set_trig_time(); 
-         
+    else {         
         p.setPen(View::Green);
         QFont font=p.font();
         font.setPointSize(50);
@@ -1366,6 +1363,7 @@ void Viewport::set_receive_len(quint64 length)
         _sample_received = 0;
         start_trigger_timer(333);
         _tigger_wait_times = 0;
+        _is_checked_trig = false;
     }
     else {
         stop_trigger_timer();
@@ -1374,10 +1372,19 @@ void Viewport::set_receive_len(quint64 length)
             _sample_received = _view.session().cur_samplelimits();
         else
             _sample_received += length;
-    } 
+    }
 
     if (_view.session().get_device()->get_work_mode() == LOGIC)
     {   
+        if (_view.session().get_device()->is_file() == false)
+        {
+            if (!_is_checked_trig && _view.session().is_triged()){
+                _view.get_viewstatus()->set_trig_time(_view.session().get_trig_time());
+                _view.get_viewstatus()->update();
+                _is_checked_trig = true;
+            }
+        }
+
         if (_view.session().is_repeat_mode())
         {
             double progress = 0;
@@ -1886,6 +1893,23 @@ void Viewport::stop_trigger_timer()
 void Viewport::on_trigger_timer()
 {
     _timer_cnt++;
+
+    if (!_is_checked_trig)
+    {
+        if (_view.session().get_device()->get_work_mode() == LOGIC
+            && _view.session().get_device()->is_file() == false)
+        {
+            if (_view.session().is_triged()){
+                _is_checked_trig = true;
+                _view.get_viewstatus()->set_trig_time(_view.session().get_trig_time());
+                _view.get_viewstatus()->update();
+            }
+        }
+        else{
+            _is_checked_trig = true;
+        }
+    }
+
     update();  // To refresh the trigger status information.
 }
 

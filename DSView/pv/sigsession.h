@@ -184,12 +184,16 @@ public:
         start_capture(_is_instant);
     } 
 
-    inline void set_session_time(QDateTime time){
-         _session_time = time;
-    }
-
     inline QDateTime get_session_time(){
         return _session_time;
+    }
+
+    inline QDateTime get_trig_time(){
+        return _trig_time;
+    }
+
+    inline bool is_triged(){
+        return _is_triged;
     }
 
     inline uint64_t get_trigger_pos(){
@@ -472,6 +476,10 @@ private:
 
     bool action_start_capture(bool instant);
     bool action_stop_capture();
+
+    inline void set_session_time(QDateTime time){
+        _session_time = time;
+    }
   
     //IMessageListener
     void OnMessage(int msg);
@@ -510,6 +518,7 @@ private:
     void repeat_capture_wait_timeout();
     void repeat_wait_prog_timeout();
     void realtime_refresh_timeout();
+    void trig_check_timeout();
 
     void clear_signals(); 
 
@@ -544,6 +553,7 @@ private:
     DsTimer     _repeat_timer;
     DsTimer     _repeat_wait_prog_timer;
     DsTimer     _refresh_rt_timer;
+    DsTimer     _trig_check_timer;
    
     int         _noData_cnt;
     bool        _data_lock;
@@ -551,6 +561,8 @@ private:
     int         _data_auto_lock;
 
     QDateTime   _session_time;
+    QDateTime   _trig_time;
+    bool        _is_triged;
     uint64_t    _trigger_pos;
     bool        _trigger_flag;
     uint8_t     _trigger_ch;
