@@ -325,9 +325,13 @@ SR_PRIV int sr_init(struct sr_context **ctx)
 	}
 	memset(context, 0, sizeof(struct sr_context));
 
+	sr_info("bbb:%s:%d", __func__, __LINE__);
+
 	ret = libusb_init(&context->libusb_ctx);
+	
 	if (LIBUSB_SUCCESS != ret) {
-		sr_err("libusb_init() returned %s.\n", libusb_error_name(ret));
+		sr_err("%s:%d, Failed to init lib. Error name:%s", 
+			__func__, __LINE__, libusb_error_name(ret));
 		ret = SR_ERR;
 		goto done;
 	}

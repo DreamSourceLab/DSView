@@ -1282,6 +1282,8 @@ static int dev_open(struct sr_dev_inst *sdi)
             ret = dsl_wr_reg(sdi, VTH_ADDR, (uint8_t)(devc->vth/5.0*255));
         
         if (ret != SR_OK){
+            sr_err("%s:%d, Failed to call dsl_wr_reg()!",
+                        __func__, __LINE__);
             ds_set_last_error(SR_ERR_DEVICE_USB_IO_ERROR);
             return ret;
         }

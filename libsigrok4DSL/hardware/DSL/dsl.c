@@ -368,7 +368,8 @@ static int hw_dev_open(struct sr_dev_driver *di, struct sr_dev_inst *sdi)
     rd_cmd.data = rd_cmd_data;
 
     if ((ret = command_ctl_rd(usb->devhdl, rd_cmd)) != SR_OK) {
-        sr_err("Failed to get firmware version.");
+        sr_err("%s:%d, Failed to get firmware version.",
+                __func__, __LINE__);
         ds_set_last_error(SR_ERR_DEVICE_USB_IO_ERROR);
         return ret;
     }
@@ -1894,7 +1895,8 @@ SR_PRIV int dsl_dev_open(struct sr_dev_driver *di, struct sr_dev_inst *sdi, gboo
     rd_cmd.data = &hw_info;
 
     if ((ret = command_ctl_rd(usb->devhdl, rd_cmd)) != SR_OK) {
-        sr_err("Failed to get hardware infos.");
+        sr_err("%s:%d, Failed to get hardware information.",
+            __func__, __LINE__);
         ds_set_last_error(SR_ERR_DEVICE_USB_IO_ERROR);
         return SR_ERR;
     }
@@ -1927,7 +1929,8 @@ SR_PRIV int dsl_dev_open(struct sr_dev_driver *di, struct sr_dev_inst *sdi, gboo
             g_free(fpga_bit);
 
             if (ret != SR_OK) {
-                sr_err("%s: Configure FPGA failed!", __func__);
+                sr_err("%s:%d, Configure FPGA failed!",
+                    __func__, __LINE__);
                 ds_set_last_error(SR_ERR_DEVICE_USB_IO_ERROR);
                 return SR_ERR;
             }
@@ -1938,7 +1941,8 @@ SR_PRIV int dsl_dev_open(struct sr_dev_driver *di, struct sr_dev_inst *sdi, gboo
             ret = dsl_hdl_version(sdi, &hw_info);
 
             if ((ret != SR_OK)) {
-               sr_err("%s: Failed to get FPGA bin version!", __func__);
+               sr_err("%s:%d, Failed to get FPGA bin version!",
+                        __func__, __LINE__);
                ds_set_last_error(SR_ERR_DEVICE_USB_IO_ERROR);
                sdi->status = SR_ST_INACTIVE;
                return SR_ERR;
@@ -1958,7 +1962,8 @@ SR_PRIV int dsl_dev_open(struct sr_dev_driver *di, struct sr_dev_inst *sdi, gboo
     uint16_t encryption[SECU_STEPS];
     ret = dsl_wr_reg(sdi, CTR0_ADDR, bmNONE); // dessert clear
     if (dsl_rd_nvm(sdi, (unsigned char *)encryption, SECU_EEP_ADDR, SECU_STEPS*2) != SR_OK) {
-        sr_err("Read EEPROM content failed!");
+        sr_err("%s:%d, Read EEPROM content failed!",
+            __func__, __LINE__);
         ds_set_last_error(SR_ERR_DEVICE_USB_IO_ERROR);
         return SR_ERR;
     }
