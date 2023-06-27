@@ -44,7 +44,7 @@
 
 #define DSL_REQUIRED_VERSION_MAJOR	2
 #define DSL_REQUIRED_VERSION_MINOR	0
-#define DSL_HDL_VERSION             0x0D
+#define DSL_HDL_VERSION             0x0E
 
 #define CAPS_FEATURE_NONE 0
 // voltage threshold
