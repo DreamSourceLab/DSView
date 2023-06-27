@@ -105,7 +105,8 @@ SR_PRIV int ezusb_upload_firmware(libusb_device *dev, int configuration,
 		libusb_get_bus_number(dev), libusb_get_device_address(dev));
 
 	if ((ret = libusb_open(dev, &hdl)) < 0) {
-        sr_err("failed to open device: %s.", libusb_error_name(ret));
+        sr_err("%s: Failed to open device: %s.", 
+				__func__, libusb_error_name(ret));
         return SR_ERR;
 	}
 

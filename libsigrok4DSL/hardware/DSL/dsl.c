@@ -257,39 +257,58 @@ SR_PRIV gboolean dsl_check_conf_profile(libusb_device *dev)
 {
     struct libusb_device_descriptor des;
     struct libusb_device_handle *hdl;
-    gboolean ret;
+    int ret;
+    gboolean bSucess;
     unsigned char strdesc[64];
 
     hdl = NULL;
-    ret = FALSE;
+    bSucess = FALSE;
+    ret = 0;
 
-    while (!ret) {
+    while (!bSucess) {
         /* Assume the FW has not been loaded, unless proven wrong. */
-        if (libusb_get_device_descriptor(dev, &des) != 0)
+        if ((ret = libusb_get_device_descriptor(dev, &des)) < 0){
+            sr_err("%s:%d, Failed to get device descriptor: %s", 
+			    __func__, __LINE__, libusb_error_name(ret));
             break;
+        }
 
-        if (libusb_open(dev, &hdl) != 0)
-            break;
+        if ((ret = libusb_open(dev, &hdl)) < 0){
+            sr_err("%s:%d, Failed to open device: %s", 
+			    __func__, __LINE__, libusb_error_name(ret));
+            // Mybe the device is busy, add it to list.
+            return TRUE;
+        }
 
-        if (libusb_get_string_descriptor_ascii(hdl,
-            des.iManufacturer, strdesc, sizeof(strdesc)) < 0)
+        if ((ret = libusb_get_string_descriptor_ascii(hdl,
+                des.iManufacturer, strdesc, sizeof(strdesc))) < 0){
+            sr_err("%s:%d, Failed to get device descriptor ascii: %s", 
+			    __func__, __LINE__, libusb_error_name(ret));
             break;
+        }
+
         if (strncmp((const char *)strdesc, "DreamSourceLab", 14))
             break;
 
-        if (libusb_get_string_descriptor_ascii(hdl,
-                des.iProduct, strdesc, sizeof(strdesc)) < 0)
+        if ((ret = libusb_get_string_descriptor_ascii(hdl,
+                des.iProduct, strdesc, sizeof(strdesc))) < 0){
+            sr_err("%s:%d, Failed to get device descriptor ascii: %s", 
+			    __func__, __LINE__, libusb_error_name(ret));
             break;
+        }
+
         if (strncmp((const char *)strdesc, "USB-based DSL Instrument v2", 27))
             break;
 
         /* If we made it here, it must be an dsl device. */
-        ret = TRUE;
+        bSucess = TRUE;
     }
-    if (hdl)
-        libusb_close(hdl);
 
-    return ret;
+    if (hdl){
+        libusb_close(hdl);
+    }
+
+    return bSucess;
 }
 
 static int hw_dev_open(struct sr_dev_driver *di, struct sr_dev_inst *sdi)
@@ -329,9 +348,9 @@ static int hw_dev_open(struct sr_dev_driver *di, struct sr_dev_inst *sdi)
 
     ret = libusb_open(dev_handel, &usb->devhdl);
     if (ret != LIBUSB_SUCCESS){
-        sr_err("Failed to open device: %s, handle:%p",
-                libusb_error_name(ret), dev_handel);
-        ds_set_last_error(SR_ERR_DEVICE_USB_IO_ERROR);
+        sr_err("%s: Failed to open device: %s, handle:%p",
+                __func__, libusb_error_name(ret), dev_handel);
+        ds_set_last_error(SR_ERR_DEVICE_IS_EXCLUSIVE);
         return SR_ERR;
     }
     //sr_info("------------Open returns the libusb_device_handle: %p, struct:%p", usb->devhdl, usb);
