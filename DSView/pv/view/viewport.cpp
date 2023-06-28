@@ -1239,13 +1239,19 @@ void Viewport::wheelEvent(QWheelEvent *event)
     isVertical = event->orientation() == Qt::Vertical;
 #endif
 
+    double zoom_scale = delta / 80;
+
+    if (ABS_VAL(delta) <= 80){
+        zoom_scale = delta > 0 ? 1.5 : -1.5;
+    }
+
     if (_type == FFT_VIEW)
     {
         for (auto t : _view.session().get_spectrum_traces())
         { 
             if (t->enabled())
             {
-                t->zoom(delta / 80, x);
+                t->zoom(zoom_scale, x);
                 break;
             }
         }
@@ -1274,10 +1280,10 @@ void Viewport::wheelEvent(QWheelEvent *event)
             }
             else
             {
-                _view.zoom(-delta / 80, x);
+                _view.zoom(-zoom_scale, x);
             }
 #else
-            _view.zoom(delta / 80, x);
+            _view.zoom(zoom_scale, x);
 #endif
         }
         else
