@@ -564,13 +564,14 @@ static int init_random_data(struct session_vdev *vdev)
     int probe_count[LOGIC_MAX_PROBE_NUM] = {0};
     uint8_t probe_status[LOGIC_MAX_PROBE_NUM] = {LOGIC_HIGH_LEVEL};
     uint64_t i;
+    static int rand_k = 0;
 
     assert(vdev->data_buf);
 
     memset(probe_status,LOGIC_HIGH_LEVEL,16);
     memset(vdev->data_buf,0,LOGIC_BUF_LEN);
 
-    srand((unsigned int)(time(NULL) + rand()));
+    srand((unsigned int)(time(NULL) + rand() + (rand_k++)));
 
     for(int i = 0 ;i < vdev->enabled_probes;i++){
         probe_count[i] = rand()%SR_KB(1);
