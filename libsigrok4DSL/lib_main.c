@@ -28,10 +28,8 @@
 
 #ifdef _WIN32
 #include <windows.h>
-#define _sleep(m) Sleep((m))
 #else
 #include <unistd.h>
-#define _sleep(m) usleep((m)*1000)
 #endif
 
 #define MAX_DEVCIE_LIST_LENGTH  20
@@ -51,7 +49,7 @@ struct sr_lib_context
 {
 	dslib_event_callback_t event_callback;
 	struct sr_context *sr_ctx;
-	GList *device_list; // All device instance, sr_dev_inst* type
+	GSList *device_list; // All device instance, sr_dev_inst* type
 	pthread_mutex_t mutext;
 	int lib_exit_flag;
 	int attach_event_flag;
@@ -73,11 +71,11 @@ struct sr_lib_context
 };
 
 static void hotplug_event_listen_callback(struct libusb_context *ctx, struct libusb_device *dev, int event);
-static void usb_hotplug_process_proc();
+static gpointer usb_hotplug_process_proc(gpointer data);
 static void destroy_device_instance(struct sr_dev_inst *dev);
 static void close_device_instance(struct sr_dev_inst *dev);
 static int open_device_instance(struct sr_dev_inst *dev);
-static void collect_run_proc();
+static gpointer collect_run_proc(gpointer data);
 static void post_event_async(int event);
 static void send_event(int event);
 static void make_demo_device_to_list();
@@ -173,13 +171,14 @@ SR_API int ds_lib_init()
 	sr_listen_hotplug(lib_ctx.sr_ctx, hotplug_event_listen_callback);
 
 	/** Start usb hotplug thread */
-	lib_ctx.hotplug_thread = g_thread_new("hotplug_proc", usb_hotplug_process_proc, NULL);
+	lib_ctx.hotplug_thread = g_thread_new("hotplug_proc", usb_hotplug_process_proc, (gpointer)0);
 
 	return SR_OK;
 }
 
 #ifndef _WIN32
 SR_PRIV int lib_extern_init(struct sr_context *ctx){
+	(void)ctx;
 	return SR_OK;
 }
 #endif
@@ -286,10 +285,10 @@ SR_API void ds_set_datafeed_callback(ds_datafeed_callback_t cb)
 SR_API int ds_get_device_list(struct ds_device_base_info **out_list, int *out_count)
 {
 	int num;
-	struct ds_device_base_info *array = NULL;
 	struct ds_device_base_info *p = NULL;
 	GSList *l;
 	struct sr_dev_inst *dev;
+	void *buf = NULL;
 
 	if (out_list == NULL)
 	{
@@ -306,21 +305,21 @@ SR_API int ds_get_device_list(struct ds_device_base_info **out_list, int *out_co
 		return SR_OK;
 	}
 
-	array = (struct ds_device_info *)malloc(sizeof(struct ds_device_base_info) * (num + 1));
-	if (array == NULL)
+	buf = malloc(sizeof(struct ds_device_base_info) * (num + 1));
+	if (buf == NULL)
 	{	
 		sr_err("%s,ERROR:failed to alloc memory.", __func__);
 		pthread_mutex_unlock(&lib_ctx.mutext);
 		return SR_ERR_MALLOC;
 	}
 
-	p = array;
+	p = (struct ds_device_base_info*)buf;
 
 	for (l = lib_ctx.device_list; l; l = l->next)
 	{
 		dev = l->data;
 		p->handle = dev->handle;
-		strncpy(p->name, dev->name, sizeof(p->name) - 1);
+		strncpy(p->name, (const char*)dev->name, sizeof(p->name) - 1);
 		p++;
 	}
 
@@ -334,7 +333,7 @@ SR_API int ds_get_device_list(struct ds_device_base_info **out_list, int *out_co
 
 	pthread_mutex_unlock(&lib_ctx.mutext);
 
-	*out_list = array;
+	*out_list = (struct ds_device_base_info*)buf;
 	return SR_OK;
 }
 
@@ -460,8 +459,8 @@ SR_API int ds_active_device_by_index(int index)
 {
 	GSList *l;
 	struct sr_dev_inst *dev;
-	ds_device_handle handle = NULL;
-	ds_device_handle lst_handle = NULL;
+	ds_device_handle handle = NULL_HANDLE;
+	ds_device_handle lst_handle = NULL_HANDLE;
 	int i = 0;
 
 	pthread_mutex_lock(&lib_ctx.mutext);
@@ -486,7 +485,7 @@ SR_API int ds_active_device_by_index(int index)
 		handle = lst_handle; // Get the last one.
 	}
 
-	if (handle == NULL)
+	if (handle == NULL_HANDLE)
 	{
 		sr_err("ds_active_device_by_index(), index is error!");
 		return SR_ERR_CALL_STATUS;
@@ -501,8 +500,10 @@ SR_API int ds_active_device_by_index(int index)
 SR_API int ds_get_actived_device_index()
 {
 	int dex = -1;
-	GSList *l;
+	GSList *l = NULL;
 	int i = 0;
+	
+	(void)l;
 
 	if (lib_ctx.actived_device_instance == NULL)
 	{
@@ -570,7 +571,6 @@ SR_API int ds_device_from_file(const char *file_path)
  */
 SR_API const GSList *ds_get_actived_device_mode_list()
 {
-	GSList *l;
 	struct sr_dev_inst *dev;
 
 	dev = lib_ctx.actived_device_instance;
@@ -677,7 +677,7 @@ SR_API int ds_get_actived_device_info(struct ds_device_full_info *fill_info)
 		p->dev_type = dev->dev_type;
 		p->di = dev;
 		p->actived_times = dev->actived_times;
-		strncpy(p->name, dev->name, sizeof(p->name) - 1);
+		strncpy(p->name, (const char*)dev->name, sizeof(p->name) - 1);
 
 		if (dev->driver && dev->driver->name)
 		{
@@ -765,13 +765,15 @@ SR_API int ds_start_collect()
 	}
 
 
-	lib_ctx.collect_thread = g_thread_new("collect_run_proc", collect_run_proc, NULL);
+	lib_ctx.collect_thread = g_thread_new("collect_proc", collect_run_proc, (gpointer)0);
 
 	return SR_OK;
 }
 
-static void collect_run_proc()
+static gpointer collect_run_proc(gpointer data)
 {
+	(void)data;
+
 	int ret;
 	struct sr_dev_inst *di;
 	int bError;
@@ -825,6 +827,8 @@ END:
 		send_event(DS_EV_COLLECT_TASK_END); // Normal end.
 
 	lib_ctx.is_stop_by_detached = 0;
+
+	return NULL;
 }
 
 /**
@@ -957,8 +961,8 @@ SR_API int ds_set_actived_device_config(const struct sr_channel *ch,
 
 	return sr_config_set(
 		lib_ctx.actived_device_instance,
-		ch,
-		cg,
+		(struct sr_channel*)ch,
+		(struct sr_channel_group*)cg,
 		key,
 		data);
 }
@@ -984,7 +988,7 @@ SR_API const struct sr_config_info *ds_get_actived_device_config_info(int key)
 	if (lib_ctx.actived_device_instance == NULL)
 	{
 		sr_err("Have no actived device.");
-		return SR_ERR_CALL_STATUS;
+		return NULL;
 	}
 
 	return sr_config_info_get(key);
@@ -1199,7 +1203,7 @@ static int update_device_handle(struct libusb_device *old_dev, struct libusb_dev
 			usb_dev_info->usb_dev = new_dev;
 			usb_dev_info->bus = bus;
 			usb_dev_info->address = address;
-			dev->handle = new_dev;
+			dev->handle = (ds_device_handle)new_dev;
 			bFind = 1;
 
 			// Reopen the device by transaction.
@@ -1227,6 +1231,8 @@ static int update_device_handle(struct libusb_device *old_dev, struct libusb_dev
 static void hotplug_event_listen_callback(struct libusb_context *ctx, struct libusb_device *dev, int event)
 {
 	int bDone = 0;
+
+	(void)ctx;
 
 	if (dev == NULL){
 		if (event == USB_EV_HOTPLUG_ATTACH)
@@ -1312,7 +1318,7 @@ static void hotplug_event_listen_callback(struct libusb_context *ctx, struct lib
 static void process_attach_event(int isEvent)
 {
 	struct sr_dev_driver **drivers;
-	GList *dev_list;
+	GSList *dev_list;
 	GSList *l;
 	struct sr_dev_driver *dr;
 	int num = 0;
@@ -1359,7 +1365,6 @@ static void process_detach_event()
 {
 	GSList *l;
 	struct sr_dev_inst *dev;
-	struct sr_dev_driver *driver_ins;
 	libusb_device *ev_dev;
 	int ev;
 	int bFind;
@@ -1411,8 +1416,10 @@ static void process_detach_event()
 	}	
 }
 
-static void usb_hotplug_process_proc()
+static gpointer usb_hotplug_process_proc(gpointer data)
 {
+	(void)data;
+	
 	sr_info("Hotplug thread start!");
 
 	int cur_trans_id = 0;
@@ -1431,7 +1438,7 @@ static void usb_hotplug_process_proc()
 			lib_ctx.detach_event_flag = 0;
 		}
 
-		_sleep(100);
+		xsleep(100);
 
 		if (lib_ctx.is_waitting_reconnect)
 		{
@@ -1467,17 +1474,19 @@ static void usb_hotplug_process_proc()
 	// Wait all callback thread end.
 	while (lib_ctx.callback_thread_count > 0)
 	{
-		_sleep(100);
+		xsleep(100);
 	}
 
 	sr_info("Hotplug thread end!");
+
+	return NULL;
 }
 
 static void make_demo_device_to_list()
 {
 	struct sr_dev_driver **drivers;
 	struct sr_dev_driver *dr;
-	GList *dev_list;
+	GSList *dev_list;
 	GSList *l;
 
 	drivers = sr_driver_list();
@@ -1553,16 +1562,18 @@ static int open_device_instance(struct sr_dev_inst *dev)
 	return SR_ERR_CALL_STATUS;
 }
 
-static void post_event_proc(int event)
+static gpointer post_event_proc(gpointer event)
 {
 	if (lib_ctx.event_callback != NULL)
 	{
-		lib_ctx.event_callback(event);
+		lib_ctx.event_callback((int)((unsigned long)event));
 	}
 
 	pthread_mutex_lock(&lib_ctx.mutext);
 	lib_ctx.callback_thread_count--;
 	pthread_mutex_unlock(&lib_ctx.mutext);
+
+	return NULL;
 }
 
 static void post_event_async(int event)
@@ -1571,7 +1582,7 @@ static void post_event_async(int event)
 	lib_ctx.callback_thread_count++;
 	pthread_mutex_unlock(&lib_ctx.mutext);
 
-	g_thread_new("callback_thread", post_event_proc, event);
+	g_thread_new("callback_thread", post_event_proc, (gpointer)((unsigned long)event));
 }
 
 static void send_event(int event)
@@ -1587,14 +1598,14 @@ static struct libusb_device* get_new_attached_usb_device()
 	struct libusb_device* array[MAX_DEVCIE_LIST_LENGTH];
 	int num;
 	int i;
-	GList *l;
+	GSList *l;
 	int bFind;
 	struct libusb_device* dev;
 	struct sr_dev_inst *dev_ins;
 
 	dev = NULL;
 	num = 0;
-	ds_scan_all_device_list(lib_ctx.sr_ctx->libusb_ctx, &array, MAX_DEVCIE_LIST_LENGTH, &num);
+	ds_scan_all_device_list(lib_ctx.sr_ctx->libusb_ctx, (struct libusb_device **)array, MAX_DEVCIE_LIST_LENGTH, &num);
 
 	pthread_mutex_lock(&lib_ctx.mutext);
 
@@ -1629,14 +1640,14 @@ static struct libusb_device* get_new_detached_usb_device()
     struct libusb_device* array[MAX_DEVCIE_LIST_LENGTH];
 	int num;
 	int i;
-	GList *l;
+	GSList *l;
 	int bFind;
 	struct libusb_device* dev;
 	struct sr_dev_inst *dev_ins;
 
 	dev = NULL;
 	num = 0;
-	ds_scan_all_device_list(lib_ctx.sr_ctx->libusb_ctx, &array, MAX_DEVCIE_LIST_LENGTH, &num);
+	ds_scan_all_device_list(lib_ctx.sr_ctx->libusb_ctx, (struct libusb_device **)array, MAX_DEVCIE_LIST_LENGTH, &num);
 
 	pthread_mutex_lock(&lib_ctx.mutext);
 
@@ -1675,6 +1686,15 @@ SR_PRIV int post_message_callback(int msg)
 {
 	send_event(msg);
 	return SR_OK;
+}
+
+SR_PRIV void xsleep(int ms)
+{
+#ifdef _WIN32
+	Sleep(ms);
+#else
+	usleep(ms * 1000);
+#endif
 }
 
 /**-------------------private function end---------------*/

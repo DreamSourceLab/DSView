@@ -454,7 +454,7 @@ void ProtocolDock::del_all_protocol()
 void ProtocolDock::decoded_progress(int progress)
 {
     const auto &decode_sigs = _session->get_decode_signals();
-    int index = 0;
+    unsigned int index = 0;
 
     for(auto d : decode_sigs) {
         int pg = d->get_progress();
@@ -933,7 +933,7 @@ bool ProtocolDock::protocol_sort_callback(const DecoderInfoItem *o1, const Decod
      strncpy(buf, id, sizeof(buf)-1);
      char *rd = buf;
      char *start = NULL;
-     int len = 0;
+     unsigned int len = 0;
 
      while (*rd && len - 1 < sizeof(buf))
      { 
@@ -1004,6 +1004,8 @@ bool ProtocolDock::protocol_sort_callback(const DecoderInfoItem *o1, const Decod
 
  void ProtocolDock::OnItemClick(void *sender, void *data_handle)
  {
+    (void)sender;
+
      if (data_handle != NULL){
          DecoderInfoItem *info = (DecoderInfoItem*)data_handle;
          srd_decoder *dec = (srd_decoder *)(info->_data_handle); 

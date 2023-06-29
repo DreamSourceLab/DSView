@@ -221,8 +221,8 @@ void ProtocolExp::save_proc()
         if ((*i).second)
         {
             if (index == row_index)
-            {
-                row = (*i).first;
+            { 
+                row = Row((*i).first);
                 break;
             }
             row_index++;

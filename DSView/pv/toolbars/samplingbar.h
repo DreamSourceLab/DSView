@@ -141,15 +141,11 @@ namespace pv
         private:
             SigSession          *_session;
 
-            DsComboBox          _device_selector;              
-            DsComboBox          _sample_count;
-            DsComboBox          _sample_rate;
-            bool                _updating_sample_rate;
-            bool                _updating_sample_count;
-            bool                _updating_device_list;
-
             QToolButton         _device_type;
-            QToolButton         _configure_button;
+            DsComboBox          _device_selector;
+            QToolButton         _configure_button;           
+            DsComboBox          _sample_count;
+            DsComboBox          _sample_rate;          
             QToolButton         _run_stop_button;
             QToolButton         _instant_button;
             QToolButton         _mode_button;
@@ -169,6 +165,10 @@ namespace pv
             int                 _last_device_index;
             bool                _is_run_as_instant;
             view::View          *_view;
+
+            bool                _updating_sample_rate;
+            bool                _updating_sample_count;
+            bool                _updating_device_list;
         };
 
     } // namespace toolbars

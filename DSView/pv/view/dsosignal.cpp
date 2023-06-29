@@ -110,16 +110,6 @@ DsoSignal::DsoSignal(data::DsoSnapshot *data,
     load_settings();
 }
 
-DsoSignal::DsoSignal(const DsoSignal &o)
-:Signal(NULL)
-{    
-}
-
-DsoSignal::DsoSignal(DsoSignal &o)
-:Signal(NULL)
-{
-}
-
 DsoSignal::~DsoSignal()
 {
     DESTROY_OBJECT(_vDial);  
@@ -971,6 +961,8 @@ void DsoSignal::paint_trace(QPainter &p,
     int zeroY, int left, const int64_t start, const int64_t end, int hw_offset,
     const double pixels_offset, const double samples_per_pixel, uint64_t num_channels)
 {
+    (void)num_channels;
+
     const int64_t sample_count = end - start + 1;
 
     if (sample_count > 0) {

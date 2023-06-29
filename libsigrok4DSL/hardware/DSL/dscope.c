@@ -54,7 +54,7 @@ static const struct sr_list_item bandwidth_list[] = {
     {-1, NULL},
 };
 
-static struct lang_text_map_item lang_text_map[] = 
+static const struct lang_text_map_item lang_text_map[] = 
 {
 	{SR_CONF_OPERATION_MODE, DS_OP_NORMAL, "Normal", "正常"},
 	{SR_CONF_OPERATION_MODE, DS_OP_INTEST, "Internal Test", "内部测试"},
@@ -1219,7 +1219,6 @@ static int config_set(int id, GVariant *data, struct sr_dev_inst *sdi,
                       struct sr_channel_group *cg )
 {
     struct DSL_context *devc;
-    const char *stropt;
     int ret, num_probes;
     struct sr_usb_dev_inst *usb;
     struct libusb_device_handle *hdl;
@@ -1731,13 +1730,10 @@ static int config_set(int id, GVariant *data, struct sr_dev_inst *sdi,
 static int config_list(int key, GVariant **data, const struct sr_dev_inst *sdi,
                        const struct sr_channel_group *cg)
 {
-    struct DSL_context *devc;
-
     assert(sdi);
     assert(sdi->priv);
 
     (void)cg;
-    devc = sdi->priv;
 
     if (dsl_config_list(key, data, sdi, cg) == SR_OK)
         return SR_OK;
@@ -1888,14 +1884,7 @@ static int dev_destroy(struct sr_dev_inst *sdi)
 
 static int cleanup(void)
 {
-	int ret;
-	struct drv_context *drvc;
-
-	if (!(drvc = di->priv))
-        return SR_OK;
-
-	g_free(drvc);
-	di->priv = NULL;
+    safe_free(di->priv);
 
     return SR_OK;
 }
@@ -2143,11 +2132,13 @@ static int dev_status_get(const struct sr_dev_inst *sdi, struct sr_status *statu
 SR_PRIV int sr_dscope_option_value_to_code(const struct sr_dev_inst *sdi, int config_id, const char *value)
 {
     int num;
-
+    
+    (void)sdi;
     assert(sdi);
     
     num = sizeof(lang_text_map) / sizeof(lang_text_map[0]);
-    return sr_option_value_to_code(config_id, value, &lang_text_map, num);
+    return sr_option_value_to_code(config_id, value, 
+                (const struct lang_text_map_item*)lang_text_map, num);
 }
 
 SR_PRIV struct sr_dev_driver DSCope_driver_info = {

@@ -454,7 +454,7 @@ void LogicSnapshot::capture_ended()
 
     if (offset > 0)
     {
-        for (int chan=0; chan<_channel_num; chan++)
+        for (unsigned int chan=0; chan<_channel_num; chan++)
         { 
             if (_ch_data[chan][index0].lbp[index1] == NULL){
                 dsv_err("ERROR:LogicSnapshot::capture_ended(),buffer is null.");
@@ -763,7 +763,7 @@ bool LogicSnapshot::get_nxt_edge_self(uint64_t &index, bool last_sample, uint64_
     bool edge_hit = false;
 
     // linear search for the next transition on the root level
-    for (int64_t i = root_index; !edge_hit && (index <= end) && i < (int64_t)_ch_data[order].size(); i++) 
+    for (uint64_t i = root_index; !edge_hit && (index <= end) && i < (uint64_t)_ch_data[order].size(); i++) 
     {
         uint64_t cur_mask = (~0ULL << root_pos);
 
@@ -1423,7 +1423,7 @@ void LogicSnapshot::move_first_node_to_last()
         struct RootNode rn = _ch_data[i][0];
         _ch_data[i].erase(_ch_data[i].begin());
 
-        for (int x=0; x<Scale; x++)
+        for (int x=0; x<(int)Scale; x++)
         {
             if (rn.lbp[x] != NULL){
                 free(rn.lbp[x]);
@@ -1467,7 +1467,7 @@ void LogicSnapshot::free_decode_lpb(void *lbp)
 
 void LogicSnapshot::free_head_blocks(int count)
 {
-    assert(count < Scale);
+    assert(count < (int)Scale);
     assert(count > 0);
 
     for (int i = 0; i < (int)_channel_num; i++)

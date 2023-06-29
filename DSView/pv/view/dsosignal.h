@@ -81,9 +81,6 @@ private:
     static const uint16_t MS_RectMargin = 10;
     static const uint16_t MS_RectHeight = 25;
 
-    DsoSignal(const DsoSignal &o);
-    DsoSignal(DsoSignal &o);
-
 public:
     DsoSignal(pv::data::DsoSnapshot *data,
               sr_channel *probe);

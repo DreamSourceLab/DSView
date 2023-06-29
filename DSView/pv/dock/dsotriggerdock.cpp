@@ -212,11 +212,7 @@ void DsoTriggerDock::reStyle()
 
 void DsoTriggerDock::paintEvent(QPaintEvent *e)
 {
-    (void*)e;
-//    QStyleOption opt;
-//    opt.init(this);
-//    QPainter p(this);
-//    style()->drawPrimitive(QStyle::PE_Widget, &opt, &p, this);
+    (void)e;
 }
 
 void DsoTriggerDock::auto_trig(int index)

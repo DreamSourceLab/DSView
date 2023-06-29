@@ -285,7 +285,7 @@ const char* AnnotationResTable::format_numberic(const char *hex_str, int fmt)
 		  if (sub_wr != sub_buf){
 			  *sub_wr = 0;
 			  const char *sub_str = format_to_string(sub_buf, fmt);
-			  int sublen = strlen(sub_str);
+			  unsigned int sublen = (unsigned int)strlen(sub_str);
 
 			  if ((all_wr - all_buf) + sublen >  CONVERT_STR_MAX_LEN){
 				printf("convert error,write buffer is full!\n");
@@ -312,12 +312,12 @@ const char* AnnotationResTable::format_numberic(const char *hex_str, int fmt)
 	 {
 		 *sub_wr = 0;
 		 const char *sub_str = format_to_string(sub_buf, fmt);
-		 int sublen = strlen(sub_str);
+		 unsigned int sublen = (unsigned int)strlen(sub_str);
 
 		 if ((all_wr - all_buf) + sublen > CONVERT_STR_MAX_LEN)
 		 {
-			 printf("convert error,write buffer is full!\n");
-			 return hex_str;
+			printf("convert error,write buffer is full!\n");
+			return hex_str;
 		 }
 
 		 strncpy(all_wr, sub_str, sublen);

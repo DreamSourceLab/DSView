@@ -51,7 +51,7 @@ static const uint8_t probeCoupling[] = {
     SR_AC_COUPLING,
 };
 
-const char *probeMapUnits[] = {
+static const char *probeMapUnits[] = {
     "V",
     "A",
     "℃",
@@ -67,17 +67,6 @@ static const char *probe_names[] = {
     "16", "17", "18", "19", "20", "21", "22", "23",
     "24", "25", "26", "27", "28", "29", "30", "31",
     NULL,
-};
- 
-static const gboolean default_ms_en[] = {
-    FALSE, /* DSO_MS_BEGIN */
-    TRUE,  /* DSO_MS_FREQ */
-    FALSE, /* DSO_MS_PERD */
-    TRUE,  /* DSO_MS_VMAX */
-    TRUE,  /* DSO_MS_VMIN */
-    FALSE, /* DSO_MS_VRMS */
-    FALSE, /* DSO_MS_VMEA */
-    FALSE, /* DSO_MS_VP2P */
 };
 
 SR_PRIV void dsl_probe_init(struct sr_dev_inst *sdi)
@@ -201,7 +190,7 @@ SR_PRIV const GSList *dsl_mode_list(const struct sr_dev_inst *sdi)
     devc = sdi->priv;
     for (i = 0; i < ARRAY_SIZE(sr_mode_list); i++) {
         if (devc->profile->dev_caps.mode_caps & (1 << i))
-            l = g_slist_append(l, &sr_mode_list[i]);    
+            l = g_slist_append(l, (gpointer)&sr_mode_list[i]);    
     }
 
     return l;
@@ -313,19 +302,15 @@ SR_PRIV gboolean dsl_check_conf_profile(libusb_device *dev)
 
 static int hw_dev_open(struct sr_dev_driver *di, struct sr_dev_inst *sdi)
 {
-    libusb_device **devlist;
+    (void)di;
+    
     libusb_device *dev_handel=NULL;
     struct sr_usb_dev_inst *usb;
-    struct libusb_device_descriptor des;
-    struct DSL_context *devc;
-    struct drv_context *drvc;
     struct version_info vi;
-    int ret, skip, i, device_count;
+    int ret;
     struct ctl_rd_cmd rd_cmd;
     uint8_t rd_cmd_data[2];
 
-    drvc = di->priv;
-    devc = sdi->priv;
     usb = sdi->conn;
   
     if (usb->usb_dev == NULL){
@@ -1783,6 +1768,8 @@ SR_PRIV int dsl_config_list(int key, GVariant **data, const struct sr_dev_inst *
     int i;
 
     (void)cg;
+    assert(sdi->priv);
+    
     devc = sdi->priv;
 
     switch (key) {
@@ -2322,8 +2309,8 @@ static void receive_transfer(struct libusb_transfer *transfer)
     if (devc->abort)
         devc->status = DSL_STOP;
 
-    sr_detail("%llu: receive_transfer(): status %d; timeout %d; received %d bytes.",
-        g_get_monotonic_time(), transfer->status, transfer->timeout, transfer->actual_length);
+    sr_detail("%lu: receive_transfer(): status %d; timeout %d; received %d bytes.",
+        (u64_t)g_get_monotonic_time(), transfer->status, transfer->timeout, transfer->actual_length);
 
     switch (transfer->status) {
     case LIBUSB_TRANSFER_COMPLETED:
@@ -2454,8 +2441,8 @@ static void receive_header(struct libusb_transfer *transfer)
         devc->status = DSL_ERROR;
     if (!devc->abort && transfer->status == LIBUSB_TRANSFER_COMPLETED &&
         trigger_pos->check_id == TRIG_CHECKID) {
-        sr_info("%llu: receive_trigger_pos(): status %d; timeout %d; received %d bytes.",
-            g_get_monotonic_time(), transfer->status, transfer->timeout, transfer->actual_length);
+        sr_info("%lu: receive_trigger_pos(): status %d; timeout %d; received %d bytes.",
+            (u64_t)g_get_monotonic_time(), transfer->status, transfer->timeout, transfer->actual_length);
         remain_cnt = trigger_pos->remain_cnt_h;
         remain_cnt = (remain_cnt << 32) + trigger_pos->remain_cnt_l;
         if (transfer->actual_length == dsl_header_size(devc)) {
@@ -2559,7 +2546,7 @@ SR_PRIV int dsl_start_transfers(const struct sr_dev_inst *sdi)
 }
 
 
-SR_PRIV int dsl_destroy_device(const struct sr_dev_inst *sdi)
+SR_PRIV int dsl_destroy_device(struct sr_dev_inst *sdi)
 { 
     assert(sdi);
 
@@ -2588,7 +2575,7 @@ SR_PRIV int sr_option_value_to_code(int config_id, const char *value, const stru
     assert(array);
     assert(value);
 
-    p = array;
+    p = (struct lang_text_map_item*)array;
 
     for (i = 0; i < num; i++){
         if (p->config_id == config_id){

@@ -265,6 +265,8 @@ SR_PRIV int sr_session_stop(void)
  *
  * @param packet The packet to show debugging information for.
  */
+
+/*
 static void datafeed_dump(const struct sr_datafeed_packet *packet)
 {
     const struct sr_datafeed_logic *logic;
@@ -288,8 +290,8 @@ static void datafeed_dump(const struct sr_datafeed_packet *packet)
 		break;
 	case SR_DF_LOGIC:
 		logic = packet->payload;
-		sr_dbg("bus: Received SR_DF_LOGIC packet (%llu bytes).",
-		       logic->length);
+		sr_dbg("bus: Received SR_DF_LOGIC packet (%lu bytes).",
+		       (u64_t)logic->length);
 		break;
     case SR_DF_DSO:
         dso = packet->payload;
@@ -318,6 +320,7 @@ static void datafeed_dump(const struct sr_datafeed_packet *packet)
 		break;
 	}
 }
+*/
 
 /**
  * Add an event source for a file descriptor.

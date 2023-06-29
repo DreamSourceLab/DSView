@@ -253,6 +253,7 @@ static void _saveHistory(UserHistory &o, QSettings &st)
     st.endGroup();
 }
 
+/*
 //------font
 static void _loadFont(FontOptions &o, QSettings &st)
 {
@@ -291,6 +292,7 @@ static void _saveFont(FontOptions &o, QSettings &st)
 
     st.endGroup();
 }
+*/
 
 //------------AppConfig
 

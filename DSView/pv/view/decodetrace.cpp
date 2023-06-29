@@ -651,6 +651,8 @@ void* DecodeTrace::get_key_handel()
 //to show decoder's property setting dialog
 bool DecodeTrace::create_popup(bool isnew)
 { 
+    (void)isnew;
+    
     int ret = false;  //setting have changed flag 
 
     while (true)

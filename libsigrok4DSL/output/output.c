@@ -250,7 +250,7 @@ SR_API void sr_output_options_free(const struct sr_option **options)
  *
  * @since 0.4.0
  */
-SR_API const struct sr_output *sr_output_new(const struct sr_output_module *omod,
+SR_API const struct sr_output* sr_output_new(const struct sr_output_module *omod,
 		GHashTable *options, const struct sr_dev_inst *sdi)
 {
 	struct sr_output *op;
@@ -264,7 +264,7 @@ SR_API const struct sr_output *sr_output_new(const struct sr_output_module *omod
 	op = malloc(sizeof(struct sr_output));
 	if (op == NULL){
 		sr_err("%s,ERROR:failed to alloc memory.", __func__);
-		return SR_ERR;
+		return NULL;
 	}
     memset(op, 0, sizeof(struct sr_output));
 

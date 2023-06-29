@@ -57,11 +57,10 @@ static void release_annotation(struct srd_proto_data_annotation *pda)
 
 static int py_parse_ann_data(PyObject *list_obj, char ***out_strv, int list_size, char *hex_str_buf, long long *numberic_value)
 {
-	PyObject *py_item, *py_bytes;
+	PyObject *py_bytes;
 	char **strv, *str; 
 	PyGILState_STATE gstate;
 	int ret = SRD_ERR_PYTHON;
-	int ijmp = 0;
 	int text_num = 0;
 	PyObject* text_items[10];
 	PyObject *py_tmp;
@@ -183,7 +182,7 @@ static int convert_annotation(struct srd_decoder_inst *di, PyObject *obj,
 {
 	PyObject *py_tmp;
 	struct srd_proto_data_annotation *pda;
-	unsigned int ann_class;
+	int ann_class;
     char **ann_text;
 	gpointer ann_type_ptr;
 	PyGILState_STATE gstate;
@@ -219,12 +218,8 @@ static int convert_annotation(struct srd_decoder_inst *di, PyObject *obj,
 		goto err;
 	}
 	ann_class = PyLong_AsLong(py_tmp);
-//	if (!(pdo = g_slist_nth_data(di->decoder->annotations, ann_class))) {
-//		srd_err("Protocol decoder %s submitted data to unregistered "
-//			"annotation class %d.", di->decoder->name, ann_class);
-//		return SRD_ERR_PYTHON;
-//	}
-	if (ann_class >= g_slist_length(di->decoder->ann_types) || ann_class < 0) {
+
+	if ((ann_class >= (int)g_slist_length(di->decoder->ann_types)) || ann_class < 0) {
 		srd_err("Protocol decoder %s submitted data to unregistered "
 			"annotation class %d.", di->decoder->name, ann_class);
 		goto err;
@@ -684,7 +679,7 @@ static PyObject *Decoder_register(PyObject *self, PyObject *args,
 	if (pdo == NULL){
 		PyGILState_Release(gstate);
 		srd_err("%s,ERROR:failed to alloc memory.", __func__);
-		return SRD_ERR;
+		return NULL;
 	}
     memset(pdo, 0, sizeof(struct srd_pd_output));
 
@@ -1017,7 +1012,7 @@ static int set_skip_condition(struct srd_decoder_inst *di, uint64_t count)
 	assert(di);
 
 	struct srd_term *term;
-	GSList *term_list;
+	GSList *term_list = NULL;
 
 	condition_list_free(di);
 
@@ -1033,7 +1028,9 @@ static int set_skip_condition(struct srd_decoder_inst *di, uint64_t count)
 		srd_err("%s,ERROR:failed to alloc memory.", __func__);
 	}
 
-	di->condition_list = g_slist_append(di->condition_list, term_list);
+	if (term_list != NULL){
+		di->condition_list = g_slist_append(di->condition_list, term_list);
+	}
 
 	return SRD_OK;
 }
@@ -1282,7 +1279,7 @@ static PyMethodDef Decoder_methods[] = {
 	{ "put", Decoder_put, METH_VARARGS,
 	  		"Accepts a dictionary with the following keys: startsample, endsample, data" },
 
-	{ "register", (PyCFunction)Decoder_register, METH_VARARGS|METH_KEYWORDS,
+	{ "register", (PyCFunction)((void*)&Decoder_register), METH_VARARGS|METH_KEYWORDS,
 			"Register a new output stream" },
 
 	{ "wait", Decoder_wait, METH_VARARGS,

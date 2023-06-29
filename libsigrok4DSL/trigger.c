@@ -119,6 +119,8 @@ SR_API int ds_trigger_stage_set_value(uint16_t stage, uint16_t probes, char *tri
 }
 SR_API int ds_trigger_stage_set_logic(uint16_t stage, uint16_t probes, unsigned char trigger_logic)
 {
+    (void)probes;
+    
     assert(stage < TriggerStages);
     assert(probes <= MaxTriggerProbes);
 
@@ -133,6 +135,8 @@ SR_API int ds_trigger_stage_set_logic(uint16_t stage, uint16_t probes, unsigned 
 }
 SR_API int ds_trigger_stage_set_inv(uint16_t stage, uint16_t probes, unsigned char trigger0_inv, unsigned char trigger1_inv)
 {
+    (void)probes;
+    
     assert(stage < TriggerStages);
     assert(probes <= MaxTriggerProbes);
 
@@ -148,6 +152,8 @@ SR_API int ds_trigger_stage_set_inv(uint16_t stage, uint16_t probes, unsigned ch
 }
 SR_API int ds_trigger_stage_set_count(uint16_t stage, uint16_t probes, uint32_t trigger0_count, uint32_t trigger1_count)
 {
+    (void)probes;
+
     assert(stage < TriggerStages);
     assert(probes <= MaxTriggerProbes);
 

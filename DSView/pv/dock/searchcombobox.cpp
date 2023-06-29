@@ -40,6 +40,8 @@ ComboButtonItem::ComboButtonItem(QWidget *parent, ISearchItemClick *click, void 
 
 void ComboButtonItem::mousePressEvent(QMouseEvent *e)
 {
+    (void)e;
+    
     if (_click != NULL){
         _click->OnItemClick(this, _data_handle);
     }
@@ -165,6 +167,8 @@ void SearchComboBox::AddDataItem(QString id, QString name, void *data_handle)
 
  void SearchComboBox::OnItemClick(void *sender, void *data_handle)
  {
+    (void)sender;
+
      if (data_handle != NULL && _item_click){
          SearchDataItem *item = (SearchDataItem*)data_handle;        
           this->close();

@@ -431,10 +431,6 @@ static int vdev_init(struct sr_dev_inst* sdi);
 
 static void dso_status_update(struct session_vdev *vdev);
 
-static int get_logic_probe_type_index_by_probe_type(int probe_type);
-
-static int logic_adjust_probe(struct sr_dev_inst *sdi, int num_probes);
-
 static void logic_adjust_samplerate(struct session_vdev * vdev);
 
 static int init_analog_random_data(struct session_vdev * vdev);
@@ -498,8 +494,6 @@ static int receive_data_analog(int fd, int revents, const struct sr_dev_inst *sd
 static void send_error_packet(const struct sr_dev_inst *cb_sdi, struct session_vdev *vdev, struct sr_datafeed_packet *packet);
 
 static int close_archive(struct session_vdev *vdev);
-
-static int hw_cleanup();
 
 static int dso_wavelength_updata(struct session_vdev *vdev);
 

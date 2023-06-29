@@ -586,7 +586,7 @@ void MeasureDock::update_dist()
     for (auto &inf : _dist_row_list) 
     {  
         if (inf.cursor1 != -1) {
-            if (inf.cursor1 > cursor_list.size()) {
+            if (inf.cursor1 > (int)cursor_list.size()) {
                 inf.start_bt->setText("");
                 set_cursor_btn_color(inf.start_bt);
                 inf.cursor1 = -1;
@@ -594,7 +594,7 @@ void MeasureDock::update_dist()
         }
 
         if (inf.cursor2 != -1) {
-            if (inf.cursor2 > cursor_list.size()) {
+            if (inf.cursor2 > (int)cursor_list.size()) {
                 inf.end_bt->setText("");
                 set_cursor_btn_color(inf.end_bt);
                 inf.cursor2 = -1;
@@ -623,14 +623,14 @@ void MeasureDock::update_edge()
     for (auto &inf : _edge_row_list)
     {
         if (inf.cursor1 != -1) {
-            if (inf.cursor1 > cursor_list.size()) {
+            if (inf.cursor1 > (int)cursor_list.size()) {
                 inf.start_bt->setText("");
                 set_cursor_btn_color(inf.start_bt);
                 inf.cursor1 = -1;
             }
         }
         if (inf.cursor2 != -1) {
-            if (inf.cursor2 > cursor_list.size()) {
+            if (inf.cursor2 > (int)cursor_list.size()) {
                 inf.end_bt->setText("");
                 set_cursor_btn_color(inf.end_bt);
                 inf.cursor2 = -1;
@@ -641,8 +641,6 @@ void MeasureDock::update_edge()
         if (inf.cursor1 != -1 && inf.cursor2 != -1) {
             uint64_t rising_edges;
             uint64_t falling_edges;
-
-            const auto &sigs = _session->get_signals();
 
             for(auto s : _session->get_signals()) {
                 if (s->signal_type() == SR_CHANNEL_LOGIC

@@ -632,7 +632,6 @@ namespace pv
             if (_updating_sample_count)
                 return;
 
-            GVariant *gvar;
             double duration;
             uint64_t v;
 
@@ -730,7 +729,6 @@ namespace pv
                                         .value<double>();
 
             const uint64_t sample_limit = _device_agent->get_sample_limit();
-            GVariant *gvar;
             uint64_t max_sample_rate;
 
             if (_device_agent->get_config_uint64(SR_CONF_MAX_DSO_SAMPLERATE, max_sample_rate) == false)

@@ -689,7 +689,7 @@ struct sr_channel {
 /** Structure for groups of channels that have common properties. */
 struct sr_channel_group {
     /** Name of the channel group. */
-    char *name;
+    const char *name;
     /** List of sr_channel structs of the channels belonging to this group. */
     GSList *channels;
     /** Private data for driver use. */
@@ -704,7 +704,7 @@ struct sr_config {
 struct sr_config_info {
 	int  key;
 	int  datatype;
-	char *name;
+	const char *name;
 };
 
 struct sr_status {
@@ -763,7 +763,7 @@ struct sr_status {
 
 struct sr_list_item{
 	int   id;
-	char *name;
+	const char *name;
 };
 
 enum sr_config_option_id

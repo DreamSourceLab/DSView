@@ -72,7 +72,8 @@ static int init(struct sr_output *o, GHashTable *options)
 /*
   add zip inner file
 */
-static int add_file_from_buffer(zipFile zipArchive, zip_fileinfo *zi, const char *innerFile, const char *buffer, unsigned int buferSize)
+static int add_file_from_buffer(zipFile zipArchive, zip_fileinfo *zi, const char *innerFile, 
+			const char *buffer, unsigned int buferSize)
 {
     assert(buffer);
     assert(innerFile);
@@ -126,10 +127,9 @@ static int create_archive(const struct sr_output *o)
 	GKeyFile *meta;
 	GVariant *gvar;
 	GSList *l;
-	int tmpfile, ret;
 	const char *devgroup;
 	size_t ch_nr;
-    char version[1], metafile[32];
+    char version[1];
     char *s = NULL;
     int logic_channels = 0;
     int enabled_logic_channels = 0;
@@ -227,7 +227,7 @@ static int create_archive(const struct sr_output *o)
 /*
  append data to archive
 */
-static int append_archive_data(const struct sr_output *o, unsigned char *buf,
+static int append_archive_data(const struct sr_output *o, const char *buf,
 		int unitsize, int length)
 {
 	struct out_context *outc;
@@ -247,8 +247,10 @@ static int append_archive_data(const struct sr_output *o, unsigned char *buf,
 	} 
 
 	outc->chunk_index++;
-	snprintf(chunkname, 15, "logic-1-%d", outc->chunk_index);
-	add_file_from_buffer(outc->zipArchive, &outc->zi, chunkname, buf, length);
+	snprintf(chunkname, 19, "logic-1-%d", (short)outc->chunk_index);
+
+	add_file_from_buffer(outc->zipArchive, &outc->zi, 
+			(const char*)chunkname, buf, length);
 
 	return SR_OK;
 }

@@ -167,7 +167,7 @@ static const char *probeMapUnits[] = {
 
 static void free_temp_buffer(struct session_vdev *vdev);
 
-static int trans_data(struct sr_dev_inst *sdi)
+static int trans_data(const struct sr_dev_inst *sdi)
 {
     // translate for old format
     struct session_vdev *vdev = sdi->priv;
@@ -242,7 +242,6 @@ static int receive_data(int fd, int revents, const struct sr_dev_inst *sdi)
     struct sr_datafeed_logic logic;
     struct sr_datafeed_dso dso;
     struct sr_datafeed_analog analog;
-    GSList *l;
     int ret;
     char file_name[32];
     struct sr_channel *probe = NULL;
@@ -423,7 +422,6 @@ static int receive_data_logic_dso_v2(int fd, int revents, const struct sr_dev_in
 
     int ret;
     char file_name[32]; 
-    int channel;
     int ch_index, malloc_chan_index;
     struct session_packet_buffer *pack_buffer;
     unz_file_info64 fileInfo;
@@ -488,7 +486,7 @@ static int receive_data_logic_dso_v2(int fd, int revents, const struct sr_dev_in
         }
 
         pack_buffer = vdev->packet_buffer;
-        pack_buffer->post_write_len;
+        pack_buffer->post_write_len = 0;
         pack_buffer->block_buf_len = 0;
         pack_buffer->block_data_len = 0;
         pack_buffer->block_read_len = 0;
@@ -663,7 +661,7 @@ static int receive_data_logic_dso_v2(int fd, int revents, const struct sr_dev_in
     }
     
     // Send back.
-    if (pack_buffer->post_write_len >= byte_align * chan_num)
+    if (pack_buffer->post_write_len >= (uint64_t)(byte_align * chan_num))
     {  
         if (sdi->mode == LOGIC)
         {
@@ -723,7 +721,7 @@ static const GSList *dev_mode_list(const struct sr_dev_inst *sdi)
     for (i = 0; i < ARRAY_SIZE(sr_mode_list); i++)
     {
         if (sdi->mode == sr_mode_list[i].mode)
-            l = g_slist_append(l, &sr_mode_list[i]);
+            l = g_slist_append(l, (gpointer)&sr_mode_list[i]);
     }
 
     return l;
@@ -1074,19 +1072,19 @@ static int config_set(int id, GVariant *data, struct sr_dev_inst *sdi,
     case SR_CONF_SAMPLERATE:
         vdev->samplerate = g_variant_get_uint64(data);
         samplerates[0] = vdev->samplerate;
-        sr_dbg("Setting samplerate to %llu.", vdev->samplerate);
+        sr_dbg("Setting samplerate to %lu.", (u64_t)vdev->samplerate);
         break;
     case SR_CONF_TIMEBASE:
         vdev->timebase = g_variant_get_uint64(data);
-        sr_dbg("Setting timebase to %llu.", vdev->timebase);
+        sr_dbg("Setting timebase to %lu.", (u64_t)vdev->timebase);
         break;
     case SR_CONF_MAX_TIMEBASE:
         vdev->max_timebase = g_variant_get_uint64(data);
-        sr_dbg("Setting max timebase to %llu.", vdev->max_timebase);
+        sr_dbg("Setting max timebase to %lu.", (u64_t)vdev->max_timebase);
         break;
     case SR_CONF_MIN_TIMEBASE:
         vdev->min_timebase = g_variant_get_uint64(data);
-        sr_dbg("Setting min timebase to %llu.", vdev->min_timebase);
+        sr_dbg("Setting min timebase to %lu.", (u64_t)vdev->min_timebase);
         break;
     case SR_CONF_UNIT_BITS:
         vdev->unit_bits = g_variant_get_byte(data);
@@ -1107,19 +1105,19 @@ static int config_set(int id, GVariant *data, struct sr_dev_inst *sdi,
     case SR_CONF_LIMIT_SAMPLES:
         vdev->total_samples = g_variant_get_uint64(data);
         samplecounts[0] = vdev->total_samples;
-        sr_dbg("Setting limit samples to %llu.", vdev->total_samples);
+        sr_dbg("Setting limit samples to %lu.", (u64_t)vdev->total_samples);
         break;
     case SR_CONF_TRIGGER_TIME:
         vdev->trig_time = g_variant_get_int64(data);
-        sr_dbg("Setting trigger time to %llu.", vdev->trig_time);
+        sr_dbg("Setting trigger time to %lu.", (u64_t)vdev->trig_time);
         break;
     case SR_CONF_TRIGGER_POS:
         vdev->trig_pos = g_variant_get_uint64(data);
-        sr_dbg("Setting trigger position to %llu.", vdev->trig_pos);
+        sr_dbg("Setting trigger position to %lu.", (u64_t)vdev->trig_pos);
         break;
     case SR_CONF_NUM_BLOCKS:
         vdev->num_blocks = g_variant_get_uint64(data);
-        sr_dbg("Setting block number to %llu.", vdev->num_blocks);
+        sr_dbg("Setting block number to %lu.", (u64_t)vdev->num_blocks);
         break;
     case SR_CONF_CAPTURE_NUM_PROBES:
         vdev->num_probes = g_variant_get_uint64(data);
@@ -1361,7 +1359,6 @@ static int dev_acquisition_start(struct sr_dev_inst *sdi, void *cb_data)
 
     struct session_vdev *vdev;
     struct sr_datafeed_packet packet;
-    int ret;
     GSList *l;
     struct sr_channel *probe; 
 
@@ -1394,8 +1391,8 @@ static int dev_acquisition_start(struct sr_dev_inst *sdi, void *cb_data)
     if (NULL == vdev->archive)
     {
         sr_err("Failed to open session file '%s': "
-               "zip error %d\n",
-               sdi->path, ret);
+               "zip error",
+               sdi->path);
         return SR_ERR;
     }
 
@@ -1563,7 +1560,7 @@ SR_PRIV int sr_new_virtual_device(const char *filename, struct sr_dev_inst **out
     sdi->dev_type = DEV_TYPE_FILELOG;
 
     get_file_short_name(filename, short_name, sizeof(short_name) - 1);
-    strncpy(sdi->name, short_name, sizeof(short_name) - 1);
+    strncpy(sdi->name, (char*)short_name, sizeof(short_name) - 1);
     sdi->path = g_strdup(filename);
 
     *out_di = sdi;
@@ -1579,7 +1576,7 @@ static int sr_load_virtual_device_session(struct sr_dev_inst *sdi)
     unz_file_info64 fileInfo;
 
     struct sr_channel *probe;
-    int ret, devcnt, i, j;
+    int devcnt, i, j;
     uint16_t probenum;
     uint64_t tmp_u64, total_probes, enabled_probes;
     uint16_t p;

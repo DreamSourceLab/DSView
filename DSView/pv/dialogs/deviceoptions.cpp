@@ -176,8 +176,10 @@ DeviceOptions::~DeviceOptions()
 
 void DeviceOptions::ChannelChecked(int index, QObject *object)
 {
-  QCheckBox* sc = dynamic_cast<QCheckBox*>(object);
-  channel_checkbox_clicked(sc);
+    (void)index;
+    
+    QCheckBox* sc = dynamic_cast<QCheckBox*>(object);
+    channel_checkbox_clicked(sc);
 }
 
 void DeviceOptions::accept()
@@ -607,7 +609,6 @@ void DeviceOptions::channel_checkbox_clicked(QCheckBox *sc)
         if (sc != NULL) {
             QGridLayout *const layout = (QGridLayout *)sc->property("Layout").value<void *>();
             int i = layout->count();
-            bool bMap = false;
 
             int ck_index = -1;
             int i_dex = 0;
@@ -633,7 +634,7 @@ void DeviceOptions::channel_checkbox_clicked(QCheckBox *sc)
 
                 if (w->objectName() == "map-enable"){
                     QCheckBox *map_ckbox = dynamic_cast<QCheckBox*>(w);
-                    bMap = map_ckbox->isChecked();
+                    map_ckbox->isChecked();
                 }
 
                 if (w->property("Enable").isNull()) {                    

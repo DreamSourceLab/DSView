@@ -485,8 +485,6 @@ void Viewport::paintProgress(QPainter &p, QColor fore, QColor back)
 
     using pv::view::Signal;
 
-    const uint64_t sample_limits = _view.session().cur_samplelimits();
-
     double progress = 0;
     int progress100 = 0;
     int captured_progress = 0;

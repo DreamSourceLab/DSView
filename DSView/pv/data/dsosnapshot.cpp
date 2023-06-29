@@ -215,8 +215,6 @@ void DsoSnapshot::append_payload(const sr_datafeed_dso &dso)
 {
     std::lock_guard<std::mutex> lock(_mutex);
 
-    //dsv_info("write sample_count:%llu", dso.num_samples);
-
     if (_channel_num > 0 && dso.num_samples > 0) {       
         append_data(dso.data, dso.num_samples, _instant);
 
@@ -241,7 +239,7 @@ void DsoSnapshot::append_data(void *data, uint64_t samples, bool instant)
 
     assert(_sample_count <= _total_sample_count);
      
-    for (int ch = 0; ch < _channel_num; ch++)
+    for (unsigned int ch = 0; ch < _channel_num; ch++)
     {
         uint8_t *src = (uint8_t*)data + ch;
         uint8_t *dest = _ch_data[ch];
@@ -250,7 +248,7 @@ void DsoSnapshot::append_data(void *data, uint64_t samples, bool instant)
             dest += old_sample_count;
         }
 
-        for (int i = 0; i < samples; i++)
+        for (uint64_t i = 0; i < samples; i++)
         {
             *dest++ = *src;
             src += _channel_num;
@@ -511,7 +509,7 @@ bool DsoSnapshot::get_max_min_value(uint8_t &maxv, uint8_t &minv, int chan_index
         return false;
     }
 
-    if (chan_index < 0 || chan_index >= _ch_data.size()){
+    if (chan_index < 0 || chan_index >= (int)_ch_data.size()){
         assert(false);
     }
 

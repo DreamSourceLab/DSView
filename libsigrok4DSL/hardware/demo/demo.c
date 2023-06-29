@@ -45,8 +45,6 @@ static uint64_t samplecounts_file[1];
 static GTimer *packet_interval = NULL;
 static GTimer *run_time = NULL;
 static int max_probe_num = 0;
-static int64_t analog_count = 0;
-static gboolean channel_mode_change = FALSE;
 static uint64_t packet_num;
 static void *logic_post_buf = NULL;
 
@@ -73,7 +71,7 @@ static struct demo_mode_pattern demo_pattern_array[3];
 static int b_load_directory = 0;
 static char* demo_mode_names[3] = {"logic", "dso", "analog"};
 
-static struct DEMO_channels logic_channel_modes[] = {
+static const struct DEMO_channels logic_channel_modes[] = {
     {DEMO_LOGIC125x16,  LOGIC,  SR_CHANNEL_LOGIC,  16, 1, SR_MHZ(1), SR_Mn(1),
      SR_KHZ(50), SR_MHZ(125), "Use 16 Channels (Max 125MHz)"},
     {DEMO_LOGIC250x12,  LOGIC,  SR_CHANNEL_LOGIC,  12, 1, SR_MHZ(1), SR_Mn(1),
@@ -86,7 +84,7 @@ static struct DEMO_channels logic_channel_modes[] = {
 
 static struct sr_list_item logic_channel_mode_list[ARRAY_SIZE(logic_channel_modes)+1];
 
-static struct DEMO_channels channel_modes[] = {
+static const struct DEMO_channels channel_modes[] = {
     // LA Stream
     {DEMO_LOGIC100x16,  LOGIC,  SR_CHANNEL_LOGIC,  16, 1, SR_MHZ(1), SR_Mn(1),
      SR_KHZ(50), SR_GHZ(1), "Use 16 Channels (Max 20MHz)"},
@@ -413,7 +411,7 @@ static int get_pattern_mode_from_file(const char *sub_dir, struct demo_mode_patt
     char dir_path_buf[500];
     int str_len;
     char *dir_path = dir_path_buf;
-    char *file_path = NULL;
+    const char *file_path = NULL;
     char  short_name[50];
     int i;
     int num;
@@ -492,10 +490,9 @@ static void scan_dsl_file(struct sr_dev_inst *sdi)
 static int reset_dsl_path(struct sr_dev_inst *sdi, uint8_t pattern_mode)
 { 
     struct demo_mode_pattern *info = NULL;
-    if(sdi->path != NULL)
-        safe_free(sdi->path);
-
     char file_path[500];
+
+    safe_free(sdi->path);
 
     strcpy(file_path, DS_USR_PATH);
     strcat(file_path,"/demo/");
@@ -566,6 +563,7 @@ static int init_random_data(struct session_vdev *vdev)
     int cur_probe = 0;
     int probe_count[LOGIC_MAX_PROBE_NUM] = {0};
     uint8_t probe_status[LOGIC_MAX_PROBE_NUM] = {LOGIC_HIGH_LEVEL};
+    uint64_t i;
 
     assert(vdev->data_buf);
 
@@ -578,7 +576,7 @@ static int init_random_data(struct session_vdev *vdev)
         probe_count[i] = rand()%SR_KB(1);
     }
 
-    for(int i = 0 ; i < vdev->data_buf_len ;i++)
+    for(i = 0 ; i < vdev->data_buf_len ;i++)
     {
         if(i % 8 == 0 && i != 0)
         {
@@ -622,7 +620,6 @@ static GSList *hw_scan(GSList *options)
     struct sr_dev_inst *sdi;
     struct session_vdev *vdev;
     GSList *devices;
-    char str[500];
 
     (void)options;
     devices = NULL;
@@ -658,14 +655,14 @@ static GSList *hw_scan(GSList *options)
 
 static const GSList *hw_dev_mode_list(const struct sr_dev_inst *sdi)
 {
-    // struct demo_context *devc;
+    (void)sdi;
+
     GSList *l = NULL;
     unsigned int i;
 
     for (i = 0; i < ARRAY_SIZE(sr_mode_list); i++) {
-        // if (devc->profile->dev_caps.mode_caps & (1 << i))
         if (supported_Demo[0].dev_caps.mode_caps & (1 << i))
-            l = g_slist_append(l, &sr_mode_list[i]);
+            l = g_slist_append(l, (gpointer)&sr_mode_list[i]);
     }
 
     return l;
@@ -755,7 +752,7 @@ static int config_get(int id, GVariant **data, const struct sr_dev_inst *sdi,
 {
     (void)cg;
 
-    char *patter_name = NULL;
+    const char *patter_name = NULL;
 
     assert(sdi);
     assert(sdi->priv);
@@ -920,11 +917,11 @@ static int config_set(int id, GVariant *data, struct sr_dev_inst *sdi,
     {
     case SR_CONF_SAMPLERATE:
         vdev->samplerate = g_variant_get_uint64(data);
-        sr_dbg("Setting samplerate to %llu.", vdev->samplerate);
+        sr_dbg("Setting samplerate to %lu.", (u64_t)vdev->samplerate);
         break;
     case SR_CONF_LIMIT_SAMPLES:
         vdev->total_samples = g_variant_get_uint64(data);
-        sr_dbg("Setting limit samples to %llu.", vdev->total_samples);
+        sr_dbg("Setting limit samples to %lu.", (u64_t)vdev->total_samples);
         break;
     case SR_CONF_LIMIT_MSEC:
         break;
@@ -1035,7 +1032,7 @@ static int config_set(int id, GVariant *data, struct sr_dev_inst *sdi,
             g_timer_start(run_time);
             vdev->timebase_change = TRUE;
         } 
-        sr_dbg("Setting timebase to %llu.", vdev->timebase);
+        sr_dbg("Setting timebase to %lu.", (u64_t)vdev->timebase);
         break;
     case SR_CONF_PROBE_COUPLING:
         if(sdi->mode != LOGIC)
@@ -1082,11 +1079,10 @@ static int config_set(int id, GVariant *data, struct sr_dev_inst *sdi,
         break;
     case SR_CONF_PROBE_MAP_MAX:
         ch->map_max = g_variant_get_double(data);
-        if(sdi->mode == ANALOG)
         break;
     case SR_CONF_NUM_BLOCKS:
         vdev->num_blocks = g_variant_get_uint64(data);
-        sr_dbg("Setting block number to %llu.", vdev->num_blocks);
+        sr_dbg("Setting block number to %d.", vdev->num_blocks);
         break;
     case SR_CONF_CAPTURE_NUM_PROBES:
         vdev->num_probes = g_variant_get_uint64(data);
@@ -1104,10 +1100,10 @@ static int config_set(int id, GVariant *data, struct sr_dev_inst *sdi,
         {
             for(i = 0 ; i < ARRAY_SIZE(logic_channel_modes);i++)
             {
-                if(logic_channel_modes[i].id == nv)
+                if(logic_channel_modes[i].id == (enum DEMO_CHANNEL_ID)nv)
                 {
                     vdev->logic_ch_mode_index = i;
-                    vdev->logic_ch_mode = nv;
+                    vdev->logic_ch_mode = (enum DEMO_CHANNEL_ID)nv;
                     load_virtual_device_session(sdi);
                     vdev->channel_mode_change = TRUE;
                     break;
@@ -1136,6 +1132,7 @@ static int config_list(int key, GVariant **data, const struct sr_dev_inst *sdi,
     GVariant *gvar;
     GVariantBuilder gvb;
     struct demo_mode_pattern *info = NULL;
+    unsigned int i;
 
     (void)sdi;
     struct session_vdev *vdev = sdi->priv;
@@ -1167,7 +1164,7 @@ static int config_list(int key, GVariant **data, const struct sr_dev_inst *sdi,
         break;
     case SR_CONF_PATTERN_MODE:
         info = &demo_pattern_array[sdi->mode];
-        *data = g_variant_new_strv(info->patterns, info->count);
+        *data = g_variant_new_strv((const char* const*)info->patterns, info->count);
         break;
     case SR_CONF_MAX_HEIGHT:
         *data = g_variant_new_strv(maxHeights, ARRAY_SIZE(maxHeights));
@@ -1196,16 +1193,14 @@ static int config_list(int key, GVariant **data, const struct sr_dev_inst *sdi,
     case SR_CONF_CHANNEL_MODE:
         if(sdi->mode == LOGIC&& vdev->sample_generator == PATTERN_RANDOM)
         {
-            for(int i = 0;i<ARRAY_SIZE(logic_channel_mode_list);i++)
+            for(i = 0; i<ARRAY_SIZE(logic_channel_modes); i++)
             {
-                logic_channel_mode_list[i].id = logic_channel_modes[i].id;
+                logic_channel_mode_list[i].id = (int)logic_channel_modes[i].id;
                 logic_channel_mode_list[i].name = logic_channel_modes[i].descr;
-                if(i == ARRAY_SIZE(logic_channel_mode_list)-1)
-                {
-                    logic_channel_mode_list[i].id = -1;
-                    logic_channel_mode_list[i].name = NULL;
-                }
             }
+
+            logic_channel_mode_list[i].id = -1;
+            logic_channel_mode_list[i].name = NULL;
             *data = g_variant_new_uint64((uint64_t)&logic_channel_mode_list);
         }
         else
@@ -1222,11 +1217,9 @@ static int hw_dev_acquisition_start(struct sr_dev_inst *sdi,
         void *cb_data)
 {
 
-     (void)cb_data;
+    (void)cb_data;
 
     struct session_vdev *vdev;
-    struct sr_datafeed_packet packet;
-    int ret;
     GSList *l;
     struct sr_channel *probe;
 
@@ -1235,8 +1228,6 @@ static int hw_dev_acquisition_start(struct sr_dev_inst *sdi,
 
     vdev = sdi->priv;
     vdev->enabled_probes = 0;
-    packet.status = SR_PKT_OK;
-
     vdev->cur_block = 0;
 
     sr_info("mode:%d, generator:%d", sdi->mode, vdev->sample_generator);
@@ -1273,8 +1264,8 @@ static int hw_dev_acquisition_start(struct sr_dev_inst *sdi,
         if (NULL == vdev->archive)
         {
             sr_err("Failed to open session file '%s': "
-                "zip error %d\n",
-                sdi->path, ret);
+                "zip error",
+                sdi->path);
             return SR_ERR;
         }
     }
@@ -1583,7 +1574,7 @@ static int receive_data_logic_decoder(int fd, int revents, const struct sr_dev_i
     char szFilePath[15];
     int bToEnd;
     int read_chan_index;
-    uint8_t chan_num;
+    int chan_num;
     uint8_t *p_wr;
     uint8_t *p_rd;
     uint8_t byte_align;
@@ -1796,7 +1787,7 @@ static int receive_data_logic_decoder(int fd, int revents, const struct sr_dev_i
         }
     }
 
-    if (pack_buffer->post_len >= byte_align * chan_num)
+    if (pack_buffer->post_len >= (uint64_t)(byte_align * chan_num))
     {
         packet.type = SR_DF_LOGIC;
         packet.payload = &logic;
@@ -2483,7 +2474,7 @@ static int load_virtual_device_session(struct sr_dev_inst *sdi)
     struct sr_channel *probe;
     int i, j;
     uint64_t tmp_u64;
-    char **sections, **keys, *metafile, *val,*probe_name;
+    char **sections, **keys, *metafile, *val;
     int mode = LOGIC;
     int channel_type = SR_CHANNEL_LOGIC;
     struct session_vdev * vdev = sdi->priv;
@@ -2624,9 +2615,8 @@ static int load_virtual_device_session(struct sr_dev_inst *sdi)
             sr_dev_probes_free(sdi);
 
             for (int i = 0; i < vdev->num_probes; i++)
-            {
-                probe_name = probe_names[i];
-                if (!(probe = sr_channel_new(i, SR_CHANNEL_LOGIC, TRUE, probe_name)))
+            { 
+                if (!(probe = sr_channel_new(i, SR_CHANNEL_LOGIC, TRUE, probe_names[i])))
                 {
                     sr_err("%s: create channel failed", __func__);
                     sr_dev_inst_free(sdi);
@@ -2645,9 +2635,8 @@ static int load_virtual_device_session(struct sr_dev_inst *sdi)
         sr_dev_probes_free(sdi);
 
         for (int i = 0; i < DSO_DEFAULT_NUM_PROBE; i++)
-        {
-            probe_name = probe_names[i];
-            if (!(probe = sr_channel_new(i, SR_CHANNEL_DSO, TRUE, probe_name)))
+        { 
+            if (!(probe = sr_channel_new(i, SR_CHANNEL_DSO, TRUE, probe_names[i])))
             {
                 sr_err("%s: create channel failed", __func__);
                 sr_dev_inst_free(sdi);
@@ -2672,9 +2661,8 @@ static int load_virtual_device_session(struct sr_dev_inst *sdi)
         sr_dev_probes_free(sdi);
         
         for (int i = 0; i < ANALOG_DEFAULT_NUM_PROBE; i++)
-        {
-            probe_name = probe_names[i];
-            if (!(probe = sr_channel_new(i, SR_CHANNEL_ANALOG, TRUE, probe_name)))
+        { 
+            if (!(probe = sr_channel_new(i, SR_CHANNEL_ANALOG, TRUE, probe_names[i])))
             {
                 sr_err("%s: create channel failed", __func__);
                 sr_dev_inst_free(sdi);

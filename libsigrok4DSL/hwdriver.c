@@ -82,7 +82,7 @@ static struct sr_config_info sr_config_info_data[] = {
     {SR_CONF_PROBE_MAP_UNIT, SR_T_CHAR,"Map Unit"},
     {SR_CONF_PROBE_MAP_MIN, SR_T_FLOAT,"Map Min"},
     {SR_CONF_PROBE_MAP_MAX, SR_T_FLOAT,"Map Max"},
-    {0, 0, NULL, NULL},
+    {0, 0, NULL},
 };
 
 
@@ -114,15 +114,9 @@ static struct sr_dev_driver *drivers_list[] = {
  */
 SR_PRIV struct sr_dev_driver **sr_driver_list(void)
 {
-
 	return drivers_list;
 }
 
-SR_API int ds_map_lang_text_id(int conf_id, int item_id, char *text)
-{
-
-	return -1;
-}
 
 /**
  * Initialize a hardware driver.
@@ -403,7 +397,7 @@ SR_PRIV int ds_scan_all_device_list(libusb_context *usb_ctx,struct libusb_device
 
 	if (devlist == NULL){
         sr_info("%s: Failed to call libusb_get_device_list(), it returns a null list.", __func__);
-        return NULL;
+        return SR_ERR_CALL_STATUS;
     }
 
 	for (i = 0; devlist[i]; i++) 
@@ -417,7 +411,7 @@ SR_PRIV int ds_scan_all_device_list(libusb_context *usb_ctx,struct libusb_device
 		if (des.idVendor == DS_VENDOR_ID){
 			if (wr >= size){
 				sr_err("ds_scan_all_device_list(), buffer length is too short.");
-				assert(0);
+				break;
 			}
 
 			list_buf[wr] = devlist[i];

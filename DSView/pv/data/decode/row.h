@@ -45,6 +45,8 @@ public:
 
 	Row(const Row &o);
 
+	bool operator=(const Row &o);
+
 public: 
 
 	inline const srd_decoder* decoder() const{

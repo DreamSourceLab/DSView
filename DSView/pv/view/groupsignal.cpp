@@ -19,6 +19,7 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
  */
 
+/*
 #include "../dsvdef.h"
 #include "groupsignal.h" 
 #include "view.h"
@@ -95,3 +96,5 @@ QRectF GroupSignal::get_rect(GroupSetRegions type, int y, int right)
 
 } // namespace view
 } // namespace pv
+
+*/

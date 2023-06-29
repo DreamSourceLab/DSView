@@ -48,7 +48,7 @@ AppControl::AppControl(AppControl &o)
  
 AppControl::~AppControl()
 { 
-    DESTROY_OBJECT(_session);
+   // DESTROY_OBJECT(_session);
 }
 
 AppControl* AppControl::Instance()

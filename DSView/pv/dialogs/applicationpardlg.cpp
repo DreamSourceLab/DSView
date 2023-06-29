@@ -110,8 +110,7 @@ bool ApplicationParamDlg::ShowDlg(QWidget *parent)
     lay->setSpacing(8);
 
     //show config
-    AppConfig &app = AppConfig::Instance();
-    int mode = AppControl::Instance()->GetSession()->get_device()->get_work_mode();
+    AppConfig &app = AppConfig::Instance(); 
 
     QCheckBox *ck_quickScroll = new QCheckBox();
     ck_quickScroll->setChecked(app.appOptions.quickScroll);

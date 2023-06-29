@@ -226,15 +226,6 @@ void StoreSession::save_logic(pv::data::LogicSnapshot *logic_snapshot)
     _unit_count = logic_snapshot->get_ring_sample_count() / 8 * to_save_probes;
     num = logic_snapshot->get_block_num();
 
-    /*
-    dsv_info("total-bytes:%llu, total-sample:%llu, loop-offset:%llu, blocks:%d",
-            _unit_count,
-            logic_snapshot->get_ring_sample_count(),
-            logic_snapshot->get_loop_offset(),       
-            num
-        );
-    */
-
     for(auto s : _session->get_signals()) 
     {
         int ch_type = s->get_type();
@@ -275,8 +266,6 @@ void StoreSession::save_logic(pv::data::LogicSnapshot *logic_snapshot)
                 }
                 _units_stored += size;
 
-                //dsv_info("read-bytes:%llu, block-size:%llu, block-index:%d-%d", _units_stored, size, ch_index, i);
-
                 if (_units_stored > _unit_count){
                     dsv_err("Read block data error!");
                     assert(false);
@@ -308,7 +297,7 @@ void StoreSession::save_logic(pv::data::LogicSnapshot *logic_snapshot)
 void StoreSession::save_analog(pv::data::AnalogSnapshot *analog_snapshot)
 {
     char chunk_name[20] = {0};
-    int num;
+    int num = 0;
     int ret = SR_ERR;
 
     int ch_type = -1;
@@ -476,7 +465,6 @@ bool StoreSession::meta_gen(data::Snapshot *snapshot, std::string &str)
     int probecnt;
     char *s;
     struct sr_status status;
-    const sr_dev_inst *sdi = NULL;
     char meta[300] = {0};
   
     sprintf(meta, "%s", "[version]\n"); str += meta;

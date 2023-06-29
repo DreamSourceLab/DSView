@@ -117,6 +117,6 @@ void srtest_check_samplerate(struct sr_context *sr_ctx, const char *drivername,
 	srtest_driver_init(sr_ctx, driver);;
 	srtest_set_samplerate(driver, samplerate);
 	s = srtest_get_samplerate(driver);
-	fail_unless(s == samplerate, "%s: Incorrect samplerate: %llu.",
-		    drivername, s);
+	fail_unless(s == samplerate, "%s: Incorrect samplerate: %lu.",
+		    drivername, (u64_t)s);
 }

@@ -88,9 +88,6 @@ void dslDial::paint(QPainter &p, QRectF dialRect, QColor dialColor, const QPoint
     }
     //tr
     pText = QString::number(displayValue) + _unit[displayIndex] + "/div";
-//    QFontMetrics fm(p.font());
-//    const QRectF valueRect = QRectF(dialRect.left(), dialRect.top()-fm.height()-10, dialRect.width(), fm.height());
-//    p.drawText(valueRect, Qt::AlignCenter, pText);
 
     // draw +/-
     if (dialRect.contains(pt) && pt.x() > dialRect.center().x()) {
@@ -109,8 +106,6 @@ void dslDial::paint(QPainter &p, QRectF dialRect, QColor dialColor, const QPoint
                    inc ? 10 : -10, hoverRect.width()/2 + 4);
         p.restore();
     }
-
-    (void*)0;
 }
 
 void dslDial::set_sel(uint64_t sel)
@@ -158,9 +153,9 @@ uint64_t dslDial::get_max()
 
 uint64_t dslDial::get_value()
 {
-    this->_div = this->_div;
+    this->_div = this->_div; 
     
-    if (_sel < 0 || _sel >= _value.count()){
+    if (_sel >= (uint64_t)_value.count()){
         assert(false);
     }
 

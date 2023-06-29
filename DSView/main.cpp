@@ -215,6 +215,12 @@ bool bHighScale = true;
 	QDateTime dateTime = QDateTime::currentDateTime();
 	std::string strTime = dateTime .toString("yyyy-MM-dd hh:mm:ss").toStdString();
 	dsv_info("%s", strTime.c_str());
+
+	int bit_width = sizeof(long);
+	if (bit_width != 8){
+		dsv_err("Can only run on 64 bit systems");
+		return 0;
+	}
  
 	//init core
 	if (!control->Init()){ 

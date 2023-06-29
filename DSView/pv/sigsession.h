@@ -181,7 +181,7 @@ public:
     inline bool re_start(){
         if (_is_working)
             stop_capture();
-        start_capture(_is_instant);
+        return start_capture(_is_instant);
     } 
 
     inline QDateTime get_session_time(){

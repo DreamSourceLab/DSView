@@ -1027,7 +1027,7 @@ namespace pv
             make_channels_view_index(start_view_dex);
 
             if (_device_agent.get_work_mode() == LOGIC){
-                for (int i=0; i<view_indexs.size() && i<_signals.size(); i++){
+                for (unsigned int i=0; i<view_indexs.size() && i<_signals.size(); i++){
                     _signals[i]->set_view_index(view_indexs[i]);
                 }
             }

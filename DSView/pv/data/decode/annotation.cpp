@@ -109,14 +109,9 @@ Annotation::Annotation()
     _end_sample = 0;
 	_resIndex = -1;
 }
-
-Annotation::Annotation(Annotation &o)
-{
-}
  
 Annotation::~Annotation()
-{
-     
+{     
 }
   
 const std::vector<QString>& Annotation::annotations() const

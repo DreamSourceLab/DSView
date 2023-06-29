@@ -77,7 +77,7 @@ static const struct sr_list_item filter_list[] = {
 #define CHANNEL_MODE_LIST_LEN 25
 static struct sr_list_item channel_mode_list[CHANNEL_MODE_LIST_LEN];
 
-static struct lang_text_map_item lang_text_map[] = 
+static const struct lang_text_map_item lang_text_map[] = 
 {
 	{SR_CONF_OPERATION_MODE, LO_OP_BUFFER, "Buffer Mode", "Buffer模式"},
 	{SR_CONF_OPERATION_MODE, LO_OP_STREAM, "Stream Mode", "Stream模式"},
@@ -95,7 +95,7 @@ static struct lang_text_map_item lang_text_map[] =
     {SR_CONF_FILTER, SR_FILTER_1T, "1 Sample Clock", "1个采样周期"},
 };
 
-static struct sr_list_item channel_mode_cn_map[] = {
+static const struct sr_list_item channel_mode_cn_map[] = {
     {DSL_STREAM20x16, "使用16个通道(最大采样率 20MHz)"},
     {DSL_STREAM25x12, "使用12个通道(最大采样率 25MHz)"},
     {DSL_STREAM50x6, "使用6个通道(最大采样率 50MHz)"},
@@ -193,9 +193,6 @@ static const int32_t sessions_pro[] = {
     SR_CONF_TRIGGER_HOLDOFF,
     SR_CONF_TRIGGER_MARGIN,
 };
-
-
-static uint16_t opmodes_show_count = 3;
 
 SR_PRIV struct sr_dev_driver DSLogic_driver_info;
 static struct sr_dev_driver *di = &DSLogic_driver_info;
@@ -1047,8 +1044,8 @@ static int config_set(int id, GVariant *data, struct sr_dev_inst *sdi,
         if (sdi->mode == LOGIC) {
             for (i = 0; i < ARRAY_SIZE(channel_modes); i++) {
                 if (devc->profile->dev_caps.channels & (1 << i)) {
-                    if (channel_modes[i].id == nv) {
-                        devc->ch_mode =  nv;
+                    if ((int)channel_modes[i].id == nv) {
+                        devc->ch_mode = (enum DSL_CHANNEL_ID)nv;
                         break;
                     }
                 }
@@ -1186,7 +1183,6 @@ static int config_list(int key, GVariant **data, const struct sr_dev_inst *sdi,
                        const struct sr_channel_group *cg)
 {
     struct DSL_context *devc;
-    GVariantBuilder gvb;
     unsigned int i;
     int num;
 
@@ -1310,16 +1306,8 @@ static int dev_destroy(struct sr_dev_inst *sdi)
 }
 
 static int cleanup(void)
-{
-	int ret;
-	struct drv_context *drvc;
-
-	if (!(drvc = di->priv))
-        return SR_OK;
-
-	g_free(drvc);
-	di->priv = NULL;
-
+{  
+    safe_free(di->priv);
     return SR_OK;
 }
 
@@ -1544,11 +1532,10 @@ static int dev_status_get(const struct sr_dev_inst *sdi, struct sr_status *statu
 SR_PRIV int sr_dslogic_option_value_to_code(const struct sr_dev_inst *sdi, int config_id, const char *value)
 {
     int num;
-    int i;
-    int n;
+    unsigned int i;
     struct DSL_context *devc;
-    char *list_text;
-    char *cn_name;
+    const char *list_text;
+    const char *cn_name;
 
     assert(sdi);
     assert(sdi->priv);
@@ -1569,7 +1556,7 @@ SR_PRIV int sr_dslogic_option_value_to_code(const struct sr_dev_inst *sdi, int c
                         return channel_modes[i].id;
 
                     if (i < ARRAY_SIZE(channel_mode_cn_map)){
-                        if (channel_modes[i].id != channel_mode_cn_map[i].id)
+                        if ((int)channel_modes[i].id != channel_mode_cn_map[i].id)
                             assert(0);
                         
                         cn_name = channel_mode_cn_map[i].name;
@@ -1584,7 +1571,7 @@ SR_PRIV int sr_dslogic_option_value_to_code(const struct sr_dev_inst *sdi, int c
     }
 
     num = sizeof(lang_text_map) / sizeof(lang_text_map[0]);
-    return sr_option_value_to_code(config_id, value, &lang_text_map, num);
+    return sr_option_value_to_code(config_id, value, &lang_text_map[0], num);
 }
 
 SR_PRIV struct sr_dev_driver DSLogic_driver_info = {

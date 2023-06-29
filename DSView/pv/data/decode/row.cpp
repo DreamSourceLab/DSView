@@ -49,6 +49,13 @@ Row::Row(const Row &o)
 	_order = o._order;
 }
 
+bool Row::operator=(const Row &o)
+{
+	_decoder = o._decoder;
+	_row = o._row;
+	_order = o._order;
+}
+
 QString Row::title() const
 {
 	if (_decoder && _decoder->name && _row && _row->desc)

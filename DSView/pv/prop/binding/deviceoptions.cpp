@@ -71,7 +71,7 @@ DeviceOptions::DeviceOptions()
 		gvar_list = _device_agent->get_config_list(NULL, key);
 
         const QString name(info->name);
-        char *label_char = info->name;
+        const char *label_char = info->name;
         QString label(label_char);
 
 		switch(key)
@@ -306,8 +306,9 @@ QString DeviceOptions::print_vdiv(GVariant *const gvar)
 void DeviceOptions::bind_bandwidths(const QString &name, const QString label, int key,
     GVariant *const gvar_list, boost::function<QString (GVariant*)> printer)
 {
-	bool bw_limit;
-	GVariant *gvar_tmp;
+	(void)printer;
+
+	bool bw_limit = false;
 	GVariant *gvar;
 	std::vector< pair<GVariant*, QString> > values;
 	struct sr_list_item *plist;
@@ -316,11 +317,11 @@ void DeviceOptions::bind_bandwidths(const QString &name, const QString label, in
 	plist = (struct sr_list_item*)g_variant_get_uint64(gvar_list);
 	assert(plist);
 
-	bw_limit = false;
 	_device_agent->get_config_bool(SR_CONF_BANDWIDTH, bw_limit);
 
-    if (!bw_limit)
+    if (bw_limit == false){
         return;
+	}
 
 	while (plist && plist->id >= 0)
 	{ 

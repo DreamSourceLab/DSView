@@ -477,10 +477,11 @@ void DecoderOptionsDlg::create_decoder_form(
                             decoder_form, 
                             parent, font);
 
-    if (group->_content_width > _content_width)
+    if (group->_content_width > _content_width){
         _content_width = group->_content_width;
+    }
 
-	form->addRow(group); 
+	form->addRow(group);
 }
 
 void DecoderOptionsDlg::commit_probes()

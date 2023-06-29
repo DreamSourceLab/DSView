@@ -45,10 +45,6 @@ public:
     Annotation();
 	~Annotation();
 
-private:
-	/* disable copy construct */
-	Annotation(Annotation &o);
-
 public:
 	inline uint64_t start_sample() const{
 		return _start_sample;

@@ -63,7 +63,6 @@ DecoderGroupBox::DecoderGroupBox(data::DecoderStack *decoder_stack,
 
     const srd_decoder *const d = _dec->decoder();
     assert(d);
-    const bool have_probes = (d->channels || d->opt_channels) != 0;
 
     _index = 0;
     for(auto dec : _decoder_stack->stack()) {
@@ -120,8 +119,9 @@ DecoderGroupBox::~DecoderGroupBox()
 }
 
 bool DecoderGroupBox::eventFilter(QObject *o, QEvent *e)
-{ 
-
+{  
+    (void)e;
+    (void)o;
     return false;
 }
 

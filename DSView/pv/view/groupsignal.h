@@ -23,6 +23,7 @@
 #ifndef DSVIEW_SV_GROUPSIGNAL_H
 #define DSVIEW_SV_GROUPSIGNAL_H
 
+/*
 #include "signal.h"
 
 #include <list> 
@@ -50,21 +51,12 @@ public:
 
     virtual ~GroupSignal();
 
-    /**
-     * Returns true if the trace is visible and enabled.
-     */
     bool enabled();
 
     pv::data::SignalData* data();
 
 	void set_scale(float scale);
 
-	/**
-	 * Paints the signal with a QPainter
-	 * @param p the QPainter to paint into.
-	 * @param left the x-coordinate of the left edge of the signal.
-	 * @param right the x-coordinate of the right edge of the signal.
-	 **/
     void paint_mid(QPainter &p, int left, int right, QColor fore, QColor back);
 
     QRectF get_rect(GroupSetRegions type, int y, int right);
@@ -87,5 +79,7 @@ private:
 
 } // namespace view
 } // namespace pv
+
+*/
 
 #endif // DSVIEW_PV_GROUPSIGNAL_H

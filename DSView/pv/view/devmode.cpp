@@ -126,11 +126,7 @@ void DevMode::set_device()
     _close_button->setIcon(QIcon());
     _close_button->setDisabled(true); 
 
-    AppConfig &app = AppConfig::Instance(); 
-    int lan = app.frameOptions.language;
-
     QString iconPath = GetIconPath() + "/";
-
     auto dev_mode_list  = _device_agent->get_device_mode_list();
 
     for (const GSList *l = dev_mode_list; l; l = l->next)
@@ -204,8 +200,6 @@ void DevMode::on_mode_change()
     }
 
     QString iconPath = GetIconPath();
-    AppConfig &app = AppConfig::Instance(); 
-    int lan = app.frameOptions.language;
 
     for(auto i = _mode_list.begin();i != _mode_list.end(); i++)
     {

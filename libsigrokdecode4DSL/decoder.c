@@ -732,7 +732,7 @@ SRD_API int srd_decoder_load(const char *module_name)
 	struct srd_decoder *d;
 	long apiver;
 	int is_subclass;
-	const char *fail_txt;
+	const char *fail_txt = NULL;
 	PyGILState_STATE gstate;
   
 	if (!srd_check_init())
@@ -920,8 +920,10 @@ except_out:
 	fail_txt = NULL;
 
 err_out:
-	if (fail_txt)
+	if (fail_txt != NULL){
 		srd_err("Failed to load decoder %s: %s", module_name, fail_txt);
+	}
+
 	decoder_free(d);
 	PyGILState_Release(gstate);
 
@@ -1102,7 +1104,6 @@ static void srd_decoder_load_all_path(char *path)
 {
 	GDir *dir;
 	const gchar *direntry;
-	int ldst = 0;
 
 	assert(path);
 
@@ -1119,7 +1120,7 @@ static void srd_decoder_load_all_path(char *path)
 	 */
 	while ((direntry = g_dir_read_name(dir)) != NULL) {
 		/* The directory name is the module name (e.g. "i2c"). */
-		ldst = srd_decoder_load(direntry);
+		srd_decoder_load(direntry);
 	}
 	g_dir_close(dir);
 }

@@ -374,7 +374,6 @@ namespace pv
         QString title;
         QString details;
         QString ch_status = "";
-        uint64_t error_pattern;
 
         switch (_session->get_error())
         {
@@ -532,6 +531,11 @@ namespace pv
         int y = parentWidget()->pos().y();
         int w = parentWidget()->frameGeometry().width();
         int h = parentWidget()->frameGeometry().height();
+
+        (void)h;
+        (void)w;
+        (void)x;
+        (void)y;
 
         QDesktopWidget *desktop = QApplication::desktop();
         int curMonitor = desktop->screenNumber(this);

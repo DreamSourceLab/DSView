@@ -236,11 +236,11 @@ static gboolean parse_header(FILE *file, struct context *ctx)
 				if (q % p != 0)
 				{
 					/* Does not happen unless time value is non-standard */
-					sr_warn("Inexact rounding of samplerate, %llu / %llu to %llu Hz.",
-						q, p, ctx->samplerate);
+					sr_warn("Inexact rounding of samplerate, %lu / %lu to %lu Hz.",
+						(u64_t)q, (u64_t)p, (u64_t)ctx->samplerate);
 				}
 				
-				sr_dbg("Samplerate: %llu", ctx->samplerate);
+				sr_dbg("Samplerate: %lu", (u64_t)ctx->samplerate);
 			}
 			else
 			{
@@ -476,7 +476,7 @@ static void parse_contents(FILE *file, const struct sr_dev_inst *sdi, struct con
 					prev_timestamp = timestamp - ctx->compress;
 				}
 			
-				sr_dbg("New timestamp: %llu", timestamp);
+				sr_dbg("New timestamp: %lu", (u64_t)timestamp);
 			
 				/* Generate samples from prev_timestamp up to timestamp - 1. */
 				send_samples(sdi, prev_values, timestamp - prev_timestamp);

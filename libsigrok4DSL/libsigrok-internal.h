@@ -22,6 +22,7 @@
 
 //#include <stdarg.h>
 #include <glib.h>
+#include <ds_types.h>
 #include "config.h" /* Needed for HAVE_LIBUSB_1_0 and others. */
 #include <libusb-1.0/libusb.h>
 #include "libsigrok.h"
@@ -95,8 +96,8 @@ enum sr_dev_driver_type
 struct lang_text_map_item{
 	int  config_id;
 	int  id;
-	char *en_name;
-	char *cn_name;
+	const char *en_name;
+	const char *cn_name;
 };
 
 struct sr_dev_driver {
@@ -420,6 +421,8 @@ SR_PRIV int current_device_acquisition_stop();
 SR_PRIV int lib_extern_init(struct sr_context *ctx);
 
 SR_PRIV int post_message_callback(int msg);
+
+SR_PRIV void xsleep(int ms);
 
 /*--- hwdriver.c ------------------------------------------------------------*/
 

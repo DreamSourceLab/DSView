@@ -200,10 +200,9 @@ void DecoderStack::build_row()
             }
 
             // Map out all the classes
-            for (const GSList *ll = ann_row->ann_classes;
-                ll; ll = ll->next)
-                _class_rows[make_pair(decc,
-                    GPOINTER_TO_INT(ll->data))] = row;
+            for (const GSList *ll = ann_row->ann_classes; ll; ll = ll->next){
+                _class_rows[make_pair(decc, GPOINTER_TO_INT(ll->data))] = Row(row);
+            }
 
             order++;
         }
@@ -552,7 +551,7 @@ void DecoderStack::decode_data(const uint64_t decode_start, const uint64_t decod
 
                 if (end_index >= align_sample_count){
                     end_index = align_sample_count - 1;
-                    dsv_info("Reset the decode end sample, new:%llu, old:%llu", end_index, decode_end);
+                    dsv_info("Reset the decode end sample, new:%lu, old:%lu", end_index, decode_end);
                 }
             }
         }
@@ -661,7 +660,7 @@ void DecoderStack::decode_data(const uint64_t decode_start, const uint64_t decod
         }
     }
  
-    dsv_info("%s%llu", "send to decoder times: ", entry_cnt);
+    dsv_info("%s%lu", "send to decoder times: ", entry_cnt);
 
     if (error != NULL)
         g_free(error);
@@ -717,7 +716,7 @@ void DecoderStack::execute_decode_stack()
             decode_end = max(dec->decode_end(), decode_end);
 	}
 
-    dsv_info("decoder start sample:%llu, end sample:%llu, count:%llu", decode_start, decode_end, decode_end - decode_start + 1);
+    dsv_info("decoder start sample:%lu, end sample:%lu, count:%lu", decode_start, decode_end, decode_end - decode_start + 1);
 
 	// Start the session
 	srd_session_metadata_set(session, SRD_CONF_SAMPLERATE,
