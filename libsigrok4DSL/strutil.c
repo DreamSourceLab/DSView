@@ -62,24 +62,24 @@ SR_API char *sr_si_string_u64(uint64_t x, const char *unit)
 		unit = "";
 
     if ((x >= SR_GHZ(1)) && (x % SR_GHZ(1) == 0)) {
-        return g_strdup_printf("%lu G%s", (u64_t)(x / SR_GHZ(1)), unit);
+        return g_strdup_printf("%llu G%s", (u64_t)(x / SR_GHZ(1)), unit);
     } else if ((x >= SR_GHZ(1)) && (x % SR_GHZ(1) != 0)) {
-        return g_strdup_printf("%lu.%lu G%s",
+        return g_strdup_printf("%llu.%llu G%s",
                        (u64_t)(x / SR_GHZ(1)), (u64_t)(x % SR_GHZ(1)), unit);
     } else if ((x >= SR_MHZ(1)) && (x % SR_MHZ(1) == 0)) {
-        return g_strdup_printf("%lu M%s",
+        return g_strdup_printf("%llu M%s",
                        (u64_t)(x / SR_MHZ(1)), unit);
     } else if ((x >= SR_MHZ(1)) && (x % SR_MHZ(1) != 0)) {
-        return g_strdup_printf("%lu.%lu M%s",
+        return g_strdup_printf("%llu.%llu M%s",
                     (u64_t)(x / SR_MHZ(1)), (u64_t)(x % SR_MHZ(1)), unit);
     } else if ((x >= SR_KHZ(1)) && (x % SR_KHZ(1) == 0)) {
-        return g_strdup_printf("%lu k%s",
+        return g_strdup_printf("%llu k%s",
                     (u64_t)(x / SR_KHZ(1)), unit);
     } else if ((x >= SR_KHZ(1)) && (x % SR_KHZ(1) != 0)) {
-        return g_strdup_printf("%lu.%lu K%s",
+        return g_strdup_printf("%llu.%llu K%s",
                     (u64_t)(x / SR_KHZ(1)), (u64_t)(x % SR_KHZ(1)), unit);
     } else {
-        return g_strdup_printf("%lu %s", (u64_t)x, unit);
+        return g_strdup_printf("%llu %s", (u64_t)x, unit);
     }
 
 	sr_err("%s: Error creating SI units string.", __func__);
@@ -107,24 +107,24 @@ SR_API char *sr_iec_string_u64(uint64_t x, const char *unit)
         unit = "";
 
     if ((x >= SR_GB(1)) && (x % SR_GB(1) == 0)) {
-        return g_strdup_printf("%lu G%s", (u64_t)(x / SR_GB(1)), unit);
+        return g_strdup_printf("%llu G%s", (u64_t)(x / SR_GB(1)), unit);
     } else if ((x >= SR_GB(1)) && (x % SR_GB(1) != 0)) {
-        return g_strdup_printf("%lu.%lu G%s",
+        return g_strdup_printf("%llu.%llu G%s",
                        (u64_t)(x / SR_GB(1)), (u64_t)(x % SR_GB(1)), unit);
     } else if ((x >= SR_MB(1)) && (x % SR_MB(1) == 0)) {
-        return g_strdup_printf("%lu M%s",
+        return g_strdup_printf("%llu M%s",
                        (u64_t)(x / SR_MB(1)), unit);
     } else if ((x >= SR_MB(1)) && (x % SR_MB(1) != 0)) {
-        return g_strdup_printf("%lu.%lu M%s",
+        return g_strdup_printf("%llu.%llu M%s",
                     (u64_t)(x / SR_MB(1)), (u64_t)(x % SR_MB(1)), unit);
     } else if ((x >= SR_KB(1)) && (x % SR_KB(1) == 0)) {
-        return g_strdup_printf("%lu k%s",
+        return g_strdup_printf("%llu k%s",
                     (u64_t)(x / SR_KB(1)), unit);
     } else if ((x >= SR_KB(1)) && (x % SR_KB(1) != 0)) {
-        return g_strdup_printf("%lu.%lu K%s",
+        return g_strdup_printf("%llu.%llu K%s",
                     (u64_t)(x / SR_KB(1)), (u64_t)(x % SR_KB(1)), unit);
     } else {
-        return g_strdup_printf("%lu %s", (u64_t)x, unit);
+        return g_strdup_printf("%llu %s", (u64_t)x, unit);
     }
 
     sr_err("%s: Error creating SI units string.", __func__);
@@ -188,13 +188,13 @@ SR_API char *sr_period_string(uint64_t frequency)
 	}
 
 	if (frequency >= SR_GHZ(1))
-		r = snprintf(o, 30, "%lu ns", (u64_t)(frequency / 1000000000));
+		r = snprintf(o, 30, "%llu ns", (u64_t)(frequency / 1000000000));
 	else if (frequency >= SR_MHZ(1))
-		r = snprintf(o, 30, "%lu us", (u64_t)(frequency / 1000000));
+		r = snprintf(o, 30, "%llu us", (u64_t)(frequency / 1000000));
 	else if (frequency >= SR_KHZ(1))
-		r = snprintf(o, 30, "%lu ms", (u64_t)(frequency / 1000));
+		r = snprintf(o, 30, "%llu ms", (u64_t)(frequency / 1000));
 	else
-		r = snprintf(o, 30, "%lu s", (u64_t)frequency);
+		r = snprintf(o, 30, "%llu s", (u64_t)frequency);
 
 	if (r < 0) {
 		/* Something went wrong... */
@@ -241,7 +241,7 @@ SR_API char *sr_time_string(uint64_t time)
     else if (time >= SR_US(1))
         r = snprintf(o, 30, "%0.2lf us", time * 1.0  / SR_US(1));
     else
-        r = snprintf(o, 30, "%lu ns", (u64_t)time);
+        r = snprintf(o, 30, "%llu ns", (u64_t)time);
 
     if (r < 0) {
         /* Something went wrong... */
@@ -277,9 +277,9 @@ SR_API char *sr_voltage_string(uint64_t v_p, uint64_t v_q)
 	}
 
 	if (v_q == 1000)
-		r = snprintf(o, 30, "%lumV", (u64_t)v_p);
+		r = snprintf(o, 30, "%llumV", (u64_t)v_p);
 	else if (v_q == 1)
-		r = snprintf(o, 30, "%luV", (u64_t)v_p);
+		r = snprintf(o, 30, "%lluV", (u64_t)v_p);
 	else
 		r = snprintf(o, 30, "%gV", (float)v_p / (float)v_q);
 

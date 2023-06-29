@@ -37,6 +37,7 @@
 #include "pv/ui/langresource.h"
 #include <QDateTime>
 #include <string>
+#include <ds_types.h>
 
 #ifdef _WIN32
 #include <windows.h>
@@ -216,7 +217,7 @@ bool bHighScale = true;
 	std::string strTime = dateTime .toString("yyyy-MM-dd hh:mm:ss").toStdString();
 	dsv_info("%s", strTime.c_str());
 
-	int bit_width = sizeof(long);
+	int bit_width = sizeof(u64_t);
 	if (bit_width != 8){
 		dsv_err("Can only run on 64 bit systems");
 		return 0;

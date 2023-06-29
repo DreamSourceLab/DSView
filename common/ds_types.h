@@ -30,6 +30,6 @@
 #ifndef _DS_TYPES_H
 #define _DS_TYPES_H
 
-typedef unsigned long u64_t;
+typedef unsigned long long u64_t;
 
 #endif

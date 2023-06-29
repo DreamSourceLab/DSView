@@ -919,11 +919,11 @@ static int config_set(int id, GVariant *data, struct sr_dev_inst *sdi,
     {
     case SR_CONF_SAMPLERATE:
         vdev->samplerate = g_variant_get_uint64(data);
-        sr_dbg("Setting samplerate to %lu.", (u64_t)vdev->samplerate);
+        sr_dbg("Setting samplerate to %llu.", (u64_t)vdev->samplerate);
         break;
     case SR_CONF_LIMIT_SAMPLES:
         vdev->total_samples = g_variant_get_uint64(data);
-        sr_dbg("Setting limit samples to %lu.", (u64_t)vdev->total_samples);
+        sr_dbg("Setting limit samples to %llu.", (u64_t)vdev->total_samples);
         break;
     case SR_CONF_LIMIT_MSEC:
         break;
@@ -1034,7 +1034,7 @@ static int config_set(int id, GVariant *data, struct sr_dev_inst *sdi,
             g_timer_start(run_time);
             vdev->timebase_change = TRUE;
         } 
-        sr_dbg("Setting timebase to %lu.", (u64_t)vdev->timebase);
+        sr_dbg("Setting timebase to %llu.", (u64_t)vdev->timebase);
         break;
     case SR_CONF_PROBE_COUPLING:
         if(sdi->mode != LOGIC)

@@ -290,7 +290,7 @@ static void datafeed_dump(const struct sr_datafeed_packet *packet)
 		break;
 	case SR_DF_LOGIC:
 		logic = packet->payload;
-		sr_dbg("bus: Received SR_DF_LOGIC packet (%lu bytes).",
+		sr_dbg("bus: Received SR_DF_LOGIC packet (%llu bytes).",
 		       (u64_t)logic->length);
 		break;
     case SR_DF_DSO:

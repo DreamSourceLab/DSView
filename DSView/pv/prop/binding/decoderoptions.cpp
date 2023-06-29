@@ -46,6 +46,7 @@ DecoderOptions::DecoderOptions(pv::data::DecoderStack* decoder_stack, data::deco
 	_decoder(decoder)
 {
 	assert(_decoder);
+	(void)decoder_stack;
 
 	const srd_decoder *const dec = _decoder->decoder();
 	assert(dec);

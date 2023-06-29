@@ -1072,19 +1072,19 @@ static int config_set(int id, GVariant *data, struct sr_dev_inst *sdi,
     case SR_CONF_SAMPLERATE:
         vdev->samplerate = g_variant_get_uint64(data);
         samplerates[0] = vdev->samplerate;
-        sr_dbg("Setting samplerate to %lu.", (u64_t)vdev->samplerate);
+        sr_dbg("Setting samplerate to %llu.", (u64_t)vdev->samplerate);
         break;
     case SR_CONF_TIMEBASE:
         vdev->timebase = g_variant_get_uint64(data);
-        sr_dbg("Setting timebase to %lu.", (u64_t)vdev->timebase);
+        sr_dbg("Setting timebase to %llu.", (u64_t)vdev->timebase);
         break;
     case SR_CONF_MAX_TIMEBASE:
         vdev->max_timebase = g_variant_get_uint64(data);
-        sr_dbg("Setting max timebase to %lu.", (u64_t)vdev->max_timebase);
+        sr_dbg("Setting max timebase to %llu.", (u64_t)vdev->max_timebase);
         break;
     case SR_CONF_MIN_TIMEBASE:
         vdev->min_timebase = g_variant_get_uint64(data);
-        sr_dbg("Setting min timebase to %lu.", (u64_t)vdev->min_timebase);
+        sr_dbg("Setting min timebase to %llu.", (u64_t)vdev->min_timebase);
         break;
     case SR_CONF_UNIT_BITS:
         vdev->unit_bits = g_variant_get_byte(data);
@@ -1105,19 +1105,19 @@ static int config_set(int id, GVariant *data, struct sr_dev_inst *sdi,
     case SR_CONF_LIMIT_SAMPLES:
         vdev->total_samples = g_variant_get_uint64(data);
         samplecounts[0] = vdev->total_samples;
-        sr_dbg("Setting limit samples to %lu.", (u64_t)vdev->total_samples);
+        sr_dbg("Setting limit samples to %llu.", (u64_t)vdev->total_samples);
         break;
     case SR_CONF_TRIGGER_TIME:
         vdev->trig_time = g_variant_get_int64(data);
-        sr_dbg("Setting trigger time to %lu.", (u64_t)vdev->trig_time);
+        sr_dbg("Setting trigger time to %llu.", (u64_t)vdev->trig_time);
         break;
     case SR_CONF_TRIGGER_POS:
         vdev->trig_pos = g_variant_get_uint64(data);
-        sr_dbg("Setting trigger position to %lu.", (u64_t)vdev->trig_pos);
+        sr_dbg("Setting trigger position to %llu.", (u64_t)vdev->trig_pos);
         break;
     case SR_CONF_NUM_BLOCKS:
         vdev->num_blocks = g_variant_get_uint64(data);
-        sr_dbg("Setting block number to %lu.", (u64_t)vdev->num_blocks);
+        sr_dbg("Setting block number to %llu.", (u64_t)vdev->num_blocks);
         break;
     case SR_CONF_CAPTURE_NUM_PROBES:
         vdev->num_probes = g_variant_get_uint64(data);

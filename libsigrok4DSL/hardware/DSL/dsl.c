@@ -2309,7 +2309,7 @@ static void receive_transfer(struct libusb_transfer *transfer)
     if (devc->abort)
         devc->status = DSL_STOP;
 
-    sr_detail("%lu: receive_transfer(): status %d; timeout %d; received %d bytes.",
+    sr_detail("%llu: receive_transfer(): status %d; timeout %d; received %d bytes.",
         (u64_t)g_get_monotonic_time(), transfer->status, transfer->timeout, transfer->actual_length);
 
     switch (transfer->status) {
@@ -2441,7 +2441,7 @@ static void receive_header(struct libusb_transfer *transfer)
         devc->status = DSL_ERROR;
     if (!devc->abort && transfer->status == LIBUSB_TRANSFER_COMPLETED &&
         trigger_pos->check_id == TRIG_CHECKID) {
-        sr_info("%lu: receive_trigger_pos(): status %d; timeout %d; received %d bytes.",
+        sr_info("%llu: receive_trigger_pos(): status %d; timeout %d; received %d bytes.",
             (u64_t)g_get_monotonic_time(), transfer->status, transfer->timeout, transfer->actual_length);
         remain_cnt = trigger_pos->remain_cnt_h;
         remain_cnt = (remain_cnt << 32) + trigger_pos->remain_cnt_l;
