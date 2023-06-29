@@ -129,7 +129,7 @@ signals:
 
 public:
     //IMainForm
-    void switchLanguage(int language);
+    void switchLanguage(int language) override;
     bool able_to_close(); 
    
 private: 
@@ -160,29 +160,29 @@ private:
    
 private:
     //ISessionCallback 
-    void session_error();
-    void session_save();
-    void data_updated();
-    void update_capture();
-    void cur_snap_samplerate_changed();      
-    void signals_changed();
-    void receive_trigger(quint64 trigger_pos);
-    void frame_ended();
-    void frame_began();
-    void show_region(uint64_t start, uint64_t end, bool keep);
-    void show_wait_trigger();
-    void repeat_hold(int percent);
-    void decode_done();
-    void receive_data_len(quint64 len);
-    void receive_header();    
-    void trigger_message(int msg);   
-    void delay_prop_msg(QString strMsg); 
+    void session_error() override;
+    void session_save() override;
+    void data_updated() override;
+    void update_capture() override;
+    void cur_snap_samplerate_changed() override;      
+    void signals_changed() override;
+    void receive_trigger(quint64 trigger_pos) override;
+    void frame_ended() override;
+    void frame_began() override;
+    void show_region(uint64_t start, uint64_t end, bool keep) override;
+    void show_wait_trigger() override;
+    void repeat_hold(int percent) override;
+    void decode_done() override;
+    void receive_data_len(quint64 len) override;
+    void receive_header() override;    
+    void trigger_message(int msg) override;   
+    void delay_prop_msg(QString strMsg) override; 
 
     //ISessionDataGetter
-    bool genSessionData(std::string &str);
+    bool genSessionData(std::string &str) override;
 
     //IMessageListener
-    void OnMessage(int msg);
+    void OnMessage(int msg) override;
 
 private: 
 	pv::view::View          *_view;

@@ -59,7 +59,6 @@ private:
 
 
 private:
-	pv::data::DecoderStack 		*_decoder_stack;
 	pv::data::decode::Decoder 	*_decoder;
 };
 

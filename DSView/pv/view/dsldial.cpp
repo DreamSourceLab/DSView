@@ -152,9 +152,7 @@ uint64_t dslDial::get_max()
 }
 
 uint64_t dslDial::get_value()
-{
-    this->_div = this->_div; 
-    
+{    
     if (_sel >= (uint64_t)_value.count()){
         assert(false);
     }

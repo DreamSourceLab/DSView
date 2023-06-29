@@ -91,7 +91,7 @@ private:
     void reStyle();
 
     //IFontForm
-    void update_font();
+    void update_font() override;
 
     void build_dist_pannel();
     void build_edge_pannel();

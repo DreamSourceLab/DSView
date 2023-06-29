@@ -124,7 +124,7 @@ namespace pv
             bool action_instant_stop();
             
             //IFontForm
-            void update_font();
+            void update_font() override;
 
         private slots:
             void on_collect_mode();

@@ -43,9 +43,10 @@ namespace pv {
             class Decoder;
         }
     }
-    namespace prop::binding
-    {
-        class DecoderOptions;
+    namespace prop{   
+        namespace binding{
+            class DecoderOptions;
+        }
     }
     namespace view{
         class View;

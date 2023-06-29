@@ -103,21 +103,21 @@ private:
     static bool protocol_sort_callback(const DecoderInfoItem *o1, const DecoderInfoItem *o2);
 
     //IProtocolItemLayerCallback
-    void OnProtocolSetting(void *handle);
-    void OnProtocolDelete(void *handle);
-    void OnProtocolFormatChanged(QString format, void *handle);
+    void OnProtocolSetting(void *handle) override;
+    void OnProtocolDelete(void *handle) override;
+    void OnProtocolFormatChanged(QString format, void *handle) override;
 
     //IKeywordActive
-    void BeginEditKeyword(); 
+    void BeginEditKeyword() override; 
 
     //ISearchItemClick
-    void OnItemClick(void *sender, void *data_handle);
+    void OnItemClick(void *sender, void *data_handle) override;
 
     //IDecoderPannel
-    void update_deocder_item_name(void *trace_handel, const char *name);
+    void update_deocder_item_name(void *trace_handel, const char *name) override;
 
     //IFontForm
-    void update_font();
+    void update_font() override;
 
 signals:
     void protocol_updated();

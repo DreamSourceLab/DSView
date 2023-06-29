@@ -60,7 +60,7 @@ private:
     void reStyle();
 
     //IFontForm
-    void update_font();
+    void update_font() override;
 
 signals: 
     //post event message to open user help document, MainWindow class receive it

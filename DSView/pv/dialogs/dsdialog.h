@@ -68,7 +68,7 @@ public:
     void SetTitleSpace(int h);
 
     //IFontForm
-    void update_font();
+    void update_font() override;
 
     void show();
 

@@ -43,7 +43,6 @@ namespace binding {
 
 DecoderOptions::DecoderOptions(pv::data::DecoderStack* decoder_stack, data::decode::Decoder *decoder) :
 	Binding(),
-	_decoder_stack(decoder_stack),
 	_decoder(decoder)
 {
 	assert(_decoder);

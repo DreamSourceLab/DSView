@@ -482,10 +482,10 @@ private:
     }
   
     //IMessageListener
-    void OnMessage(int msg);
+    void OnMessage(int msg) override;
 
     //IDeviceAgentCallback
-    void DeviceConfigChanged();
+    void DeviceConfigChanged() override;
 
 private:
     /**

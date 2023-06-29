@@ -87,7 +87,7 @@ private:
     bool commit_trigger();
 
     //IFontForm
-    void update_font();
+    void update_font() override;
 
 private slots:
     void simple_trigger();

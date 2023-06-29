@@ -49,12 +49,8 @@ namespace pv
         ~ApplicationParamDlg();
 
         bool ShowDlg(QWidget *parent);
-
  
     private:
-       //IDlgCallback
-        void OnDlgResult(bool bYes);
-
         void bind_font_name_list(QComboBox *box, QString v);
 
         void bind_font_size_list(QComboBox *box, float size);

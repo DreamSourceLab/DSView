@@ -321,7 +321,7 @@ public:
     }
 
     //IFontForm
-    void update_font();
+    void update_font() override;
 
 signals:
 	void hover_point_changed();

@@ -56,7 +56,7 @@ private:
     void update_checked_status();
 
     //IFontForm
-    void update_font();
+    void update_font() override;
 
 signals:
     void sig_setTheme(QString style);
