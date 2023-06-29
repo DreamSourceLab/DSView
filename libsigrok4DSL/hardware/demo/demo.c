@@ -570,7 +570,7 @@ static int init_random_data(struct session_vdev *vdev)
     memset(probe_status,LOGIC_HIGH_LEVEL,16);
     memset(vdev->data_buf,0,LOGIC_BUF_LEN);
 
-    srand((unsigned)time(NULL));
+    srand((unsigned int)(time(NULL) + rand()));
 
     for(int i = 0 ;i < vdev->enabled_probes;i++){
         probe_count[i] = rand()%SR_KB(1);
@@ -744,6 +744,8 @@ static int dev_destroy(struct sr_dev_inst *sdi)
     assert(sdi);
     hw_dev_close(sdi);
     sr_dev_inst_free(sdi);
+    
+    return SR_OK;
 }
 
 static int config_get(int id, GVariant **data, const struct sr_dev_inst *sdi,
@@ -2785,6 +2787,8 @@ int dso_wavelength_updata(struct session_vdev *vdev)
 
         safe_free(tmp_buf);
     }
+
+    return SR_OK;
 }
 
 SR_PRIV struct sr_dev_driver demo_driver_info = {
