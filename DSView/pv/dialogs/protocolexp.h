@@ -42,6 +42,7 @@ class SigSession;
 namespace data {
 namespace decode {
 class Row;
+class Annotation;
 }
 }
 
@@ -51,6 +52,15 @@ class ProtocolExp : public DSDialog
 {
     Q_OBJECT
 
+private:
+    struct ExportRowInfo
+    {
+        QString title;
+        const data::decode::Row *row;
+        int     row_index;
+        uint64_t    read_index;
+    };
+
 public:
     ProtocolExp(QWidget *parent, SigSession *session);
 
@@ -58,6 +68,8 @@ protected:
     void accept();
     void reject();
     void save_proc();
+    static bool compare_ann_index(const data::decode::Annotation *a, 
+                    const data::decode::Annotation *b);
 
 signals:
     void export_progress(int percent);

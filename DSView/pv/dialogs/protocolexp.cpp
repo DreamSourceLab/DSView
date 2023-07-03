@@ -29,6 +29,7 @@
 #include <QProgressDialog>
 #include <QFuture>
 #include <QtConcurrent/QtConcurrent>
+#include <algorithm>
 
 #include "../sigsession.h"
 #include "../data/decoderstack.h"
@@ -40,8 +41,10 @@
 #include "../dsvdef.h"
 #include "../utility/encoding.h"
 #include "../utility/path.h"
-
+#include "../log.h"
 #include "../ui/langresource.h"
+
+#define EXPORT_DEC_ROW_COUNT_MAX 20
 
 using namespace pv::data::decode;
 
@@ -190,66 +193,138 @@ void ProtocolExp::save_proc()
     QTextStream out(&file);
     encoding::set_utf8(out);
     // out.setGenerateByteOrderMark(true); // UTF-8 without BOM
+    int row_num = 0;
+    ExportRowInfo row_inf_arr[EXPORT_DEC_ROW_COUNT_MAX];
+    std::vector<Annotation*> annotations_arr[EXPORT_DEC_ROW_COUNT_MAX];
 
-    QString title;
-    int index = 0;
     for (std::list<QCheckBox *>::const_iterator i = _row_sel_list.begin();
          i != _row_sel_list.end(); i++)
     {
         if ((*i)->isChecked())
         {
-            title = (*i)->property("title").toString();
-            index = (*i)->property("index").toULongLong();
-            break;
+            row_inf_arr[row_num].title = (*i)->property("title").toString();
+            row_inf_arr[row_num].row_index = (*i)->property("index").toULongLong();
+            row_num++;
+
+            if (row_num == EXPORT_DEC_ROW_COUNT_MAX)
+                break;
         }
     }
 
-    out << QString("%1,%2,%3\n")
-               .arg("Id")
-               .arg("Time[ns]")
-               .arg(title);
+    if (row_num == 0){
+        dsv_info("ERROR: There have no decode data row to export.");
+        return;
+    }
 
     pv::data::DecoderModel *decoder_model = _session->get_decoder_model();
     const auto decoder_stack = decoder_model->getDecoderStack();
-    int row_index = 0;
-    Row row;
-
+    
+    int fd_row_dex = 0;
     const std::map<const Row, bool> rows_lshow = decoder_stack->get_rows_lshow();
-    for (std::map<const Row, bool>::const_iterator i = rows_lshow.begin();
-         i != rows_lshow.end(); i++)
+    for (auto it = rows_lshow.begin();it != rows_lshow.end(); it++)
     {
-        if ((*i).second)
+        if ((*it).second)
         {
-            if (index == row_index)
-            { 
-                row = Row((*i).first);
-                break;
-            }
-            row_index++;
+            for (int i=0; i<row_num; i++) {
+                if (row_inf_arr[i].row_index == fd_row_dex){
+                    row_inf_arr[i].row = &(*it).first;
+                    break;
+                }
+            }      
+            fd_row_dex++;
         }
     }
 
-    uint64_t exported = 0;
-    double ns_per_sample = SR_SEC(1) * 1.0 / decoder_stack->samplerate();
-    std::vector<Annotation*> annotations;
-    decoder_stack->get_annotation_subset(annotations, row,
+    //get annotation list
+    uint64_t total_ann_count = 0;
+
+    for (int i=0; i<row_num; i++)
+    {
+        decoder_stack->get_annotation_subset(annotations_arr[i], *row_inf_arr[i].row,
                                          0, decoder_stack->sample_count() - 1);
-    if (annotations.size() > 0 )
-    { 
-        for (Annotation *a : annotations)
-        {
-            out << QString("%1,%2,%3\n")
-                       .arg(QString::number(exported))
-                       .arg(QString::number(a->start_sample() * ns_per_sample, 'f', 20))
-                       .arg(a->annotations().at(0));
-            exported++;
-            emit export_progress(exported * 100 / annotations.size());
-            if (_export_cancel)
-                break;
+        total_ann_count += (uint64_t)annotations_arr[i].size();
+        sort(annotations_arr[i].begin(), annotations_arr[i].end(), compare_ann_index);  
+        row_inf_arr[i].read_index = 0;
+    }
+
+    //title
+    QString title_str;
+
+    for (int i=0; i<row_num; i++) {
+        if (i > 0 && i < row_num){
+            title_str.append(",");
         }
+        title_str.append(row_inf_arr[i].title);
+    }
+
+    out << QString("%1,%2,%3\n")
+            .arg("Id")
+            .arg("Time[ns]")
+            .arg(title_str);
+
+    uint64_t write_row_dex = 0;
+    uint64_t write_ann_num = 0;
+    double ns_per_sample = SR_SEC(1) * 1.0 / decoder_stack->samplerate();
+    uint64_t sample_index = 0;
+    uint64_t sample_index1 = 0;
+
+    while (write_ann_num < total_ann_count && !_export_cancel)
+    {    
+        bool bFirtColumn = true;
+
+        for (int i=0; i<row_num; i++)
+        {   
+            if (row_inf_arr[i].read_index >= annotations_arr[i].size())
+                continue;
+            
+            Annotation *ann = annotations_arr[i].at(row_inf_arr[i].read_index);
+            sample_index1 = ann->start_sample();
+
+            if (bFirtColumn || sample_index1 < sample_index){
+                sample_index = sample_index1;
+                bFirtColumn = false;
+            }
+        }
+
+        QString ann_row_str;
+
+        for (int i=0; i<row_num; i++)
+        {   
+            if (i > 0 && i < row_num){
+                ann_row_str.append(",");
+            }
+
+            if (row_inf_arr[i].read_index >= annotations_arr[i].size())
+                continue;
+            
+            Annotation *ann = annotations_arr[i].at(row_inf_arr[i].read_index);           
+
+            if (ann->start_sample() == sample_index){
+                ann_row_str.append(ann->annotations().at(0));
+                row_inf_arr[i].read_index++;
+                write_ann_num++;
+            }
+        }
+
+        write_row_dex++;
+
+        out << QString("%1,%2,%3\n")
+                       .arg(QString::number(write_row_dex))
+                       .arg(QString::number(sample_index * ns_per_sample, 'f', 2))
+                       .arg(ann_row_str);
+
+        emit export_progress(write_ann_num * 100 / total_ann_count);
     }
 
     file.close();
+}
+
+bool ProtocolExp::compare_ann_index(const data::decode::Annotation *a, 
+                    const data::decode::Annotation *b)
+{   
+    assert(a);
+    assert(b);
+    return a->start_sample() < b->start_sample();
 }
 
 void ProtocolExp::reject()
