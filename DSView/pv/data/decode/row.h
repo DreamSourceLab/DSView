@@ -45,7 +45,7 @@ public:
 
 	Row(const Row &o);
 
-	bool operator=(const Row &o);
+	Row& operator=(const Row &o);
 
 public: 
 

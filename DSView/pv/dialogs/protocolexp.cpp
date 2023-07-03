@@ -77,7 +77,7 @@ ProtocolExp::ProtocolExp(QWidget *parent, SigSession *session) :
         for (auto i = rows.begin();i != rows.end(); i++) {
             if ((*i).second) {
                 QLabel *row_label = new QLabel((*i).first.title(), this);
-                QRadioButton *row_sel = new QRadioButton(this);
+                QCheckBox *row_sel = new QCheckBox(this);
                 if (row_index == 0) {
                     row_sel->setChecked(true);
                 }
@@ -193,7 +193,7 @@ void ProtocolExp::save_proc()
 
     QString title;
     int index = 0;
-    for (std::list<QRadioButton *>::const_iterator i = _row_sel_list.begin();
+    for (std::list<QCheckBox *>::const_iterator i = _row_sel_list.begin();
          i != _row_sel_list.end(); i++)
     {
         if ((*i)->isChecked())

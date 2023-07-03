@@ -27,7 +27,7 @@
 #include <QFormLayout>
 #include <QVBoxLayout>
 #include <QLabel>
-#include <QRadioButton> 
+#include <QCheckBox> 
 #include <QString>
  
 #include "../prop/binding/deviceoptions.h"
@@ -70,7 +70,7 @@ private:
 
     toolbars::TitleBar *_titlebar;
     DsComboBox *_format_combobox;
-    std::list<QRadioButton *> _row_sel_list;
+    std::list<QCheckBox *> _row_sel_list;
     std::list<QLabel *> _row_label_list;
     QFormLayout *_flayout;
     QVBoxLayout *_layout;
