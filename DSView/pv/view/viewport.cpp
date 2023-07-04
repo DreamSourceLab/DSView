@@ -1256,25 +1256,29 @@ void Viewport::wheelEvent(QWheelEvent *event)
     }
     else if (_type == TIME_VIEW)
     {
+        static bool bLstTime = false;
+
         if (isVertical)
         {
             // Vertical scrolling is interpreted as zooming in/out
 #ifdef Q_OS_DARWIN
-            static bool active = true;
             static int64_t last_time;
+
             if (event->source() == Qt::MouseEventSynthesizedBySystem)
             {
-                if (active)
-                {
+                if (!bLstTime)
+                {  
                     last_time = QDateTime::currentMSecsSinceEpoch();
-                    const double scale = delta > 1.5 ? 1 : (delta < -1.5 ? -1 : 0);
-                    _view.zoom(scale, x);
+                    bLstTime = true;
                 }
-                int64_t cur_time = QDateTime::currentMSecsSinceEpoch();
-                if (cur_time - last_time > 50)
-                    active = true;
-                else
-                    active = false;
+                else{
+                    int64_t cur_time = QDateTime::currentMSecsSinceEpoch();
+                    if (cur_time - last_time > 50){
+                        double scale = delta > 1.5 ? 1 : (delta < -1.5 ? -1 : 0);
+                        _view.zoom(scale, x);
+                        last_time = QDateTime::currentMSecsSinceEpoch();
+                    }                   
+                } 
             }
             else
             {
@@ -1285,7 +1289,10 @@ void Viewport::wheelEvent(QWheelEvent *event)
 #endif
         }
         else
-        {
+        {   
+            bLstTime = false;
+            (void)bLstTime;
+
             // Horizontal scrolling is interpreted as moving left/right
             if (!(event->modifiers() & Qt::ShiftModifier))
                 _view.set_scale_offset(_view.scale(), _view.offset() - delta);
