@@ -159,6 +159,13 @@ View::View(SigSession *session, pv::toolbars::SamplingBar *sampling_bar, QWidget
     _viewbottom = new ViewStatus(_session, *this);
     _viewbottom->setFixedHeight(StatusHeight);
     layout->addWidget(_viewbottom, 1, 0);
+
+#ifdef Q_OS_DARWIN
+    QWidget *lineSpan = new QWidget(this);
+    lineSpan->setFixedHeight(10);
+    layout->addWidget(lineSpan, 2, 0);
+#endif
+
     setViewport(_viewcenter);
 
     _time_viewport->installEventFilter(this);
