@@ -111,20 +111,20 @@ public:
         return _threshold;
     }
 
-    inline void set_measure_voltage_factor1(uint64_t v){
-        _measure_voltage_factor1 = v;
+    inline void set_measure_voltage_factor(uint64_t v, int index){   
+        index == 0 ? _measure_voltage_factor1 = v : _measure_voltage_factor2 = v;
     }
 
-    inline uint64_t get_measure_voltage_factor1(){
-        return _measure_voltage_factor1;
+    inline uint64_t get_measure_voltage_factor(int index){
+        return index == 0 ? _measure_voltage_factor1 : _measure_voltage_factor2;
     }
 
-    inline void set_measure_voltage_factor2(uint64_t v){
-        _measure_voltage_factor2 = v;
+    inline void set_data_scale(float scale, int index){
+        index == 0 ? _data_scale1 = scale : _data_scale2 = scale;
     }
 
-    inline uint64_t get_measure_voltage_factor2(){
-        return _measure_voltage_factor2;
+    inline float get_data_scale(int index){
+        return index == 0 ? _data_scale1 : _data_scale2;
     }
 
 private:
@@ -144,6 +144,8 @@ private:
     float   _threshold;
     uint64_t _measure_voltage_factor1;
     uint64_t _measure_voltage_factor2;
+    float _data_scale1 = 0;
+    float _data_scale2 = 0;
  
     friend class DsoSnapshotTest::Basic;
 };
