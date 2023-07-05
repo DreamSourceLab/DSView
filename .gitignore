@@ -56,3 +56,6 @@ test
 qtpro5
 .DS_Store
 .qt
+win32x
+qrc_*
+install_manifest.txt
