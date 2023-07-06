@@ -68,7 +68,7 @@ ChannelLabel::ChannelLabel(IChannelCheck *check, QWidget *parent, int chanIndex)
     lb->setFont(font);
 
     int fh = lb->fontMetrics().height();
-    int w = lb->fontMetrics().width(lb->text()) + 5;
+    int w = lb->fontMetrics().horizontalAdvance(lb->text()) + 5;
     w = w < 30 ? 30 : w;
     int h = fh + _box->height() + 2;
     setFixedSize(w, h);
@@ -395,7 +395,7 @@ void DeviceOptions::logic_probes(QVBoxLayout &layout)
     enable_all_probes->setFont(font);
     disable_all_probes->setFont(font);
 
-    int bt_width = enable_all_probes->fontMetrics().width(enable_all_probes->text()) + 20;
+    int bt_width = enable_all_probes->fontMetrics().horizontalAdvance(enable_all_probes->text()) + 20;
     enable_all_probes->setMaximumWidth(bt_width);
     disable_all_probes->setMaximumWidth(bt_width);
 
