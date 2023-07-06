@@ -1236,8 +1236,8 @@ bool LogicSnapshot::pattern_search_self(int64_t start, int64_t end, int64_t &ind
     int  count = 0;  
     bool bEdgeFlag = false;
 
-    int64_t to = isNext ? end + 1 : start - 1;
-    int64_t step = isNext ? 1 : -1;
+    const int64_t to = isNext ? end + 1 : start - 1;
+    const int64_t step = isNext ? 1 : -1;
 
     for (auto it = pattern.begin(); it != pattern.end(); it++){
          char flag = *(it->second.toStdString().c_str());
@@ -1268,6 +1268,13 @@ bool LogicSnapshot::pattern_search_self(int64_t start, int64_t end, int64_t &ind
             lstValues[i] =  (char)get_sample_self(index, chanIndexs[i]);
         }
         index += step;
+    }
+
+    if (index < start){
+        index = start;
+    }
+    if (index > end){
+        index = end;
     }
 
     while (index != to)
