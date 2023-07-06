@@ -616,7 +616,7 @@ void View::mode_changed()
     _scale = max(min(_scale, _maxscale), _minscale);
 }
 
-void View::signals_changed()
+void View::signals_changed(const Trace* eventTrace)
 {
     double actualMargin = SignalMargin;
     int total_rows = 0;
@@ -627,6 +627,8 @@ void View::signals_changed()
     std::vector<Trace*> traces;
     std::vector<Trace*> logic_traces;
     std::vector<Trace*> decoder_traces;
+
+    (void)eventTrace;
 
     get_traces(ALL_VIEW, traces);
 
@@ -761,14 +763,15 @@ void View::signals_changed()
             t->set_v_offset(next_v_offset + 0.5 * traceHeight + actualMargin);
             next_v_offset += traceHeight + 2 * actualMargin;
 
-            view::DsoSignal *dsoSig = NULL;
-            if ((dsoSig = dynamic_cast<view::DsoSignal*>(t))) {
-                dsoSig->set_scale(dsoSig->get_view_rect().height());
+            if (t->signal_type() == SR_CHANNEL_DSO)
+            {
+                auto sig = dynamic_cast<view::DsoSignal*>(t);
+                sig->set_scale(sig->get_view_rect().height());              
             }
-
-            view::AnalogSignal *analogSig = NULL;
-            if ((analogSig = dynamic_cast<view::AnalogSignal*>(t))) {
-                analogSig->set_scale(analogSig->get_totalHeight());
+            else if (t->signal_type() == SR_CHANNEL_ANALOG)
+            {
+                auto sig = dynamic_cast<view::AnalogSignal*>(t);
+                sig->set_scale(sig->get_view_rect().height());
             }
         }
         _time_viewport->clear_measure();
@@ -852,7 +855,7 @@ void View::resizeEvent(QResizeEvent*)
     setViewportMargins(headerWidth(), RulerHeight, 0, 0);
     update_margins();
     update_scroll();
-    signals_changed();
+    signals_changed(NULL);
 
     if (_device_agent->get_work_mode() == DSO)
         _scale = _session->cur_view_time() / get_view_width();
@@ -1143,7 +1146,7 @@ void View::vDial_updated()
 void View::show_lissajous(bool show)
 {
     _show_lissajous = show;
-    signals_changed();
+    signals_changed(NULL);
 }
 
 void View::show_region(uint64_t start, uint64_t end, bool keep)
@@ -1175,7 +1178,7 @@ void View::splitterMoved(int pos, int index)
 {
     (void)pos;
     (void)index;
-    signals_changed();
+    signals_changed(NULL);
 }
 
 void View::reload()

@@ -275,7 +275,7 @@ void Header::mouseReleaseEvent(QMouseEvent *event)
 
     if (_moveFlag) {
         _drag_traces.clear();
-        _view.signals_changed();
+        _view.signals_changed(mTrace);
         _view.set_all_update(true);
 
         std::vector<Trace*> traces;

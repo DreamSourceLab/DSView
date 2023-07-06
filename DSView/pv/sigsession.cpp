@@ -112,7 +112,6 @@ namespace pv
 
         _lissajous_trace = NULL;
         _math_trace = NULL;
-        _stop_scale = 1;
         _is_decoding = false;
         _bClose = false;
         _callback = NULL;
@@ -441,7 +440,6 @@ namespace pv
 
         set_cur_snap_samplerate(_device_agent.get_sample_rate());
         set_cur_samplelimits(_device_agent.get_sample_limit());
-        set_stop_scale(1);
 
         _data_updated = false;
         _trigger_flag = false;
@@ -472,12 +470,13 @@ namespace pv
         for (auto s : _signals)
         {  
             if (s->signal_type() == SR_CHANNEL_DSO){   
-                view::DsoSignal *dsoSig = (view::DsoSignal*)s;
-                dsoSig->set_zero_ratio(dsoSig->get_zero_ratio());
+                auto sig = (view::DsoSignal*)s;
+                sig->set_zero_ratio(sig->get_zero_ratio());
+                sig->set_stop_scale(1);
             }            
             else if (s->signal_type() == SR_CHANNEL_ANALOG){  
-                view::AnalogSignal *analogSig = (view::AnalogSignal*)s;
-                analogSig->set_zero_ratio(analogSig->get_zero_ratio());
+                auto sig = (view::AnalogSignal*)s;
+                sig->set_zero_ratio(sig->get_zero_ratio());
             }
         }
 

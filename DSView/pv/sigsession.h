@@ -305,14 +305,6 @@ public:
         return _save_end;
     }
 
-    inline void set_stop_scale(float scale){
-        _stop_scale = scale;
-    }
-
-    inline float stop_scale(){
-        return _stop_scale;
-    }
-
     void clear_all_decoder(bool bUpdateView = true); 
 
     inline bool is_closed(){
@@ -571,7 +563,6 @@ private:
     SESSION_ERROR_STATUS _error;
     uint64_t    _error_pattern;
     int         _map_zoom;  
-    float       _stop_scale;
     bool        _bClose;  
  
     uint64_t    _save_start;

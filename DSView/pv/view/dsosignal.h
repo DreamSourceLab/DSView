@@ -239,6 +239,9 @@ public:
 
     bool mouse_wheel(int right, const QPoint pt, const int shift);
 
+    inline void set_stop_scale(float v){
+        _stop_scale = v;
+    }
 
 protected:
     void paint_type_options(QPainter &p, int right, const QPoint pt, QColor fore);
@@ -264,6 +267,7 @@ private:
 private:
     pv::data::DsoSnapshot *_data;
 	float _scale;
+    float _stop_scale = 1;
     bool _en_lock;
     bool _show;
 

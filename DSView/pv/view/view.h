@@ -313,7 +313,7 @@ public:
     void update_view_port();
 
     inline void update_all_trace_postion(){
-        signals_changed();
+        signals_changed(NULL);
     }
 
     inline Viewport* get_time_view(){
@@ -353,11 +353,13 @@ public:
     static bool compare_trace_view_index(const Trace *a, const Trace *b);
 
     static bool compare_trace_y(const Trace *a, const Trace *b);
+
+    void signals_changed(const Trace* eventTrace);
  
 public slots:
     void reload();
     void set_measure_en(int enable);
-    void signals_changed();
+  
     void data_updated();
     void update_scale_offset();
     void show_region(uint64_t start, uint64_t end, bool keep);

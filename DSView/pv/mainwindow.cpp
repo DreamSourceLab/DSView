@@ -1458,7 +1458,7 @@ namespace pv
 
     void MainWindow::on_signals_changed()
     {
-        _view->signals_changed();
+        _view->signals_changed(NULL);
     }
 
     void MainWindow::receive_trigger(quint64 trigger_pos)

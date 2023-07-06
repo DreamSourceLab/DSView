@@ -117,7 +117,7 @@ DsoSignal::~DsoSignal()
 
 void DsoSignal::set_scale(int height)
 {
-    _scale = height / (_ref_max - _ref_min) * session->stop_scale();
+    _scale = height / (_ref_max - _ref_min) * _stop_scale;
 }
 
 void DsoSignal::set_enable(bool enable)
@@ -191,7 +191,7 @@ bool DsoSignal::go_vDialPre(bool manul)
                               _vDial->get_value(), _probe, NULL);
 
         if (session->is_stopped_status()) {
-            session->set_stop_scale(session->stop_scale() * (pre_vdiv/_vDial->get_value()));
+            set_stop_scale(_stop_scale * (pre_vdiv/_vDial->get_value()));
             set_scale(get_view_rect().height());
         }
         session->get_device()->set_config_uint16(SR_CONF_PROBE_OFFSET,
@@ -226,7 +226,7 @@ bool DsoSignal::go_vDialNext(bool manul)
                               _vDial->get_value(), _probe, NULL);
 
         if (session->is_stopped_status()) {
-            session->set_stop_scale(session->stop_scale() * (pre_vdiv/_vDial->get_value()));
+            set_stop_scale(_stop_scale * (pre_vdiv/_vDial->get_value()));
             set_scale(get_view_rect().height());
         }
         session->get_device()->set_config_uint16(SR_CONF_PROBE_OFFSET,
@@ -985,7 +985,7 @@ void DsoSignal::paint_trace(QPainter &p,
         uint8_t value; 
         float x = (start / samples_per_pixel - pixels_offset) + left + _view->trig_hoff()*pixels_per_sample;
         float y;
-       
+ 
         for (int64_t sample = 0; sample < sample_count; sample++) {
             value = samples_buffer[sample];
             y = min(max(top, zeroY + (value - hw_offset) * _scale), bottom);
