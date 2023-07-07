@@ -127,6 +127,10 @@ public:
         return index == 0 ? _data_scale1 : _data_scale2;
     }
 
+    inline bool is_file(){
+        return _is_file;
+    }
+
 private:
     void append_data(void *data, uint64_t samples, bool instant);
     void free_envelop();
@@ -146,6 +150,7 @@ private:
     uint64_t _measure_voltage_factor2;
     float _data_scale1 = 0;
     float _data_scale2 = 0;
+    bool    _is_file;
  
     friend class DsoSnapshotTest::Basic;
 };

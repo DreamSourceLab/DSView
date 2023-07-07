@@ -51,6 +51,7 @@ DsoSnapshot::DsoSnapshot() :
     _threshold = 0;
     _measure_voltage_factor1 = 0;
     _measure_voltage_factor2 = 0;
+    _is_file = false;
 
 	memset(_envelope_levels, 0, sizeof(_envelope_levels));
 }
@@ -83,7 +84,8 @@ void DsoSnapshot::init_all()
     _ring_sample_count = 0;
     _memory_failed = false;
     _last_ended = true;
-    _envelope_done = false;    
+    _envelope_done = false;   
+    _is_file = false; 
 
     for (unsigned int i = 0; i < _channel_num; i++) {
         for (unsigned int level = 0; level < ScaleStepCount; level++) {
@@ -122,6 +124,7 @@ void DsoSnapshot::first_payload(const sr_datafeed_dso &dso, uint64_t total_sampl
 
     bool channel_changed = false;
     uint16_t channel_num = 0;
+    _is_file = isFile;
 
     for (const GSList *l = channels; l; l = l->next) {
         sr_channel *const probe = (sr_channel*)l->data;
