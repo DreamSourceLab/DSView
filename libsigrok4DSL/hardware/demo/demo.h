@@ -77,6 +77,8 @@
 
 #define DSO_EXPAND_MID_VAL(i) ((i)*(uint16_t)(256))
 #define DSO_LIMIT 255
+#define DSO_WAVE_PERIOD_LEN 200
+#define DSO_WAVE_PERIOD_LEN_PER_PROBE 100
 
 
 #define ANALOG_HW_DEPTH (SR_MHZ(12.5))
@@ -84,6 +86,8 @@
 #define ANALOG_MID_VAL 128
 #define ANALOG_MAX_VAL 0
 #define ANALOG_MIN_VAL 255
+#define ANALOG_AC_COUL_OFFSET 128
+#define ANALOG_DC_COUL_OFFSET 178
 
 #define ANALOG_CYCLE_RATIO ((gdouble)(103) / (gdouble)(2048))
 #define ANALOG_DATA_LEN_PER_CYCLE 206
@@ -125,6 +129,8 @@
 #define ANALOG_DEFAULT_MAP_UNIT "V"
 #define ANALOG_DEFAULT_MAP_MIN (gdouble)-5
 #define ANALOG_DEFAULT_MAP_MAX (gdouble)+5
+
+
 
 
 enum DEMO_PATTERN {  
