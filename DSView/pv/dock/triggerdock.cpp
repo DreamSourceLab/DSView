@@ -35,8 +35,8 @@
 #include <QApplication>
 #include <math.h>
 #include <libsigrok.h> 
-#include <QRegExp>
-#include <QRegExpValidator>
+#include <QRegularExpression>
+#include <QRegularExpressionValidator>
 #include "../config/appconfig.h"
 #include "../deviceagent.h"
 #include "../view/logicsignal.h"
