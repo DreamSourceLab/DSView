@@ -1459,7 +1459,7 @@ static int dev_acquisition_start(struct sr_dev_inst *sdi, void *cb_data)
 SR_PRIV int sr_new_virtual_device(const char *filename, struct sr_dev_inst **out_di)
 {
     struct sr_dev_inst *sdi; 
-    char short_name[50];
+    char short_name[150];
     GKeyFile *kf;
     char **sections, **keys, *metafile, *val;
     int mode = LOGIC;
@@ -1560,7 +1560,7 @@ SR_PRIV int sr_new_virtual_device(const char *filename, struct sr_dev_inst **out
     sdi->dev_type = DEV_TYPE_FILELOG;
 
     get_file_short_name(filename, short_name, sizeof(short_name) - 1);
-    strncpy(sdi->name, (char*)short_name, sizeof(short_name) - 1);
+    sdi->name = g_strdup((const char*)short_name);
     sdi->path = g_strdup(filename);
 
     *out_di = sdi;

@@ -1328,13 +1328,13 @@ typedef unsigned long long ds_device_handle;
 struct ds_device_base_info
 {
 	ds_device_handle handle;
-	char 	name[50];
+	char 	name[150];
 };
 
 struct ds_device_full_info
 {
 	ds_device_handle handle;
-	char 	name[50];
+	char 	name[150];
 	char 	path[256]; //file path
 	char 	driver_name[20];
 	int 	dev_type; // enum sr_device_type

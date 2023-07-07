@@ -201,8 +201,8 @@ SR_PRIV struct sr_dev_inst *sr_dev_inst_new(int mode, int status,
 		sdi->version = g_strdup(version);
 	}
 
-	if (model && *model){
-		strncpy(sdi->name, model, sizeof(sdi->name)-1);
+	if (model && *model){ 
+		sdi->name = g_strdup(model);
 	}
 
 	return sdi;
@@ -236,6 +236,7 @@ SR_PRIV void sr_dev_inst_free(struct sr_dev_inst *sdi)
 	safe_free(sdi->vendor);
 	safe_free(sdi->version);
 	safe_free(sdi->path);
+	safe_free(sdi->name);
 
 	g_free(sdi);
 }

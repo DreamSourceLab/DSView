@@ -146,7 +146,7 @@ struct sr_dev_inst {
     ds_device_handle handle;
 
 	/** device name. */
-	char name[50];
+	char *name;
 
 	char *path;
 
