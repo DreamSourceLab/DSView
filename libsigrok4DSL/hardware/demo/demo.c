@@ -181,10 +181,12 @@ static void dso_status_update(struct session_vdev *vdev)
     for(int i = 0 ; i<DSO_PACKET_LEN ; i += 2)
     {
         uint8_t val = *(uint8_t*)(pack_buffer->post_buf +i);
-        if (val >  ch_max)
+        if (val >  ch_max){
             ch_max = val;
-        if (val <  ch_min)
+        }
+        if (val <  ch_min){
             ch_min = val;
+        }
     }
     status->ch0_max = status->ch1_max = status->ch0_high_level = status->ch1_high_level = ch_max;
     status->ch0_min = status->ch1_min = status->ch0_low_level = status->ch1_low_level = ch_min;
@@ -215,7 +217,6 @@ static void dso_status_update(struct session_vdev *vdev)
 
                 if(temp_plevel)
                 {
-                    //rlen and flen err?
                     status->ch0_cyc_rlen++;
                     status->ch1_cyc_rlen++;
                     if(val == ch_max)
@@ -229,8 +230,7 @@ static void dso_status_update(struct session_vdev *vdev)
                             status->ch0_cyc_llen = status->ch1_cyc_llen = 0;
                             temp_llen = 0;
                         }
-                        else
-                        {
+                        else{
                             status->ch0_cyc_llen = status->ch1_cyc_llen = temp_llen;
                         }
                     }
@@ -242,7 +242,6 @@ static void dso_status_update(struct session_vdev *vdev)
                     if(val == ch_min)
                     {
                         temp_plevel = !temp_plevel;
-
                         if(status->ch0_plevel == temp_plevel)
                         {
                             status->ch0_cyc_cnt++;
@@ -251,8 +250,7 @@ static void dso_status_update(struct session_vdev *vdev)
                             status->ch0_cyc_llen = status->ch1_cyc_llen = 0;
                             temp_llen = 0;
                         }
-                        else
-                        {
+                        else{
                             status->ch0_cyc_llen = status->ch1_cyc_llen = temp_llen;
                         }
                     }
@@ -262,10 +260,12 @@ static void dso_status_update(struct session_vdev *vdev)
             {
                 if(val == ch_max || val == ch_min)
                 {
-                    if(val == ch_max)
+                    if(val == ch_max){
                         temp_plevel = status->ch0_plevel = status->ch1_plevel = FALSE;
-                    else
+                    }
+                    else{
                         temp_plevel = status->ch0_plevel = status->ch1_plevel = TRUE;
+                    }
                     first_plevel = TRUE;
                 }
             }
@@ -277,12 +277,10 @@ static void dso_status_update(struct session_vdev *vdev)
     status->ch0_cyc_rlen = status->ch1_cyc_rlen /=2;
     status->ch0_cyc_flen = status->ch1_cyc_flen /=2;
 
-    if(vdev->sample_generator != PATTERN_RANDOM)
-    {
+    if(vdev->sample_generator != PATTERN_RANDOM){
         status->ch0_acc_mean = status->ch1_acc_mean =  DSO_MID_VAL*pack_buffer->post_len/2;
     }
-    else
-    {
+    else{
         status->ch0_acc_mean = status->ch1_acc_mean =  total_val;
     }
     status->ch0_acc_square = status->ch1_acc_square =  ch_max*pack_buffer->post_len/2*7;
@@ -292,21 +290,25 @@ static void logic_adjust_samplerate(struct session_vdev * vdev)
 {
     vdev->samplerates_max_index = ARRAY_SIZE(samplerates) - 1;
     while (samplerates[vdev->samplerates_max_index] >
-           logic_channel_modes[vdev->logic_ch_mode_index].max_samplerate)
+           logic_channel_modes[vdev->logic_ch_mode_index].max_samplerate){
         vdev->samplerates_max_index--;
+    }
 
     vdev->samplerates_min_index = 0;
     while (samplerates[vdev->samplerates_min_index] <
-           logic_channel_modes[vdev->logic_ch_mode_index].min_samplerate)
+           logic_channel_modes[vdev->logic_ch_mode_index].min_samplerate){
         vdev->samplerates_min_index++;
+    }
 
     assert(vdev->samplerates_max_index >= vdev->samplerates_min_index);
 
-    if (vdev->samplerate > samplerates[vdev->samplerates_max_index])
+    if (vdev->samplerate > samplerates[vdev->samplerates_max_index]){
         vdev->samplerate = samplerates[vdev->samplerates_max_index];
+    }
 
-    if (vdev->samplerate < samplerates[vdev->samplerates_min_index])
+    if (vdev->samplerate < samplerates[vdev->samplerates_min_index]){
         vdev->samplerate = samplerates[vdev->samplerates_min_index];
+    }
 }
 
 
@@ -323,10 +325,12 @@ static int init_analog_random_data(struct session_vdev * vdev)
 
     for(uint64_t i = 0;i < DSO_BUF_LEN ;i++)
     {
-        if(i % 2 == 0)
+        if(i % 2 == 0){
             *(uint8_t*)(vdev->data_buf + i) = ANALOG_RANDOM_DATA;
-        else
+        }
+        else{
             *(uint8_t*)(vdev->data_buf + i) = *(uint8_t*)(vdev->data_buf + i -1);
+        }
     }
 
     vdev->data_buf_len = DSO_BUF_LEN;
@@ -337,8 +341,7 @@ static int delay_time(struct session_vdev *vdev)
 {
     gdouble packet_elapsed = g_timer_elapsed(packet_interval, NULL);
     gdouble waittime = vdev->packet_time - packet_elapsed;
-    if(waittime > 0)
-    {
+    if(waittime > 0){
         g_usleep(SR_MS(waittime));
     }
     return SR_OK;
@@ -386,8 +389,9 @@ static int get_pattern_mode_index_by_string(uint8_t device_mode, const char* pat
 
     while (dex < info->count)
     {
-        if (strcmp(info->patterns[dex], pattern) == 0)
+        if (strcmp(info->patterns[dex], pattern) == 0){
             return dex;
+        }
         dex++;
     }
 
@@ -453,8 +457,9 @@ static int get_pattern_mode_from_file(const char *sub_dir, struct demo_mode_patt
                 short_name[str_len] = 0;
                 info->patterns[num++] = g_strdup(short_name);
 
-                if (num >= max_count)
+                if (num >= max_count){
                     break;
+                }
             }
         }
     }
@@ -470,7 +475,8 @@ static void scan_dsl_file(struct sr_dev_inst *sdi)
     struct session_vdev * vdev = sdi->priv;
     int dex;
 
-    if (b_load_directory == 0){
+    if (b_load_directory == 0)
+    {
         get_pattern_mode_from_file(demo_mode_names[LOGIC], &demo_pattern_array[LOGIC], PATTERN_COUNT);
         get_pattern_mode_from_file(demo_mode_names[DSO], &demo_pattern_array[DSO], PATTERN_COUNT);
         get_pattern_mode_from_file(demo_mode_names[ANALOG], &demo_pattern_array[ANALOG], PATTERN_COUNT);
@@ -479,8 +485,9 @@ static void scan_dsl_file(struct sr_dev_inst *sdi)
 
     dex = get_pattern_mode_index_by_string(LOGIC, DEFAULT_LOGIC_FILE);
 
-    if(dex == -1)
+    if(dex == -1){
         dex = PATTERN_RANDOM;
+    }
 
     vdev->sample_generator = dex;
     sdi->mode = LOGIC;
@@ -519,43 +526,48 @@ static int reset_dsl_path(struct sr_dev_inst *sdi, uint8_t pattern_mode)
 static void adjust_samplerate(struct sr_dev_inst *sdi)
 {
     struct session_vdev *vdev = sdi->priv;
-    if(sdi->mode == LOGIC && vdev->sample_generator > PATTERN_RANDOM)
-    {
+    if(sdi->mode == LOGIC && vdev->sample_generator > PATTERN_RANDOM){
         return;
     }
 
     int cur_mode = -1;
-    if(sdi->mode == LOGIC)
+    if(sdi->mode == LOGIC){
         cur_mode = 0;
-    else if(sdi->mode == DSO)
+    }
+    else if(sdi->mode == DSO){
         cur_mode = 2;
-    else if(sdi->mode == ANALOG)
+    }
+    else if(sdi->mode == ANALOG){
         cur_mode = 1;
+    }
 
-    if(cur_mode == -1)
+    if(cur_mode == -1){
         return;
+    }
 
     vdev->samplerates_max_index = ARRAY_SIZE(samplerates) - 1;
 
     while (samplerates[vdev->samplerates_max_index] > 
-        channel_modes[cur_mode].max_samplerate)
-    {
+        channel_modes[cur_mode].max_samplerate){
         vdev->samplerates_max_index--;
     }
 
     vdev->samplerates_min_index = 0;
     while (samplerates[vdev->samplerates_min_index] <
-           channel_modes[cur_mode].min_samplerate)
+           channel_modes[cur_mode].min_samplerate){
         vdev->samplerates_min_index++;
+    }
+
 
     assert(vdev->samplerates_max_index >= vdev->samplerates_min_index);
 
-    if (vdev->samplerate > samplerates[vdev->samplerates_max_index])
+    if (vdev->samplerate > samplerates[vdev->samplerates_max_index]){
         vdev->samplerate = samplerates[vdev->samplerates_max_index];
+    }
 
-    if (vdev->samplerate < samplerates[vdev->samplerates_min_index])
+    if (vdev->samplerate < samplerates[vdev->samplerates_min_index]){
         vdev->samplerate = samplerates[vdev->samplerates_min_index];
-
+    }
 }
 
 static int init_random_data(struct session_vdev *vdev)
@@ -582,8 +594,9 @@ static int init_random_data(struct session_vdev *vdev)
         if(i % 8 == 0 && i != 0)
         {
             cur_probe++;
-            if(cur_probe >vdev->enabled_probes-1)
+            if(cur_probe >vdev->enabled_probes-1){
                 cur_probe = 0;
+            }
         }
 
         if(probe_count[cur_probe]> 0)
@@ -593,10 +606,12 @@ static int init_random_data(struct session_vdev *vdev)
         }
         else
         {
-            if(probe_status[cur_probe] == LOGIC_HIGH_LEVEL)
+            if(probe_status[cur_probe] == LOGIC_HIGH_LEVEL){
                 probe_status[cur_probe] = LOGIC_LOW_LEVEL;
-            else
+            }
+            else{
                 probe_status[cur_probe] = LOGIC_HIGH_LEVEL;
+            }
             probe_count[cur_probe] = rand()%SR_KB(1);
             memset(vdev->data_buf+i,probe_status[cur_probe],1);
             probe_count[cur_probe] -= 1;
@@ -637,7 +652,8 @@ static GSList *hw_scan(GSList *options)
                           supported_Demo[0].vendor,
                           supported_Demo[0].model,
                           supported_Demo[0].model_version);
-    if (!sdi) {
+    if (!sdi) 
+    {
         safe_free(vdev);
         sr_err("Device instance creation failed.");
         return NULL;
@@ -661,9 +677,11 @@ static const GSList *hw_dev_mode_list(const struct sr_dev_inst *sdi)
     GSList *l = NULL;
     unsigned int i;
 
-    for (i = 0; i < ARRAY_SIZE(sr_mode_list); i++) {
-        if (supported_Demo[0].dev_caps.mode_caps & (1 << i))
+    for (i = 0; i < ARRAY_SIZE(sr_mode_list); i++) 
+    {
+        if (supported_Demo[0].dev_caps.mode_caps & (1 << i)){
             l = g_slist_append(l, (gpointer)&sr_mode_list[i]);
+        }
     }
 
     return l;
@@ -682,8 +700,7 @@ static int hw_dev_open(struct sr_dev_inst *sdi)
     scan_dsl_file(sdi);
     
     ret = vdev_init(sdi);
-    if (ret == SR_OK)
-    {
+    if (ret == SR_OK){
         sdi->status = SR_ST_ACTIVE;
     }
 
@@ -710,13 +727,16 @@ static int hw_dev_close(struct sr_dev_inst *sdi)
     {
         vdev = sdi->priv;
 
-        if (vdev->packet_buffer != NULL){
+        if (vdev->packet_buffer != NULL)
+        {
             pack_buf = vdev->packet_buffer;
 
             safe_free(pack_buf->post_buf);
 
-            for (i = 0; i < SESSION_MAX_CHANNEL_COUNT; i++){
-                if (pack_buf->block_bufs[i] != NULL){
+            for (i = 0; i < SESSION_MAX_CHANNEL_COUNT; i++)
+            {
+                if (pack_buf->block_bufs[i] != NULL)
+                {
                     safe_free(pack_buf->block_bufs[i]);
                     pack_buf->block_bufs[i] = NULL;
                 }
@@ -787,20 +807,24 @@ static int config_get(int id, GVariant **data, const struct sr_dev_inst *sdi,
         *data = g_variant_new_byte(vdev->max_height);
         break;
     case SR_CONF_PROBE_OFFSET:
-        if (ch)
+        if (ch){
             *data = g_variant_new_uint16(ch->offset);
+        }
         break;
     case SR_CONF_PROBE_HW_OFFSET:
-        if (ch)
+        if (ch){
             *data = g_variant_new_uint16(ch->hw_offset);
+        }
         break;
     case SR_CONF_PROBE_VDIV:
-        if (ch)
+        if (ch){
             *data = g_variant_new_uint64(ch->vdiv);
+        }
         break;
     case SR_CONF_PROBE_FACTOR:
-        if (ch)
+        if (ch){
             *data = g_variant_new_uint64(ch->vfactor);
+        }
         break;
     case SR_CONF_TIMEBASE:
         *data = g_variant_new_uint64(vdev->timebase);
@@ -816,12 +840,14 @@ static int config_get(int id, GVariant **data, const struct sr_dev_inst *sdi,
             *data = g_variant_new_byte(ch->coupling);
         break;
     case SR_CONF_TRIGGER_VALUE:
-        if (ch)
+        if (ch){
             *data = g_variant_new_byte(ch->trig_value);
+        }
         break;
     case SR_CONF_PROBE_EN:
-        if (ch)
+        if (ch){
             *data = g_variant_new_boolean(ch->enabled);
+        }
         break;
     case SR_CONF_MAX_DSO_SAMPLERATE:
         *data = g_variant_new_uint64(SR_MHZ(200));
@@ -833,10 +859,12 @@ static int config_get(int id, GVariant **data, const struct sr_dev_inst *sdi,
         switch (sdi->mode)
         {
         case LOGIC:
-            if(vdev->sample_generator == PATTERN_RANDOM)
+            if(vdev->sample_generator == PATTERN_RANDOM){
                 *data = g_variant_new_uint64(LOGIC_HW_DEPTH);
-            else
+            }
+            else{
                 *data = g_variant_new_uint64(vdev->total_samples);
+            }
             break;
         case DSO:
                 *data = g_variant_new_uint64(vdev->total_samples);
@@ -852,23 +880,28 @@ static int config_get(int id, GVariant **data, const struct sr_dev_inst *sdi,
          *data = g_variant_new_byte(vdev->unit_bits);
         break;
     case SR_CONF_PROBE_MAP_DEFAULT:
-        if (!sdi || !ch)
+        if (!sdi || !ch){
             return SR_ERR;
+        }
         *data = g_variant_new_boolean(ch->map_default);
         break;
     case SR_CONF_PROBE_MAP_UNIT:
-        if (!sdi || !ch)
+        if (!sdi || !ch){
             return SR_ERR;
+        }
+            
         *data = g_variant_new_string(ch->map_unit);
         break;
     case SR_CONF_PROBE_MAP_MIN:
-        if (!sdi || !ch)
+        if (!sdi || !ch){
             return SR_ERR;
+        }
         *data = g_variant_new_double(ch->map_min);
         break;
     case SR_CONF_PROBE_MAP_MAX:
-        if (!sdi || !ch)
+        if (!sdi || !ch){
             return SR_ERR;
+        }
         *data = g_variant_new_double(ch->map_max);
         break;
     case SR_CONF_VLD_CH_NUM:
@@ -930,29 +963,28 @@ static int config_set(int id, GVariant *data, struct sr_dev_inst *sdi,
         break;
     case SR_CONF_DEVICE_MODE:
         sdi->mode = g_variant_get_int16(data);
-
         nv = get_pattern_mode_index_by_string(sdi->mode, (sdi->mode == LOGIC ? DEFAULT_LOGIC_FILE :
                                                           sdi->mode == DSO ? DEFAULT_DSO_FILE : DEFAULT_ANALOG_FILE));
-        if (nv != -1)
+        if (nv != -1){
             vdev->sample_generator = nv;
-        else
+        }
+        else{
             vdev->sample_generator = PATTERN_RANDOM;
-
+        }
         reset_dsl_path(sdi,vdev->sample_generator);
-
         load_virtual_device_session(sdi);
         break;
     case SR_CONF_PATTERN_MODE:
         stropt = g_variant_get_string(data, NULL);
         tmp_sample_generator = vdev->sample_generator;
         nv = get_pattern_mode_index_by_string(sdi->mode , stropt);
-
-        if(nv == -1)
+        if(nv == -1){
             vdev->sample_generator = PATTERN_RANDOM;
-        else
+        }
+        else{
             vdev->sample_generator = nv;
+        }
         reset_dsl_path(sdi, vdev->sample_generator);
-
         if(sdi->mode == LOGIC)
         {
             if(vdev->sample_generator == PATTERN_RANDOM)
@@ -1015,13 +1047,11 @@ static int config_set(int id, GVariant *data, struct sr_dev_inst *sdi,
             vdev->offset_change = TRUE;
         }
         else{
-            if(ch->coupling == 0)
-            {
-                ch->hw_offset = 178;
+            if(ch->coupling == 0){
+                ch->hw_offset = ANALOG_DC_COUL_OFFSET;
             }
-            else
-            {
-                ch->hw_offset = 128;
+            else{
+                ch->hw_offset = ANALOG_AC_COUL_OFFSET;
             }
         }
         break;
@@ -1048,13 +1078,11 @@ static int config_set(int id, GVariant *data, struct sr_dev_inst *sdi,
             else
             {
                 ch->coupling = g_variant_get_byte(data);
-                if(ch->coupling == 0)
-                {
-                    ch->hw_offset = 178;
+                if(ch->coupling == 0){
+                    ch->hw_offset = ANALOG_DC_COUL_OFFSET;
                 }
-                else
-                {
-                    ch->hw_offset = 128;
+                else{
+                    ch->hw_offset = ANALOG_AC_COUL_OFFSET;
                 }       
             }
         }
@@ -1068,7 +1096,8 @@ static int config_set(int id, GVariant *data, struct sr_dev_inst *sdi,
         break;
     case SR_CONF_PROBE_MAP_DEFAULT:
         ch->map_default = g_variant_get_boolean(data);
-        if (ch->map_default) {
+        if (ch->map_default)
+        {
             ch->map_unit = probeMapUnits[0];
             ch->map_min = -(ch->vdiv * ch->vfactor * DS_CONF_DSO_VDIVS / 2000.0);
             ch->map_max = ch->vdiv * ch->vfactor * DS_CONF_DSO_VDIVS / 2000.0;
@@ -1112,7 +1141,6 @@ static int config_set(int id, GVariant *data, struct sr_dev_inst *sdi,
                     break;
                 }
             }
-
         }
         break;
      case SR_CONF_HORIZ_TRIGGERPOS:
@@ -1152,13 +1180,11 @@ static int config_list(int key, GVariant **data, const struct sr_dev_inst *sdi,
         break;
     case SR_CONF_SAMPLERATE:
         g_variant_builder_init(&gvb, G_VARIANT_TYPE("a{sv}"));
-        if(sdi->mode == LOGIC && vdev->sample_generator != PATTERN_RANDOM)
-        {
+        if(sdi->mode == LOGIC && vdev->sample_generator != PATTERN_RANDOM){
              gvar = g_variant_new_from_data(G_VARIANT_TYPE("at"),
                                        samplerates_file, ARRAY_SIZE(samplerates_file) * sizeof(uint64_t), TRUE, NULL, NULL);
         }
-        else
-        {
+        else{
             gvar = g_variant_new_from_data(G_VARIANT_TYPE("at"),
                                        samplerates + vdev->samplerates_min_index , (vdev->samplerates_max_index - vdev->samplerates_min_index + 1) * sizeof(uint64_t), TRUE, NULL, NULL);
         }
@@ -1201,13 +1227,13 @@ static int config_list(int key, GVariant **data, const struct sr_dev_inst *sdi,
                 logic_channel_mode_list[i].id = (int)logic_channel_modes[i].id;
                 logic_channel_mode_list[i].name = logic_channel_modes[i].descr;
             }
-
             logic_channel_mode_list[i].id = -1;
             logic_channel_mode_list[i].name = NULL;
             *data = g_variant_new_uint64((uint64_t)&logic_channel_mode_list);
         }
-        else
+        else{
             return SR_ERR_ARG;
+        }
         break;
     default:
         return SR_ERR_ARG;
@@ -1255,8 +1281,7 @@ static int hw_dev_acquisition_start(struct sr_dev_inst *sdi,
 
     if(vdev->sample_generator != PATTERN_RANDOM)
     {
-        if (vdev->archive != NULL)
-        {
+        if (vdev->archive != NULL){
             sr_err("history archive is not closed.");
         }
 
@@ -1296,14 +1321,11 @@ static int hw_dev_acquisition_start(struct sr_dev_inst *sdi,
             uint64_t ideal_len = 2;
             while (1)
             {
-                if(ideal_len>=vdev->packet_len)
-                {
-                    //sr_info("len:%d",ideal_len);
+                if(ideal_len>=vdev->packet_len){
                     vdev->packet_len = ideal_len;
                     break;
                 }
-                else
-                {
+                else{
                     ideal_len *=2;
                 }
             }
@@ -1334,8 +1356,7 @@ static int hw_dev_acquisition_start(struct sr_dev_inst *sdi,
             g_timer_start(run_time);
             sr_session_source_add(-1, 0, 0, receive_data_logic, sdi);
         }
-        else
-        {
+        else{
             sr_session_source_add(-1, 0, 0, receive_data_logic_decoder, sdi);
         }
     }
@@ -1371,15 +1392,15 @@ static int hw_dev_acquisition_start(struct sr_dev_inst *sdi,
         }
         else
         {
-            if (vdev->packet_len % ANALOG_PACKET_ALIGN != 0)
-            {
+            if (vdev->packet_len % ANALOG_PACKET_ALIGN != 0){
                 vdev->packet_len += 1;
             }
             vdev->packet_time = ANALOG_PACKET_TIME(ANALOG_PACKET_NUM_PER_SEC);
         }
-        if(vdev->sample_generator == PATTERN_RANDOM)
+        if(vdev->sample_generator == PATTERN_RANDOM){
             init_analog_random_data(vdev);
-            
+        }
+
         vdev->analog_read_pos = 0;
         vdev->analog_post_buf_len = 0;
 
@@ -1419,8 +1440,7 @@ static int hw_dev_status_get(const struct sr_dev_inst *sdi, struct sr_status *st
         *status = vdev->mstatus;
         return SR_OK;
     }
-    else
-    {
+    else{
         return SR_ERR;
     }
 }
@@ -1446,18 +1466,21 @@ static int receive_data_logic(int fd, int revents, const struct sr_dev_inst *sdi
 
     chan_num = vdev->enabled_probes;
 
-    if (chan_num < 1){
+    if (chan_num < 1)
+    {
         sr_err("%s: channel count < 1.", __func__);
         return SR_ERR_ARG;
     }
-    if (chan_num > SESSION_MAX_CHANNEL_COUNT){
+    if (chan_num > SESSION_MAX_CHANNEL_COUNT)
+    {
         sr_err("%s: channel count is to big.", __func__);
         return SR_ERR_ARG;
     }
 
-     g_timer_start(packet_interval);
+    g_timer_start(packet_interval);
 
-    if(!vdev->is_loop){
+    if(!vdev->is_loop)
+    {
         if(vdev->post_data_len >= vdev->total_samples/8){
             bToEnd = 1;
         }
@@ -1476,8 +1499,7 @@ static int receive_data_logic(int fd, int revents, const struct sr_dev_inst *sdi
         if(!vdev->is_loop)
         {
             vdev->post_data_len += logic.length / vdev->enabled_probes;
-            if(vdev->post_data_len >= vdev->total_samples/8)
-            {
+            if(vdev->post_data_len >= vdev->total_samples/8){
                 get_last_packet_len(&logic,vdev);
             }
         }
@@ -1515,8 +1537,7 @@ static int receive_data_logic(int fd, int revents, const struct sr_dev_inst *sdi
             {
                 vdev->logic_sel_probe_num = rand()%vdev->enabled_probes+1;
                 memset(vdev->logic_sel_probe_list,0,vdev->enabled_probes);
-                for(int i = 0; i< vdev->logic_sel_probe_num;i++)
-                {
+                for(int i = 0; i< vdev->logic_sel_probe_num;i++){
                     vdev->logic_sel_probe_list[i] = rand()%vdev->enabled_probes;
                 }
             }
@@ -1548,7 +1569,8 @@ static void free_temp_buffer(struct session_vdev *vdev)
         safe_free(pack_buf->post_buf);
 
         for (i = 0; i < SESSION_MAX_CHANNEL_COUNT; i++){
-            if (pack_buf->block_bufs[i] != NULL){
+            if (pack_buf->block_bufs[i] != NULL)
+            {
                 free(pack_buf->block_bufs[i]);
                 pack_buf->block_bufs[i] = NULL;
             }
@@ -1588,8 +1610,6 @@ static int receive_data_logic_decoder(int fd, int revents, const struct sr_dev_i
     (void)fd;
     (void)revents;
 
-   // sr_info("load demo file.");
-
     ret = 0;
     bToEnd = 0;
     packet.status = SR_PKT_OK;
@@ -1602,11 +1622,13 @@ static int receive_data_logic_decoder(int fd, int revents, const struct sr_dev_i
     chan_num = vdev->enabled_probes;
     byte_align = sdi->mode == LOGIC ? 8 : 1;
 
-    if (chan_num < 1){
+    if (chan_num < 1)
+    {
         sr_err("%s: channel count < 1.", __func__);
         return SR_ERR_ARG;
     }
-    if (chan_num > SESSION_MAX_CHANNEL_COUNT){
+    if (chan_num > SESSION_MAX_CHANNEL_COUNT)
+    {
         sr_err("%s: channel count is to big.", __func__);
         return SR_ERR_ARG;
     }
@@ -1619,13 +1641,15 @@ static int receive_data_logic_decoder(int fd, int revents, const struct sr_dev_i
         vdev->cur_block = 0;
 
         vdev->packet_buffer = malloc(sizeof(struct session_packet_buffer));
-        if (vdev->packet_buffer == NULL){
+        if (vdev->packet_buffer == NULL)
+        {
             sr_err("%s: vdev->packet_buffer malloc failed", __func__);
             return SR_ERR_MALLOC;
         }
         memset(vdev->packet_buffer, 0, sizeof(struct session_packet_buffer));
 
-        for (ch_index = 0; ch_index <= chan_num; ch_index++){
+        for (ch_index = 0; ch_index <= chan_num; ch_index++)
+        {
             vdev->packet_buffer->block_bufs[ch_index] = NULL;
             vdev->packet_buffer->block_read_positions[ch_index] = 0;
         }
@@ -1633,7 +1657,8 @@ static int receive_data_logic_decoder(int fd, int revents, const struct sr_dev_i
         vdev->packet_buffer->post_buf_len = chan_num * vdev->packet_len;
 
         vdev->packet_buffer->post_buf = malloc(vdev->packet_buffer->post_buf_len + 1);
-        if (vdev->packet_buffer->post_buf == NULL){
+        if (vdev->packet_buffer->post_buf == NULL)
+        {
             sr_err("%s: vdev->packet_buffer->post_buf malloc failed", __func__);
             return SR_ERR_MALLOC;
         }
@@ -1651,8 +1676,7 @@ static int receive_data_logic_decoder(int fd, int revents, const struct sr_dev_i
     {
         for(ch_index = 0 ;ch_index < chan_num; ch_index++)
         {
-            if(pack_buffer->block_bufs[ch_index] != NULL)
-            {
+            if(pack_buffer->block_bufs[ch_index] != NULL){
                 safe_free(pack_buffer->block_bufs[ch_index]);
             }
             pack_buffer->block_bufs[ch_index] = NULL;
@@ -1686,7 +1710,8 @@ static int receive_data_logic_decoder(int fd, int revents, const struct sr_dev_i
     {
         if (pack_buffer->block_chan_read_pos >= pack_buffer->block_data_len)
         {
-            if(vdev->cur_block >= vdev->num_blocks){
+            if(vdev->cur_block >= vdev->num_blocks)
+            {
                 bToEnd = 1;
                 break;
             }
@@ -1695,8 +1720,9 @@ static int receive_data_logic_decoder(int fd, int revents, const struct sr_dev_i
             {
                 snprintf(file_name, sizeof(file_name)-1, "L-%d/%d", ch_index, vdev->cur_block);
 
-                if (unzLocateFile(vdev->archive, file_name, 0) != UNZ_OK){
-                     sr_err("can't locate zip inner file:\"%s\"", file_name);
+                if (unzLocateFile(vdev->archive, file_name, 0) != UNZ_OK)
+                {
+                    sr_err("can't locate zip inner file:\"%s\"", file_name);
                     send_error_packet(sdi, vdev, &packet);
                     return FALSE;
                 }
@@ -1716,13 +1742,15 @@ static int receive_data_logic_decoder(int fd, int revents, const struct sr_dev_i
                     {
                         for (malloc_chan_index = 0; malloc_chan_index < chan_num; malloc_chan_index++){
                             // Release the old buffer.
-                            if (pack_buffer->block_bufs[malloc_chan_index] != NULL){
+                            if (pack_buffer->block_bufs[malloc_chan_index] != NULL)
+                            {
                                 safe_free(pack_buffer->block_bufs[malloc_chan_index]);
                                 pack_buffer->block_bufs[malloc_chan_index] = NULL;
                             }
 
                             pack_buffer->block_bufs[malloc_chan_index] = malloc(pack_buffer->block_data_len + 1);
-                            if (pack_buffer->block_bufs[malloc_chan_index] == NULL){
+                            if (pack_buffer->block_bufs[malloc_chan_index] == NULL)
+                            {
                                 sr_err("%s: block buffer malloc failed", __func__);
                                 send_error_packet(sdi, vdev, &packet);
                                 return FALSE;
@@ -1733,7 +1761,8 @@ static int receive_data_logic_decoder(int fd, int revents, const struct sr_dev_i
                 }
                 else
                 {
-                    if (pack_buffer->block_data_len != fileInfo.uncompressed_size){
+                    if (pack_buffer->block_data_len != fileInfo.uncompressed_size)
+                    {
                         sr_err("The block size is not coincident:%s", file_name);
                         send_error_packet(sdi, vdev, &packet);
                         return FALSE;
@@ -1774,16 +1803,16 @@ static int receive_data_logic_decoder(int fd, int revents, const struct sr_dev_i
         {
             read_chan_index++;
 
-            if (pack_buffer->block_read_positions[read_chan_index] == pack_buffer->block_data_len){
-               // sr_info("Block read end.");
+            if (pack_buffer->block_read_positions[read_chan_index] == pack_buffer->block_data_len)
+            {
                 if (vdev->cur_block < vdev->num_blocks){
-                   // sr_err("%s", "The block data is not align.");
                     break;
                 }
             }
 
             // Each channel's data is ready.
-            if (read_chan_index == chan_num){
+            if (read_chan_index == chan_num)
+            {
                 read_chan_index = 0;
                 pack_buffer->block_chan_read_pos += byte_align;
             }
@@ -1820,14 +1849,18 @@ static int receive_data_logic_decoder(int fd, int revents, const struct sr_dev_i
 
 int get_bit(uint64_t timebase)
 {
-    if(timebase < SR_MS(1) && timebase >= SR_US(20))
+    if(timebase < SR_MS(1) && timebase >= SR_US(20)){
         return SR_MS(1)/timebase*2;
-    else if(timebase < SR_MS(200) && timebase >= SR_MS(1))
+    }
+    else if(timebase < SR_MS(200) && timebase >= SR_MS(1)){
         return SR_MS(200)/timebase*2;
-    else if(timebase <= SR_SEC(10) && timebase > SR_MS(200))
+    }
+    else if(timebase <= SR_SEC(10) && timebase > SR_MS(200)){
         return SR_SEC(40)/timebase*2;
-    else
+    }
+    else{
         return 200;
+    }
 }
 
 static int receive_data_dso(int fd, int revents, const struct sr_dev_inst *sdi)
@@ -1869,19 +1902,20 @@ static int receive_data_dso(int fd, int revents, const struct sr_dev_inst *sdi)
     vdev = sdi->priv;
 
     assert(vdev->unit_bits > 0);
-    if(vdev->sample_generator != PATTERN_RANDOM)
-    {
+    if(vdev->sample_generator != PATTERN_RANDOM){
         assert(vdev->archive);
     }
 
     chan_num = vdev->num_probes;
     byte_align = sdi->mode == LOGIC ? 8 : 1;
 
-    if (chan_num < 1){
+    if (chan_num < 1)
+    {
         sr_err("%s: channel count < 1.", __func__);
         return SR_ERR_ARG;
     }
-    if (chan_num > SESSION_MAX_CHANNEL_COUNT){
+    if (chan_num > SESSION_MAX_CHANNEL_COUNT)
+    {
         sr_err("%s: channel count is to big.", __func__);
         return SR_ERR_ARG;
     }
@@ -1892,13 +1926,15 @@ static int receive_data_dso(int fd, int revents, const struct sr_dev_inst *sdi)
         vdev->cur_block = 0;
 
         vdev->packet_buffer = malloc(sizeof(struct session_packet_buffer));
-        if (vdev->packet_buffer == NULL){
+        if (vdev->packet_buffer == NULL)
+        {
             sr_err("%s: vdev->packet_buffer malloc failed", __func__);
             return SR_ERR_MALLOC;
         }
         memset(vdev->packet_buffer, 0, sizeof(struct session_packet_buffer));
 
-        for (ch_index = 0; ch_index <= chan_num; ch_index++){
+        for (ch_index = 0; ch_index <= chan_num; ch_index++)
+        {
             vdev->packet_buffer->block_bufs[ch_index] = NULL;
             vdev->packet_buffer->block_read_positions[ch_index] = 0;
         }
@@ -1906,7 +1942,8 @@ static int receive_data_dso(int fd, int revents, const struct sr_dev_inst *sdi)
         vdev->packet_buffer->post_buf_len = chan_num * 10000;
 
         vdev->packet_buffer->post_buf = malloc(vdev->packet_buffer->post_buf_len);
-        if (vdev->packet_buffer->post_buf == NULL){
+        if (vdev->packet_buffer->post_buf == NULL)
+        {
             sr_err("%s: vdev->packet_buffer->post_buf malloc failed", __func__);
             return SR_ERR_MALLOC;
         }
@@ -1938,8 +1975,7 @@ static int receive_data_dso(int fd, int revents, const struct sr_dev_inst *sdi)
     {
         for(ch_index = 0 ;ch_index < chan_num; ch_index++)
         {
-            if(pack_buffer->block_bufs[ch_index] != NULL)
-            {
+            if(pack_buffer->block_bufs[ch_index] != NULL){
                 safe_free(pack_buffer->block_bufs[ch_index]);
             }
             pack_buffer->block_bufs[ch_index] = NULL;
@@ -1960,10 +1996,12 @@ static int receive_data_dso(int fd, int revents, const struct sr_dev_inst *sdi)
         {
             for(uint64_t i = 0 ; i < pack_buffer->post_buf_len ;i++)
             {
-                if(i % 2 == 0)
+                if(i % 2 == 0){
                     *(uint8_t*)(pack_buffer->post_buf + i) = DSO_RANDOM_DATA;
-                else
+                } 
+                else{
                     *(uint8_t*)(pack_buffer->post_buf + i) = *(uint8_t*)(pack_buffer->post_buf + i -1);
+                }
             }
             pack_buffer->post_len = pack_buffer->post_buf_len;
         }
@@ -1984,7 +2022,8 @@ static int receive_data_dso(int fd, int revents, const struct sr_dev_inst *sdi)
                         {
                             snprintf(file_name, sizeof(file_name)-1, "O-%d/0", ch_index);
 
-                            if (unzLocateFile(vdev->archive, file_name, 0) != UNZ_OK){
+                            if (unzLocateFile(vdev->archive, file_name, 0) != UNZ_OK)
+                            {
                                 sr_err("cant't locate zip inner file:\"%s\"", file_name);
                                 send_error_packet(sdi, vdev, &packet);
                                 return FALSE;
@@ -2005,13 +2044,15 @@ static int receive_data_dso(int fd, int revents, const struct sr_dev_inst *sdi)
                                 {
                                     for (malloc_chan_index = 0; malloc_chan_index < chan_num; malloc_chan_index++){
                                         // Release the old buffer.
-                                        if (pack_buffer->block_bufs[malloc_chan_index] != NULL){
+                                        if (pack_buffer->block_bufs[malloc_chan_index] != NULL)
+                                        {
                                             safe_free(pack_buffer->block_bufs[malloc_chan_index]);
                                             pack_buffer->block_bufs[malloc_chan_index] = NULL;
                                         }
 
                                         pack_buffer->block_bufs[malloc_chan_index] = malloc(pack_buffer->block_data_len + 1);
-                                        if (pack_buffer->block_bufs[malloc_chan_index] == NULL){
+                                        if (pack_buffer->block_bufs[malloc_chan_index] == NULL)
+                                        {
                                             sr_err("%s: block buffer malloc failed", __func__);
                                             send_error_packet(sdi, vdev, &packet);
                                             return FALSE;
@@ -2022,7 +2063,8 @@ static int receive_data_dso(int fd, int revents, const struct sr_dev_inst *sdi)
                             }
                             else
                             {
-                                if (pack_buffer->block_data_len != fileInfo.uncompressed_size){
+                                if (pack_buffer->block_data_len != fileInfo.uncompressed_size)
+                                {
                                     sr_err("The block size is not coincident:%s", file_name);
                                     send_error_packet(sdi, vdev, &packet);
                                     return FALSE;
@@ -2064,15 +2106,14 @@ static int receive_data_dso(int fd, int revents, const struct sr_dev_inst *sdi)
                         read_chan_index++;
 
                         if (pack_buffer->block_read_positions[read_chan_index] == pack_buffer->block_data_len){
-                           // sr_info("Block read end.");
                             if (vdev->cur_block < vdev->num_blocks){
-                                //sr_err("%s", "The block data is not align.");
                                 break;
                             }
                         }
 
                         // Each channel's data is ready.
-                        if (read_chan_index == chan_num){
+                        if (read_chan_index == chan_num)
+                        {
                             read_chan_index = 0;
                             pack_buffer->block_chan_read_pos += byte_align;
                         }
@@ -2095,15 +2136,20 @@ static int receive_data_dso(int fd, int revents, const struct sr_dev_inst *sdi)
             uint16_t high_gate,low_gate;
             for(uint64_t i = 0 ; i < pack_buffer->post_buf_len; i++)
             {
-                if(i % 2 == 0)
+                if(i % 2 == 0){
                     probe = g_slist_nth(sdi->channels, 0)->data;
-                else
+                }
+                else{
                     probe = g_slist_nth(sdi->channels, 1)->data;
+                }
+                    
                 if(!probe->enabled){
-                    if(i % 2 == 0)
+                    if(i % 2 == 0){
                         probe = g_slist_nth(sdi->channels, 1)->data;
-                    else
+                    }
+                    else{
                         probe = g_slist_nth(sdi->channels, 0)->data;
+                    }  
                 }
                 vdiv = probe->vdiv;
 
@@ -2145,12 +2191,16 @@ static int receive_data_dso(int fd, int revents, const struct sr_dev_inst *sdi)
                     high_gate =  DSO_EXPAND_MID_VAL(SR_mV(200)/vdiv);
                     high_gate -= probe->offset;
                     low_gate = high_gate + DSO_LIMIT;
-                    if(tem <=high_gate)
+                    if(tem <=high_gate){
                         tem = DSO_MAX_VAL;
-                    else if(tem >=low_gate)
+                    }
+                    else if(tem >=low_gate){
                         tem = DSO_MIN_VAL;
-                    else
+                    }
+                    else{
                         tem-= high_gate;
+                    }
+                        
                     *((uint8_t*)pack_buffer->post_buf + i) = (uint8_t)tem;
                 }
             }
@@ -2170,8 +2220,9 @@ static int receive_data_dso(int fd, int revents, const struct sr_dev_inst *sdi)
         {
             gdouble percent = total_time_elapsed / total_time;
             int buf_len = percent* DSO_PACKET_LEN;
-            if(buf_len %2 != 0)
+            if(buf_len %2 != 0){
                 buf_len +=1;
+            }
             pack_buffer->post_len = buf_len;
         }
         else
@@ -2226,13 +2277,14 @@ static int receive_data_dso(int fd, int revents, const struct sr_dev_inst *sdi)
         dso.unit = SR_UNIT_VOLT;
         dso.mqflags = SR_MQFLAG_AC;
         dso.num_samples = pack_buffer->post_len / chan_num;
-        if (vdev->instant)
+        if (vdev->instant){
             dso.data = pack_buffer->post_buf+vdev->post_data_len;
-        else
+        }
+        else{
             dso.data = pack_buffer->post_buf;
+        }
         ds_data_forward(sdi, &packet);
-        if (vdev->instant)
-        {
+        if (vdev->instant){
             instant_delay_time(vdev);
         }
         else
@@ -2318,8 +2370,7 @@ static int receive_data_analog(int fd, int revents, const struct sr_dev_inst *sd
             }
 
             uint64_t total_buf_len = ANALOG_CYCLE_RATIO * vdev->total_samples * ANALOG_PROBE_NUM;
-            if(total_buf_len % ANALOG_DATA_LEN_PER_CYCLE != 0)
-            {
+            if(total_buf_len % ANALOG_DATA_LEN_PER_CYCLE != 0){
                 total_buf_len = total_buf_len / ANALOG_DATA_LEN_PER_CYCLE * ANALOG_DATA_LEN_PER_CYCLE;
             }
 
@@ -2346,10 +2397,12 @@ static int receive_data_analog(int fd, int revents, const struct sr_dev_inst *sd
 
             for(int i = 0 ; i < ANALOG_DATA_LEN_PER_CYCLE;i++)
             {
-                if(i % 2 == 0)
+                if(i % 2 == 0){
                     vdiv = p0_vdiv;
-                else
+                }
+                else{
                     vdiv = p1_vdiv;
+                }
                 tem = 0;
 
                 uint8_t temp_value = *((uint8_t*)analog_data + i);
@@ -2357,30 +2410,32 @@ static int receive_data_analog(int fd, int revents, const struct sr_dev_inst *sd
                 if(temp_value > ANALOG_MID_VAL){
                     val = temp_value - ANALOG_MID_VAL;
                     tem = val * ANALOG_DEFAULT_VDIV / vdiv;
-                    if(tem >= ANALOG_MID_VAL)
+                    if(tem >= ANALOG_MID_VAL){
                         temp_value = ANALOG_MIN_VAL;
-                    else
+                    }
+                    else{
                         temp_value = ANALOG_MID_VAL + tem;
+                    }
                 }
                 else if(temp_value < ANALOG_MID_VAL)
                 {
                     val = ANALOG_MID_VAL - temp_value;
                     tem =  val * ANALOG_DEFAULT_VDIV / vdiv;
 
-                    if(tem >= ANALOG_MID_VAL)
+                    if(tem >= ANALOG_MID_VAL){
                         temp_value = ANALOG_MAX_VAL;
-                    else
+                    }
+                    else{
                         temp_value = ANALOG_MID_VAL - tem;
+                    }
                 }
 
                 for(uint64_t j = 0 ; j <per_block_after_expend ;j++)
                 {
-                    if(i % 2 == 0)
-                    {
+                    if(i % 2 == 0){
                         cur_l = i * per_block_after_expend + j * 2;
                     }
-                    else
-                    {
+                    else{
                         cur_l = 1 + (i - 1) * per_block_after_expend + j * 2;
                     }
                     memset(vdev->data_buf + cur_l,temp_value,1);
@@ -2391,7 +2446,8 @@ static int receive_data_analog(int fd, int revents, const struct sr_dev_inst *sd
         vdev->load_data = FALSE;
     }
 
-    if(vdev->analog_post_buf_len != vdev->packet_len){
+    if(vdev->analog_post_buf_len != vdev->packet_len)
+    {
         safe_free(vdev->analog_post_buf);
         vdev->analog_post_buf = malloc(vdev->packet_len);
         if(vdev->analog_post_buf == NULL)
@@ -2448,7 +2504,6 @@ static int close_archive(struct session_vdev *vdev)
     {
         assert(vdev->archive);
 
-        // close current inner file
         if (vdev->capfile)
         {
             unzCloseCurrentFile(vdev->archive);
@@ -2456,8 +2511,7 @@ static int close_archive(struct session_vdev *vdev)
         }
 
         int ret = unzClose(vdev->archive);
-        if (ret != UNZ_OK)
-        {
+        if (ret != UNZ_OK){
             sr_err("close zip archive error!");
         }
 
@@ -2478,20 +2532,19 @@ static int load_virtual_device_session(struct sr_dev_inst *sdi)
     int i, j;
     uint64_t tmp_u64;
     char **sections, **keys, *metafile, *val;
-    int mode = LOGIC;
     int channel_type = SR_CHANNEL_LOGIC;
     struct session_vdev * vdev = sdi->priv;
 
     assert(sdi);
-    if (vdev->sample_generator != PATTERN_RANDOM)
-    {
+    if (vdev->sample_generator != PATTERN_RANDOM){
         assert(sdi->path);
     }
         
     switch (sdi->mode)
     {
     case LOGIC:
-        if(vdev->sample_generator != PATTERN_RANDOM){
+        if(vdev->sample_generator != PATTERN_RANDOM)
+        {
             archive = unzOpen64(sdi->path);
             if (NULL == archive)
             {
@@ -2553,27 +2606,17 @@ static int load_virtual_device_session(struct sr_dev_inst *sdi)
                     {
                         val = g_key_file_get_string(kf, sections[i], keys[j], NULL);
 
-                        if (!strcmp(keys[j], "device mode"))
-                        {
-                            mode = strtoull(val, NULL, 10);
-                        }
-                        else if (!strcmp(keys[j], "samplerate"))
+                        if (!strcmp(keys[j], "samplerate"))
                         {
                             sr_parse_sizestring(val, &tmp_u64);
                             vdev->samplerate = tmp_u64;
-                            if(sdi->mode == LOGIC && vdev->sample_generator >PATTERN_RANDOM)
-                            {
-                                samplerates_file[0] = vdev->samplerate;
-                            }
+                            samplerates_file[0] = vdev->samplerate;
                         }
                         else if (!strcmp(keys[j], "total samples"))
                         {
                             tmp_u64 = strtoull(val, NULL, 10);
                             vdev->total_samples = tmp_u64;
-                            if(sdi->mode == LOGIC && vdev->sample_generator >PATTERN_RANDOM)
-                            {
-                                samplecounts_file[0] = vdev->total_samples;
-                            }
+                            samplecounts_file[0] = vdev->total_samples;
                         }
                         else if (!strcmp(keys[j], "total blocks"))
                         {
@@ -2589,8 +2632,7 @@ static int load_virtual_device_session(struct sr_dev_inst *sdi)
                         else if (!strncmp(keys[j], "probe", 5))
                         {
                             tmp_u64 = strtoul(keys[j] + 5, NULL, 10);
-                            channel_type = (mode == DSO) ? SR_CHANNEL_DSO : (mode == ANALOG) ? SR_CHANNEL_ANALOG
-                                                                                            : SR_CHANNEL_LOGIC;
+                            channel_type = SR_CHANNEL_LOGIC;
                             if (!(probe = sr_channel_new(tmp_u64, channel_type, TRUE, val)))
                             {
                                 sr_err("%s: create channel failed", __func__);
@@ -2605,7 +2647,6 @@ static int load_virtual_device_session(struct sr_dev_inst *sdi)
                     g_strfreev(keys);
                 }
             }
-
             g_strfreev(sections);
             g_key_file_free(kf);
             safe_free(metafile);
@@ -2703,17 +2744,17 @@ int dso_wavelength_updata(struct session_vdev *vdev)
 
     int l = 0;
     char* pattern_mode = demo_pattern_array[DSO].patterns[vdev->sample_generator];
+    const uint8_t wave_max_val = 78;
 
     if(vdev->sample_generator!= PATTERN_RANDOM)
     {
-        if(!strcmp(pattern_mode,"triangle"))
-            l = 106;
-        else if(strcmp(pattern_mode,"square"))
+        if(strcmp(pattern_mode,"square"))
         {
             for(int i = 0 ; i < DSO_PACKET_LEN/2 ; i += 2)
             {
                 tmp_val = *((uint8_t*)pack_buffer->post_buf + i);
-                if(tmp_val == 78){
+                if(tmp_val == wave_max_val)
+                {
                     l = i;
                     break;
                 }
@@ -2727,62 +2768,38 @@ int dso_wavelength_updata(struct session_vdev *vdev)
             sr_err("%s: tmp_buf malloc failed", __func__);
             return SR_ERR_MALLOC;
         }
-        if(!strcmp(pattern_mode,"sawtooth"))
+
+        for(int i = 0 ; i < bit ; i++)
         {
-            for(int i = 0 ; i< bit;i++)
+            if(i%2 == 0)
             {
-                if(i%2 == 0)
-                {
-                    if(i == bit -2)
-                    {
-                        index = 198;
-                    }
-                    else
-                    {
-                        index = i * 100 / (bit / 2);
-                    }
+                if(!strcmp(pattern_mode,"sawtooth") && i == bit - 2){
+                    index = DSO_WAVE_PERIOD_LEN-2;
                 }
-                else
-                {
-                    if(i == bit -1)
-                    {
-                        index = 199;
-                    }
-                    else
-                    {
-                        index = (i-1) * 100 / (bit / 2) + 1;
-                    }
-
+                else if(strcmp(pattern_mode,"sawtooth") && bit == 10){
+                    index = i * 16;
                 }
-                *((uint8_t*)tmp_buf+ i) = *((uint8_t*)pack_buffer->post_buf + index + l);
+                else{
+                    index = i * DSO_WAVE_PERIOD_LEN_PER_PROBE / (bit / 2);
+                }
             }
-        }
-        else {
-            for(int i = 0 ; i < bit ; i++)
+            else
             {
-                if(i%2 == 0)
-                {
-                    if(bit == 10)
-                        index = i * 16;
-                    else
-                        index = i * 100 / (bit / 2);
+                if(!strcmp(pattern_mode,"sawtooth") && i == bit - 1){
+                    index = DSO_WAVE_PERIOD_LEN-1;
                 }
-                else
-                {
-
-                    if(bit == 10)
-                        index = (i-1) * 16 + 1;
-                    else
-                        index = (i-1) * 100 / (bit / 2) + 1;
+                else if(strcmp(pattern_mode,"sawtooth") && bit == 10){
+                    index = (i-1) * 16 + 1;
                 }
-
-                *((uint8_t*)tmp_buf+ i) = *((uint8_t*)pack_buffer->post_buf + index + l);
+                else{
+                    index = (i-1) * DSO_WAVE_PERIOD_LEN_PER_PROBE / (bit / 2) + 1;
+                }
             }
+            
+            *((uint8_t*)tmp_buf+ i) = *((uint8_t*)pack_buffer->post_buf + index + l);
         }
 
-
-        for(int i = 0 ; i < DSO_PACKET_LEN/bit ; i++)
-        {
+        for(int i = 0 ; i < DSO_PACKET_LEN/bit ; i++){
             memcpy(pack_buffer->post_buf+i*bit,tmp_buf,bit);
         }
 
