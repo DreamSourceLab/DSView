@@ -44,7 +44,10 @@
 #include <QJsonArray>
 #include <functional>
 
+//include with qt5
+#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
 #include <QDesktopWidget>
+#endif
 
 #include "mainwindow.h"
 
@@ -537,25 +540,27 @@ namespace pv
         (void)x;
         (void)y;
 
-        QDesktopWidget *desktop = QApplication::desktop();
-        int curMonitor = desktop->screenNumber(this);
-
 #ifdef _WIN32 
     #if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
-        QPixmap pixmap = QGuiApplication::primaryScreen()->grabWindow(desktop->winId(), x, y, w, h);
+        QPixmap pixmap = QGuiApplication::primaryScreen()->grabWindow(QApplication::desktop->winId(), x, y, w, h);
     #else
         QPixmap pixmap = QPixmap::grabWidget(parentWidget());
     #endif
-
 #elif __APPLE__ 
         x += MainFrame::Margin;
         y += MainFrame::Margin;
         w -= MainFrame::Margin * 2;
         h -= MainFrame::Margin * 2;
-        QPixmap pixmap = QGuiApplication::screens().at(curMonitor)->grabWindow(winId(), x, y, w, h);
 
+    #if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
+        QPixmap pixmap = QGuiApplication::primaryScreen()->grabWindow(winId(), x, y, w, h);
+    #else
+        QDesktopWidget *desktop = QApplication::desktop();
+        int curMonitor = desktop->screenNumber(this);
+        QPixmap pixmap = QGuiApplication::screens().at(curMonitor)->grabWindow(winId(), x, y, w, h);
+    #endif       
 #else       
-        QPixmap pixmap = QGuiApplication::screens().at(curMonitor)->grabWindow(winId());
+        QPixmap pixmap = QGuiApplication::primaryScreen()->grabWindow(winId());
 #endif
 
         QString format = "png";

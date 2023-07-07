@@ -34,9 +34,16 @@
 #include <QInputMethodEvent>
 #include <QApplication>
 #include <math.h>
-#include <libsigrok.h> 
-#include <QRegExp>
-#include <QRegExpValidator>
+#include <libsigrok.h>
+
+#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
+    #include <QRegularExpression>
+    #include <QRegularExpressionValidator>
+#else
+    #include <QRegExp>
+    #include <QRegExpValidator>
+#endif
+
 #include "../config/appconfig.h"
 #include "../deviceagent.h"
 #include "../view/logicsignal.h"
