@@ -1,3 +1,31 @@
+v1.3.0-RC10 -- (2023-07-08)
+----------
+  --common
+  * Improve device management, decouple it from wave acquisition and display
+  * Add support for dynamically switching font sizes
+  * Modify the multilingual framework to support language extensions
+  * Modify the format of session files
+  * Modify the loading and display of data files
+  * Optimize the switching between multiple devices
+  * Add a mandatory prompt to save data when switching
+  * Update demo device
+  * Added the ability to view and clear logs
+  
+  --for logic analyzer
+  * Add real-time display support for stream mode
+  * Add scrolling (loop) mode to continuously collect and display in real-time
+  * Update repeat mode to maintain previous waveform before switching
+  * Update the display and search of waveform edges
+  * Add and fix decoders (e.g., can-fd, mipi-rffe, UFCS, etc.)
+  * Support ordering of decoders and waveform channels, and remember the order
+  * Support exporting multiple column decoding results to the same CSV file
+  * Support mapping and saving of decoder names and decoding channel names
+  * Add Chinese translation for decoder options
+  
+  --for oscilloscope
+  * Update the data storage method for oscilloscope channels
+  * Fix an issue with file saving when using single channel
+
 v1.2.2 -- (2023-01-11)
 ----------
   --common
