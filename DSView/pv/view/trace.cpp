@@ -61,6 +61,7 @@ Trace::Trace(QString name, uint16_t index, int type) :
 {
     _index_list.push_back(index);
     _view_index = -1;
+    _selected = false;
 }
 
 Trace::Trace(QString name, std::list<int> index_list, int type, int sec_index) :
@@ -74,6 +75,7 @@ Trace::Trace(QString name, std::list<int> index_list, int type, int sec_index) :
     _typeWidth(SquareNum)
 {
     _view_index = -1;
+    _selected = false;
 }
 
 Trace::Trace(const Trace &t) :
@@ -90,6 +92,7 @@ Trace::Trace(const Trace &t) :
     _text_size(t._text_size)
 {
     _view_index = -1;
+    _selected = false;
 }
 
 
@@ -345,18 +348,6 @@ QRect Trace::get_view_rect()
 QColor Trace::get_text_colour()
 {
 	return (_colour.lightness() > 64) ? Qt::black : Qt::white;
-}
-
-void Trace::on_text_changed(const QString &text)
-{
-	set_name(text);
-	text_changed();
-}
-
-void Trace::on_colour_changed(const QColor &colour)
-{
-	set_colour(colour);
-	colour_changed();
 }
 
 int Trace::rows_size()

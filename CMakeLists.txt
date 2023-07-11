@@ -277,7 +277,6 @@ set(DSView_SOURCES
     DSView/pv/view/dsldial.cpp
     DSView/pv/dock/dsotriggerdock.cpp
     DSView/pv/view/trace.cpp
-    DSView/pv/view/selectableitem.cpp
     DSView/pv/data/decoderstack.cpp
     DSView/pv/data/decode/rowdata.cpp
     DSView/pv/data/decode/row.cpp
@@ -379,7 +378,6 @@ set(DSView_HEADERS
     DSView/pv/dialogs/search.h
     DSView/pv/dock/dsotriggerdock.h
     DSView/pv/view/trace.h
-    DSView/pv/view/selectableitem.h
     DSView/pv/data/decoderstack.h
     DSView/pv/view/decodetrace.h
     DSView/pv/widgets/fakelineedit.h

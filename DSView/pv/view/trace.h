@@ -28,10 +28,8 @@
 #include <QPen>
 #include <QRect>
 #include <QString>
-
+#include <QObject>
 #include <stdint.h>
-
-#include "selectableitem.h"
 #include "dsldial.h"
 
 class QFormLayout;
@@ -43,7 +41,7 @@ class View;
 class Viewport;
 
 //base class
-class Trace : public SelectableItem
+class Trace : public QObject
 {
 	Q_OBJECT
 
@@ -295,6 +293,14 @@ public:
         return _view_index;
     }
 
+    inline bool selected(){
+        return _selected;
+    }
+
+    inline void select(bool flag){
+        _selected = flag;
+    }
+
 protected:
 
 	/**
@@ -322,9 +328,7 @@ private:
     void compute_text_size(QPainter &p);
 
 private slots:
-	void on_text_changed(const QString &text);
-	void on_colour_changed(const QColor &colour);
-    virtual void resize();
+    void resize();
 
 signals:
 	void visibility_changed();
@@ -347,6 +351,7 @@ protected:
     int _view_index;
 
     QSizeF _text_size;  
+    bool _selected;
 };
 
 } // namespace view

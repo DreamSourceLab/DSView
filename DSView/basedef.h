@@ -1,9 +1,9 @@
+
 /*
  * This file is part of the DSView project.
  * DSView is based on PulseView.
- *
- * Copyright (C) 2013 Joel Holdsworth <joel@airwebreathe.org.uk>
- * Copyright (C) 2014 DreamSourceLab <support@dreamsourcelab.com>
+ * 
+ * Copyright (C) 2023 DreamSourceLab <support@dreamsourcelab.com>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -20,38 +20,17 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
  */
 
-#include "selectableitem.h"
- 
-#include <QMenu>
-#include <QPalette>
-#include <QApplication>
+#ifndef DSV_BASE_DEF_H
+#define DSV_BASE_DEF_H
 
-namespace pv {
-namespace view {
+#ifdef _WIN32
+    #define DSV_EXPORT     __declspec(dllexport)
+    #define DSV_IMPORT     __declspec(dllimport)
+    #define DSV_HIDDEN
+#else
+    #define DSV_EXPORT     __attribute__((visibility("default")))
+    #define DSV_IMPORT     __attribute__((visibility("default")))
+    #define DSV_HIDDEN     __attribute__((visibility("hidden")))
+#endif
 
-const int SelectableItem::HighlightRadius = 6;
-
-SelectableItem::SelectableItem() :
-    _selected(false)
-{
-}
-
-bool SelectableItem::selected()
-{
-	return _selected;
-}
-
-void SelectableItem::select(bool select)
-{
-	_selected = select;
-}
-
-QPen SelectableItem::highlight_pen()
-{
-	return QPen(QApplication::palette().brush(
-		QPalette::Highlight), HighlightRadius,
-		Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin);
-}
-
-} // namespace view
-} // namespace pv
+#endif
