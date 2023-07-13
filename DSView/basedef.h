@@ -33,4 +33,30 @@
     #define DSV_HIDDEN     __attribute__((visibility("hidden")))
 #endif
 
+
+#define countof(x) (sizeof(x)/sizeof(x[0]))
+
+#define begin_element(x) (&x[0])
+#define end_element(x) (&x[countof(x)])
+
+enum View_type {
+    TIME_VIEW,
+    FFT_VIEW,
+    ALL_VIEW
+};
+
+#define DESTROY_OBJECT(p) if((p)){delete (p); p = NULL;} 
+#define DESTROY_QT_OBJECT(p) if((p)){((p))->deleteLater(); p = NULL;}
+#define DESTROY_QT_LATER(p) ((p))->deleteLater();
+
+#define RELEASE_ARRAY(a)   for (auto ptr : (a)){delete ptr;} (a).clear();
+
+#define ABS_VAL(x) ((x) > 0 ? (x) : -(x))
+
+#define ds_max(a,b) ((a) > (b) ? (a) : (b))
+#define ds_min(a,b) ((a) < (b) ? (a) : (b))
+
+#define SESSION_FORMAT_VERSION      3
+#define HEADER_FORMAT_VERSION       3
+
 #endif

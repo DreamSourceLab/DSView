@@ -30,7 +30,7 @@
 #include "dsapplication.h"
 #include "mystyle.h" 
 #include "pv/mainframe.h"
-#include "pv/config/appconfig.h"
+#include "config/appconfig.h"
 #include "config.h"
 #include "pv/appcontrol.h"
 #include "pv/log.h" 
