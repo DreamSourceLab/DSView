@@ -149,7 +149,8 @@ private:
     void draw_annotation(const pv::data::decode::Annotation &a, QPainter &p,
         QColor text_colour, int text_height, int left, int right,
         double samples_per_pixel, double pixels_offset, int y,
-        size_t base_colour, double min_annWidth, QColor fore, QColor back);
+        size_t base_colour, double min_annWidth, QColor fore, QColor back, double &last_x);
+
     void draw_nodetail(QPainter &p,
         int text_height, int left, int right, int y,
         size_t base_colour, QColor fore, QColor back);

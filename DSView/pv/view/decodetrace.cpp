@@ -32,9 +32,7 @@
 #include <QDialogButtonBox>
 #include <QScrollArea>
 #include <QApplication>
-
 #include "decodetrace.h"
-
 #include "../sigsession.h"
 #include "../data/decoderstack.h"
 #include "../data/decode/decoder.h"
@@ -53,6 +51,7 @@
 #include "../dialogs/decoderoptionsdlg.h"
 #include "../ui/langresource.h"
 #include "../config/appconfig.h"
+#include "../log.h"
 
 using namespace boost;
 using namespace std;
@@ -280,7 +279,7 @@ void DecodeTrace::paint_mid(QPainter &p, int left, int right, QColor fore, QColo
                                 _decoder_stack->get_max_annotation(row);
                         const double max_annWidth = max_annotation / samples_per_pixel;
                         
-                        if ((max_annWidth > 100) ||
+                        if ((max_annWidth > 20) ||
                             (max_annWidth > 10 && min_annWidth > 1) ||
                             (max_annWidth == 0 && samples_per_pixel < 10)) {
                             std::vector<Annotation*> annotations;
@@ -288,15 +287,20 @@ void DecodeTrace::paint_mid(QPainter &p, int left, int right, QColor fore, QColo
                                 start_sample, end_sample);
 
                             if (!annotations.empty()) {
-                                for(Annotation *a : annotations)
+                                double last_x = -1;
+
+                                for(Annotation *a : annotations){
                                     draw_annotation(*a, p, get_text_colour(),
                                         annotation_height, left, right,
                                         samples_per_pixel, pixels_offset, y,
-                                        0, min_annWidth, fore, back);
+                                        0, min_annWidth, fore, back, last_x);
+                                }
                             }
-                        } else {
+                        }
+                        else {
                             draw_nodetail(p, annotation_height, left, right, y, 0, fore, back);
                         }
+
                         y += annotation_height;
                         _cur_row_headings.push_back(row.title());
                     }
@@ -324,7 +328,7 @@ void DecodeTrace::paint_fore(QPainter &p, int left, int right, QColor fore, QCol
 void DecodeTrace::draw_annotation(const pv::data::decode::Annotation &a,
     QPainter &p, QColor text_color, int h, int left, int right,
     double samples_per_pixel, double pixels_offset, int y,
-    size_t base_colour, double min_annWidth, QColor fore, QColor back)
+    size_t base_colour, double min_annWidth, QColor fore, QColor back, double &last_x)
 {
     const double start = max(a.start_sample() / samples_per_pixel -
         pixels_offset, (double)left);
@@ -337,6 +341,11 @@ void DecodeTrace::draw_annotation(const pv::data::decode::Annotation &a,
 
 	if (start > right + DrawPadding || end < left - DrawPadding)
 		return;
+
+    if (end - last_x <= 0.5){
+        return;
+    }
+    last_x = end;
 
     if (_decoder_stack->get_mark_index() == (int64_t)(a.start_sample()+ a.end_sample())/2) {
         p.setPen(View::Blue);
