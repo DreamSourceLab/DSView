@@ -126,10 +126,6 @@ bool RowData::push_annotation(Annotation *a)
             _min_annotation = a->end_sample() - a->start_sample();
         }
         else{
-            if (a->end_sample() - a->start_sample() == 2){
-                int bbb = 0;
-                bbb++;
-            }
             _min_annotation = min(_min_annotation, a->end_sample() - a->start_sample());
         }
       }
