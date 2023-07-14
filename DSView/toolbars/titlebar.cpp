@@ -36,7 +36,7 @@
 #include "../dsvdef.h"
 #include "../ui/fn.h"
 
-namespace pv {
+namespace dsv {
 namespace toolbars {
 
 TitleBar::TitleBar(bool top, QWidget *parent, bool hasClose) :
@@ -244,4 +244,4 @@ void TitleBar::update_font()
 }
  
 } // namespace toolbars
-} // namespace pv
+} // namespace dsv

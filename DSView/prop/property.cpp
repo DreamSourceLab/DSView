@@ -22,7 +22,7 @@
 
 #include "property.h"
 
-namespace pv {
+namespace dsv {
 namespace prop {
 
 Property::Property(QString name, QString label, Getter getter, Setter setter) :

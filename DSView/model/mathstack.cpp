@@ -30,7 +30,7 @@
 using namespace boost;
 using namespace std;
 
-namespace pv {
+namespace dsv {
 namespace data {
 
 const int MathStack::EnvelopeScalePower = 8;
@@ -473,4 +473,4 @@ void MathStack::append_to_envelope_level(bool header)
 }
 
 } // namespace data
-} // namespace pv
+} // namespace dsv

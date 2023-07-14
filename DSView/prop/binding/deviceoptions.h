@@ -33,7 +33,7 @@
 
 class DeviceAgent;
 
-namespace pv {
+namespace dsv {
 
 namespace prop {
 namespace binding {

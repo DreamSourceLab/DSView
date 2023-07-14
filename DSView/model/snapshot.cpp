@@ -26,7 +26,7 @@
 #include <stdlib.h>
 #include <string.h>
  
-namespace pv {
+namespace dsv {
 namespace data {
 
 Snapshot::Snapshot(int unit_size, uint64_t total_sample_count, unsigned int channel_num)
@@ -119,4 +119,4 @@ void Snapshot::set_samplerate(double samplerate)
 }
 
 } // namespace data
-} // namespace pv
+} // namespace dsv

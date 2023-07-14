@@ -37,7 +37,7 @@
 using namespace boost;
 using namespace std;
  
-namespace pv {
+namespace dsv {
 namespace prop {
 namespace binding {
 

@@ -26,7 +26,7 @@
 
 class QLineEdit;
 
-namespace pv {
+namespace dsv {
 namespace prop {
 
 class String : public Property

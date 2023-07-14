@@ -33,7 +33,7 @@
 #include "../sigsession.h"
 #include "../interface/icallbacks.h"
 
-namespace pv {
+namespace dsv {
 namespace toolbars {
 
 //The tool button for help,is a ui class,referenced by MainWindow
@@ -103,6 +103,6 @@ private:
 };
 
 } // namespace toolbars
-} // namespace pv
+} // namespace dsv
 
 #endif // DSVIEW_PV_TOOLBARS_LOGOBAR_H

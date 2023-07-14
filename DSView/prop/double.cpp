@@ -29,7 +29,7 @@
 using namespace std;
 using namespace boost;
 
-namespace pv {
+namespace dsv {
 namespace prop {
 
 Double::Double(QString name, QString label,

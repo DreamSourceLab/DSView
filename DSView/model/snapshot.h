@@ -26,7 +26,7 @@
 #include <mutex>
 #include <vector>
 
-namespace pv {
+namespace dsv {
 namespace data {
 
 class Snapshot
@@ -110,6 +110,6 @@ protected:
 };
 
 } // namespace data
-} // namespace pv
+} // namespace dsv
 
 #endif // DSVIEW_PV_DATA_SNAPSHOT_H

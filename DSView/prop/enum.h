@@ -30,7 +30,7 @@
 
 class DsComboBox;
 
-namespace pv {
+namespace dsv {
 namespace prop {
 
 class Enum : public Property

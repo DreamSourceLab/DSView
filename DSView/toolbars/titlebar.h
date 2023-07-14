@@ -29,7 +29,7 @@ class QToolButton;
 class QHBoxLayout;
 class QLabel;
 
-namespace pv {
+namespace dsv {
 namespace toolbars {
 
 class TitleBar : public QWidget, public IFontForm

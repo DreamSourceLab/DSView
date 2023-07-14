@@ -41,7 +41,7 @@ class Pulses;
 class LongPulses;
 }
 
-namespace pv {
+namespace dsv {
 namespace data {
 
 class LogicSnapshot : public Snapshot
@@ -261,6 +261,6 @@ private:
 };
 
 } // namespace data
-} // namespace pv
+} // namespace dsv
 
 #endif // DSVIEW_PV_DATA_LOGICSNAPSHOT_H

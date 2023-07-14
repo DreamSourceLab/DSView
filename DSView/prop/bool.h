@@ -27,7 +27,7 @@
 
 class QCheckBox;
 
-namespace pv {
+namespace dsv {
 namespace prop {
 
 class Bool : public Property

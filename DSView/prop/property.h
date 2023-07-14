@@ -32,7 +32,7 @@
 
 class QWidget;
 
-namespace pv {
+namespace dsv {
 namespace prop {
 
 class Property : public QObject

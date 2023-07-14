@@ -31,7 +31,7 @@
 
 class QDoubleSpinBox;
 
-namespace pv {
+namespace dsv {
 namespace prop {
 
 class Double : public Property

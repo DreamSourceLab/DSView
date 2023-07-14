@@ -27,7 +27,7 @@
 #include <stdint.h>
 #include <mutex>
 
-namespace pv {
+namespace dsv {
 namespace data {
 
 class SignalData
@@ -50,6 +50,6 @@ protected:
 };
 
 } // namespace data
-} // namespace pv
+} // namespace dsv
 
 #endif // DSVIEW_PV_DATA_SIGNALDATA_H

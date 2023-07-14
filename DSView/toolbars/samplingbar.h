@@ -42,7 +42,7 @@ struct ds_device_info;
 
 class DeviceAgent;
 
-namespace pv
+namespace dsv
 {  
     class SigSession;
 
@@ -172,6 +172,6 @@ namespace pv
         };
 
     } // namespace toolbars
-} // namespace pv
+} // namespace dsv
 
 #endif // DSVIEW_PV_TOOLBARS_SAMPLINGBAR_H

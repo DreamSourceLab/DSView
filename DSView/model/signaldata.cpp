@@ -24,7 +24,7 @@
 
 #include "signaldata.h"
 
-namespace pv {
+namespace dsv {
 namespace data {
 
 SignalData::SignalData() :
@@ -42,4 +42,4 @@ void SignalData::set_samplerate(double samplerate)
 }
 
 } // namespace data
-} // namespace pv
+} // namespace dsv

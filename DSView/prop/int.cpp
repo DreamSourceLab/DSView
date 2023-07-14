@@ -46,7 +46,7 @@ using namespace std;
 //#define UINT32_MAX  0xffffffff
 //#define UINT64_MAX  0xffffffffffffffff
 
-namespace pv {
+namespace dsv {
 namespace prop {
 
 Int::Int(QString name, QString label,

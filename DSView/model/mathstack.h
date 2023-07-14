@@ -32,7 +32,7 @@
 #include <QObject>
 #include <QString>
 
-namespace pv {
+namespace dsv {
 
 class SigSession;
 
@@ -148,6 +148,6 @@ private:
 };
 
 } // namespace data
-} // namespace pv
+} // namespace dsv
 
 #endif // DSVIEW_PV_DATA_MATHSTACK_H

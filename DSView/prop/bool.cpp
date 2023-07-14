@@ -29,7 +29,7 @@
 using namespace std;
 using namespace boost;
 
-namespace pv {
+namespace dsv {
 namespace prop {
 
 Bool::Bool(QString name, QString label, Getter getter, Setter setter) :

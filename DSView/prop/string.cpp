@@ -26,7 +26,7 @@
 
 #include "string.h"
 
-namespace pv {
+namespace dsv {
 namespace prop {
 
 String::String(QString name, QString label,

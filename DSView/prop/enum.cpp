@@ -30,7 +30,7 @@
 using namespace boost;
 using namespace std;
 
-namespace pv {
+namespace dsv {
 namespace prop {
 
 Enum::Enum(QString name, QString label,

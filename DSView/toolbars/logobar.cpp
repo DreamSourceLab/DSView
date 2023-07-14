@@ -48,7 +48,7 @@
 #include "../ui/msgbox.h"
 #include "../ui/fn.h"
 
-namespace pv {
+namespace dsv {
 namespace toolbars {
 
 LogoBar::LogoBar(SigSession *session, QWidget *parent) :
@@ -356,4 +356,4 @@ void LogoBar::update_font()
 }
 
 } // namespace toolbars
-} // namespace pv
+} // namespace dsv

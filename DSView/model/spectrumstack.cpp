@@ -31,7 +31,7 @@
 using namespace boost;
 using namespace std;
 
-namespace pv {
+namespace dsv {
 namespace data {
 
 const QString SpectrumStack::windows_support[5] = {
@@ -238,4 +238,4 @@ double SpectrumStack::window(uint64_t i, int type)
 }
 
 } // namespace data
-} // namespace pv
+} // namespace dsv

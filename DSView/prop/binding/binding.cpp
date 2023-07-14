@@ -28,7 +28,7 @@
 #include "binding.h"
  
 
-namespace pv {
+namespace dsv {
 namespace prop {
 namespace binding {
 

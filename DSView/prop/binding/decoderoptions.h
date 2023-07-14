@@ -29,7 +29,7 @@
 
 struct srd_decoder_option;
 
-namespace pv {
+namespace dsv {
 
 namespace data {
 class DecoderStack;

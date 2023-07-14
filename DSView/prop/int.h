@@ -31,7 +31,7 @@
 
 class QSpinBox;
 
-namespace pv {
+namespace dsv {
 namespace prop {
 
 class Int : public Property

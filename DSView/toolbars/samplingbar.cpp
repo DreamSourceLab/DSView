@@ -49,7 +49,7 @@ using std::max;
 using std::min;
 using std::string;
 
-namespace pv
+namespace dsv
 {
     namespace toolbars
     {
@@ -1263,4 +1263,4 @@ namespace pv
         }
 
     } // namespace toolbars
-} // namespace pv
+} // namespace dsv

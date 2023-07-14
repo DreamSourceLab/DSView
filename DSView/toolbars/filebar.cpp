@@ -33,7 +33,7 @@
 #include "../log.h" 
 #include "../ui/fn.h"
 
-namespace pv {
+namespace dsv {
 namespace toolbars {
 
 FileBar::FileBar(SigSession *session, QWidget *parent) :
@@ -262,4 +262,4 @@ void FileBar::update_font()
 }
 
 } // namespace toolbars
-} // namespace pv
+} // namespace dsv
