@@ -36,7 +36,7 @@ std::mutex RowData::_global_visitor_mutex;
 
 RowData::RowData() :
     _max_annotation(0),
-    _min_annotation(UINT64_MAX)
+    _min_annotation(0)
 {
     _item_count = 0;
 }
@@ -56,6 +56,7 @@ void RowData::clear()
     }
     _annotations.clear();
     _item_count = 0;
+    _min_annotation = 0;
 }
 
 uint64_t RowData::get_max_sample()
@@ -74,7 +75,7 @@ uint64_t RowData::get_max_annotation()
 
 uint64_t RowData::get_min_annotation()
 {
-    if (_min_annotation == UINT64_MAX)
+    if (_min_annotation == 0)
         return 10;
     else
         return _min_annotation;
@@ -119,8 +120,14 @@ bool RowData::push_annotation(Annotation *a)
       _item_count = _annotations.size();
       _max_annotation = max(_max_annotation, a->end_sample() - a->start_sample());
 
-      if (a->end_sample() != a->start_sample())
-          _min_annotation = min(_min_annotation, a->end_sample() - a->start_sample());
+      if (a->end_sample() != a->start_sample()){
+        if (_min_annotation == 0){
+            _min_annotation = a->end_sample() - a->start_sample();
+        }
+        else{
+            _min_annotation = min(_min_annotation, a->end_sample() - a->start_sample());
+        }
+      }
           
       return true;
       
