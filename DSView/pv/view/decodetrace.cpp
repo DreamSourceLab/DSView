@@ -339,12 +339,14 @@ void DecodeTrace::draw_annotation(const pv::data::decode::Annotation &a,
 	const QColor &fill = Colours[colour];
 	const QColor &outline = OutlineColours[colour];
 
-	if (start > right + DrawPadding || end < left - DrawPadding)
+	if (start > right + DrawPadding || end < left - DrawPadding){
 		return;
+    }
 
-    if (end - last_x <= 0.5){
+    if (end - last_x <= 0.5 && end - start < 1){
         return;
     }
+    
     last_x = end;
 
     if (_decoder_stack->get_mark_index() == (int64_t)(a.start_sample()+ a.end_sample())/2) {
