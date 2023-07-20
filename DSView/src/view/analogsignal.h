@@ -24,18 +24,18 @@
 #define DSVIEW_PV_ANALOGSIGNAL_H
 
 #include "signal.h"
- 
+
+namespace dsv{
+    namespace data {
+        class AnalogSnapshot;
+    }
+}
+using namespace dsv::data;
 
 namespace dsv {
-
-namespace data {
-class AnalogSnapshot;
-}
-
 namespace view {
 
 //when device is data acquisition model, to draw signal trace
-//created by SigSession
 class AnalogSignal : public Signal
 {
     Q_OBJECT
@@ -147,14 +147,14 @@ public:
 
 private:
     void paint_trace(QPainter &p,
-                     const pv::data::AnalogSnapshot *snapshot,
+                     const dsv::data::AnalogSnapshot *snapshot,
                      int zeroY, const int start_pixel,
                      const uint64_t start_index, const int64_t sample_count,
                      const double samples_per_pixel, const int order,
                      const float top, const float bottom, const int width);
 
     void paint_envelope(QPainter &p,
-                        const pv::data::AnalogSnapshot *snapshot,
+                        const dsv::data::AnalogSnapshot *snapshot,
                         int zeroY, const int start_pixel,
                         const uint64_t start_index, const int64_t sample_count,
                         const double samples_per_pixel, const int order,
@@ -163,17 +163,14 @@ private:
     void paint_hover_measure(QPainter &p, QColor fore, QColor back);
 
 private:
-	pv::data::AnalogSnapshot *_data;
-
+	AnalogSnapshot *_data;
     QRectF *_rects;
-
 	float _scale;
     double _zero_vrate;
     int _zero_offset;
     int _bits;
     double _ref_min;
     double _ref_max;
-
     bool _hover_en;
     uint64_t _hover_index;
     QPointF _hover_point;

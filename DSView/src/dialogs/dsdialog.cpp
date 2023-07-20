@@ -21,16 +21,17 @@
 
 
 #include "dsdialog.h"
-#include "shadow.h"
-
 #include <QObject>
 #include <QEvent>
 #include <QMouseEvent>
 #include <QVBoxLayout>
 #include <QAbstractButton>
+#include "shadow.h"
 #include "../basedef.h"
 #include "../config/appconfig.h"
 #include "../ui/fn.h"
+
+using namespace dsv::config;
 
 namespace dsv {
 namespace dialogs {

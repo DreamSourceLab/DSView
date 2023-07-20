@@ -24,11 +24,14 @@
 #define DSVIEW_PV_DSOSIGNAL_H
 
 #include "signal.h"
-#include "../dstimer.h"
+#include "../com/dstimer.h"
+
+using namespace dsv::com;
   
 namespace dsv {
+
 namespace data {
-class DsoSnapshot;
+    class DsoSnapshot;
 }
 
 namespace view {
@@ -82,7 +85,7 @@ private:
     static const uint16_t MS_RectHeight = 25;
 
 public:
-    DsoSignal(pv::data::DsoSnapshot *data,
+    DsoSignal(dsv::data::DsoSnapshot *data,
               sr_channel *probe);
 
     virtual ~DsoSignal();
@@ -248,13 +251,13 @@ protected:
 
 private:
     void paint_trace(QPainter &p,
-        const pv::data::DsoSnapshot* snapshot,
+        const dsv::data::DsoSnapshot* snapshot,
         int zeroY, int left, const int64_t start, const int64_t end, int hw_offset,
         const double pixels_offset, const double samples_per_pixel,
         uint64_t num_channels);
 
     void paint_envelope(QPainter &p,
-        const pv::data::DsoSnapshot *snapshot,
+        const dsv::data::DsoSnapshot *snapshot,
         int zeroY, int left, const int64_t start, const int64_t end, int hw_offset,
         const double pixels_offset, const double samples_per_pixel,
         uint64_t num_channels);
@@ -265,7 +268,7 @@ private:
     void call_auto_end();
 
 private:
-    pv::data::DsoSnapshot *_data;
+    dsv::data::DsoSnapshot *_data;
 	float _scale;
     float _stop_scale = 1;
     bool _en_lock;

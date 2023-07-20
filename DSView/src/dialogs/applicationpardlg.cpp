@@ -31,16 +31,17 @@
 #include <QLabel>
 #include <vector>
 #include <QGridLayout>
-
 #include "../config/appconfig.h"
 #include "../ui/langresource.h"
-#include "../appcontrol.h"
-#include "../sigsession.h"
+#include "../appcore/appcontrol.h"
+#include "../appcore/sigsession.h"
 #include "../ui/dscombobox.h"
 #include "../log.h"
 
-namespace dsv
-{
+using namespace dsv::appcore;
+using namespace dsv::config;
+
+namespace dsv{
 namespace dialogs
 {
 

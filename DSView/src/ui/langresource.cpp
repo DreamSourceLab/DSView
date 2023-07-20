@@ -21,8 +21,6 @@
 
 #include "langresource.h"
 #include <stddef.h>
-#include "../log.h"
-#include "../config/appconfig.h"
 #include <QFile>
 #include <QByteArray>
 #include <QJsonParseError>
@@ -30,6 +28,10 @@
 #include <QJsonArray>
 #include <QJsonObject>
 #include <assert.h>
+#include "../log.h"
+#include "../config/appconfig.h"
+
+using namespace dsv::config;
 
 //---------------Lang_resource_page
 Lang_resource_page::Lang_resource_page()
@@ -149,7 +151,7 @@ void LangResource::load_page(Lang_resource_page &p)
     QStringList files = fileNmae.split(",");
         
     for (int x=0; x<files.count(); x++){
-        QString file = GetAppDataDir() + "/lang/" + QString(lan_name) + "/" + files[x].trimmed();
+        QString file = AppConfig::GetAppDataDir() + "/lang/" + QString(lan_name) + "/" + files[x].trimmed();
         load_page(p, file);
     }
 }

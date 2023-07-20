@@ -33,14 +33,18 @@
 #include "../toolbars/titlebar.h"
 #include "dsdialog.h"
 
-namespace dsv {
-
-class SigSession;
-
-namespace view {
-class View;
+namespace dsv{
+	namespace appcore{
+    	class SigSession; 
+	}
+    namespace view {
+        class View;
+    }
 }
+using namespace dsv::appcore;
+using namespace dsv::view;
 
+namespace dsv {
 namespace dialogs {
 
 class DsoMeasure : public DSDialog

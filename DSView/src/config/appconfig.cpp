@@ -28,10 +28,10 @@
 #include <QStandardPaths>
 #include "../log.h"
 
-namespace dsv{
-namespace config{
-
 #define MAX_PROTOCOL_FORMAT_LIST 15
+
+namespace dsv {
+namespace config {
 
 StringPair::StringPair(const std::string &key, const std::string &value)
 {

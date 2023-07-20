@@ -27,26 +27,32 @@
 #include <string>
 #include <thread>  
 #include <QObject>
-#include <libsigrok.h> 
+#include <libsigrok.h>
+#include "../interface/icallbacks.h"
+#include "zipmaker.h"
 
-#include "interface/icallbacks.h"
+namespace dsv
+{
+  namespace data {
+    class Snapshot;
+    class LogicSnapshot;
+    class AnalogSnapshot;
+    class DsoSnapshot;
+}
+namespace appcore{
+    class SigSession;
+}
+namespace dock {
+    class ProtocolDock;
+}
+}
 
-#include "ZipMaker.h"
+using namespace dsv::appcore;
+using namespace dsv::data;
+using namespace dsv::dock;
 
 namespace dsv {
-
-class SigSession;
-
-namespace data {
-class Snapshot;
-class LogicSnapshot;
-class AnalogSnapshot;
-class DsoSnapshot;
-}
-
-namespace dock {
-class ProtocolDock;
-}
+namespace com { 
 
 class StoreSession : public QObject
 {
@@ -72,12 +78,12 @@ public:
 	void cancel();
 
 private:
-    void save_proc(pv::data::Snapshot *snapshot);
-    void save_logic(pv::data::LogicSnapshot *logic_snapshot);
-    void save_analog(pv::data::AnalogSnapshot *analog_snapshot);
-    void save_dso(pv::data::DsoSnapshot *dso_snapshot);
+    void save_proc(dsv::data::Snapshot *snapshot);
+    void save_logic(dsv::data::LogicSnapshot *logic_snapshot);
+    void save_analog(dsv::data::AnalogSnapshot *analog_snapshot);
+    void save_dso(dsv::data::DsoSnapshot *dso_snapshot);
     bool meta_gen(data::Snapshot *snapshot, std::string &str);
-    void export_proc(pv::data::Snapshot *snapshot);   
+    void export_proc(dsv::data::Snapshot *snapshot);   
     bool decoders_gen(std::string &str);
  
 
@@ -121,6 +127,7 @@ private:
     ZipMaker        m_zipDoc;  
 };
 
-} // pv
+} //namespace com
+} //namespace dsv
 
 #endif // DSVIEW_PV_STORESESSION_H

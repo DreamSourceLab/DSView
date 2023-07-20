@@ -19,16 +19,13 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
  */
 
- 
+#include "lissajoustrace.h"
 #include <math.h>
 #include <QTimer>
-
 #include "view.h"
-#include "../dsvdef.h"
-#include "lissajoustrace.h"
+#include "../basedef.h"
 #include "../data/dsosnapshot.h"
-#include "../sigsession.h"
-
+#include "../appcore/sigsession.h"
 #include "../ui/langresource.h"
  
 using namespace std;

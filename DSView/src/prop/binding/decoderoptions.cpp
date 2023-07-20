@@ -19,29 +19,29 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
  */
 
-#include <libsigrokdecode.h>
-
 #include "decoderoptions.h"
+#include <libsigrokdecode.h>
 #include <boost/bind.hpp> 
 #include <boost/none_t.hpp>
-
-#include "../../data/decoderstack.h"
-#include "../../data/decode/decoder.h"
 #include "../double.h"
 #include "../enum.h"
 #include "../int.h"
 #include "../string.h"
+#include "../../data/decoderstack.h"
+#include "../../decode/decoder.h"
 #include "../../ui/langresource.h"
 #include "../../config/appconfig.h"
 
 using namespace boost;
 using namespace std;
+using namespace dsv::config;
+using namespace dsv::appcore;
  
 namespace dsv {
 namespace prop {
 namespace binding {
 
-DecoderOptions::DecoderOptions(pv::data::DecoderStack* decoder_stack, data::decode::Decoder *decoder) :
+DecoderOptions::DecoderOptions(DecoderStack* decoder_stack, Decoder *decoder):
 	Binding(),
 	_decoder(decoder)
 {

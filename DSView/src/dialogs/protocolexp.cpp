@@ -20,7 +20,6 @@
  */
 
 #include "protocolexp.h"
-  
 #include <QFormLayout>
 #include <QListWidget>
 #include <QFile>
@@ -30,15 +29,14 @@
 #include <QFuture>
 #include <QtConcurrent/QtConcurrent>
 #include <algorithm>
-
-#include "../sigsession.h"
+#include "../appcore/sigsession.h"
 #include "../data/decoderstack.h"
-#include "../data/decode/row.h"
-#include "../data/decode/annotation.h"
+#include "../decode/row.h"
+#include "../decode/annotation.h"
 #include "../view/decodetrace.h"
 #include "../data/decodermodel.h"
 #include "../config/appconfig.h"
-#include "../dsvdef.h"
+#include "../basedef.h"
 #include "../utility/encoding.h"
 #include "../utility/path.h"
 #include "../log.h"
@@ -46,7 +44,7 @@
 
 #define EXPORT_DEC_ROW_COUNT_MAX 20
 
-using namespace dsv::decode;
+using namespace dsv::config;
 
 namespace dsv {
 namespace dialogs {
@@ -70,7 +68,7 @@ ProtocolExp::ProtocolExp(QWidget *parent, SigSession *session) :
     _flayout->setFieldGrowthPolicy(QFormLayout::AllNonFixedFieldsGrow);
     _flayout->addRow(new QLabel(L_S(STR_PAGE_DLG, S_ID(IDS_DLG_EXPORT_FORMAT), "Export Format: "), this), _format_combobox);
 
-    pv::data::DecoderModel* decoder_model = _session->get_decoder_model();
+    dsv::data::DecoderModel* decoder_model = _session->get_decoder_model();
 
     const auto decoder_stack = decoder_model->getDecoderStack();
     if (decoder_stack) {
@@ -216,7 +214,7 @@ void ProtocolExp::save_proc()
         return;
     }
 
-    pv::data::DecoderModel *decoder_model = _session->get_decoder_model();
+    dsv::data::DecoderModel *decoder_model = _session->get_decoder_model();
     const auto decoder_stack = decoder_model->getDecoderStack();
     
     int fd_row_dex = 0;
@@ -319,8 +317,8 @@ void ProtocolExp::save_proc()
     file.close();
 }
 
-bool ProtocolExp::compare_ann_index(const data::decode::Annotation *a, 
-                    const data::decode::Annotation *b)
+bool ProtocolExp::compare_ann_index(const decode::Annotation *a, 
+                    const decode::Annotation *b)
 {   
     assert(a);
     assert(b);

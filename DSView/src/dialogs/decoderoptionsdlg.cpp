@@ -33,22 +33,22 @@
 #include <QGuiApplication>
 #include <QScreen>
 #include <QCheckBox>
-
 #include "../data/decoderstack.h"
 #include "../prop/binding/decoderoptions.h"
-#include "../data/decode/decoder.h"
+#include "../decode/decoder.h"
 #include "../ui/dscombobox.h"
 #include "../view/logicsignal.h"
-#include "../appcontrol.h"
-#include "../sigsession.h"
+#include "../appcore/appcontrol.h"
+#include "../appcore/sigsession.h"
 #include "../view/view.h"
 #include "../view/cursor.h"
 #include "../widgets/decodergroupbox.h"
 #include "../view/decodetrace.h"
 #include "../ui/msgbox.h"
-
 #include "../ui/langresource.h"
 #include "../config/appconfig.h"
+
+using namespace dsv::config;
 
 namespace dsv {
 namespace dialogs {
@@ -261,8 +261,7 @@ void DecoderOptionsDlg::load_options_view()
 }
 
 void DecoderOptionsDlg::load_decoder_forms(QWidget *container)
-{
-	using pv::data::decode::Decoder; 
+{ 
 	assert(container); 
 
     int dex = 0;
@@ -284,14 +283,14 @@ void DecoderOptionsDlg::load_decoder_forms(QWidget *container)
  
 
 DsComboBox* DecoderOptionsDlg::create_probe_selector(
-    QWidget *parent, const data::decode::Decoder *dec,
+    QWidget *parent, const Decoder *dec,
 	const srd_channel *const pdch)
 {
 	assert(dec);
     
     const auto &sigs = AppControl::Instance()->GetSession()->get_signals();
 
-    data::decode::Decoder *_dec = const_cast<data::decode::Decoder*>(dec);
+    auto _dec = const_cast<Decoder*>(dec);
     auto probe_iter = _dec->channels().find(pdch);
 	DsComboBox *selector = new DsComboBox(parent);
     selector->addItem("-", QVariant::fromValue(-1));
@@ -382,7 +381,7 @@ void DecoderOptionsDlg::update_decode_range()
  
 
 void DecoderOptionsDlg::create_decoder_form(
-    data::decode::Decoder *dec, QWidget *parent,
+    Decoder *dec, QWidget *parent,
     QFormLayout *form)
 {
 	const GSList *l;
@@ -471,7 +470,7 @@ void DecoderOptionsDlg::create_decoder_form(
     binding->add_properties_to_form(decoder_form, true, font);
 	_bindings.push_back(binding);
   
-    auto group = new pv::widgets::DecoderGroupBox(_trace->decoder(), 
+    auto group = new dsv::widgets::DecoderGroupBox(_trace->decoder(), 
                             dec, 
                             decoder_form, 
                             parent, font);
@@ -495,7 +494,7 @@ void DecoderOptionsDlg::on_probe_selected(int)
 	commit_probes();
 }
 
-void DecoderOptionsDlg::commit_decoder_probes(data::decode::Decoder *dec)
+void DecoderOptionsDlg::commit_decoder_probes(decode::Decoder *dec)
 {
 	assert(dec); 
 

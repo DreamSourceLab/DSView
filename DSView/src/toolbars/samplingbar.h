@@ -22,42 +22,47 @@
 #ifndef DSVIEW_PV_TOOLBARS_SAMPLINGBAR_H
 #define DSVIEW_PV_TOOLBARS_SAMPLINGBAR_H
 
-#include "../sigsession.h"
-
+#include <libsigrok.h>
 #include <stdint.h>
 #include <list>
-#include <map>
-  
+#include <map>  
 #include <QToolBar>
 #include <QToolButton>
 #include <QAction>
 #include <QMenu>
+#include <QDialog>
 #include "../ui/dscombobox.h"
 #include "../interface/icallbacks.h"
-#include <QDialog>
 
 struct st_dev_inst;
 class QAction;
 struct ds_device_info;
 
-class DeviceAgent;
+namespace dsv{
+	namespace appcore{
+    	class SigSession;
+        class DeviceAgent;
+	}
+}
+using namespace dsv::appcore;
 
-namespace dsv
-{  
-    class SigSession;
+namespace dsv{
+	namespace view{
+    	class View;
+	}
+}
+using namespace dsv::view;
 
-    namespace view{
-        class View;
-    }
-
-    namespace dialogs
-    {
+namespace dsv{
+	namespace dialogs{
         class deviceoptions;
         class Calibration;
     }
+}
+using namespace dsv::dialogs;
 
-    namespace toolbars
-    {
+namespace dsv{
+namespace toolbars{
 
         class SamplingBar : public QToolBar, public IFontForm
         {

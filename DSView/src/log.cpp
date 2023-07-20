@@ -26,9 +26,11 @@
 #include "utility/path.h"
 #include <string>
 
-namespace dsv{
+using namespace dsv::config;
 
 xlog_writer *dsv_log = nullptr;
+
+namespace dsv{
 static xlog_context *log_ctx = nullptr;
 static bool b_logfile = false;
 static int log_file_index = -1; 
@@ -69,7 +71,7 @@ void dsv_log_enalbe_logfile(bool append)
         
         dsv_info("%s\"%s\"", "Store log to file: ", lf.toUtf8().data());
 
-        std::string log_file = pv::path::ToUnicodePath(lf);
+        std::string log_file = dsv::path::ToUnicodePath(lf);
 
         int ret = xlog_add_receiver_from_file(log_ctx, log_file.c_str(), &log_file_index, append);
         if (ret != 0){
@@ -83,7 +85,7 @@ void dsv_clear_log_file()
     if (b_logfile && log_ctx)
     {
         QString lf = get_dsv_log_path();
-        std::string log_file = pv::path::ToUnicodePath(lf);
+        std::string log_file = dsv::path::ToUnicodePath(lf);
         int ret = xlog_reset_log_file(log_ctx, log_file_index, log_file.c_str());
 
         if (ret != 0){
@@ -127,11 +129,11 @@ QString get_dsv_log_path()
     #endif
 
     #ifdef _WIN32
-        lf = GetUserDataDir() + "/DSView.log";
+        lf = AppConfig::GetUserDataDir() + "/DSView.log";
     #endif
 
     #ifdef Q_OS_DARWIN
-        lf = GetUserDataDir() + "/DSView.log";
+        lf = AppConfig::GetUserDataDir() + "/DSView.log";
     #endif
 
     return lf;

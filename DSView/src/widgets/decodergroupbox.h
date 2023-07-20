@@ -32,10 +32,11 @@
 namespace dsv {
 
 namespace data{
-class DecoderStack;
-namespace decode{
-class Decoder;
+    class DecoderStack;
 }
+
+namespace decode{
+    class Decoder;
 }
 
 namespace widgets {
@@ -45,8 +46,8 @@ class DecoderGroupBox : public QWidget
 	Q_OBJECT
 
 public:
-    DecoderGroupBox(pv::data::DecoderStack *decoder_stack,
-                    data::decode::Decoder *dec, QLayout *dec_layout,
+    DecoderGroupBox(dsv::data::DecoderStack *decoder_stack,
+                    decode::Decoder *dec, QLayout *dec_layout,
                     QWidget *parent, QFont font);
     ~DecoderGroupBox();
     bool eventFilter(QObject *o, QEvent *e);
@@ -58,7 +59,7 @@ public:
 signals:
 	void show_hide_decoder();
     void show_hide_row();
-    void del_stack(data::decode::Decoder *_dec);
+    void del_stack(decode::Decoder *_dec);
 
 private slots:
     void tog_icon();
@@ -67,8 +68,8 @@ private slots:
 private:
     QWidget *_widget;
 
-    pv::data::DecoderStack  *_decoder_stack;
-    data::decode::Decoder   *_dec;
+    dsv::data::DecoderStack  *_decoder_stack;
+    decode::Decoder   *_dec;
     int _index;
 
     QGridLayout *_layout;

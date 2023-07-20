@@ -26,6 +26,7 @@
 #include "view.h"
 #include "../basedef.h"
 #include "../log.h"
+#include "../appcore/sigsession.h"
 
 using namespace std;
 
@@ -83,7 +84,7 @@ AnalogSignal::AnalogSignal(data::AnalogSnapshot *data, sr_channel *probe) :
     }
 }
 
-AnalogSignal::AnalogSignal(view::AnalogSignal *s, pv::data::AnalogSnapshot *data, sr_channel *probe) :
+AnalogSignal::AnalogSignal(view::AnalogSignal *s, dsv::data::AnalogSnapshot *data, sr_channel *probe) :
     Signal(*s, probe),
     _data(data),
     _rects(NULL),
@@ -464,7 +465,7 @@ void AnalogSignal::paint_fore(QPainter &p, int left, int right, QColor fore, QCo
 }
 
 void AnalogSignal::paint_trace(QPainter &p,
-    const pv::data::AnalogSnapshot *snapshot,
+    const dsv::data::AnalogSnapshot *snapshot,
     int zeroY, const int start_pixel,
     const uint64_t start_index, const int64_t sample_count,
     const double samples_per_pixel, const int order,
@@ -472,7 +473,7 @@ void AnalogSignal::paint_trace(QPainter &p,
 {
     (void)width;
 
-    pv::data::AnalogSnapshot *pshot = const_cast<pv::data::AnalogSnapshot*>(snapshot);
+    dsv::data::AnalogSnapshot *pshot = const_cast<dsv::data::AnalogSnapshot*>(snapshot);
 
     int64_t channel_num = (int64_t)pshot->get_channel_num();
     if (sample_count > 0) {
@@ -510,15 +511,15 @@ void AnalogSignal::paint_trace(QPainter &p,
 }
 
 void AnalogSignal::paint_envelope(QPainter &p,
-    const pv::data::AnalogSnapshot *snapshot,
+    const dsv::data::AnalogSnapshot *snapshot,
     int zeroY, const int start_pixel,
     const uint64_t start_index, const int64_t sample_count,
     const double samples_per_pixel, const int order,
     const float top, const float bottom, const int width)
 {
     using namespace Qt;
-    using pv::data::AnalogSnapshot;
-    pv::data::AnalogSnapshot *pshot = const_cast<pv::data::AnalogSnapshot*>(snapshot);
+    using dsv::data::AnalogSnapshot;
+    dsv::data::AnalogSnapshot *pshot = const_cast<dsv::data::AnalogSnapshot*>(snapshot);
 
     AnalogSnapshot::EnvelopeSection e;
     pshot->get_envelope_section(e, start_index, sample_count,

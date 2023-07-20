@@ -76,7 +76,7 @@ class AnnotationResTable
         char g_all_buf[CONVERT_STR_MAX_LEN + 1];
 };
 
-#endif
-
 } //namespace decode
 } //namespace dsv
+
+#endif

@@ -28,16 +28,19 @@
 #include <QVBoxLayout>
 #include <QLabel>
 #include <QCheckBox> 
-
 #include "../prop/binding/deviceoptions.h"
 #include "../toolbars/titlebar.h"
 #include "dsdialog.h"
 #include "../ui/dscombobox.h"
 
+namespace dsv{
+	namespace appcore{
+    	class SigSession; 
+	}
+}
+using namespace dsv::appcore;
+
 namespace dsv {
-
-class SigSession;
-
 namespace dialogs {
 
 class ProtocolList : public DSDialog

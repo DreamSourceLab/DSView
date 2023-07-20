@@ -28,17 +28,22 @@
 #include <boost/optional.hpp> 
 #include "signaldata.h"
 
-namespace dsv {
-
-namespace appcore {
-    class SigSession;
-} 
-
-namespace view {
-    class DsoSignal;
-    class dslDial;
+namespace dsv{
+	namespace appcore{
+    	class SigSession; 
+	}
 }
+using namespace dsv::appcore;
 
+namespace dsv{
+	namespace view{
+    	class DsoSignal;
+        class dslDial;
+	}
+}
+using namespace dsv::view;
+
+namespace dsv {
 namespace data {
 
 class DsoSnapshot;
@@ -99,7 +104,7 @@ private:
     static const QString vDialDivUnit[vDialUnitCount];
 
 public:
-    MathStack(pv::SigSession *_session,
+    MathStack(SigSession *_session,
               view::DsoSignal *dsoSig1,
               view::DsoSignal *dsoSig2, MathType type);
     virtual ~MathStack();
@@ -129,7 +134,7 @@ public:
 signals:
 
 private:
-    pv::SigSession  *_session;
+    SigSession  *_session;
     view::DsoSignal *_dsoSig1;
     view::DsoSignal *_dsoSig2;
 

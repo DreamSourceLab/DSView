@@ -28,11 +28,16 @@
 #include <QVBoxLayout>
 #include <QGridLayout>
 #include <QDialogButtonBox>
-
-#include "../sigsession.h"
 #include "../toolbars/titlebar.h"
 #include "dsdialog.h"
  
+namespace dsv{
+	namespace appcore{
+    	class SigSession; 
+	}
+}
+using namespace dsv::appcore;
+
 namespace dsv {
 namespace dialogs {
 

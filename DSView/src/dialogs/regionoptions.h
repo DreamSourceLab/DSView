@@ -26,20 +26,26 @@
 #include <QDialogButtonBox>
 #include <QHBoxLayout>
 #include <QVBoxLayout>
-#include <QLabel>
- 
+#include <QLabel> 
 #include "../toolbars/titlebar.h"
 #include "dsdialog.h"
 #include "../ui/dscombobox.h"
 
-namespace dsv {
-
-class SigSession;
-
-namespace view {
-class View;
+namespace dsv{
+	namespace appcore{
+    	class SigSession; 
+	}
 }
+using namespace dsv::appcore;
 
+namespace dsv{
+	namespace view{
+    	class View;
+	}
+}
+using namespace dsv::view;
+
+namespace dsv {
 namespace dialogs {
 
 class RegionOptions : public DSDialog

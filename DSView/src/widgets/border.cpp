@@ -20,12 +20,14 @@
  */
 
 #include "border.h"
-#include "../mainframe.h"
- 
+#include "../appcore/mainframe.h" 
 #include <QPainter>
 #include <QLinearGradient>
 #include <QRadialGradient>
 #include "../config/appconfig.h"
+
+using namespace dsv::config;
+using namespace dsv::appcore;
 
 namespace dsv {
 namespace widgets {
@@ -88,46 +90,46 @@ void Border::paintEvent(QPaintEvent *)
         radialGrad.setColorAt(1, light_border4);
     }
 
-    if (_type == pv::MainFrame::TopLeft) {
+    if (_type == MainFrame::TopLeft) {
         QRectF rectangle(0, 0, width()*2, height()*2);
         radialGrad.setCenter(QPointF(width(), height()));
         radialGrad.setFocalPoint(QPointF(width(), height()));
         painter.setBrush(QBrush(radialGrad));
         painter.drawPie(rectangle, 90 * 16, 180 * 16);
-    } else if (_type == pv::MainFrame::TopRight) {
+    } else if (_type == MainFrame::TopRight) {
         QRectF rectangle(-width(), 0, width()*2, height()*2);
         radialGrad.setCenter(QPointF(0, height()));
         radialGrad.setFocalPoint(QPointF(0, height()));
         painter.setBrush(QBrush(radialGrad));
         painter.drawPie(rectangle, 0 * 16, 90 * 16);
-    } else if (_type == pv::MainFrame::BottomLeft) {
+    } else if (_type == MainFrame::BottomLeft) {
         QRectF rectangle(0, -height(), width()*2, height()*2);
         radialGrad.setCenter(QPointF(width(), 0));
         radialGrad.setFocalPoint(QPointF(width(), 0));
         painter.setBrush(QBrush(radialGrad));
         painter.drawPie(rectangle, 180 * 16, 270 * 16);
-    } else if (_type == pv::MainFrame::BottomRight) {
+    } else if (_type == MainFrame::BottomRight) {
         QRectF rectangle(-width(), -height(), width()*2, height()*2);
         radialGrad.setCenter(QPointF(0, 0));
         radialGrad.setFocalPoint(QPointF(0, 0));
         painter.setBrush(QBrush(radialGrad));
         painter.drawPie(rectangle, 270 * 16, 360 * 16);
-    } else if (_type == pv::MainFrame::Top) {
+    } else if (_type == MainFrame::Top) {
         linearGrad.setStart(QPointF(0, height()));
         linearGrad.setFinalStop(QPointF(0, 0));
         painter.setBrush(QBrush(linearGrad));
         painter.drawRect(rect());
-    } else if (_type == pv::MainFrame::Bottom) {
+    } else if (_type == MainFrame::Bottom) {
         linearGrad.setStart(QPointF(0, 0));
         linearGrad.setFinalStop(QPointF(0, height()));
         painter.setBrush(QBrush(linearGrad));
         painter.drawRect(rect());
-    } else if (_type == pv::MainFrame::Left) {
+    } else if (_type == MainFrame::Left) {
         linearGrad.setStart(QPointF(width(), 0));
         linearGrad.setFinalStop(QPointF(0, 0));
         painter.setBrush(QBrush(linearGrad));
         painter.drawRect(rect());
-    } else if (_type == pv::MainFrame::Right) {
+    } else if (_type == MainFrame::Right) {
         linearGrad.setStart(QPointF(0, 0));
         linearGrad.setFinalStop(QPointF(width(), 0));
         painter.setBrush(QBrush(linearGrad));

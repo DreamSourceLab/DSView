@@ -34,7 +34,6 @@
 #include <QCheckBox>
 #include <QTableWidget>
 #include <QJsonObject>
-
 #include <QVector>
 #include <QVBoxLayout>
 #include <QHBoxLayout>
@@ -43,10 +42,14 @@
 #include "../ui/dscombobox.h"
 #include "../interface/icallbacks.h"
 
+namespace dsv{
+	namespace appcore{
+    	class SigSession; 
+	}
+}
+using namespace dsv::appcore;
+
 namespace dsv {
-
-class SigSession;
-
 namespace dock {
 
 class TriggerDock : public QScrollArea, public IFontForm

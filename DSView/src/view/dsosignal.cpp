@@ -24,13 +24,12 @@
 #include <functional>
 #include <QApplication>
 #include <math.h>
-
 #include "view.h"
-#include "../dsvdef.h"
+#include "../basedef.h"
 #include "../data/dsosnapshot.h"
-#include "../sigsession.h" 
+#include "../appcore/sigsession.h" 
 #include "../log.h"
-#include "../appcontrol.h"
+#include "../appcore/appcontrol.h"
  
 using namespace std;
 
@@ -962,7 +961,7 @@ QRectF DsoSignal::get_trig_rect(int left, int right)
 }
 
 void DsoSignal::paint_trace(QPainter &p,
-    const pv::data::DsoSnapshot *snapshot,
+    const dsv::data::DsoSnapshot *snapshot,
     int zeroY, int left, const int64_t start, const int64_t end, int hw_offset,
     const double pixels_offset, const double samples_per_pixel, uint64_t num_channels)
 {
@@ -971,7 +970,7 @@ void DsoSignal::paint_trace(QPainter &p,
     const int64_t sample_count = end - start + 1;
 
     if (sample_count > 0) {
-        pv::data::DsoSnapshot *pshot = const_cast<pv::data::DsoSnapshot*>(snapshot);
+        dsv::data::DsoSnapshot *pshot = const_cast<dsv::data::DsoSnapshot*>(snapshot);
         const uint8_t *const samples_buffer = pshot->get_samples(start, end, get_index());;
         assert(samples_buffer);
 
@@ -1012,12 +1011,12 @@ void DsoSignal::paint_trace(QPainter &p,
 }
 
 void DsoSignal::paint_envelope(QPainter &p,
-    const pv::data::DsoSnapshot *snapshot,
+    const dsv::data::DsoSnapshot *snapshot,
     int zeroY, int left, const int64_t start, const int64_t end, int hw_offset,
     const double pixels_offset, const double samples_per_pixel, uint64_t num_channels)
 {
 	using namespace Qt;
-    using pv::data::DsoSnapshot;
+    using dsv::data::DsoSnapshot;
 
     data::DsoSnapshot *pshot = const_cast<data::DsoSnapshot*>(snapshot);
 

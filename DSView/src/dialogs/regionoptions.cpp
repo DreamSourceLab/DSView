@@ -19,12 +19,10 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
  */
 
-#include "regionoptions.h"
- 
-#include "../sigsession.h"
+#include "regionoptions.h" 
+#include "../appcore/sigsession.h"
 #include "../view/cursor.h"
 #include "../view/view.h"
-
 #include "../ui/langresource.h"
 
 using namespace boost;

@@ -34,21 +34,10 @@
 #include <QTextEdit>
 #include <QRadioButton>
 #include <QCheckBox>
-
 #include "../config/appconfig.h"
 
 namespace ui
 {
-
-    void set_font_param(QFont &font, struct FontParam &param)
-    {
-        font.setPointSizeF(param.size >= 9.0f ? param.size : 9.0f);
-
-        if (param.name != ""){
-            font.setFamily(param.name);
-        }
-    }
-
     void set_toolbar_font(QToolBar *bar, QFont font)
     {
         assert(bar);

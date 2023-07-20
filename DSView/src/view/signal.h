@@ -24,27 +24,28 @@
 #ifndef DSVIEW_PV_SIGNAL_H
 #define DSVIEW_PV_SIGNAL_H
  
-
 #include <QColor>
 #include <QPainter>
 #include <QPen>
 #include <QRect>
 #include <QString>
-
 #include <stdint.h>
 #include <list>
-
 #include <libsigrok.h> 
 #include "trace.h"
 
-namespace dsv {
-
-namespace data {
-class SignalData;
+namespace dsv{
+	namespace appcore{
+    	class SigSession; 
+	}
+    namespace data {
+        class SignalData;
+    }
 }
+using namespace dsv::appcore;
+using namespace dsv::data;
 
-class SigSession;
-
+namespace dsv {
 namespace view {
 
 //draw signal trace base class

@@ -33,10 +33,15 @@
 #include "../toolbars/titlebar.h"
 #include "dsdialog.h"
 
-class DeviceAgent;
-
-namespace dsv {
-
+namespace dsv{
+	namespace appcore{
+    	class SigSession;
+        class DeviceAgent;
+	}
+}
+using namespace dsv::appcore;
+ 
+namespace dsv { 
 namespace dialogs {
 
 class Calibration : public DSDialog

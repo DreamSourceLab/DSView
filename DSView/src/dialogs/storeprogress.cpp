@@ -21,19 +21,20 @@
  */
 
 #include "storeprogress.h" 
-#include "../sigsession.h"
 #include <QGridLayout>
 #include <QDialogButtonBox>
 #include <QTimer>
 #include <QTextEdit>
 #include <QPushButton>
 #include <QRadioButton>
+#include "../appcore/sigsession.h"
 #include "../ui/msgbox.h"
 #include "../config/appconfig.h"
 #include "../interface/icallbacks.h"
 #include "../log.h"
-
 #include "../ui/langresource.h"
+
+using namespace dsv::config;
 
 namespace dsv {
 namespace dialogs {

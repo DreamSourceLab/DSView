@@ -20,16 +20,6 @@
  */
 
 #include "searchdock.h"
-#include "../sigsession.h"
-#include "../view/cursor.h"
-#include "../view/view.h"
-#include "../view/timemarker.h"
-#include "../view/ruler.h"
-#include "../dialogs/search.h"
-#include "../data/snapshot.h"
-#include "../data/logicsnapshot.h"
-#include "../dialogs/dsmessagebox.h"
-
 #include <QObject>
 #include <QPainter> 
 #include <QRect>
@@ -38,11 +28,22 @@
 #include <QProgressDialog>
 #include <QtConcurrent/QtConcurrent>
 #include <stdint.h> 
+#include "../appcore/sigsession.h"
+#include "../view/cursor.h"
+#include "../view/view.h"
+#include "../view/timemarker.h"
+#include "../view/ruler.h"
+#include "../dialogs/search.h"
+#include "../data/snapshot.h"
+#include "../data/logicsnapshot.h"
+#include "../dialogs/dsmessagebox.h"
 #include "../config/appconfig.h"
 #include "../ui/langresource.h"
 #include "../ui/msgbox.h"
-#include "../appcontrol.h"
+#include "../appcore/appcontrol.h"
 #include "../ui/fn.h"
+
+using namespace dsv::config;
 
 namespace dsv {
 namespace dock {
@@ -110,7 +111,7 @@ void SearchDock::retranslateUi()
 
 void SearchDock::reStyle()
 {
-    QString iconPath = GetIconPath();
+    QString iconPath = AppConfig::GetIconPath();
 
     _pre_button.setIcon(QIcon(iconPath+"/pre.svg"));
     _nxt_button.setIcon(QIcon(iconPath+"/next.svg"));

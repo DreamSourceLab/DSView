@@ -21,7 +21,6 @@
  */
 
 #include "deviceoptions.h"
-
 #include <boost/bind.hpp>
 #include <QObject>
 #include <stdint.h>
@@ -31,12 +30,13 @@
 #include "../int.h"
 #include "../../config/appconfig.h"
 #include "../../log.h"
-#include "../../appcontrol.h"
-#include "../../sigsession.h"
-#include "../../deviceagent.h"
+#include "../../appcore/appcontrol.h"
+#include "../../appcore/sigsession.h"
+#include "../../appcore/deviceagent.h"
 #include "../../ui/langresource.h"
  
 using namespace std;
+using namespace dsv::appcore;
 
 namespace dsv {
 namespace prop {
@@ -47,10 +47,10 @@ DeviceOptions::DeviceOptions()
 	GVariant *gvar_opts, *gvar_list;
 	gsize num_opts;
 
-	SigSession *session = AppControl::Instance()->GetSession();
-	_device_agent = session->get_device();
+	auto session = AppControl::Instance()->GetSession();
+	auto device_agent = session->get_device();
 
-	gvar_opts = _device_agent->get_config_list(NULL, SR_CONF_DEVICE_OPTIONS);
+	gvar_opts = device_agent->get_config_list(NULL, SR_CONF_DEVICE_OPTIONS);
 	 
     if (gvar_opts == NULL)
 		/* Driver supports no device instance options. */
@@ -61,14 +61,14 @@ DeviceOptions::DeviceOptions()
 	
 	for (unsigned int i = 0; i < num_opts; i++) {
 		const struct sr_config_info *const info =
-			_device_agent->get_config_info(options[i]);
+			device_agent->get_config_info(options[i]);
 
 		if (!info)
 			continue;
 
 		const int key = info->key;
 
-		gvar_list = _device_agent->get_config_list(NULL, key);
+		gvar_list = device_agent->get_config_list(NULL, key);
 
         const QString name(info->name);
         const char *label_char = info->name;
@@ -143,16 +143,16 @@ DeviceOptions::DeviceOptions()
 
 GVariant* DeviceOptions::config_getter(int key)
 { 
-	SigSession *session = AppControl::Instance()->GetSession();
-	DeviceAgent *_device_agent = session->get_device();	
-	return _device_agent->get_config(key);
+	auto session = AppControl::Instance()->GetSession();
+	auto device_agent = session->get_device();	
+	return device_agent->get_config(key);
 }
 
 void DeviceOptions::config_setter(int key, GVariant* value)
 {
-	SigSession *session = AppControl::Instance()->GetSession();
-	DeviceAgent *_device_agent = session->get_device();
-    _device_agent->set_config(key, value);
+	auto session = AppControl::Instance()->GetSession();
+	auto device_agent = session->get_device();
+    device_agent->set_config(key, value);
 }
 
 void DeviceOptions::bind_bool(const QString &name, const QString label, int key)
@@ -317,7 +317,9 @@ void DeviceOptions::bind_bandwidths(const QString &name, const QString label, in
 	plist = (struct sr_list_item*)g_variant_get_uint64(gvar_list);
 	assert(plist);
 
-	_device_agent->get_config_bool(SR_CONF_BANDWIDTH, bw_limit);
+	auto session = AppControl::Instance()->GetSession();
+	auto device_agent = session->get_device();	
+	device_agent->get_config_bool(SR_CONF_BANDWIDTH, bw_limit);
 
     if (bw_limit == false){
         return;

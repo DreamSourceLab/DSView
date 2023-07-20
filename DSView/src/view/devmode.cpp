@@ -35,6 +35,8 @@
 #include "../ui/langresource.h"
 #include "../appcore/appcontrol.h"
 #include "../ui/fn.h"
+
+using namespace dsv::config;
   
 namespace dsv {
 namespace view {
@@ -123,7 +125,7 @@ void DevMode::set_device()
     _close_button->setIcon(QIcon());
     _close_button->setDisabled(true); 
 
-    QString iconPath = GetIconPath() + "/";
+    QString iconPath = AppConfig::GetIconPath() + "/";
     auto dev_mode_list  = _device_agent->get_device_mode_list();
 
     for (const GSList *l = dev_mode_list; l; l = l->next)
@@ -176,7 +178,7 @@ void DevMode::set_device()
 
 void DevMode::paintEvent(QPaintEvent*)
 {  
-    using pv::view::Trace;
+    using dsv::view::Trace;
 
     QStyleOption o;
     o.initFrom(this);
@@ -196,7 +198,7 @@ void DevMode::on_mode_change()
         return;
     }
 
-    QString iconPath = GetIconPath();
+    QString iconPath = AppConfig::GetIconPath();
 
     for(auto i = _mode_list.begin();i != _mode_list.end(); i++)
     {

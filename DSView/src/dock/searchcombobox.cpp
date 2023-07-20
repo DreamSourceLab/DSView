@@ -26,8 +26,11 @@
 #include <QLineEdit>
 #include <QScrollBar>
 #include "../config/appconfig.h"
-#include "../appcontrol.h"
+#include "../appcore/appcontrol.h"
 #include "../ui/fn.h"
+
+using namespace dsv::appcore;
+using namespace dsv::config;
 
 //----------------------ComboButtonItem
 

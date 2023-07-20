@@ -21,29 +21,26 @@
  */
 
 #include "ruler.h"
-
 #include "cursor.h"
 #include "view.h"
 #include "viewport.h"
-#include "../sigsession.h"
+#include "../appcore/sigsession.h"
 #include "dsosignal.h"
-#include "../dsvdef.h"
-
+#include "../basedef.h"
 #include <assert.h>
 #include <math.h>
 #include <limits.h>
 #include <cmath>
-
 #include <QMouseEvent>
 #include <QPainter>
 #include <QStyleOption>
-#include "../appcontrol.h"
+#include "../appcore/appcontrol.h"
 #include "../config/appconfig.h"
 #include "../ui/fn.h"
 
-
 using namespace std;
 using namespace Qt;
+using namespace dsv::config;
 
 namespace dsv {
 namespace view {

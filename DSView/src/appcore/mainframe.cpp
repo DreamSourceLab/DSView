@@ -39,7 +39,6 @@
 #include <QGuiApplication>
 #include <QFont>
 #include <algorithm>
-
 #include "mainwindow.h"
 #include "../toolbars/titlebar.h"
 #include "../dialogs/dsmessagebox.h"
@@ -50,6 +49,8 @@
 #include "appcontrol.h"
 #include "../ui/langresource.h"
 #include "../log.h"
+
+using namespace dsv::config;
 
 namespace dsv {
 namespace appcore {
@@ -512,7 +513,7 @@ void MainFrame::show_doc()
         dialogs::DSDialog dlg(this, true);
         dlg.setTitle(L_S(STR_PAGE_DLG, S_ID(IDS_DLG_DOCUMENT), "Document"));
 
-        QString path = GetAppDataDir() + "/showDoc" + QString::number(lan)+ ".png";
+        QString path = AppConfig::GetAppDataDir() + "/showDoc" + QString::number(lan)+ ".png";
         if (!QFile::exists(path)){
             path = ":/icons/showDoc"+QString::number(lan)+".png";
         }

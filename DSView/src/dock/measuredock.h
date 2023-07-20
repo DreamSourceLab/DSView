@@ -38,19 +38,22 @@
 #include <QHBoxLayout>
 #include <QScrollArea>
 #include <vector>
-
 #include "../ui/dscombobox.h"
 #include "../interface/icallbacks.h"
 
-namespace dsv {
-
-class SigSession;
-
-namespace view {
-    class Cursor;
-    class View;
+namespace dsv{
+	namespace appcore{
+    	class SigSession; 
+	}
+    namespace view {
+        class Cursor;
+        class View;
+    }
 }
+using namespace dsv::appcore;
+using namespace dsv::view;
 
+namespace dsv {
 namespace dock {
 
 struct cursor_row_info
@@ -80,7 +83,7 @@ private:
     static const int Max_Measure_Limits = 15;
 
 public:
-    MeasureDock(QWidget *parent, pv::view::View &view, SigSession *session);
+    MeasureDock(QWidget *parent, dsv::view::View &view, SigSession *session);
     ~MeasureDock();
 
     void reload();

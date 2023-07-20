@@ -35,13 +35,15 @@
 #include "../utility/path.h"
 #include "../utility/encoding.h"
 
+using namespace dsv::config;
+
 namespace dsv {
 namespace appcore {
 
 AppControl::AppControl()
 {
     _topWindow = NULL; 
-    _session = new pv::SigSession();
+    _session = new SigSession();
 }
 
 AppControl::AppControl(AppControl &o)
@@ -68,28 +70,28 @@ void AppControl::Destroy(){
 } 
 
 bool AppControl::Init()
-{  
-    pv::encoding::init();
+{ 
+    dsv::encoding::init();
 
     QString qs;
     std::string cs;
 
-    qs = GetAppDataDir();
-    cs = pv::path::ToUnicodePath(qs);
+    qs = AppConfig::GetAppDataDir();
+    cs = dsv::path::ToUnicodePath(qs);
     dsv_info("GetAppDataDir:\"%s\"", cs.c_str());
-    cs = pv::path::ConvertPath(qs);
+    cs = dsv::path::ConvertPath(qs);
     ds_set_user_data_dir(cs.c_str());
 
-    qs = GetFirmwareDir();
-    cs = pv::path::ToUnicodePath(qs);
+    qs = AppConfig::GetFirmwareDir();
+    cs = dsv::path::ToUnicodePath(qs);
     dsv_info("GetFirmwareDir:\"%s\"", cs.c_str());
 
-    qs = GetUserDataDir();
-    cs = pv::path::ToUnicodePath(qs);
+    qs = AppConfig::GetUserDataDir();
+    cs = dsv::path::ToUnicodePath(qs);
     dsv_info("GetUserDataDir:\"%s\"", cs.c_str());
 
-    qs = GetDecodeScriptDir();
-    cs = pv::path::ToUnicodePath(qs);
+    qs = AppConfig::GetDecodeScriptDir();
+    cs = dsv::path::ToUnicodePath(qs);
     dsv_info("GetDecodeScriptDir:\"%s\"", cs.c_str());
     //---------------end print directorys.
 
@@ -110,7 +112,7 @@ bool AppControl::Init()
     
     //the python script path of decoder
     char path[256] = {0};
-    QString dir = GetDecodeScriptDir();   
+    QString dir = AppConfig::GetDecodeScriptDir();   
     strcpy(path, dir.toUtf8().data());
 
     // Initialise libsigrokdecode

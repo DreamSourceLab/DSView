@@ -28,19 +28,15 @@
 #include <QString>
 #include <QByteArray>
 
-namespace dsv{
-namespace config{
-
 #define LAN_CN  25
 #define LAN_EN  31
 
 #define THEME_STYLE_DARK   "dark"
 #define THEME_STYLE_LIGHT  "light"
-
 #define APP_NAME  "DSView"
 
-
-//------------------class
+namespace dsv {
+namespace config {
   
 class StringPair
 {
@@ -49,7 +45,6 @@ public:
    std::string m_key;
    std::string m_value;
 };
-
 
 struct AppOptions
 {   

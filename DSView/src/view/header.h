@@ -26,7 +26,6 @@
 
 #include <list>
 #include <utility>
-
 #include <QWidget>
 #include <QLineEdit>
 
@@ -46,7 +45,7 @@ public:
 	Header(View &parent);
 
 private:
-    pv::view::Trace* get_mTrace(int &action, const QPoint &pt);
+    dsv::view::Trace* get_mTrace(int &action, const QPoint &pt);
 
 private:
     void changeEvent(QEvent *event);

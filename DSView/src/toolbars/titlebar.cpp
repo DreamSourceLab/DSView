@@ -20,7 +20,6 @@
  */
 
 #include "titlebar.h"
-
 #include <QStyle>
 #include <QLabel>
 #include <QToolButton>
@@ -32,9 +31,12 @@
 #include <QStyleOption>
 #include <assert.h>
 #include "../config/appconfig.h"
-#include "../appcontrol.h"
-#include "../dsvdef.h"
+#include "../appcore/appcontrol.h"
+#include "../basedef.h"
 #include "../ui/fn.h"
+
+using namespace dsv::appcore;
+using namespace dsv::config;
 
 namespace dsv {
 namespace toolbars {
@@ -108,8 +110,8 @@ void TitleBar::changeEvent(QEvent *event)
 }
 
 void TitleBar::reStyle()
-{
-    QString iconPath = GetIconPath();
+{ 
+    QString iconPath =  AppConfig::GetIconPath();
 
     if (_isTop) {
         _minimizeButton->setIcon(QIcon(iconPath+"/minimize.svg"));
@@ -169,7 +171,7 @@ QString TitleBar::title()
 
 void TitleBar::showMaxRestore()
 {
-    QString iconPath = GetIconPath();
+    QString iconPath = AppConfig::GetIconPath();
     if (parentWidget()->isMaximized()) {
         _maximizeButton->setIcon(QIcon(iconPath+"/maximize.svg"));
         normalShow();
@@ -181,7 +183,7 @@ void TitleBar::showMaxRestore()
 
 void TitleBar::setRestoreButton(bool max)
 {
-    QString iconPath = GetIconPath();
+    QString iconPath = AppConfig::GetIconPath();
     if (!max) {
         _maximizeButton->setIcon(QIcon(iconPath+"/maximize.svg"));
     } else {

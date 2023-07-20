@@ -19,9 +19,8 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
  */
 
+#include "logobar.h"
 #include <boost/bind.hpp>
- 
-
 #include <QMetaObject>
 #include <QFileDialog> 
 #include <QDesktopServices>
@@ -36,17 +35,18 @@
 #include <QHBoxLayout>
 #include <QFile> 
 #include <QLabel>
-
-#include "logobar.h"
 #include "../dialogs/about.h"
 #include "../dialogs/dsmessagebox.h"
 #include "../config/appconfig.h"
 #include "../dialogs/dsdialog.h"
-#include "../appcontrol.h"
+#include "../appcore/appcontrol.h"
 #include "../log.h"
 #include "../ui/langresource.h"
 #include "../ui/msgbox.h"
 #include "../ui/fn.h"
+#include "../appcore/sigsession.h"
+
+using namespace dsv::config;
 
 namespace dsv {
 namespace toolbars {
@@ -158,7 +158,7 @@ void LogoBar::retranslateUi()
 
 void LogoBar::reStyle()
 {
-    QString iconPath = GetIconPath();
+    QString iconPath = AppConfig::GetIconPath();
 
     _about->setIcon(QIcon(iconPath+"/about.svg"));
     _manual->setIcon(QIcon(iconPath+"/manual.svg"));
@@ -175,7 +175,7 @@ void LogoBar::reStyle()
 void LogoBar::dsl_connected(bool conn)
 {
     _connected = conn;
-    QString iconPath =  GetIconPath();
+    QString iconPath =  AppConfig::GetIconPath();
     if (_connected)
         _logo_button.setIcon(QIcon(iconPath+"/logo_color.svg"));
     else
@@ -207,7 +207,7 @@ void LogoBar::on_actionAbout_triggered()
 
 void LogoBar::on_actionManual_triggered()
 { 
-    QDir dir(GetAppDataDir());
+    QDir dir(AppConfig::GetAppDataDir());
     QDesktopServices::openUrl( QUrl("file:///"+dir.absolutePath() + "/ug.pdf"));
 }
 

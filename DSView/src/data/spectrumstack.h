@@ -29,16 +29,18 @@
 #include <QString>
 #include "signaldata.h"
 
+namespace dsv{
+    namespace appcore {
+        class SigSession;
+    }
+    namespace view {
+        class DsoSignal;
+    }
+}
+using namespace dsv::appcore;
+using namespace dsv::view;
+
 namespace dsv {
-
-namespace appcore {
-    class SigSession;
-}
-
-namespace view {
-    class DsoSignal;
-}
-
 namespace data {
 
 class DsoSnapshot;
@@ -59,7 +61,7 @@ public:
     };
 
 public:
-    SpectrumStack(pv::SigSession *_session, int index);
+    SpectrumStack(SigSession *_session, int index);
     virtual ~SpectrumStack();
     void clear();
     void init();
@@ -91,7 +93,7 @@ public:
 signals:
 
 private:
-    pv::SigSession *_session;
+    SigSession *_session;
 
     int _index;
     uint64_t _sample_num;

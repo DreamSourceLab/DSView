@@ -32,7 +32,7 @@
 #include "../data/dsosnapshot.h"
 #include "../data/logicsnapshot.h"
 #include "../data/decoderstack.h"
-#include "../data/decode/decoder.h"
+#include "../decode/decoder.h"
 #include "../data/decodermodel.h"
 #include "../data/spectrumstack.h"
 #include "../data/mathstack.h"
@@ -44,7 +44,7 @@
 #include "../view/spectrumtrace.h"
 #include "../view/lissajoustrace.h"
 #include "../view/mathtrace.h"
-#include "../data/decode/decoderstatus.h"
+#include "../decode/decoderstatus.h"
 #include "../basedef.h"
 #include "../log.h"
 #include "../config/appconfig.h"
@@ -52,8 +52,11 @@
 #include "../ui/msgbox.h"
 #include "../ui/langresource.h"
 
-namespace dsv
-{
+using namespace dsv::config;
+
+namespace dsv {
+namespace appcore {
+
     SessionData::SessionData()
     {
         _cur_snap_samplerate = 0;
@@ -103,7 +106,7 @@ namespace dsv
 
         this->add_msg_listener(this);
 
-        _decoder_model = new pv::data::DecoderModel(NULL);
+        _decoder_model = new dsv::data::DecoderModel(NULL);
 
         _lissajous_trace = NULL;
         _math_trace = NULL;
@@ -147,8 +150,8 @@ namespace dsv
         ds_set_datafeed_callback(data_feed_callback);
 
         // firmware resource directory
-        QString resdir = GetFirmwareDir();
-        std::string res_path = pv::path::ToUnicodePath(resdir);
+        QString resdir = AppConfig::GetFirmwareDir();
+        std::string res_path = dsv::path::ToUnicodePath(resdir);
         ds_set_firmware_resource_dir(res_path.c_str());
 
         if (ds_lib_init() != SR_OK)
@@ -228,7 +231,7 @@ namespace dsv
         set_collect_mode(COLLECT_SINGLE);
 
         if (_device_agent.is_file()){
-            std::string dev_name = pv::path::ToUnicodePath(_device_agent.name());
+            std::string dev_name = dsv::path::ToUnicodePath(_device_agent.name());
             dsv_info("Switch to file \"%s\" done.", dev_name.c_str());
         }
         else
@@ -291,7 +294,7 @@ namespace dsv
         assert(!_is_saving);
         assert(!_is_working);
 
-        std::string file_name = pv::path::ToUnicodePath(name);
+        std::string file_name = dsv::path::ToUnicodePath(name);
         dsv_info("Load file: \"%s\"", file_name.c_str());
 
         std::string file_str = name.toUtf8().toStdString();
@@ -1447,7 +1450,7 @@ namespace dsv
     }
 
     bool SigSession::add_decoder(srd_decoder *const dec, bool silent, DecoderStatus *dstatus,
-                                 std::list<pv::data::decode::Decoder *> &sub_decoders, view::Trace* &out_trace)
+                                 std::list<dsv::decode::Decoder *> &sub_decoders, view::Trace* &out_trace)
     {
         if (dec == NULL)
         {
@@ -2436,4 +2439,5 @@ namespace dsv
         }
     }
 
-} // namespace dsv
+} //namespace com
+} //namespace appcore

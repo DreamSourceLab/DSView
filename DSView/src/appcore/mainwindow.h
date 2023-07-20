@@ -26,12 +26,12 @@
 
 #include <list>
 #include <QMainWindow>
-#include <QTranslator> 
-#include "dialogs/dsmessagebox.h"
-#include "interface/icallbacks.h"
-#include "eventobject.h" 
+#include <QTranslator>
 #include <QJsonDocument>
 #include <chrono>
+#include "../dialogs/dsmessagebox.h"
+#include "../interface/icallbacks.h"
+#include "eventobject.h"
 #include "../com/dstimer.h"
 
 class QAction;
@@ -42,39 +42,45 @@ class QStatusBar;
 class QToolBar;
 class QWidget;
 class QDockWidget;
-class AppControl;
-class DeviceAgent;
 
 using std::chrono::high_resolution_clock;
 using std::chrono::milliseconds;
 
-using dsv::com;
+namespace dsv{
+	namespace appcore{
+    	class SigSession;
+        class AppControl;
+        class DeviceAgent;
+	}
+}
+
+namespace dsv{
+	namespace toolbars {
+        class SamplingBar;
+        class TrigBar;
+        class FileBar;
+        class LogoBar;
+        class TitleBar;
+    }
+    namespace dock{
+        class ProtocolDock;
+        class TriggerDock;
+        class DsoTriggerDock;
+        class MeasureDock;
+        class SearchDock;
+    }
+    namespace view {
+        class View;
+    }
+}
+using namespace dsv::toolbars;
+using namespace dsv::dock;
+using namespace dsv::com;
+using namespace dsv::view;
 
 namespace dsv {
 namespace appcore {
-
- 
 class SigSession;
-
-namespace toolbars {
-class SamplingBar;
-class TrigBar;
-class FileBar;
-class LogoBar;
-class TitleBar;
-}
-
-namespace dock{
-class ProtocolDock;
-class TriggerDock;
-class DsoTriggerDock;
-class MeasureDock;
-class SearchDock;
-}
-
-namespace view {
-class View;
-}
  
 //The mainwindow,referenced by MainFrame
 //TODO: create graph view,toolbar,and show device list
@@ -189,7 +195,7 @@ private:
     void OnMessage(int msg) override;
 
 private: 
-	pv::view::View          *_view;
+	dsv::view::View          *_view;
     dialogs::DSMessageBox   *_msg;
 
 	QMenuBar                *_menu_bar;

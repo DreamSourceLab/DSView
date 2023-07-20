@@ -20,12 +20,10 @@
  */
 
 #include "trigbar.h"
-
 #include <QBitmap>
 #include <QPainter>
 #include <QEvent>
-
-#include "../sigsession.h"
+#include "../appcore/sigsession.h"
 #include "../dialogs/fftoptions.h"
 #include "../dialogs/lissajousoptions.h"
 #include "../dialogs/mathoptions.h"
@@ -34,6 +32,8 @@
 #include "../ui/langresource.h"
 #include "../config/appconfig.h"
 #include "../ui/fn.h"
+
+using namespace dsv::config;
 
 namespace dsv {
 namespace toolbars {
@@ -160,7 +160,7 @@ void TrigBar::retranslateUi()
 
 void TrigBar::reStyle()
 {
-    QString iconPath = GetIconPath();
+    QString iconPath = AppConfig::GetIconPath();
 
     _trig_button.setIcon(QIcon(iconPath+"/trigger.svg"));
     _protocol_button.setIcon(QIcon(iconPath+"/protocol.svg"));
@@ -285,39 +285,39 @@ void TrigBar::reload()
 
 void TrigBar::on_actionFft_triggered()
 {
-    pv::dialogs::FftOptions fft_dlg(this, _session);
+    dsv::dialogs::FftOptions fft_dlg(this, _session);
     fft_dlg.exec();
 }
 
 void TrigBar::on_actionMath_triggered()
 {
-    pv::dialogs::MathOptions math_dlg(_session, this);
+    dsv::dialogs::MathOptions math_dlg(_session, this);
     math_dlg.exec();
 }
 
 void TrigBar::on_actionDark_triggered()
 {
     sig_setTheme(THEME_STYLE_DARK);
-    QString icon = GetIconPath() + "/" + THEME_STYLE_DARK + ".svg";
+    QString icon = AppConfig::GetIconPath() + "/" + THEME_STYLE_DARK + ".svg";
     _themes->setIcon(QIcon(icon));
 }
 
 void TrigBar::on_actionLight_triggered()
 {
     sig_setTheme(THEME_STYLE_LIGHT);
-    QString icon = GetIconPath() + "/" + THEME_STYLE_LIGHT +".svg";
+    QString icon = AppConfig::GetIconPath() + "/" + THEME_STYLE_LIGHT +".svg";
     _themes->setIcon(QIcon(icon));
 }
 
 void TrigBar::on_actionLissajous_triggered()
 {
-    pv::dialogs::LissajousOptions lissajous_dlg(_session, this);
+    dsv::dialogs::LissajousOptions lissajous_dlg(_session, this);
     lissajous_dlg.exec();
 }
 
  void TrigBar::on_display_setting()
  {    
-    pv::dialogs::ApplicationParamDlg dlg;
+    dsv::dialogs::ApplicationParamDlg dlg;
     dlg.ShowDlg(this);
  }
 

@@ -1,4 +1,4 @@
-v1.3.0-RC10 -- (2023-07-08)
+v1.3.0 -- (2023-07-18)
 ----------
   --common
   * Improve device management, decouple it from wave acquisition and display

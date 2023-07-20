@@ -29,9 +29,14 @@
 #include <QMenu>
 #include <libsigrok.h> 
 #include <QPushButton>
-
-#include "../sigsession.h"
 #include "../interface/icallbacks.h"
+
+namespace dsv{
+	namespace appcore{
+    	class SigSession; 
+	}
+}
+using namespace dsv::appcore;
 
 namespace dsv {
 namespace toolbars {

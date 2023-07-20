@@ -27,14 +27,18 @@
 #include <QString>
 #include "../ui/dscombobox.h"
 
-class DecoderStatus;
- 
 namespace dsv{
-
-namespace view{
-    class Trace;
+	namespace decode{
+    	class DecoderStatus; 
+	}
+    namespace view{
+        class Trace;
+    }
 }
+using namespace dsv::decode;
+using namespace dsv::view;
 
+namespace dsv{
 namespace dock{
 
 class IProtocolItemLayerCallback
@@ -77,7 +81,7 @@ private slots:
 public:
     DecoderStatus *m_decoderStatus; //DecoderStatus
     QString        m_protocolId;
-    pv::view::Trace *_trace;
+    dsv::view::Trace *_trace;
   
 private:
     QLabel *_protocol_label;

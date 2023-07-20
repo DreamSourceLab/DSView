@@ -20,14 +20,6 @@
  */
 
 #include "protocoldock.h"
-#include "../sigsession.h"
-#include "../view/decodetrace.h"
-#include "../data/decodermodel.h"
-#include "../data/decoderstack.h"
-#include "../dialogs/protocollist.h"
-#include "../dialogs/protocolexp.h" 
-#include "../view/view.h"
-
 #include <QObject>
 #include <QHBoxLayout>
 #include <QPainter>
@@ -47,17 +39,27 @@
 #include <QToolButton>
 #include <algorithm>
 #include <QTableWidgetItem>
+#include "../appcore/sigsession.h"
+#include "../view/decodetrace.h"
+#include "../data/decodermodel.h"
+#include "../data/decoderstack.h"
+#include "../dialogs/protocollist.h"
+#include "../dialogs/protocolexp.h" 
+#include "../view/view.h"
 #include "../ui/msgbox.h"
-#include "../dsvdef.h"
+#include "../basedef.h"
 #include "../config/appconfig.h"
-#include "../data/decode/decoderstatus.h"
-#include "../data/decode/decoder.h"
+#include "../decode/decoderstatus.h"
+#include "../decode/decoder.h"
 #include "../log.h"
 #include "../ui/langresource.h"
-#include "../appcontrol.h"
+#include "../appcore/appcontrol.h"
 #include "../ui/fn.h"
+#include "../decode/displaydataformat.h"
 
 using namespace std;
+using namespace dsv::config;
+using namespace dsv::decode;
 
 namespace dsv {
 namespace dock {
@@ -249,7 +251,7 @@ void ProtocolDock::retranslateUi()
 
 void ProtocolDock::reStyle()
 {
-    QString iconPath = GetIconPath();
+    QString iconPath = AppConfig::GetIconPath();
 
     if (_pro_add_button == NULL)
     {
@@ -317,7 +319,7 @@ void ProtocolDock::on_add_protocol()
     //check the base protocol
     srd_decoder *const dec = (srd_decoder *)(_decoderInfoList[dex]->_data_handle);
     QString pro_id(dec->id);
-    std::list<data::decode::Decoder*> sub_decoders;
+    std::list<decode::Decoder*> sub_decoders;
     
     assert(dec->inputs);
 
@@ -328,7 +330,7 @@ void ProtocolDock::on_add_protocol()
         pro_id = ""; //reset base protocol
 
         int base_dex = get_output_protocol_by_id(input_id);
-        sub_decoders.push_front(new data::decode::Decoder(dec));
+        sub_decoders.push_front(new decode::Decoder(dec));
 
         while (base_dex != -1)
         {
@@ -344,7 +346,7 @@ void ProtocolDock::on_add_protocol()
                 break;
             }
 
-            sub_decoders.push_front(new data::decode::Decoder(base_dec));
+            sub_decoders.push_front(new decode::Decoder(base_dec));
             pro_id = ""; //reset base protocol
             base_dex = get_output_protocol_by_id(input_id);
         }
@@ -365,7 +367,7 @@ void ProtocolDock::on_add_protocol()
     add_protocol_by_id(pro_id, false, sub_decoders);
 }
 
-bool ProtocolDock::add_protocol_by_id(QString id, bool silent, std::list<pv::data::decode::Decoder*> &sub_decoders)
+bool ProtocolDock::add_protocol_by_id(QString id, bool silent, std::list<dsv::decode::Decoder*> &sub_decoders)
 {
     if (_session->get_device()->get_work_mode() != LOGIC) {
         dsv_info("Protocol Analyzer\nProtocol Analyzer is only valid in Digital Mode!");
@@ -392,7 +394,7 @@ bool ProtocolDock::add_protocol_by_id(QString id, bool silent, std::list<pv::dat
         protocolId = QString((*it)->decoder()->id); 
     }
 
-    pv::view::Trace *trace = NULL;
+    dsv::view::Trace *trace = NULL;
 
     if (_session->add_decoder(decoder, silent, dstatus, sub_decoders, trace) == false){
         return false;
@@ -484,7 +486,7 @@ void ProtocolDock::decoded_progress(int progress)
 
 void ProtocolDock::set_model()
 {
-    pv::dialogs::ProtocolList *protocollist_dlg = new pv::dialogs::ProtocolList(this, _session);
+    dsv::dialogs::ProtocolList *protocollist_dlg = new dsv::dialogs::ProtocolList(this, _session);
     protocollist_dlg->exec();
     resize_table_view(_session->get_decoder_model());
     _model_proxy.setSourceModel(_session->get_decoder_model());
@@ -500,7 +502,7 @@ void ProtocolDock::set_model()
 
 void ProtocolDock::update_model()
 {
-    pv::data::DecoderModel *decoder_model = _session->get_decoder_model();
+    dsv::data::DecoderModel *decoder_model = _session->get_decoder_model();
     const auto &decode_sigs = _session->get_decode_signals();
 
     if (decode_sigs.size() == 0)
@@ -543,11 +545,11 @@ void ProtocolDock::resize_table_view(data::DecoderModel* decoder_model)
 
 void ProtocolDock::item_clicked(const QModelIndex &index)
 {
-    pv::data::DecoderModel *decoder_model = _session->get_decoder_model();
+    dsv::data::DecoderModel *decoder_model = _session->get_decoder_model();
 
     auto decoder_stack = decoder_model->getDecoderStack();
     if (decoder_stack) {
-        pv::data::decode::Annotation ann;
+        dsv::decode::Annotation ann;
         if (decoder_stack->list_annotation(ann, index.column(), index.row())) {
             const auto &decode_sigs = _session->get_decode_signals();
 
@@ -603,7 +605,7 @@ void ProtocolDock::column_resize(int index, int old_size, int new_size)
     (void)index;
     (void)old_size;
     (void)new_size;
-    pv::data::DecoderModel *decoder_model = _session->get_decoder_model();
+    dsv::data::DecoderModel *decoder_model = _session->get_decoder_model();
     if (decoder_model->getDecoderStack()) {
         int top_row = _table_view->rowAt(0);
         int bom_row = _table_view->rowAt(_table_view->height());
@@ -616,21 +618,21 @@ void ProtocolDock::column_resize(int index, int old_size, int new_size)
 
 void ProtocolDock::export_table_view()
 {
-    pv::dialogs::ProtocolExp *protocolexp_dlg = new pv::dialogs::ProtocolExp(this, _session);
+    dsv::dialogs::ProtocolExp *protocolexp_dlg = new dsv::dialogs::ProtocolExp(this, _session);
     protocolexp_dlg->exec();
 }
 
 void ProtocolDock::nav_table_view()
 {
     uint64_t row_index = 0;
-    pv::data::DecoderModel *decoder_model = _session->get_decoder_model();
+    dsv::data::DecoderModel *decoder_model = _session->get_decoder_model();
 
     auto decoder_stack = decoder_model->getDecoderStack();
     if (decoder_stack) {
         uint64_t offset = _view.offset() * (decoder_stack->samplerate() * _view.scale());
-        std::map<const pv::data::decode::Row, bool> rows = decoder_stack->get_rows_lshow();
+        std::map<const dsv::decode::Row, bool> rows = decoder_stack->get_rows_lshow();
         int column = _model_proxy.filterKeyColumn();
-        for (std::map<const pv::data::decode::Row, bool>::const_iterator i = rows.begin();
+        for (std::map<const dsv::decode::Row, bool>::const_iterator i = rows.begin();
             i != rows.end(); i++) {
             if ((*i).second && column-- == 0) {
                 row_index = decoder_stack->get_annotation_index((*i).first, offset);
@@ -642,7 +644,7 @@ void ProtocolDock::nav_table_view()
             _table_view->scrollTo(index);
             _table_view->setCurrentIndex(index);
 
-            pv::data::decode::Annotation ann;
+            dsv::decode::Annotation ann;
             decoder_stack->list_annotation(ann, index.column(), index.row());
             const auto &decode_sigs = _session->get_decode_signals();
 
@@ -671,7 +673,7 @@ void ProtocolDock::search_pre()
     int i = 0;
     uint64_t rowCount = _model_proxy.rowCount();
     QModelIndex matchingIndex;
-    pv::data::DecoderModel *decoder_model = _session->get_decoder_model();
+    dsv::data::DecoderModel *decoder_model = _session->get_decoder_model();
 
     auto decoder_stack = decoder_model->getDecoderStack();
     do {
@@ -685,7 +687,7 @@ void ProtocolDock::search_pre()
         i = 1;
         uint64_t row = matchingIndex.row() + 1;
         uint64_t col = matchingIndex.column();
-        pv::data::decode::Annotation ann;
+        dsv::decode::Annotation ann;
         bool ann_valid;
         while(i < _str_list.size()) {
             QString nxt = _str_list.at(i);
@@ -731,7 +733,7 @@ void ProtocolDock::search_nxt()
     int i = 0;
     uint64_t rowCount = _model_proxy.rowCount();
     QModelIndex matchingIndex;
-    pv::data::DecoderModel *decoder_model = _session->get_decoder_model();
+    dsv::data::DecoderModel *decoder_model = _session->get_decoder_model();
     auto decoder_stack = decoder_model->getDecoderStack();
 
     if (decoder_stack == NULL){ 
@@ -752,7 +754,7 @@ void ProtocolDock::search_nxt()
         i = 1;
         uint64_t row = matchingIndex.row() + 1;
         uint64_t col = matchingIndex.column();
-        pv::data::decode::Annotation ann;
+        dsv::decode::Annotation ann;
         bool ann_valid;
 
         while(i < _str_list.size()) {
@@ -807,7 +809,7 @@ void ProtocolDock::search_update()
     if (!_search_edited)
         return;
 
-    pv::data::DecoderModel *decoder_model = _session->get_decoder_model();
+    dsv::data::DecoderModel *decoder_model = _session->get_decoder_model();
 
     auto decoder_stack = decoder_model->getDecoderStack();
     if (!decoder_stack)

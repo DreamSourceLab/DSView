@@ -35,19 +35,21 @@
 #include "dsdialog.h"
 #include "../ui/dscombobox.h"
 
+namespace dsv{
+	namespace appcore{
+    	class SigSession; 
+	}
+    namespace decode {
+        class Row;
+        class Annotation;
+    }
+}
+using namespace dsv::appcore;
+using namespace dsv::decode;
+
 namespace dsv {
-
-class SigSession;
-
-namespace data {
-namespace decode {
-class Row;
-class Annotation;
-}
-}
-
 namespace dialogs {
-
+    
 class ProtocolExp : public DSDialog
 {
     Q_OBJECT
@@ -56,7 +58,7 @@ private:
     struct ExportRowInfo
     {
         QString title;
-        const data::decode::Row *row;
+        const decode::Row *row;
         int     row_index;
         uint64_t    read_index;
     };
@@ -68,8 +70,8 @@ protected:
     void accept();
     void reject();
     void save_proc();
-    static bool compare_ann_index(const data::decode::Annotation *a, 
-                    const data::decode::Annotation *b);
+    static bool compare_ann_index(const decode::Annotation *a, 
+                    const decode::Annotation *b);
 
 signals:
     void export_progress(int percent);

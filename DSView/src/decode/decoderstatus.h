@@ -41,7 +41,7 @@ public:
     AnnotationResTable  m_resTable; 
 };
 
-#endif //DECODE_DECODER_STATUS_H
-
 } //namespace decode
 } //namespace dsv
+
+#endif //DECODE_DECODER_STATUS_H

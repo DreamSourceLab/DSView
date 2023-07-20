@@ -27,21 +27,9 @@
 
 class QComboBox;
 
-struct FontBindInfo
+namespace dsv{
+namespace dialogs
 {
-    QComboBox   *name_box;
-    QComboBox   *size_box;
-    QString     lang_id;
-    char        *lang_def;
-    QString     *ptr_name;
-    float         *ptr_size;
-};
-
-namespace dsv
-{
- namespace dialogs
-{
-
     class ApplicationParamDlg
     { 
     public:

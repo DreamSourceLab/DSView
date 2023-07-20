@@ -24,28 +24,31 @@
 
 #include "binding.h"
 #include <QFont>
-
 #include "../property.h"
 
 struct srd_decoder_option;
 
+namespace dsv{
+	namespace decode{
+    	class Decoder;
+	}
+
+	namespace data{
+		class DecoderStack;
+	}
+}
+
+using namespace dsv::data;
+using namespace dsv::decode;
+
 namespace dsv {
-
-namespace data {
-class DecoderStack;
-namespace decode {
-class Decoder;
-}
-}
-
 namespace prop {
 namespace binding {
 
 class DecoderOptions : public Binding
 {
 public:
-	DecoderOptions(pv::data::DecoderStack *decoder_stack,
-		pv::data::decode::Decoder* decoder);
+	DecoderOptions(DecoderStack *decoder_stack, Decoder* decoder);
 
     GVariant* getter(const char *id);
 
@@ -59,7 +62,7 @@ private:
 
 
 private:
-	pv::data::decode::Decoder 	*_decoder;
+	Decoder 	*_decoder;
 };
 
 } // binding

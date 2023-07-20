@@ -20,13 +20,12 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
  */
 
-  
-#include <math.h> 
 #include "signal.h"
+#include <math.h> 
 #include "view.h" 
-#include "../dsvdef.h"
-#include "../appcontrol.h"
-#include "../sigsession.h"
+#include "../basedef.h"
+#include "../appcore/appcontrol.h"
+#include "../appcore/sigsession.h"
 
 namespace dsv {
 namespace view {

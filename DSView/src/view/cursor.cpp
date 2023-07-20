@@ -31,6 +31,7 @@
 #include "ruler.h"
 #include "view.h"
 #include "../basedef.h"
+#include "../appcore/sigsession.h"
 
 namespace dsv {
 namespace view {
@@ -84,7 +85,7 @@ void Cursor::paint_label(QPainter &p, const QRect &rect,
 {
     assert(index > 0);
 
-    using pv::view::Ruler;
+    using dsv::view::Ruler;
     bool visible;
 
     compute_text_size(p, prefix);
@@ -128,7 +129,7 @@ void Cursor::paint_label(QPainter &p, const QRect &rect,
 void Cursor::paint_fix_label(QPainter &p, const QRect &rect,
     unsigned int prefix, QChar label, QColor color, bool has_hoff)
 {
-    using pv::view::Ruler;
+    using dsv::view::Ruler;
     bool visible;
 
     compute_text_size(p, prefix);

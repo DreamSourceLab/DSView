@@ -36,38 +36,41 @@
 #include <QSortFilterProxyModel>
 #include <QLineEdit>
 #include <QToolButton>
-
 #include <vector>
 #include <mutex>
 #include <list>
-
 #include "../data/decodermodel.h"
 #include "protocolitemlayer.h"
 #include "keywordlineedit.h"
 #include "searchcombobox.h"
 #include "../interface/icallbacks.h"
 
+namespace dsv{
+	namespace appcore{
+    	class SigSession; 
+	}
+    namespace decode{
+        class Decoder;
+    }
+    namespace data {
+        class DecoderModel;
+    }
+    namespace view {
+        class View;
+    }
+}
+using namespace dsv::appcore;
+using namespace dsv::decode;
+using namespace dsv::data;
+using namespace dsv::view;
+
+namespace dsv {
+namespace dock {
+
 struct DecoderInfoItem{
     void  *_data_handle; //srd_decoder* type
 };
 
-namespace dsv {
-
-class SigSession;
-  
-namespace data {
-    class DecoderModel;
-    namespace decode{
-        class Decoder;
-    }
-}
-
-namespace view {
-class View;
-}
-
-namespace dock {
-  
 class ProtocolDock : public QScrollArea, 
 public IProtocolItemLayerCallback, 
 public IKeywordActive,
@@ -85,7 +88,7 @@ public:
     ~ProtocolDock();
 
     void del_all_protocol(); 
-    bool add_protocol_by_id(QString id, bool silent, std::list<pv::data::decode::Decoder*> &sub_decoders);
+    bool add_protocol_by_id(QString id, bool silent, std::list<dsv::decode::Decoder*> &sub_decoders);
 
     void reset_view();
     void update_view_status();

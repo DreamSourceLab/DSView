@@ -20,14 +20,14 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
  */
 
+#include "logicsignal.h"
 #include <libsigrokdecode.h>
 #include <math.h>
-#include "logicsignal.h"
-#include "view.h" 
 #include "../data/logicsnapshot.h"
 #include "view.h"
-#include "../dsvdef.h"
+#include "../basedef.h"
 #include "../log.h"
+#include "../appcore/sigsession.h"
 
 using namespace std;
 
@@ -107,7 +107,7 @@ void LogicSignal::paint_mid_align_sample(QPainter &p, int left, int right, QColo
 
 void LogicSignal::paint_mid_align(QPainter &p, int left, int right, QColor fore, QColor back, uint64_t end_align_sample)
 {
-	using pv::view::View;
+	using dsv::view::View;
 
     (void)back;
 
@@ -199,7 +199,7 @@ void LogicSignal::paint_caps(QPainter &p, QLineF *const lines,
 
     uint64_t curX = 0;
     uint64_t nxtX = 0;
-	for (std::vector<pv::data::LogicSnapshot::EdgePair>::const_iterator i =
+	for (std::vector<dsv::data::LogicSnapshot::EdgePair>::const_iterator i =
 		edges.begin(); i != (edges.end() - 1); i++)
 		if ((*i).second == level) {
             curX = ((*i).first / samples_per_pixel -

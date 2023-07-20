@@ -25,25 +25,29 @@
 #define DSVIEW_PV_VIEW_VIEWPORT_H
 
 #include <stdint.h>
- 
 #include <QTime>
 #include <QTimer>
 #include <QWidget>
 #include <QNativeGestureEvent>
 #include <QElapsedTimer>
 #include <chrono>
-
-#include "../view/view.h"
-#include "../dsvdef.h"
+#include "view.h"
+#include "../basedef.h"
 #include "../interface/icallbacks.h"
 
 class QPainter;
 class QPaintEvent;
-class SigSession;
 class QAction;
 
 using std::chrono::high_resolution_clock;
 using std::chrono::milliseconds;
+
+namespace dsv{
+	namespace appcore{
+    	class SigSession; 
+	}
+}
+using namespace dsv::appcore;
 
 namespace dsv {
 namespace view {

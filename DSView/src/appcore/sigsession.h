@@ -32,7 +32,6 @@
 #include <QDateTime>
 #include <list>
 #include <libsigrok.h>
-
 #include "../view/mathtrace.h"
 #include "../data/mathstack.h"
 #include "../interface/icallbacks.h"
@@ -49,7 +48,6 @@ struct srd_channel;
 typedef std::lock_guard<std::mutex> ds_lock_guard;
 
 namespace dsv {
-
 namespace data {
     class SignalData;
     class Snapshot;
@@ -74,6 +72,17 @@ namespace view {
     class MathTrace;
 }
 
+namespace com{
+    class DsTimer;
+}
+}
+
+using namespace dsv::view;
+using namespace dsv::com;
+using namespace dsv::decode;
+using namespace dsv::data;
+
+namespace dsv {
 namespace appcore {
 
 enum DEVICE_STATUS_TYPE
@@ -118,8 +127,6 @@ private:
     data::AnalogSnapshot  analog;
     data::DsoSnapshot     dso;
 };
-
-using namespace dsv::data;
 
 //created by MainWindow
 class SigSession:
@@ -212,7 +219,7 @@ public:
 	std::vector<view::Signal*>& get_signals(); 
 
     bool add_decoder(srd_decoder *const dec, bool silent, DecoderStatus *dstatus, 
-                        std::list<pv::data::decode::Decoder*> &sub_decoders, view::Trace* &out_trace);
+                        std::list<dsv::decode::Decoder*> &sub_decoders, view::Trace* &out_trace);
     int get_trace_index_by_key_handel(void *handel);
     void remove_decoder(int index);
     void remove_decoder_by_key_handel(void *handel); 
@@ -224,7 +231,7 @@ public:
     void rst_decoder(int index); 
     void rst_decoder_by_key_handel(void *handel);
 
-    inline pv::data::DecoderModel* get_decoder_model(){
+    inline dsv::data::DecoderModel* get_decoder_model(){
          return _decoder_model;
     }
 
@@ -253,8 +260,8 @@ public:
     void lissajous_rebuild(bool enable, int xindex, int yindex, double percent);
     void lissajous_disable();
 
-    void math_rebuild(bool enable,pv::view::DsoSignal *dsoSig1,
-                      pv::view::DsoSignal *dsoSig2,
+    void math_rebuild(bool enable,dsv::view::DsoSignal *dsoSig1,
+                      dsv::view::DsoSignal *dsoSig2,
                       data::MathStack::MathType type);
 
     inline bool trigd(){
@@ -537,7 +544,7 @@ private:
 	std::vector<view::Signal*>      _signals; 
     std::vector<view::DecodeTrace*> _decode_traces;
     std::vector<view::DecodeTrace*> _decode_tasks;
-    pv::data::DecoderModel          *_decoder_model;
+    dsv::data::DecoderModel          *_decoder_model;
     std::vector<view::SpectrumTrace*> _spectrum_traces;
     view::LissajousTrace            *_lissajous_trace;
     view::MathTrace                 *_math_trace;
@@ -604,6 +611,7 @@ private:
 	static SigSession *_session;
 };
 
-} // namespace dsv
+} //namespace com
+} //namespace appcore
 
 #endif // DSVIEW_PV_SIGSESSION_H

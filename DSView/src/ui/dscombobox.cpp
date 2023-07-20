@@ -25,8 +25,9 @@
 #include <QString>
 #include <QGuiApplication>
 #include <QScreen>
-
 #include "../config/appconfig.h"
+ 
+using namespace dsv::config;
 
 DsComboBox::DsComboBox(QWidget *parent) : QComboBox(parent)
 {

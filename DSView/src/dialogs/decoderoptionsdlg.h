@@ -35,13 +35,12 @@ struct srd_channel;
 
 #include "dsdialog.h"
 
-namespace dsv {
+namespace dsv{
     namespace data{
-        class DecoderStack;
-
-        namespace decode{
-            class Decoder;
-        }
+        class DecoderStack;       
+    }
+    namespace decode{
+        class Decoder;
     }
     namespace prop{   
         namespace binding{
@@ -53,10 +52,14 @@ namespace dsv {
         class Cursor;
         class DecodeTrace;
     }
+}
+using namespace dsv::data;
+using namespace dsv::decode;
+using namespace dsv::view;
 
+namespace dsv { 
 namespace dialogs {
  
-
 class DecoderOptionsDlg: public DSDialog
 {
     Q_OBJECT
@@ -65,7 +68,7 @@ private:
 	struct ProbeSelector
 	{
 		const DsComboBox *_combo;
-        const pv::data::decode::Decoder *_decoder;
+        const Decoder *_decoder;
 		const srd_channel *_pdch;
 	};
 
@@ -85,7 +88,7 @@ public:
         cursor2 = _cursor2;
     }
 
-    void load_options(view::DecodeTrace *trace);
+    void load_options(DecodeTrace *trace);
 
     inline bool is_reload_form(){
         return _is_reload_form;
@@ -96,14 +99,14 @@ private:
 
     void load_decoder_forms(QWidget *container);  
 
-    DsComboBox* create_probe_selector(QWidget *parent, const data::decode::Decoder *dec,
+    DsComboBox* create_probe_selector(QWidget *parent, const Decoder *dec,
             const srd_channel *const pdch);
  
-    void create_decoder_form(pv::data::decode::Decoder *dec,
+    void create_decoder_form(Decoder *dec,
             QWidget *parent, QFormLayout *form);
 
     void commit_probes();    
-    void commit_decoder_probes(data::decode::Decoder *dec);
+    void commit_decoder_probes(Decoder *dec);
     void update_decode_range(); 
  
 private slots:
@@ -116,7 +119,7 @@ private:
     std::vector<prop::binding::DecoderOptions*> _bindings;
     DsComboBox 		*_start_comboBox;
 	DsComboBox 		*_end_comboBox;
-    view::DecodeTrace   *_trace;
+    DecodeTrace   *_trace;
     uint64_t     _cursor1; //cursor key
     uint64_t     _cursor2;
     int          _contentHeight;

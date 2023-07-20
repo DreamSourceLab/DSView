@@ -25,15 +25,20 @@
 #define DSVIEW_PV_LOGICSIGNAL_H
 
 #include "signal.h"
-
 #include <vector> 
 
+namespace dsv{
+	namespace appcore{
+    	class SigSession; 
+	}
+    namespace data {
+        class LogicSnapshot;
+    }    
+}
+using namespace dsv::appcore;
+using namespace dsv::data;
+
 namespace dsv {
-
-namespace data {
-    class LogicSnapshot;
-} 
-
 namespace view {
 
 //when device is logic analyzer mode, to draw logic signal trace
@@ -61,9 +66,9 @@ public:
     };
 
 public:
-    LogicSignal(data::LogicSnapshot *data, sr_channel *probe);
+    LogicSignal(LogicSnapshot *data, sr_channel *probe);
 
-    LogicSignal(view::LogicSignal*s, data::LogicSnapshot *data, sr_channel *probe);
+    LogicSignal(view::LogicSignal*s, LogicSnapshot *data, sr_channel *probe);
 
 	virtual ~LogicSignal();
 
@@ -71,11 +76,11 @@ public:
         return _probe;
     }
 
-    inline data::LogicSnapshot* data(){
+    inline LogicSnapshot* data(){
         return _data;
     }
 
-    void set_data(data::LogicSnapshot* data);
+    void set_data(LogicSnapshot* data);
     
     inline LogicSetRegions get_trig(){
         return _trig;
@@ -121,8 +126,8 @@ private:
     void paint_mid_align(QPainter &p, int left, int right, QColor fore, QColor back, uint64_t end_align_sample);
 
 private:
-	pv::data::LogicSnapshot* _data;
-    std::vector< std::pair<uint16_t, bool> > _cur_edges;
+	LogicSnapshot* _data;
+    std::vector<std::pair<uint16_t, bool> > _cur_edges;
     std::vector<std::pair<bool, bool>> _cur_pulses;
     LogicSetRegions _trig;
     uint64_t    _paint_align_sample_count;

@@ -26,8 +26,6 @@
 
 namespace dsv {
 
-class SigSession;
-
 namespace widgets {
 
 class FakeLineEdit : public QLineEdit

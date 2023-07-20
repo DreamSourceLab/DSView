@@ -29,12 +29,20 @@
 #include <QMenu>
 #include "../interface/icallbacks.h"
 
-class DockOptions;
+namespace dsv {
+    namespace config{
+    	class DockOptions; 
+	}
+
+    namespace appcore{
+    	class SigSession; 
+	}
+}
+
+using namespace dsv::appcore;
+using namespace dsv::config;
 
 namespace dsv {
-
-class SigSession;
-
 namespace toolbars {
 
 //boolbar, referenced by MainWindow

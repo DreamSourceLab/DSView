@@ -20,9 +20,12 @@
  */
 
 #include "protocolitemlayer.h"
-#include "../dsvdef.h"
+#include "../basedef.h"
 #include <assert.h> 
 #include "../config/appconfig.h"
+#include "../decode/displaydataformat.h"
+
+using namespace dsv::config;
  
 namespace dsv {
 namespace dock {
@@ -44,7 +47,7 @@ ProtocolItemLayer::ProtocolItemLayer(QWidget *parent, QString protocolName, IPro
         _del_button = new QPushButton(parent);
         _format_combox = new DsComboBox(parent);
 
-        QString iconPath = GetIconPath();
+        QString iconPath = AppConfig::GetIconPath();
         _del_button->setFlat(true);
         _del_button->setIcon(QIcon(iconPath + "/del.svg"));
         _set_button->setFlat(true);
@@ -115,7 +118,7 @@ void ProtocolItemLayer::on_format_select_changed(int index){
  }
 
 void ProtocolItemLayer::ResetStyle(){
-    QString iconPath = GetIconPath();
+    QString iconPath = AppConfig::GetIconPath();
      _del_button->setIcon(QIcon(iconPath + "/del.svg"));
     _set_button->setIcon(QIcon(iconPath + "/gear.svg"));
 }

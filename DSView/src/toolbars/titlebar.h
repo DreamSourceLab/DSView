@@ -23,7 +23,7 @@
 #define DSVIEW_PV_TOOLBARS_TITLEBAR_H
 
 #include <QWidget>
- #include "../interface/icallbacks.h"
+#include "../interface/icallbacks.h"
 
 class QToolButton;
 class QHBoxLayout;

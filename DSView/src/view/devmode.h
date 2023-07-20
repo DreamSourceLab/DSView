@@ -35,14 +35,21 @@
 #include <libsigrok.h> 
 #include "../interface/icallbacks.h"
 
-namespace dsv {
-
-namespace appcore {
-    class SigSession;
-    class DeviceAgent;
+namespace dsv{
+	namespace appcore{
+    	class SigSession;
+        class DeviceAgent;
+	}
 }
+using namespace dsv::appcore;
 
+namespace dsv {
 namespace view {
+
+struct dev_mode_name{
+    int _mode;
+    const char *_logo;
+};
 
 //devece work mode select list
 class DevMode : public QWidget, public IFontForm
@@ -52,24 +59,17 @@ class DevMode : public QWidget, public IFontForm
 private:
     static const int GRID_COLS = 3;
 
-    struct dev_mode_name{
-        int _mode;
-        const char *_logo;
-    };
-
 public:
     DevMode(QWidget *parent, SigSession *session);
 
 private:
 	void paintEvent(QPaintEvent *event);
-
-private:
 	void mousePressEvent(QMouseEvent * event);
 	void mouseReleaseEvent(QMouseEvent *event);
 	void mouseMoveEvent(QMouseEvent *event);
 	void leaveEvent(QEvent *event);
     void changeEvent(QEvent *event);
-    const dev_mode_name* get_mode_name(int mode);
+    const struct dev_mode_name* get_mode_name(int mode);
 
     //IFontForm
     void update_font() override;
@@ -77,11 +77,7 @@ private:
 public slots:
     void set_device();
     void on_mode_change();
-    void on_close();
-
-private slots:
-
- 
+    void on_close(); 
 
 private:
     SigSession *_session;

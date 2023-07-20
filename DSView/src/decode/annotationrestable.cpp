@@ -25,6 +25,7 @@
 #include <math.h>
 #include "../log.h"
 #include "../basedef.h"
+#include "displaydataformat.h"
 
 namespace dsv {
 namespace decode {

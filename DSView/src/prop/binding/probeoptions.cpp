@@ -29,11 +29,12 @@
 #include "../int.h"
 #include "../../config/appconfig.h"
 #include "../../log.h"
-#include "../../appcontrol.h"
-#include "../../sigsession.h"
+#include "../../appcore/appcontrol.h"
+#include "../../appcore/sigsession.h"
 #include "../../ui/langresource.h"
 
 using namespace std;
+using namespace dsv::appcore;
 
 namespace dsv {
 namespace prop {
@@ -46,10 +47,10 @@ ProbeOptions::ProbeOptions(struct sr_channel *probe) :
 	GVariant *gvar_opts;
 	gsize num_opts;
 
-    SigSession *session = AppControl::Instance()->GetSession();
-    _device_agent = session->get_device();
+    auto session = AppControl::Instance()->GetSession();
+    auto device_agent = session->get_device();
 
-    gvar_opts = _device_agent->get_config_list(NULL, SR_CONF_PROBE_CONFIGS);
+    gvar_opts = device_agent->get_config_list(NULL, SR_CONF_PROBE_CONFIGS);
     if (gvar_opts == NULL){
 		/* Driver supports no device instance options. */
 		return;
@@ -61,14 +62,14 @@ ProbeOptions::ProbeOptions(struct sr_channel *probe) :
 	for (unsigned int i = 0; i < num_opts; i++) 
     {
 		const struct sr_config_info *const info =
-			_device_agent->get_config_info(options[i]);
+			device_agent->get_config_info(options[i]);
 
 		if (!info)
 			continue;
 
 		const int key = info->key;
 
-        GVariant *gvar_list = _device_agent->get_config_list(NULL, key);
+        GVariant *gvar_list = device_agent->get_config_list(NULL, key);
 
         const QString name(info->name);
         const char *label_char =  LangResource::Instance()->get_lang_text(STR_PAGE_DSL, info->name, info->name);       
@@ -107,16 +108,16 @@ ProbeOptions::ProbeOptions(struct sr_channel *probe) :
 
 GVariant* ProbeOptions::config_getter(const struct sr_channel *probe, int key)
 { 
-    SigSession *session = AppControl::Instance()->GetSession();
-    DeviceAgent *_device_agent = session->get_device();
-    return _device_agent->get_config(key, probe, NULL);
+    auto session = AppControl::Instance()->GetSession();
+    auto device_agent = session->get_device();
+    return device_agent->get_config(key, probe, NULL);
 }
 
 void ProbeOptions::config_setter(struct sr_channel *probe, int key, GVariant* value)
 {
-    SigSession *session = AppControl::Instance()->GetSession();
-    DeviceAgent *_device_agent = session->get_device();
-    _device_agent->set_config(key, value, probe, NULL);
+    auto session = AppControl::Instance()->GetSession();
+    auto device_agent = session->get_device();
+    device_agent->set_config(key, value, probe, NULL);
 }
 
 void ProbeOptions::bind_bool(const QString &name, const QString label, int key)

@@ -20,6 +20,7 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
  */
 
+#include "mainwindow.h"
 #include <QAction>
 #include <QButtonGroup>
 #include <QFileDialog>
@@ -43,69 +44,62 @@
 #include <QJsonValue>
 #include <QJsonArray>
 #include <functional>
-
-//include with qt5
-#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
-#include <QDesktopWidget>
-#endif
-
-#include "mainwindow.h"
-
-#include "data/logicsnapshot.h"
-#include "data/dsosnapshot.h"
-#include "data/analogsnapshot.h"
-
-#include "dialogs/about.h"
-#include "dialogs/deviceoptions.h"
-#include "dialogs/storeprogress.h"
-#include "dialogs/waitingdialog.h"
-#include "dialogs/regionoptions.h"
-
-#include "toolbars/samplingbar.h"
-#include "toolbars/trigbar.h"
-#include "toolbars/filebar.h"
-#include "toolbars/logobar.h"
-#include "toolbars/titlebar.h"
-
-#include "dock/triggerdock.h"
-#include "dock/dsotriggerdock.h"
-#include "dock/measuredock.h"
-#include "dock/searchdock.h"
-#include "dock/protocoldock.h"
-
-#include "view/view.h"
-#include "view/trace.h"
-#include "view/signal.h"
-#include "view/dsosignal.h"
-#include "view/logicsignal.h"
-#include "view/analogsignal.h"
-
 /* __STDC_FORMAT_MACROS is required for PRIu64 and friends (in C++). */
 #include <inttypes.h>
 #include <stdint.h>
 #include <stdarg.h>
 #include <glib.h>
 #include <list>
-#include "ui/msgbox.h"
-#include "config/appconfig.h"
-#include "appcontrol.h"
-#include "dsvdef.h"
-#include "appcontrol.h"
-#include "utility/encoding.h"
-#include "utility/path.h"
-#include "log.h"
+#include <thread>
+#include <stdlib.h>
+
+//include with qt5
+#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
+#include <QDesktopWidget>
+#endif
+
+#include "../data/logicsnapshot.h"
+#include "../data/dsosnapshot.h"
+#include "../data/analogsnapshot.h"
+#include "../dialogs/about.h"
+#include "../dialogs/deviceoptions.h"
+#include "../dialogs/storeprogress.h"
+#include "../dialogs/waitingdialog.h"
+#include "../dialogs/regionoptions.h"
+#include "../toolbars/samplingbar.h"
+#include "../toolbars/trigbar.h"
+#include "../toolbars/filebar.h"
+#include "../toolbars/logobar.h"
+#include "../toolbars/titlebar.h"
+#include "../dock/triggerdock.h"
+#include "../dock/dsotriggerdock.h"
+#include "../dock/measuredock.h"
+#include "../dock/searchdock.h"
+#include "../dock/protocoldock.h"
+#include "../view/view.h"
+#include "../view/trace.h"
+#include "../view/signal.h"
+#include "../view/dsosignal.h"
+#include "../view/logicsignal.h"
+#include "../view/analogsignal.h"
+#include "../ui/msgbox.h"
+#include "../config/appconfig.h"
+#include "../utility/encoding.h"
+#include "../utility/path.h"
+#include "../log.h"
 #include "sigsession.h"
 #include "deviceagent.h"
-#include <stdlib.h>
-#include "ZipMaker.h"
-#include "ui/langresource.h"
+#include "../com/zipmaker.h"
+#include "../ui/langresource.h"
 #include "mainframe.h"
-#include "dsvdef.h"
-#include <thread>
+#include "../basedef.h"
+#include "appcontrol.h"
+
+
+using namespace dsv::config;
 
 namespace dsv {
 namespace appcore {
-
 
     MainWindow::MainWindow(toolbars::TitleBar *title_bar, QWidget *parent)
         : QMainWindow(parent)
@@ -179,7 +173,7 @@ namespace appcore {
         _dso_trigger_dock->setWidget(_dso_trigger_widget);
 
         // Setup _view widget
-        _view = new pv::view::View(_session, _sampling_bar, this);
+        _view = new dsv::view::View(_session, _sampling_bar, this);
         _vertical_layout->addWidget(_view);
 
         setIconSize(QSize(40, 40));
@@ -314,7 +308,7 @@ namespace appcore {
         QString ldFileName(AppControl::Instance()->_open_file_name.c_str());
         if (ldFileName != "")
         {   
-            std::string file_name = pv::path::ToUnicodePath(ldFileName);
+            std::string file_name = dsv::path::ToUnicodePath(ldFileName);
 
             if (QFile::exists(ldFileName))
             {              
@@ -414,7 +408,7 @@ namespace appcore {
             break;
         }
 
-        pv::dialogs::DSMessageBox msg(this, title);
+        dsv::dialogs::DSMessageBox msg(this, title);
         msg.mBox()->setText(details);
         msg.mBox()->setStandardButtons(QMessageBox::Ok);
         msg.mBox()->setIcon(QMessageBox::Warning);
@@ -449,7 +443,7 @@ namespace appcore {
     { 
         AppConfig &app = AppConfig::Instance();
 
-        QString file = GetProfileDir();
+        QString file = AppConfig::GetProfileDir();
         QDir dir(file);
         if (dir.exists() == false){
             dir.mkpath(file);
@@ -599,7 +593,7 @@ namespace appcore {
     // save file
     void MainWindow::on_save()
     {
-        using pv::dialogs::StoreProgress;
+        using dsv::dialogs::StoreProgress;
 
         if (_device_agent->have_instance() == false)
         {
@@ -620,7 +614,7 @@ namespace appcore {
 
     void MainWindow::on_export()
     {
-        using pv::dialogs::StoreProgress;
+        using dsv::dialogs::StoreProgress;
 
         if (_session->is_working()){
             dsv_info("Export data: stop the current device."); 
@@ -645,7 +639,7 @@ namespace appcore {
 
         _protocol_widget->del_all_protocol();
 
-        std::string file_name = pv::path::ToUnicodePath(file);
+        std::string file_name = dsv::path::ToUnicodePath(file);
         dsv_info("Load device profile: \"%s\"", file_name.c_str());
         
         QFile sf(file);
@@ -1159,7 +1153,7 @@ namespace appcore {
             assert(false);
         }
 
-        std::string file_name = pv::path::ToUnicodePath(name);
+        std::string file_name = dsv::path::ToUnicodePath(name);
         dsv_info("Store session to file: \"%s\"", file_name.c_str());
 
         QFile sf(name);
@@ -1433,7 +1427,7 @@ namespace appcore {
 
     void MainWindow::openDoc()
     {
-        QDir dir(GetAppDataDir());
+        QDir dir(AppConfig::GetAppDataDir());
         AppConfig &app = AppConfig::Instance();
         int lan = app.frameOptions.language;
         QDesktopServices::openUrl(
@@ -1677,7 +1671,7 @@ namespace appcore {
         }
         else if (_device_agent->is_demo())
         {
-            QDir dir(GetFirmwareDir());
+            QDir dir(AppConfig::GetFirmwareDir());
             if (dir.exists())
             {
                 QString ses_name = dir.absolutePath() + "/" 
@@ -1709,7 +1703,7 @@ namespace appcore {
             assert(false);
         }
 
-        auto f_name = pv::path::ConvertPath(file);
+        auto f_name = dsv::path::ConvertPath(file);
         ZipReader rd(f_name.c_str());
         auto *data = rd.GetInnterFileData("session");
 
@@ -2153,7 +2147,7 @@ namespace appcore {
 
     void MainWindow::load_demo_decoder_config(QString optname)
     { 
-        QString file = GetAppDataDir() + "/demo/logic/" + optname + ".demo";
+        QString file = AppConfig::GetAppDataDir() + "/demo/logic/" + optname + ".demo";
         bool bLoadSurccess = false;
 
         QJsonArray deArray = get_decoder_json_from_data_file(file, bLoadSurccess);

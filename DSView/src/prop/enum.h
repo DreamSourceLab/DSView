@@ -25,7 +25,6 @@
 
 #include <utility>
 #include <vector>
-
 #include "property.h"
 
 class DsComboBox;

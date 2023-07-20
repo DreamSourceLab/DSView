@@ -20,17 +20,15 @@
  */
 
 #include "lissajousoptions.h"
-#include "../sigsession.h"
-#include "../view/view.h"
-#include "../view/lissajoustrace.h"
-
 #include <QCheckBox>
 #include <QVariant>
 #include <QLabel>
 #include <QTabBar>
 #include <QBitmap>
 #include <math.h>
-
+#include "../appcore/sigsession.h"
+#include "../view/view.h"
+#include "../view/lissajoustrace.h"
 #include "../ui/langresource.h"
 
   

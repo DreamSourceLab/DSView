@@ -33,11 +33,11 @@ set(DS_DESCRIPTION "A GUI for instruments of DreamSourceLab")
 set(DS_VERSION_MAJOR 1)
 set(DS_VERSION_MINOR 3)
 set(DS_VERSION_MICRO 0)
-set(DS_VERSION_STRING  ${DS_VERSION_MAJOR}.${DS_VERSION_MINOR}.${DS_VERSION_MICRO}-RC10 )
+set(DS_VERSION_STRING  ${DS_VERSION_MAJOR}.${DS_VERSION_MINOR}.${DS_VERSION_MICRO} )
 
 configure_file (
-	${PROJECT_SOURCE_DIR}/DSView/config.h.in
-	${PROJECT_BINARY_DIR}/DSView/config.h
+	${PROJECT_SOURCE_DIR}/DSView/src/config.h.in
+	${PROJECT_BINARY_DIR}/DSView/src/config.h
 )
 
 #===============================================================================
@@ -62,7 +62,6 @@ endif()
 set(DISABLE_WERROR TRUE) #Build without -Werror
 set(ENABLE_SIGNALS TRUE) #Build with UNIX signals
 set(ENABLE_COTIRE FALSE) #Enable cotire
-set(ENABLE_TESTS  FALSE) #Enable unit tests
 set(STATIC_PKGDEPS_LIBS FALSE) #Statically link to (pkg-config) libraries
 
 if(WIN32)
@@ -236,78 +235,281 @@ find_package(Threads)
 #-------------------------------------------------------------------------------
 
 set(DSView_SOURCES
-    DSView/main.cpp
+	DSView/src/log.cpp
+	DSView/src/main.cpp
+	DSView/src/utility/path.cpp
+	DSView/src/utility/array.cpp
+	DSView/src/utility/encoding.cpp
+	DSView/src/config/appconfig.cpp
+	DSView/src/decode/rowdata.cpp
+	DSView/src/decode/annotationrestable.cpp
+	DSView/src/decode/decoder.cpp
+	DSView/src/decode/row.cpp
+	DSView/src/decode/annotation.cpp
+	DSView/src/decode/decoderstatus.cpp
+	DSView/src/prop/property.cpp
+	DSView/src/prop/double.cpp
+	DSView/src/prop/int.cpp
+	DSView/src/prop/bool.cpp
+	DSView/src/prop/enum.cpp
+	DSView/src/prop/string.cpp
+	DSView/src/prop/binding/deviceoptions.cpp
+	DSView/src/prop/binding/decoderoptions.cpp
+	DSView/src/prop/binding/probeoptions.cpp
+	DSView/src/prop/binding/binding.cpp
+	DSView/src/dialogs/protocollist.cpp
+	DSView/src/dialogs/interval.cpp
+	DSView/src/dialogs/search.cpp
+	DSView/src/dialogs/fftoptions.cpp
+	DSView/src/dialogs/waitingdialog.cpp
+	DSView/src/dialogs/regionoptions.cpp
+	DSView/src/dialogs/deviceoptions.cpp
+	DSView/src/dialogs/decoderoptionsdlg.cpp
+	DSView/src/dialogs/applicationpardlg.cpp
+	DSView/src/dialogs/storeprogress.cpp
+	DSView/src/dialogs/shadow.cpp
+	DSView/src/dialogs/protocolexp.cpp
+	DSView/src/dialogs/calibration.cpp
+	DSView/src/dialogs/dsdialog.cpp
+	DSView/src/dialogs/about.cpp
+	DSView/src/dialogs/mathoptions.cpp
+	DSView/src/dialogs/dsmessagebox.cpp
+	DSView/src/dialogs/lissajousoptions.cpp
+	DSView/src/dialogs/dsomeasure.cpp
+	DSView/src/view/viewport.cpp
+	DSView/src/view/view.cpp
+	DSView/src/view/groupsignal.cpp
+	DSView/src/view/devmode.cpp
+	DSView/src/view/dsosignal.cpp
+	DSView/src/view/timemarker.cpp
+	DSView/src/view/viewstatus.cpp
+	DSView/src/view/mathtrace.cpp
+	DSView/src/view/trace.cpp
+	DSView/src/view/logicsignal.cpp
+	DSView/src/view/dsldial.cpp
+	DSView/src/view/spectrumtrace.cpp
+	DSView/src/view/analogsignal.cpp
+	DSView/src/view/signal.cpp
+	DSView/src/view/cursor.cpp
+	DSView/src/view/header.cpp
+	DSView/src/view/ruler.cpp
+	DSView/src/view/decodetrace.cpp
+	DSView/src/view/lissajoustrace.cpp
+	DSView/src/view/xcursor.cpp
+	DSView/src/appcore/mainframe.cpp
+	DSView/src/appcore/appcontrol.cpp
+	DSView/src/appcore/deviceagent.cpp
+	DSView/src/appcore/mainwindow.cpp
+	DSView/src/appcore/eventobject.cpp
+	DSView/src/appcore/sigsession.cpp
+	DSView/src/com/storesession.cpp
+	DSView/src/com/zipmaker.cpp
+	DSView/src/com/dstimer.cpp
+	DSView/src/widgets/decodergroupbox.cpp
+	DSView/src/widgets/decodermenu.cpp
+	DSView/src/widgets/border.cpp
+	DSView/src/widgets/fakelineedit.cpp
+	DSView/src/ui/dscombobox.cpp
+	DSView/src/ui/langresource.cpp
+	DSView/src/ui/fn.cpp
+	DSView/src/ui/msgbox.cpp
+	DSView/src/dock/triggerdock.cpp
+	DSView/src/dock/keywordlineedit.cpp
+	DSView/src/dock/searchcombobox.cpp
+	DSView/src/dock/measuredock.cpp
+	DSView/src/dock/dsotriggerdock.cpp
+	DSView/src/dock/searchdock.cpp
+	DSView/src/dock/protocolitemlayer.cpp
+	DSView/src/dock/protocoldock.cpp
+	DSView/src/toolbars/samplingbar.cpp
+	DSView/src/toolbars/logobar.cpp
+	DSView/src/toolbars/trigbar.cpp
+	DSView/src/toolbars/titlebar.cpp
+	DSView/src/toolbars/filebar.cpp
+	DSView/src/data/analogsnapshot.cpp
+	DSView/src/data/decodermodel.cpp
+	DSView/src/data/signaldata.cpp
+	DSView/src/data/snapshot.cpp
+	DSView/src/data/dsosnapshot.cpp
+	DSView/src/data/mathstack.cpp
+	DSView/src/data/logicsnapshot.cpp
+	DSView/src/data/decoderstack.cpp
+	DSView/src/data/spectrumstack.cpp
 )
 
 set(DSView_HEADERS
-
+	DSView/src/log.h
+	DSView/src/config.h
+	DSView/src/mystyle.h
+	DSView/src/basedef.h
+	DSView/src/utility/encoding.h
+	DSView/src/utility/path.h
+	DSView/src/utility/array.h
+	DSView/src/config/appconfig.h
+	DSView/src/decode/annotation.h
+	DSView/src/decode/displaydataformat.h
+	DSView/src/decode/annotationrestable.h
+	DSView/src/decode/row.h
+	DSView/src/decode/rowdata.h
+	DSView/src/decode/decoderstatus.h
+	DSView/src/decode/decoder.h
+	DSView/src/prop/double.h
+	DSView/src/prop/bool.h
+	DSView/src/prop/enum.h
+	DSView/src/prop/property.h
+	DSView/src/prop/int.h
+	DSView/src/prop/string.h
+	DSView/src/prop/binding/deviceoptions.h
+	DSView/src/prop/binding/probeoptions.h
+	DSView/src/prop/binding/decoderoptions.h
+	DSView/src/prop/binding/binding.h
+	DSView/src/dialogs/deviceoptions.h
+	DSView/src/dialogs/calibration.h
+	DSView/src/dialogs/protocollist.h
+	DSView/src/dialogs/waitingdialog.h
+	DSView/src/dialogs/applicationpardlg.h
+	DSView/src/dialogs/search.h
+	DSView/src/dialogs/regionoptions.h
+	DSView/src/dialogs/fftoptions.h
+	DSView/src/dialogs/dsmessagebox.h
+	DSView/src/dialogs/dsdialog.h
+	DSView/src/dialogs/dsomeasure.h
+	DSView/src/dialogs/lissajousoptions.h
+	DSView/src/dialogs/about.h
+	DSView/src/dialogs/shadow.h
+	DSView/src/dialogs/decoderoptionsdlg.h
+	DSView/src/dialogs/interval.h
+	DSView/src/dialogs/protocolexp.h
+	DSView/src/dialogs/storeprogress.h
+	DSView/src/dialogs/mathoptions.h
+	DSView/src/view/viewport.h
+	DSView/src/view/mathtrace.h
+	DSView/src/view/xcursor.h
+	DSView/src/view/spectrumtrace.h
+	DSView/src/view/decodetrace.h
+	DSView/src/view/devmode.h
+	DSView/src/view/ruler.h
+	DSView/src/view/logicsignal.h
+	DSView/src/view/lissajoustrace.h
+	DSView/src/view/groupsignal.h
+	DSView/src/view/signal.h
+	DSView/src/view/dsldial.h
+	DSView/src/view/cursor.h
+	DSView/src/view/viewstatus.h
+	DSView/src/view/timemarker.h
+	DSView/src/view/trace.h
+	DSView/src/view/analogsignal.h
+	DSView/src/view/dsosignal.h
+	DSView/src/view/header.h
+	DSView/src/view/view.h
+	DSView/src/interface/icallbacks.h
+	DSView/src/appcore/sigsession.h
+	DSView/src/appcore/mainframe.h
+	DSView/src/appcore/eventobject.h
+	DSView/src/appcore/appcontrol.h
+	DSView/src/appcore/deviceagent.h
+	DSView/src/appcore/mainwindow.h
+	DSView/src/com/dstimer.h
+	DSView/src/com/zipmaker.h
+	DSView/src/com/storesession.h
+	DSView/src/widgets/fakelineedit.h
+	DSView/src/widgets/decodermenu.h
+	DSView/src/widgets/decodergroupbox.h
+	DSView/src/widgets/border.h
+	DSView/src/ui/langresource.h
+	DSView/src/ui/msgbox.h
+	DSView/src/ui/string_ids.h
+	DSView/src/ui/dscombobox.h
+	DSView/src/ui/fn.h
+	DSView/src/dock/searchdock.h
+	DSView/src/dock/protocolitemlayer.h
+	DSView/src/dock/searchcombobox.h
+	DSView/src/dock/triggerdock.h
+	DSView/src/dock/keywordlineedit.h
+	DSView/src/dock/protocoldock.h
+	DSView/src/dock/measuredock.h
+	DSView/src/dock/dsotriggerdock.h
+	DSView/src/toolbars/samplingbar.h
+	DSView/src/toolbars/trigbar.h
+	DSView/src/toolbars/titlebar.h
+	DSView/src/toolbars/filebar.h
+	DSView/src/toolbars/logobar.h
+	DSView/src/data/logicsnapshot.h
+	DSView/src/data/analogsnapshot.h
+	DSView/src/data/decoderstack.h
+	DSView/src/data/dsosnapshot.h
+	DSView/src/data/snapshot.h
+	DSView/src/data/decodermodel.h
+	DSView/src/data/mathstack.h
+	DSView/src/data/signaldata.h
+	DSView/src/data/spectrumstack.h
 )
  
 #===============================================================================
 #= libsigrok4DSL source
 #-------------------------------------------------------------------------------
 set(libsigrok4DSL_SOURCES
-    libsigrok4DSL/version.c
-    libsigrok4DSL/strutil.c
-    libsigrok4DSL/std.c
-    libsigrok4DSL/session_driver.c
-    libsigrok4DSL/session.c
-    libsigrok4DSL/log.c
-    libsigrok4DSL/hwdriver.c
-    libsigrok4DSL/error.c
-    libsigrok4DSL/backend.c
-    libsigrok4DSL/output/output.c
-    libsigrok4DSL/input/input.c
-    libsigrok4DSL/hardware/demo/demo.c
-    libsigrok4DSL/input/in_binary.c
-    libsigrok4DSL/input/in_vcd.c
-    libsigrok4DSL/input/in_wav.c
-    libsigrok4DSL/output/csv.c
-    libsigrok4DSL/output/gnuplot.c
-    libsigrok4DSL/output/srzip.c
-    libsigrok4DSL/output/vcd.c
-    libsigrok4DSL/hardware/DSL/dslogic.c
-    libsigrok4DSL/hardware/common/usb.c
-    libsigrok4DSL/hardware/common/ezusb.c
-    libsigrok4DSL/trigger.c
-    libsigrok4DSL/dsdevice.c
-    libsigrok4DSL/hardware/DSL/dscope.c
-    libsigrok4DSL/hardware/DSL/command.c
-    libsigrok4DSL/hardware/DSL/dsl.c
-    libsigrok4DSL/lib_main.c
+	libsigrok4DSL/version.c
+	libsigrok4DSL/strutil.c
+	libsigrok4DSL/std.c
+	libsigrok4DSL/session_driver.c
+	libsigrok4DSL/session.c
+	libsigrok4DSL/log.c
+	libsigrok4DSL/hwdriver.c
+	libsigrok4DSL/error.c
+	libsigrok4DSL/backend.c
+	libsigrok4DSL/output/output.c
+	libsigrok4DSL/input/input.c
+	libsigrok4DSL/hardware/demo/demo.c
+	libsigrok4DSL/input/in_binary.c
+	libsigrok4DSL/input/in_vcd.c
+	libsigrok4DSL/input/in_wav.c
+	libsigrok4DSL/output/csv.c
+	libsigrok4DSL/output/gnuplot.c
+	libsigrok4DSL/output/srzip.c
+	libsigrok4DSL/output/vcd.c
+	libsigrok4DSL/hardware/DSL/dslogic.c
+	libsigrok4DSL/hardware/common/usb.c
+	libsigrok4DSL/hardware/common/ezusb.c
+	libsigrok4DSL/trigger.c
+	libsigrok4DSL/dsdevice.c
+	libsigrok4DSL/hardware/DSL/dscope.c
+	libsigrok4DSL/hardware/DSL/command.c
+	libsigrok4DSL/hardware/DSL/dsl.c
+	libsigrok4DSL/lib_main.c
 )
 
 set(libsigrok4DSL_HEADERS
-    libsigrok4DSL/version.h
-    libsigrok4DSL/libsigrok-internal.h
-    libsigrok4DSL/libsigrok.h
-    libsigrok4DSL/config.h
-    libsigrok4DSL/hardware/DSL/command.h
-    libsigrok4DSL/hardware/DSL/dsl.h
+	libsigrok4DSL/version.h
+	libsigrok4DSL/libsigrok-internal.h
+	libsigrok4DSL/libsigrok.h
+	libsigrok4DSL/config.h
+	libsigrok4DSL/hardware/DSL/command.h
+	libsigrok4DSL/hardware/DSL/dsl.h
 )
  
 #===============================================================================
 #= libsigrokdecode4DSL source
 #-------------------------------------------------------------------------------
 set(libsigrokdecode4DSL_SOURCES
-    libsigrokdecode4DSL/type_decoder.c
-    libsigrokdecode4DSL/srd.c
-    libsigrokdecode4DSL/module_sigrokdecode.c
-    libsigrokdecode4DSL/decoder.c
-    libsigrokdecode4DSL/error.c
-    libsigrokdecode4DSL/exception.c
-    libsigrokdecode4DSL/instance.c
-    libsigrokdecode4DSL/log.c
-    libsigrokdecode4DSL/session.c
-    libsigrokdecode4DSL/util.c
-    libsigrokdecode4DSL/version.c
+	libsigrokdecode4DSL/type_decoder.c
+	libsigrokdecode4DSL/srd.c
+	libsigrokdecode4DSL/module_sigrokdecode.c
+	libsigrokdecode4DSL/decoder.c
+	libsigrokdecode4DSL/error.c
+	libsigrokdecode4DSL/exception.c
+	libsigrokdecode4DSL/instance.c
+	libsigrokdecode4DSL/log.c
+	libsigrokdecode4DSL/session.c
+	libsigrokdecode4DSL/util.c
+	libsigrokdecode4DSL/version.c
 )
 
 set(libsigrokdecode4DSL_HEADERS
-    libsigrokdecode4DSL/libsigrokdecode-internal.h
-    libsigrokdecode4DSL/libsigrokdecode.h
-    libsigrokdecode4DSL/config.h
-    libsigrokdecode4DSL/version.h
+	libsigrokdecode4DSL/libsigrokdecode-internal.h
+	libsigrokdecode4DSL/libsigrokdecode.h
+	libsigrokdecode4DSL/config.h
+	libsigrokdecode4DSL/version.h
 )
 
 #===============================================================================
@@ -315,17 +517,17 @@ set(libsigrokdecode4DSL_HEADERS
 #-------------------------------------------------------------------------------
 
 set(common_SOURCES
-    common/minizip/zip.c
-    common/minizip/unzip.c
-    common/minizip/ioapi.c
-    common/log/xlog.c
+	common/minizip/zip.c
+	common/minizip/unzip.c
+	common/minizip/ioapi.c
+	common/log/xlog.c
 )
 
 set(common_HEADERS
-    common/minizip/zip.h
-    common/minizip/unzip.h
-    common/minizip/ioapi.h
-    common/log/xlog.h
+	common/minizip/zip.h
+	common/minizip/unzip.h
+	common/minizip/ioapi.h
+	common/log/xlog.h
 )
 
 #===============================================================================
@@ -497,15 +699,5 @@ set(CPACK_SOURCE_PACKAGE_FILE_NAME
 set(CPACK_SOURCE_GENERATOR "TGZ")
 
 include(CPack)
-
-#===============================================================================
-#= Tests
-#-------------------------------------------------------------------------------
-
-if(ENABLE_TESTS)
-	add_subdirectory(test)
-	enable_testing()
-	add_test(test ${CMAKE_CURRENT_BINARY_DIR}/DSView/test/DSView-test)
-endif(ENABLE_TESTS)
 
 

@@ -26,7 +26,6 @@
 #include <QColor>
 #include <QObject>
 #include <QRectF>
-
 #include <stdint.h>
 
 class QPainter;

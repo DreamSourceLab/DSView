@@ -49,7 +49,7 @@ const uint64_t SpectrumStack::length_support[5] = {
     16384,
 };
 
-SpectrumStack::SpectrumStack(pv::SigSession *session, int index) :
+SpectrumStack::SpectrumStack(SigSession *session, int index) :
     _session(session),
     _index(index),
     _dc_ignore(true),
@@ -168,8 +168,8 @@ void SpectrumStack::calc_fft()
 {
     _spectrum_state = Running;
     // Get the dso data
-    pv::data::DsoSnapshot *data = NULL;
-    pv::view::DsoSignal *dsoSig = NULL;
+    dsv::data::DsoSnapshot *data = NULL;
+    dsv::view::DsoSignal *dsoSig = NULL;
 
     for(auto s : _session->get_signals()) {
         if (s->signal_type() == SR_CHANNEL_DSO) {

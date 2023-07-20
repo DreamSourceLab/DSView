@@ -20,10 +20,6 @@
  */
 
 #include "triggerdock.h"
-#include "../sigsession.h"
-#include "../dialogs/dsmessagebox.h"
-#include "../view/view.h"
-
 #include <QObject>
 #include <QGridLayout>
 #include <QVBoxLayout>
@@ -44,15 +40,20 @@
     #include <QRegExpValidator>
 #endif
 
+#include "../appcore/sigsession.h"
+#include "../dialogs/dsmessagebox.h"
+#include "../view/view.h"
 #include "../config/appconfig.h"
-#include "../deviceagent.h"
+#include "../appcore/deviceagent.h"
 #include "../view/logicsignal.h"
 #include "../ui/langresource.h"
 #include "../ui/msgbox.h"
 #include "../log.h"
-#include "../data/decode/annotationrestable.h"
-#include "../appcontrol.h"
+#include "../decode/annotationrestable.h"
+#include "../appcore/appcontrol.h"
 #include "../ui/fn.h"
+
+using namespace dsv::config;
 
 namespace dsv {
 namespace dock {

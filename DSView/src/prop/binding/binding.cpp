@@ -20,13 +20,11 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
  */
  
-
+#include "binding.h"
 #include <QFormLayout>
 #include <QLabel>
-
 #include "../property.h"
-#include "binding.h"
- 
+
 
 namespace dsv {
 namespace prop {

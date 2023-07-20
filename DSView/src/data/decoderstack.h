@@ -29,27 +29,28 @@
 #include <QObject>
 #include <QString>
 #include <mutex> 
-
 #include "../decode/row.h" 
 #include "signaldata.h"
-#include "decode/decoderstatus.h"
+#include "../decode/decoderstatus.h"
+
+namespace dsv{
+    namespace decode {
+        class Annotation;
+        class Decoder;
+        class RowData;
+    }
+    namespace appcore {
+        class SigSession;
+    }
+    namespace view {
+        class LogicSignal;
+    }
+}
+using namespace dsv::appcore;
+using namespace dsv::view;
+using namespace dsv::decode;
  
 namespace dsv {
-
-namespace view {
-    class SigSession;
-}
-
-namespace view {
-    class LogicSignal;
-}
-
-namespace decode {
-    class Annotation;
-    class Decoder;
-    class RowData;
-}
-
 namespace data {
 
 class LogicSnapshot;
@@ -80,7 +81,7 @@ public:
     };
 
 public:
-   	DecoderStack(pv::SigSession *_session,
+   	DecoderStack(SigSession *_session,
 		const srd_decoder *const decoder, DecoderStatus *decoder_status);
 
 public:
@@ -105,7 +106,7 @@ public:
 	 * Extracts sorted annotations between two period into a vector.
 	 */
 	void get_annotation_subset(
-		std::vector<pv::data::decode::Annotation*> &dest,
+		std::vector<dsv::decode::Annotation*> &dest,
 		const decode::Row &row, uint64_t start_sample,
 		uint64_t end_sample);
 
@@ -189,7 +190,7 @@ signals:
   
 private: 
 	std::list<decode::Decoder*> _stack;
-	pv::data::LogicSnapshot *_snapshot;
+	dsv::data::LogicSnapshot *_snapshot;
   
     std::map<const decode::Row, decode::RowData*>   _rows;
     std::map<const decode::Row, bool>       _rows_gshow;

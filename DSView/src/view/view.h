@@ -26,26 +26,22 @@
 
 #include <stdint.h>
 #include <set>
-#include <vector>
-   
+#include <vector>   
 #include <QScrollArea>
 #include <QSizeF>
 #include <QDateTime>
-#include <QSplitter>
-
- 
+#include <QSplitter> 
 #include "../toolbars/samplingbar.h"
 #include "../data/signaldata.h"
-#include "../view/viewport.h"
+#include "viewport.h"
 #include "cursor.h"
 #include "xcursor.h"
 #include "signal.h"
 #include "viewstatus.h"
-#include "../dsvdef.h" 
+#include "../basedef.h" 
 #include "../interface/icallbacks.h"
-
-class DeviceAgent;
-
+ 
+ 
 namespace dsv {
 
 namespace toolbars {
@@ -57,7 +53,10 @@ namespace dialogs {
     class Lissajous;
 }
 
-class SigSession;
+namespace appcore{
+    class SigSession;
+    class DeviceAgent;
+}
 
 namespace view {
 
@@ -106,7 +105,7 @@ public:
     static const QColor LightRed;
 
 public:
-    explicit View(SigSession *session, pv::toolbars::SamplingBar *sampling_bar, QWidget *parent = 0);
+    explicit View(SigSession *session, dsv::toolbars::SamplingBar *sampling_bar, QWidget *parent = 0);
 
     ~View();
 
@@ -418,7 +417,7 @@ public:
 private:
 
 	SigSession                  *_session;
-    pv::toolbars::SamplingBar   *_sampling_bar;
+    dsv::toolbars::SamplingBar   *_sampling_bar;
 
     QWidget                 *_viewcenter;
     ViewStatus              *_viewbottom;

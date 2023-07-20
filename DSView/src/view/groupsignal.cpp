@@ -20,7 +20,7 @@
  */
 
 /*
-#include "../dsvdef.h"
+#include "../basedef.h"
 #include "groupsignal.h" 
 #include "view.h"
 #include <cmath>
@@ -56,7 +56,7 @@ bool GroupSignal::enabled()
     return true;
 }
 
-pv::data::SignalData* GroupSignal::data()
+dsv::data::SignalData* GroupSignal::data()
 {
     return NULL;
 }

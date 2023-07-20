@@ -27,7 +27,6 @@
 #include <QWidget>
 #include <QVBoxLayout>
 #include <QDialogButtonBox>
-
 #include "../toolbars/titlebar.h"
 #include "../interface/icallbacks.h"
 

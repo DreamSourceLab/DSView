@@ -19,10 +19,10 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
  */
 
-#include <math.h>
-
 #include "measuredock.h"
-#include "../sigsession.h"
+#include <math.h>
+#include <QObject>
+#include <QPainter>
 #include "../view/cursor.h"
 #include "../view/view.h"
 #include "../view/viewport.h"
@@ -36,19 +36,18 @@
 #include "../config/appconfig.h"
 #include "../ui/langresource.h"
 #include "../ui/msgbox.h"
-#include <QObject>
-#include <QPainter> 
-#include "../appcontrol.h"
+#include "../appcore/appcontrol.h"
+#include "../appcore/sigsession.h"
 #include "../ui/fn.h"
 #include "../log.h"
 
 using namespace boost;
+using namespace dsv::config;
+using namespace dsv::view;
 
 namespace dsv {
 namespace dock {
-
-using namespace dsv::view;
-
+    
 MeasureDock::MeasureDock(QWidget *parent, View &view, SigSession *session) :
     QScrollArea(parent),
     _session(session),
@@ -188,7 +187,7 @@ void MeasureDock::retranslateUi()
 
 void MeasureDock::reStyle()
 {
-    QString iconPath = GetIconPath();
+    QString iconPath = AppConfig::GetIconPath();
 
     _dist_add_btn->setIcon(QIcon(iconPath+"/add.svg"));
     _edge_add_btn->setIcon(QIcon(iconPath+"/add.svg"));
@@ -268,7 +267,7 @@ void MeasureDock::build_dist_pannel()
         row_layout->setSpacing(0);
         row_widget->setLayout(row_layout);
 
-        QString iconPath = GetIconPath();
+        QString iconPath = AppConfig::GetIconPath();
         QToolButton *del_btn = new QToolButton(row_widget);
         del_btn->setIcon(QIcon(iconPath+"/del.svg"));
         del_btn->setCheckable(true);
@@ -391,7 +390,7 @@ void MeasureDock::build_edge_pannel()
         row_layout->setSpacing(0);
         row_widget->setLayout(row_layout);
 
-        QString iconPath = GetIconPath();
+        QString iconPath = AppConfig::GetIconPath();
         QToolButton *del_btn = new QToolButton(row_widget);
         del_btn->setIcon(QIcon(iconPath+"/del.svg"));
         del_btn->setCheckable(true);
@@ -771,7 +770,7 @@ void MeasureDock::cursor_update()
 
     int index = 1;
     int cursor_dex = 0;
-    QString iconPath = GetIconPath();
+    QString iconPath = AppConfig::GetIconPath();
     auto &cursor_list = _view.get_cursorList();
 
     for(auto it = cursor_list.begin(); it != cursor_list.end(); it++) {

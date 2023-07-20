@@ -186,15 +186,15 @@ public:
 	 */
     virtual bool enabled() = 0;
 
-	virtual void set_view(pv::view::View *view);
+	virtual void set_view(dsv::view::View *view);
 
-    inline pv::view::View* get_view(){
+    inline dsv::view::View* get_view(){
         return _view;
     }
 
-    virtual void set_viewport(pv::view::Viewport *viewport);
+    virtual void set_viewport(dsv::view::Viewport *viewport);
 
-    inline pv::view::Viewport* get_viewport(){
+    inline dsv::view::Viewport* get_viewport(){
         return _viewport;
     }
 
@@ -336,8 +336,8 @@ signals:
 	void colour_changed();
 
 protected:
-	pv::view::View *_view;
-    pv::view::Viewport *_viewport;
+	dsv::view::View *_view;
+    dsv::view::Viewport *_viewport;
 
 	QString _name;
 	QColor _colour;

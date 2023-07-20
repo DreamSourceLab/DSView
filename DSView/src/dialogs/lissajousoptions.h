@@ -31,15 +31,15 @@
 #include <QCheckBox>
 #include <QRadioButton>
 #include <QSlider>
- 
-
 #include "../view/dsosignal.h"
 #include "../toolbars/titlebar.h"
 #include "dsdialog.h"
 
 namespace dsv {
 
-class SigSession;
+namespace appcore {
+    class SigSession;
+}
 
 namespace view {
 class View;

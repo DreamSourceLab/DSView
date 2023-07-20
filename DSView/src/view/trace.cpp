@@ -20,20 +20,19 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
  */
 
- 
+#include "trace.h"
 #include <assert.h>
 #include <math.h> 
 #include <QFormLayout>
 #include <QLineEdit>
 #include <QApplication>
-
-#include "trace.h"
 #include "view.h"
-#include "../sigsession.h"
-#include "../dsvdef.h"
+#include "../appcore/sigsession.h"
+#include "../basedef.h"
 #include "../config/appconfig.h"
-#include "../appcontrol.h"
+#include "../appcore/appcontrol.h"
 
+using namespace dsv::config;
 
 namespace dsv {
 namespace view {
@@ -138,14 +137,14 @@ void Trace::resize()
 {
 }
 
-void Trace::set_view(pv::view::View *view)
+void Trace::set_view(dsv::view::View *view)
 {
 	assert(view);
 	_view = view;
     connect(_view, SIGNAL(resize()), this, SLOT(resize()));
 }
 
-void Trace::set_viewport(pv::view::Viewport *viewport)
+void Trace::set_viewport(dsv::view::Viewport *viewport)
 {
     assert(viewport);
     _viewport = viewport;

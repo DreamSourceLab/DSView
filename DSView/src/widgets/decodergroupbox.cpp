@@ -20,28 +20,27 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
  */
 
-#include <libsigrokdecode.h>
 #include "decodergroupbox.h"
-#include "../data/decoderstack.h"
-#include "../data/decode/decoder.h"
-#include "../data/decode/row.h"
-
+#include <libsigrokdecode.h>
 #include <QHBoxLayout>
 #include <QLabel>
 #include <QPushButton>
 #include <QVBoxLayout>
 #include <QVariant>
 #include <QApplication>
- 
+#include <assert.h>
+#include "../data/decoderstack.h"
+#include "../decode/decoder.h"
+#include "../decode/row.h"
 #include "../config/appconfig.h"
 
-#include <assert.h>
+using namespace dsv::config;
 
 namespace dsv {
 namespace widgets {
 
 DecoderGroupBox::DecoderGroupBox(data::DecoderStack *decoder_stack,
-                                 data::decode::Decoder *dec,
+                                 decode::Decoder *dec,
                                  QLayout *dec_layout,
                                  QWidget *parent, QFont font):
     QWidget(parent)
@@ -56,7 +55,7 @@ DecoderGroupBox::DecoderGroupBox(data::DecoderStack *decoder_stack,
     _layout->setContentsMargins(0, 0, 0, 0);
     _layout->setVerticalSpacing(2);
 
-    QString iconPath = GetIconPath();
+    QString iconPath = AppConfig::GetIconPath();
     _layout->addWidget(new QLabel(QString("<h3 style='font-style:italic'>%1</h3>").arg(_dec->decoder()->name), _widget),
         0, 0);
 	_layout->setColumnStretch(0, 1);
@@ -127,7 +126,7 @@ bool DecoderGroupBox::eventFilter(QObject *o, QEvent *e)
 
 void DecoderGroupBox::tog_icon()
 {
-    QString iconPath = GetIconPath();
+    QString iconPath = AppConfig::GetIconPath();
     QPushButton *sc = dynamic_cast<QPushButton*>(sender());
     int index = sc->property("index").toInt();
 

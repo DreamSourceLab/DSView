@@ -32,13 +32,14 @@
 #include "../view/dsosignal.h"
 #include "../dialogs/interval.h"
 #include "../config/appconfig.h"
-#include "../dsvdef.h"
+#include "../basedef.h"
 #include "../log.h"
-#include "../deviceagent.h"
+#include "../appcore/deviceagent.h"
 #include "../ui/msgbox.h"
 #include "../ui/langresource.h"
 #include "../view/view.h"
 #include "../ui/fn.h"
+#include "../appcore/sigsession.h"
 
 #define SINGLE_ACTION_ICON  "/once.svg"
 #define REPEAT_ACTION_ICON  "/repeat.svg"
@@ -48,6 +49,7 @@ using std::map;
 using std::max;
 using std::min;
 using std::string;
+using namespace dsv::config;
 
 namespace dsv
 {
@@ -237,7 +239,7 @@ namespace dsv
 
             if (true)
             {
-                QString iconPath = GetIconPath();
+                QString iconPath = AppConfig::GetIconPath();
                 _configure_button.setIcon(QIcon(iconPath + "/params.svg"));
             
                 QString icon2 = _session->is_working() ? "stop.svg" : "start.svg";
@@ -264,7 +266,7 @@ namespace dsv
 
             _session->broadcast_msg(DSV_MSG_BEGIN_DEVICE_OPTIONS);
 
-            pv::dialogs::DeviceOptions dlg(this);
+            dsv::dialogs::DeviceOptions dlg(this);
             connect(_session->device_event_object(), SIGNAL(device_updated()), &dlg, SLOT(reject()));
 
             ret = dlg.exec();
@@ -342,7 +344,7 @@ namespace dsv
             if (_session->is_working() == false)
                 _session->start_capture(false);
 
-            pv::dialogs::WaitingDialog wait(this, _session, SR_CONF_ZERO);
+            dsv::dialogs::WaitingDialog wait(this, _session, SR_CONF_ZERO);
             if (wait.start() == QDialog::Rejected)
             {
                 for (auto s : _session->get_signals())
@@ -992,7 +994,7 @@ namespace dsv
 
         void SamplingBar::reload()
         {
-            QString iconPath = GetIconPath();
+            QString iconPath = AppConfig::GetIconPath();
 
             _action_loop->setVisible(false);
 
@@ -1039,7 +1041,7 @@ namespace dsv
 
         void SamplingBar::on_collect_mode()
         {
-            QString iconPath = GetIconPath();
+            QString iconPath = AppConfig::GetIconPath();
             QAction *act = qobject_cast<QAction *>(sender());
 
             if (act == _action_single)
@@ -1059,7 +1061,7 @@ namespace dsv
                     _session->set_collect_mode(COLLECT_REPEAT);
                 }
                 else{
-                    pv::dialogs::Interval interval_dlg(this);
+                    dsv::dialogs::Interval interval_dlg(this);
 
                     interval_dlg.set_interval(_session->get_repeat_intvl());
                     interval_dlg.exec();
@@ -1199,7 +1201,7 @@ namespace dsv
                 _instant_button.setEnabled(true);                
             }
  
-            QString iconPath = GetIconPath();
+            QString iconPath = AppConfig::GetIconPath();
 
             if (_is_run_as_instant)
                 _instant_button.setIcon(!bEnable ? QIcon(iconPath + "/stop.svg") : QIcon(iconPath + "/single.svg"));
@@ -1234,7 +1236,7 @@ namespace dsv
 
         void SamplingBar::update_mode_icon()
         {  
-            QString iconPath = GetIconPath();
+            QString iconPath = AppConfig::GetIconPath();
 
             if (_session->is_repeat_mode())
                 _mode_button.setIcon(QIcon(iconPath + REPEAT_ACTION_ICON));

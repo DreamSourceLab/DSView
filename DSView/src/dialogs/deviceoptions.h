@@ -46,6 +46,14 @@
 
 class QScrollArea;
 
+namespace dsv{
+	namespace appcore{
+    	class SigSession;
+        class DeviceAgent;
+	}
+}
+using namespace dsv::appcore;
+
 class IChannelCheck
 {
 public:
@@ -78,10 +86,7 @@ struct ChannelModePair
     int  value;
 };
 
-class DeviceAgent;
-
 namespace dsv {
-
 namespace dialogs {
 
 class DeviceOptions : public DSDialog, public IChannelCheck
@@ -145,8 +150,8 @@ private:
     int     _cur_analog_tag_index;
     QString _demo_operation_mode;
 
-	pv::prop::binding::DeviceOptions _device_options_binding;
-    std::vector<pv::prop::binding::ProbeOptions *> _probe_options_binding_list;
+	dsv::prop::binding::DeviceOptions _device_options_binding;
+    std::vector<dsv::prop::binding::ProbeOptions *> _probe_options_binding_list;
     std::vector<ChannelModePair> _channel_mode_indexs;
     std::vector<struct sr_channel*>     _dso_channel_list;
 };

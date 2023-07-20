@@ -20,8 +20,7 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
  */
 
-#include "deviceoptions.h"
- 
+#include "deviceoptions.h" 
 #include <QListWidget>
 #include <QSpinBox>
 #include <QDoubleSpinBox> 
@@ -30,19 +29,19 @@
 #include <QScrollArea>
 #include <QLayoutItem>
 #include <assert.h>
-
 #include "dsmessagebox.h"
 #include "../prop/property.h"
-#include "../dsvdef.h"
+#include "../basedef.h"
 #include "../config/appconfig.h"
-#include "../appcontrol.h"
-#include "../sigsession.h"
+#include "../appcore/appcontrol.h"
+#include "../appcore/sigsession.h"
 #include "../ui/langresource.h"
 #include "../log.h"
 #include "../ui/msgbox.h"
 
 using namespace boost;
 using namespace std;
+using namespace dsv::config;
 
 //--------------------------ChannelLabel
 
@@ -689,7 +688,7 @@ void DeviceOptions::analog_probes(QGridLayout &layout)
         probe_layout->addWidget(en_label, 0, 0, 1, 1);
         probe_layout->addWidget(probe_checkBox, 0, 1, 1, 3);
         
-        auto *probe_options_binding = new pv::prop::binding::ProbeOptions(probe);
+        auto *probe_options_binding = new dsv::prop::binding::ProbeOptions(probe);
         const auto &properties = probe_options_binding->properties();
         int i = 1;
         

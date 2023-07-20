@@ -33,30 +33,31 @@
 #include <QGroupBox>
 #include <QTableWidget>
 #include <QCheckBox>
-
 #include <QVector>
 #include <QGridLayout>
 #include <QVBoxLayout>
 #include <QHBoxLayout>
-
 #include <vector>
-
 #include "../widgets/fakelineedit.h"
 #include "../ui/dscombobox.h"
 #include "../interface/icallbacks.h"
 
+namespace dsv{
+	namespace appcore{
+    	class SigSession; 
+	}
+    namespace view {
+        class View;
+    }
+    namespace widgets {
+        class FakeLineEdit;
+    }
+}
+using namespace dsv::appcore;
+using namespace dsv::view;
+using namespace dsv::widgets;
+
 namespace dsv {
-
-class SigSession;
-
-namespace view {
-    class View;
-}
-
-namespace widgets {
-    class FakeLineEdit;
-}
-
 namespace dock {
 
 class SearchDock : public QWidget, public IFontForm
@@ -64,7 +65,7 @@ class SearchDock : public QWidget, public IFontForm
     Q_OBJECT
 
 public:
-    SearchDock(QWidget *parent, pv::view::View &view, SigSession *session);
+    SearchDock(QWidget *parent, dsv::view::View &view, SigSession *session);
     ~SearchDock();
 
     void paintEvent(QPaintEvent *);

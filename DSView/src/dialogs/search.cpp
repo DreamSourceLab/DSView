@@ -20,14 +20,12 @@
  */
 
 #include "search.h"
-#include "../view/logicsignal.h"
-
 #include <assert.h>
 #include <QRegularExpressionValidator>
-
 #include "../ui/langresource.h"
+#include "../view/logicsignal.h"
+#include "../appcore/sigsession.h"
  
-
 namespace dsv {
 namespace dialogs {
 

@@ -20,9 +20,7 @@
  */
 
 #include "interval.h"
-
 #include <QGridLayout>
-
 #include "../ui/langresource.h"
 
 namespace dsv {

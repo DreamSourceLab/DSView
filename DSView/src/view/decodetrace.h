@@ -35,26 +35,27 @@
 #include "../dialogs/dsdialog.h"
 
 struct srd_channel;
-struct srd_decoder;
- 
+struct srd_decoder; 
 class DsComboBox;
 
+namespace dsv{
+	namespace appcore{
+    	class SigSession; 
+	}
+	namespace data {
+		class DecoderStack;
+	}
+	namespace decode {
+		class Annotation;
+		class Decoder;
+		class Row;
+	}
+}
+using namespace dsv::appcore;
+using namespace dsv::data;
+using namespace dsv::decode;
+
 namespace dsv {
-
-namespace appcore {
-	class SigSession;
-}
-
-namespace data {
-	class DecoderStack;
-}
-
-namespace decode {
-	class Annotation;
-	class Decoder;
-	class Row;
-}
-
 namespace view {
 
 //create by  SigSession
@@ -87,21 +88,21 @@ private:
     static const QString RegionEnd;
 
 public:
-	DecodeTrace(pv::SigSession *session,
-		pv::data::DecoderStack *decoder_stack,
-		int index);
+	DecodeTrace(SigSession *session,
+			DecoderStack *decoder_stack,
+			int index);
 
 public:
     ~DecodeTrace();
 
 	bool enabled();
 
-	inline pv::data::DecoderStack* decoder()
+	inline DecoderStack* decoder()
 	{
 		return _decoder_stack;
 	}
 
-	void set_view(pv::view::View *view);
+	void set_view(View *view);
 
 	/**
 	 * Paints the background layer of the trace with a QPainter
@@ -147,7 +148,7 @@ protected:
 
 private: 
  
-    void draw_annotation(const pv::data::decode::Annotation &a, QPainter &p,
+    void draw_annotation(const Annotation &a, QPainter &p,
         QColor text_colour, int text_height, int left, int right,
         double samples_per_pixel, double pixels_offset, int y,
         size_t base_colour, double min_annWidth, QColor fore, QColor back, double &last_x);
@@ -156,11 +157,11 @@ private:
         int text_height, int left, int right, int y,
         size_t base_colour, QColor fore, QColor back);
 
-	void draw_instant(const pv::data::decode::Annotation &a, QPainter &p,
+	void draw_instant(const Annotation &a, QPainter &p,
 		QColor fill, QColor outline, QColor text_color, int h, double x,
         int y, double min_annWidth);
 
-    void draw_range(const pv::data::decode::Annotation &a, QPainter &p,
+    void draw_range(const Annotation &a, QPainter &p,
         QColor fill, QColor outline, QColor text_color, int h, double start,
         double end, int y, QColor fore, QColor back);
 
@@ -183,17 +184,13 @@ public:
 	volatile bool _delete_flag; //destroy it when deocde task end
 
 private:
-	pv::SigSession 			*_session;
-	pv::data::DecoderStack 	*_decoder_stack;
-
+	SigSession 			*_session;
+	DecoderStack 	*_decoder_stack;
 	uint64_t 		_decode_start;
-	uint64_t	 	_decode_end;
-	
+	uint64_t	 	_decode_end;	
 	uint64_t		_decode_cursor1; // the cursor key, sample start index 
-	uint64_t		_decode_cursor2;	 
-
+	uint64_t		_decode_cursor2;
 	std::vector<QString> 	_cur_row_headings; 
- 
 };
 
 } // namespace view

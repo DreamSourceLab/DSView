@@ -23,21 +23,23 @@
 #define DSVIEW_PV_VIEW_SPECTRUMTRACE_H
 
 #include "trace.h"
-
 #include <list>
 #include <map>
  
-
 struct srd_channel;
 
-namespace dsv {
-
-class SigSession;
-
-namespace data{
-class SpectrumStack;
+namespace dsv{
+	namespace appcore{
+    	class SigSession; 
+	}
+    namespace data{
+        class SpectrumStack;
+    }
 }
+using namespace dsv::appcore;
+using namespace dsv::data;
 
+namespace dsv {
 namespace view {
 
 //when device is oscillcopse mode, to draw signal trace
@@ -67,7 +69,7 @@ private:
     static const double VerticalRate;
 
 public:
-    SpectrumTrace(pv::SigSession *session, pv::data::SpectrumStack *spectrum_stack, int index);
+    SpectrumTrace(SigSession *session,SpectrumStack *spectrum_stack, int index);
     ~SpectrumTrace();
 
     bool enabled();
@@ -92,7 +94,9 @@ public:
     void set_view_mode(unsigned int mode);
     std::vector<QString> get_view_modes_support();
 
-    pv::data::SpectrumStack* get_spectrum_stack();
+    inline SpectrumStack* get_spectrum_stack(){
+        return _spectrum_stack;
+    }
 
     static QString format_freq(double freq, unsigned precision = Pricision);
 
@@ -127,13 +131,10 @@ public:
 protected:
     void paint_type_options(QPainter &p, int right, const QPoint pt, QColor fore);
 
-private:
-
-private slots:
 
 private:
-    pv::SigSession *_session;
-    pv::data::SpectrumStack *_spectrum_stack;
+    SigSession *_session;
+    SpectrumStack *_spectrum_stack;
 
     bool _enable;
     int _view_mode;

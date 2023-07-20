@@ -53,7 +53,7 @@ public:
 
     bool enabled();
 
-    pv::data::SignalData* data();
+    dsv::data::SignalData* data();
 
 	void set_scale(float scale);
 

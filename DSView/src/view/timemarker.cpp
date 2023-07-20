@@ -21,11 +21,9 @@
  */
 
 #include "timemarker.h"
-
+#include <QPainter>
 #include "view.h"
 #include "ruler.h"
-
-#include <QPainter>
 
 namespace dsv {
 namespace view {

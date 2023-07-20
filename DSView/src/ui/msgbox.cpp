@@ -20,11 +20,11 @@
  */
 
 #include "msgbox.h"
-#include "../dialogs/dsmessagebox.h"
 #include <assert.h>
 #include <QMessageBox>
-#include "../dsvdef.h"
-#include "../appcontrol.h"
+#include "../dialogs/dsmessagebox.h"
+#include "../basedef.h"
+#include "../appcore/appcontrol.h"
 #include "langresource.h"
 
 //QMessageBox::information(NULL, "Title", "Content",QMessageBox::Yes | QMessageBox::No, QMessageBox::Yes);
@@ -48,13 +48,13 @@ void Show(const QString title, const QString text, const QString infoText)
 }
 
 void MsgBox::Show(const QString title, const QString text, 
-        QWidget *parent, pv::dialogs::DSMessageBox **box)
+        QWidget *parent, dsv::dialogs::DSMessageBox **box)
 {
     MsgBox::Show(title, text, "", parent, box);
 }
 
 void MsgBox::Show(const QString title, const QString text, const QString infoText, 
-        QWidget *parent, pv::dialogs::DSMessageBox **box)
+        QWidget *parent, dsv::dialogs::DSMessageBox **box)
 {
     assert(!text.isEmpty());
 
@@ -63,10 +63,10 @@ void MsgBox::Show(const QString title, const QString text, const QString infoTex
     str.append(text);
 
     if (parent == NULL){
-        parent = AppControl::Instance()->GetTopWindow();
+        parent = dsv::appcore::AppControl::Instance()->GetTopWindow();
     }
 
-    pv::dialogs::DSMessageBox msg(parent, title);
+    dsv::dialogs::DSMessageBox msg(parent, title);
 
     if (box != NULL){
         *box = &msg;
@@ -89,7 +89,7 @@ bool MsgBox::Confirm(const QString text, QWidget *parent)
 }
 
 bool MsgBox::Confirm(const QString text, const QString infoText, 
-        pv::dialogs::DSMessageBox **box, QWidget *parent)
+        dsv::dialogs::DSMessageBox **box, QWidget *parent)
 {
     assert(!text.isEmpty());
 
@@ -98,11 +98,11 @@ bool MsgBox::Confirm(const QString text, const QString infoText,
     str.append(text);
 
     if (parent == NULL){
-        parent = AppControl::Instance()->GetTopWindow();
+        parent = dsv::appcore::AppControl::Instance()->GetTopWindow();
     }
 
     const char *title = L_S(STR_PAGE_MSG, S_ID(IDS_MSG_BOX_CONFIRM), "Confirm");
-    pv::dialogs::DSMessageBox msg(parent, title);
+    dsv::dialogs::DSMessageBox msg(parent, title);
     msg.mBox()->setText(str);
     msg.mBox()->setStandardButtons(QMessageBox::Yes | QMessageBox::No);
     msg.mBox()->setIcon(QMessageBox::Question);

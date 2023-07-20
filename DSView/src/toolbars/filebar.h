@@ -27,9 +27,14 @@
 #include <QToolButton>
 #include <QAction>
 #include <QMenu>
-
-#include "../sigsession.h" 
 #include "../interface/icallbacks.h"
+
+namespace dsv{
+	namespace appcore{
+    	class SigSession; 
+	}
+}
+using namespace dsv::appcore;
 
 namespace dsv {
 namespace toolbars {

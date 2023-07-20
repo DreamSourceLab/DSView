@@ -24,9 +24,7 @@
 #define DSVIEW_PV_PROP_INT_H
 
 #include <utility>
-
 #include <boost/optional.hpp>
-
 #include "property.h"
 
 class QSpinBox;

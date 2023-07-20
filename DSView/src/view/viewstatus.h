@@ -29,10 +29,14 @@
 #include <QToolButton> 
 #include <libsigrok.h> 
 
+namespace dsv{
+	namespace appcore{
+    	class SigSession; 
+	}
+}
+using namespace dsv::appcore;
+
 namespace dsv {
-
-class SigSession;
-
 namespace view {
 class View;
 class DsoSignal;

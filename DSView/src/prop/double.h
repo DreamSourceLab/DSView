@@ -24,9 +24,7 @@
 #define DSVIEW_PV_PROP_DOUBLE_H
 
 #include <utility>
-
 #include <boost/optional.hpp>
-
 #include "property.h"
 
 class QDoubleSpinBox;

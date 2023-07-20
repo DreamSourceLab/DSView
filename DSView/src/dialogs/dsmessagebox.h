@@ -27,13 +27,12 @@
 #include <QWidget>
 #include <QMessageBox>
 #include <QVBoxLayout>
-
 #include "../toolbars/titlebar.h"
 
 namespace dsv {
 namespace dialogs {
 
-     class Shadow;
+    class Shadow;
 
 class DSMessageBox : public QDialog
 {

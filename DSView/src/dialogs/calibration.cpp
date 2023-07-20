@@ -19,20 +19,18 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
  */
 
-#include "calibration.h"
-  
+#include "calibration.h"  
 #include <QGridLayout>
 #include <QFuture>
 #include <QProgressDialog>
 #include <QtConcurrent/QtConcurrent>
 #include <QTime>
 #include <assert.h>
-
 #include "../view/trace.h"
 #include "../dialogs/dsmessagebox.h"
-#include "../dsvdef.h"
-#include "../appcontrol.h"
-#include "../sigsession.h"
+#include "../basedef.h"
+#include "../appcore/appcontrol.h"
+#include "../appcore/sigsession.h"
 #include "../ui/langresource.h"
 #include "../ui/msgbox.h"
 

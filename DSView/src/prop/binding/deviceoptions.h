@@ -26,15 +26,11 @@
 
 #include <boost/function.hpp>
 #include <boost/optional.hpp>
-
 #include <QString>
 #include <libsigrok.h> 
 #include "binding.h" 
 
-class DeviceAgent;
-
 namespace dsv {
-
 namespace prop {
 namespace binding {
 
@@ -79,9 +75,6 @@ private:
 
     void bind_bandwidths(const QString &name, const QString label, int key,GVariant *const gvar_list,
         boost::function<QString (GVariant*)> printer = print_gvariant);
-
-private:
-	DeviceAgent *_device_agent;
  
 };
 

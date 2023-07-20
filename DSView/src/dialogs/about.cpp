@@ -36,6 +36,8 @@
 #include "../utility/encoding.h"
 #include "../ui/langresource.h"
 
+using namespace dsv::config;
+
 namespace dsv {
 namespace dialogs {
 
@@ -84,7 +86,7 @@ About::About(QWidget *parent) :
 
     QString changlogs = tr("<font size=16>Changelogs</font><br />");
 
-    QDir dir(GetAppDataDir());
+    QDir dir(AppConfig::GetAppDataDir());
     AppConfig &app = AppConfig::Instance(); 
     int lan = app.frameOptions.language;
 

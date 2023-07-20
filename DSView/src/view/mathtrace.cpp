@@ -26,9 +26,9 @@
 #include "../data/dsosnapshot.h"
 #include "../data/mathstack.h"
 #include "view.h"
-#include "../sigsession.h"
-#include "../view/dsosignal.h"
-#include "../dsvdef.h"
+#include "../appcore/sigsession.h"
+#include "dsosignal.h"
+#include "../basedef.h"
   
 using namespace std;
 
@@ -497,7 +497,7 @@ QString MathTrace::get_time(double t)
     return str;
 }
 
-pv::data::MathStack* MathTrace::get_math_stack()
+dsv::data::MathStack* MathTrace::get_math_stack()
 {
    return _math_stack;
 }

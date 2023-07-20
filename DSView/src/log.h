@@ -25,9 +25,16 @@
 #include <log/xlog.h>
 #include <QString>
 
-namespace dsv{
-
 extern xlog_writer *dsv_log;
+
+#define LOG_PREFIX "" 
+#define dsv_err(fmt, args...) xlog_err(dsv_log, LOG_PREFIX fmt, ## args)
+#define dsv_warn(fmt, args...) xlog_warn(dsv_log, LOG_PREFIX fmt, ## args)
+#define dsv_info(fmt, args...) xlog_info(dsv_log, LOG_PREFIX fmt, ## args)
+#define dsv_dbg(fmt, args...) xlog_dbg(dsv_log, LOG_PREFIX fmt, ## args)
+#define dsv_detail(fmt, args...) xlog_detail(dsv_log, LOG_PREFIX fmt, ## args)
+
+namespace dsv{
 
 void dsv_log_init();
 void dsv_log_uninit();
@@ -41,13 +48,6 @@ void dsv_clear_log_file();
 void dsv_set_log_file_enable(bool flag);
 
 QString get_dsv_log_path();
-
-#define LOG_PREFIX "" 
-#define dsv_err(fmt, args...) xlog_err(dsv_log, LOG_PREFIX fmt, ## args)
-#define dsv_warn(fmt, args...) xlog_warn(dsv_log, LOG_PREFIX fmt, ## args)
-#define dsv_info(fmt, args...) xlog_info(dsv_log, LOG_PREFIX fmt, ## args)
-#define dsv_dbg(fmt, args...) xlog_dbg(dsv_log, LOG_PREFIX fmt, ## args)
-#define dsv_detail(fmt, args...) xlog_detail(dsv_log, LOG_PREFIX fmt, ## args)
 
 } //namespace dsv
 

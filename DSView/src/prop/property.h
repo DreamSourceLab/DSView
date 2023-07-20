@@ -24,9 +24,7 @@
 #define DSVIEW_PV_PROP_PROPERTY_H
 
 #include <glib.h>
-
 #include <boost/function.hpp>
-
 #include <QString>
 #include <QWidget>
 

@@ -20,15 +20,14 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
  */
 
+#include "view.h"
 #include <assert.h>
 #include <limits.h>
 #include <cmath>
-
 #include <QEvent>
 #include <QMouseEvent>
 #include <QScrollBar>
 #include <algorithm>
-
 #include "groupsignal.h"
 #include "decodetrace.h"
 #include "header.h"
@@ -36,23 +35,22 @@
 #include "ruler.h"
 #include "signal.h"
 #include "dsosignal.h"
-#include "view.h"
 #include "viewport.h"
 #include "spectrumtrace.h"
 #include "lissajoustrace.h"
 #include "analogsignal.h"
-
-#include "../sigsession.h"
+#include "../appcore/sigsession.h"
 #include "../data/logicsnapshot.h"
 #include "../dialogs/calibration.h"
 #include "../dialogs/lissajousoptions.h"
-#include "../dsvdef.h"
+#include "../basedef.h"
 #include "../log.h"
 #include "../config/appconfig.h"
-#include "../appcontrol.h"
+#include "../appcore/appcontrol.h"
 
 
 using namespace std;
+using namespace dsv::config;
 
 namespace dsv {
 namespace view {
@@ -80,7 +78,7 @@ const QColor View::LightBlue = QColor(17, 133, 209, 200);
 const QColor View::LightRed = QColor(213, 15, 37, 200);
 
 
-View::View(SigSession *session, pv::toolbars::SamplingBar *sampling_bar, QWidget *parent) :
+View::View(SigSession *session, dsv::toolbars::SamplingBar *sampling_bar, QWidget *parent) :
     QScrollArea(parent),
     _sampling_bar(sampling_bar),
     _scale(10),
@@ -188,7 +186,7 @@ View::View(SigSession *session, pv::toolbars::SamplingBar *sampling_bar, QWidget
     _search_pos = 0;
     _search_cursor = new Cursor(*this, fore, _search_pos);
 
-    _cali = new pv::dialogs::Calibration(this);
+    _cali = new dsv::dialogs::Calibration(this);
     _cali->hide();
 
 	connect(horizontalScrollBar(), SIGNAL(valueChanged(int)), this, SLOT(h_scroll_value_changed(int)));

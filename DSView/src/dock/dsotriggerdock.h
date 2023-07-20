@@ -29,16 +29,18 @@
 #include <QScrollArea>
 #include <QLabel>
 #include <QRadioButton>
-
 #include <vector>
-
 #include "../ui/dscombobox.h"
 #include "../interface/icallbacks.h"
 
+namespace dsv{
+	namespace appcore{
+    	class SigSession; 
+	}
+}
+using namespace dsv::appcore;
+
 namespace dsv {
-
-class SigSession;
-
 namespace dock {
 
 class DsoTriggerDock : public QScrollArea, public IFontForm

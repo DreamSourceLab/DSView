@@ -19,20 +19,18 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
  */
 
- 
+#include "spectrumtrace.h"
 #include <algorithm>
 #include <math.h>
 #include <QTextStream>
 #include <boost/functional/hash.hpp>
 #include <stdlib.h>
-
-#include "spectrumtrace.h"
-#include "../sigsession.h"
+#include "../appcore/sigsession.h"
 #include "../data/dsosnapshot.h"
-#include "../view/dsosignal.h"
-#include "../view/viewport.h"
+#include "dsosignal.h"
+#include "viewport.h"
 #include "../data/spectrumstack.h"
-#include "../dsvdef.h"
+#include "../basedef.h"
 
 using namespace boost;
 using namespace std;
@@ -67,8 +65,8 @@ const int SpectrumTrace::DbvRanges[4] = {
 const int SpectrumTrace::HoverPointSize = 3;
 const double SpectrumTrace::VerticalRate = 1.0 / 2000.0;
 
-SpectrumTrace::SpectrumTrace(pv::SigSession *session,
-    pv::data::SpectrumStack *spectrum_stack, int index) :
+SpectrumTrace::SpectrumTrace(SigSession *session,
+    SpectrumStack *spectrum_stack, int index) :
     Trace("FFT("+QString::number(index)+")", index, SR_CHANNEL_FFT),
     _session(session),
     _spectrum_stack(spectrum_stack),
@@ -120,11 +118,6 @@ std::vector<QString> SpectrumTrace::get_view_modes_support()
         modes.push_back(FFT_ViewMode[i]);
     }
     return modes;
-}
-
-pv::data::SpectrumStack* SpectrumTrace::get_spectrum_stack()
-{
-    return _spectrum_stack;
 }
 
 void SpectrumTrace::init_zoom()

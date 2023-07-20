@@ -20,17 +20,14 @@
  */
 
 #include "dsomeasure.h"
-#include "../sigsession.h"
-#include "../view/view.h"
-
 #include <QCheckBox>
 #include <QVariant>
 #include <QLabel>
 #include <QTabBar>
-#include <QBitmap>
- 
-#include "../dsvdef.h"
-
+#include <QBitmap> 
+#include "../appcore/sigsession.h"
+#include "../view/view.h"
+#include "../basedef.h"
 #include "../ui/langresource.h"
 
 using namespace std;
@@ -92,7 +89,7 @@ void DsoMeasure::add_measure(QWidget *widget, const view::DsoSignal *dsoSig)
     QGridLayout *layout = new QGridLayout(widget);
     layout->setSpacing(0);
 
-    pv::view::DsoSignal *psig = const_cast<pv::view::DsoSignal*>(dsoSig);
+    dsv::view::DsoSignal *psig = const_cast<dsv::view::DsoSignal*>(dsoSig);
     
     for (int i=DSO_MS_BEGIN+1; i<DSO_MS_END; i++) {
         QToolButton *button = new QToolButton(this);

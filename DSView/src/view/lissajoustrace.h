@@ -43,7 +43,7 @@ private:
     static const int DIV_NUM = 10; 
 
 public:
-    LissajousTrace(bool enable, pv::data::DsoSnapshot *data,
+    LissajousTrace(bool enable, dsv::data::DsoSnapshot *data,
                    int xIndex, int yIndex, int percent);
 
     virtual ~LissajousTrace();
@@ -68,11 +68,11 @@ public:
         return _percent;
     }
 
-    inline pv::data::DsoSnapshot* get_data(){
+    inline dsv::data::DsoSnapshot* get_data(){
         return _data;
     }
 
-    inline void set_data(pv::data::DsoSnapshot* data){
+    inline void set_data(dsv::data::DsoSnapshot* data){
         _data = data;
     }
 
@@ -107,7 +107,7 @@ public:
     void paint_label(QPainter &p, int right, const QPoint pt, QColor fore);
 
 private:
-    pv::data::DsoSnapshot *_data;
+    dsv::data::DsoSnapshot *_data;
 
     bool _enable;
     int _xIndex;

@@ -20,23 +20,22 @@
  */
 
 #include "waitingdialog.h"
- 
-
 #include <QMovie>
 #include <QAbstractButton>
 #include <QFuture>
 #include <QProgressDialog>
 #include <QtConcurrent/QtConcurrent>
 #include <QVBoxLayout>
-
 #include "../view/trace.h"
 #include "../view/dsosignal.h"
 #include "../config/appconfig.h"
 #include "../ui/langresource.h"
-#include "../appcontrol.h"
+#include "../appcore/appcontrol.h"
+#include "../appcore/sigsession.h"
 
 using namespace boost;
 using namespace std;
+using namespace dsv::config;
 
 namespace dsv {
 namespace dialogs {
@@ -65,7 +64,7 @@ WaitingDialog::WaitingDialog(QWidget *parent, SigSession *session, int key) :
     warning_tips->setFont(font);
     warning_tips->setAlignment(Qt::AlignCenter);
 
-    QString iconPath = GetIconPath();
+    QString iconPath = AppConfig::GetIconPath();
     label = new QLabel(this);
     movie = new QMovie(iconPath+"/wait.gif");
     label->setMovie(movie);

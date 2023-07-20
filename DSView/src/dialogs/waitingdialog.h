@@ -27,15 +27,19 @@
 #include <QTimer>
 #include <QLabel>
 #include <QMovie>
-  
-#include "../sigsession.h"
 #include "../toolbars/titlebar.h"
 #include "dsdialog.h"
 
-class DeviceAgent;
+
+namespace dsv{
+	namespace appcore{
+    	class SigSession;
+        class DeviceAgent;
+	}
+}
+using namespace dsv::appcore;
 
 namespace dsv {
-
 namespace dialogs {
 
 class WaitingDialog : public DSDialog

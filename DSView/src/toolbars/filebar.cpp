@@ -19,19 +19,21 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
  */
 
+#include "filebar.h"
 #include <boost/bind.hpp>   
 #include <QMetaObject>
 #include <QFileDialog> 
 #include <deque>
 #include <QApplication>
-
-#include "filebar.h"
 #include "../ui/msgbox.h"
 #include "../config/appconfig.h"
 #include "../utility/path.h"
 #include "../ui/langresource.h"
 #include "../log.h" 
 #include "../ui/fn.h"
+#include "../appcore/sigsession.h" 
+
+using namespace dsv::config;
 
 namespace dsv {
 namespace toolbars {
@@ -121,7 +123,7 @@ void FileBar::retranslateUi()
 
 void FileBar::reStyle()
 {
-    QString iconPath = GetIconPath();
+    QString iconPath = AppConfig::GetIconPath();
 
     _action_load->setIcon(QIcon(iconPath+"/open.svg"));
     _action_store->setIcon(QIcon(iconPath+"/save.svg"));
@@ -187,7 +189,7 @@ void FileBar::on_actionLoad_triggered()
 
 void FileBar::on_actionDefault_triggered()
 { 
-    QDir dir(GetFirmwareDir());
+    QDir dir(AppConfig::GetFirmwareDir());
     if (!dir.exists()) { 
           MsgBox::Show(NULL, L_S(STR_PAGE_MSG, S_ID(IDS_MSG_NOT_FOND_DEFAULT_PROFILE),
              "Cannot find default profile for this device!"), this);
@@ -201,7 +203,7 @@ void FileBar::on_actionDefault_triggered()
 
 QString FileBar::genDefaultSessionFile()
 {   
-    QDir dir(GetFirmwareDir());
+    QDir dir(AppConfig::GetFirmwareDir());
 
     QString driver_name = _session->get_device()->driver_name();
     QString mode_name = QString::number(_session->get_device()->get_work_mode());

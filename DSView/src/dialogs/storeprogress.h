@@ -24,7 +24,7 @@
 #define DSVIEW_PV_DIALOGS_SAVEPROGRESS_H
  
 #include <QProgressBar>
-#include "../storesession.h"
+#include "../com/storesession.h"
 #include "../dialogs/dsdialog.h" 
 #include "../interface/icallbacks.h"
 
@@ -34,10 +34,18 @@ class QGridLayout;
 class QPushButton;
 class QWidget;
 
+namespace dsv{
+	namespace appcore{
+    	class SigSession; 
+	}
+    namespace com{
+        class StoreSession;
+    }
+}
+using namespace dsv::appcore;
+using namespace dsv::com;
+
 namespace dsv {
-
-class SigSession;
-
 namespace dialogs {
 
 class StoreProgress : public DSDialog
@@ -74,7 +82,7 @@ private slots:
     void on_ck_compress(bool ck);
 
 private:
-    pv::StoreSession    _store_session;
+    StoreSession    _store_session;
     QProgressBar        _progress;
     bool                _done;
     bool                _isExport;

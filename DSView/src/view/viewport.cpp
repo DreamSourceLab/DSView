@@ -21,33 +21,31 @@
  */
 
 #include "viewport.h"
+#include <QMouseEvent>
+#include <QStyleOption>
+#include <QPainterPath> 
+#include <math.h>
+#include <QWheelEvent>
 #include "ruler.h"
-
 #include "signal.h"
 #include "dsosignal.h"
 #include "logicsignal.h"
 #include "analogsignal.h"
 #include "spectrumtrace.h"
 #include "../data/logicsnapshot.h"
-#include "../sigsession.h"
+#include "../appcore/sigsession.h"
 #include "../dialogs/dsomeasure.h"
 #include "decodetrace.h"
-
-#include <QMouseEvent>
-#include <QStyleOption>
-#include <QPainterPath> 
-#include <math.h>
-#include <QWheelEvent>
- 
 #include "../config/appconfig.h"
-#include "../dsvdef.h"
-#include "../appcontrol.h"
+#include "../basedef.h"
+#include "../appcore/appcontrol.h"
 #include "../log.h" 
 #include "../ui/langresource.h"
 #include "../ui/fn.h"
 #include "lissajoustrace.h"
 
 using namespace std;
+using namespace dsv::config;
 
 namespace dsv {
 namespace view {
@@ -152,7 +150,7 @@ void Viewport::paintEvent(QPaintEvent *event)
 
 void Viewport::doPaint()
 {     
-    using pv::view::Signal;
+    using dsv::view::Signal;
    
     QStyleOption o;
     o.initFrom(this);
@@ -483,7 +481,7 @@ void Viewport::paintProgress(QPainter &p, QColor fore, QColor back)
         return;
     }
 
-    using pv::view::Signal;
+    using dsv::view::Signal;
 
     double progress = 0;
     int progress100 = 0;

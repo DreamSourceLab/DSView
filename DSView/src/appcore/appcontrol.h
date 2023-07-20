@@ -53,7 +53,7 @@ public:
 
     void UnInit(); 
 
-    inline pv::SigSession*  GetSession(){
+    inline SigSession*  GetSession(){
         return _session;
     } 
 
@@ -75,7 +75,7 @@ public:
     std::string        _open_file_name; 
 
 private: 
-    pv::SigSession      *_session;
+    SigSession      *_session;
     QWidget             *_topWindow;
     std::vector<IFontForm*> _font_forms;
 };

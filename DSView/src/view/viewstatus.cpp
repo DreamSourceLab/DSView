@@ -20,7 +20,6 @@
  */
 
 #include "viewstatus.h"
-
 #include <QHBoxLayout>
 #include <QPainter>
 #include <QStyleOption>
@@ -28,20 +27,19 @@
 #include <QBitmap>
 #include <QJsonObject>
 #include <QJsonArray>
-
 #include "../view/trace.h"
-#include "../sigsession.h"
-#include "../view/view.h"
-#include "../view/trace.h"
+#include "../appcore/sigsession.h"
+#include "view.h"
+#include "trace.h"
 #include "../dialogs/dsomeasure.h"
-
 #include "../ui/langresource.h"
 #include "../log.h"
 #include "../config/appconfig.h"
-#include "../appcontrol.h"
+#include "../appcore/appcontrol.h"
 #include "../ui/fn.h"
 
 using namespace std;
+using namespace dsv::config;
 
 namespace dsv {
 namespace view {
@@ -114,7 +112,7 @@ void ViewStatus::paintEvent(QPaintEvent *)
             p.setBrush(active ? dsoSig->get_colour() : fore);
             p.drawRect(QRect(rect.topLeft(), QSize(10, rect.height())));
 
-            QPixmap msPix(pv::dialogs::DsoMeasure::get_ms_icon(std::get<2>(_mrects[i])));
+            QPixmap msPix(dsv::dialogs::DsoMeasure::get_ms_icon(std::get<2>(_mrects[i])));
             QBitmap msMask = msPix.createMaskFromColor(QColor("black"), Qt::MaskOutColor);
             msPix.fill(active ? dsoSig->get_colour() : fore);
             msPix.setMask(msMask);
@@ -129,7 +127,7 @@ void ViewStatus::paintEvent(QPaintEvent *)
             enum DSO_MEASURE_TYPE mtype = std::get<2>(_mrects[i]);
 
             if (active && (mtype != DSO_MS_BEGIN)) {
-                QString title = pv::dialogs::DsoMeasure::get_ms_text(std::get<2>(_mrects[i])) + ":";
+                QString title = dsv::dialogs::DsoMeasure::get_ms_text(std::get<2>(_mrects[i])) + ":";
                 title += dsoSig->get_measure(mtype);
                 int width = p.boundingRect(rect, title).width();
                 p.drawText(QRect(rect.left()+10+rect.height(), rect.top(), width, rect.height()),
@@ -221,7 +219,7 @@ void ViewStatus::mousePressEvent(QMouseEvent *event)
             const QRect rect = std::get<0>(_mrects[i]);
             if (rect.contains(event->pos())) {
                 _hit_rect = (int)i;
-                pv::dialogs::DsoMeasure dsoMeasureDialog(_session, _view, i, _last_sig_index);
+                dsv::dialogs::DsoMeasure dsoMeasureDialog(_session, _view, i, _last_sig_index);
                 dsoMeasureDialog.exec();
                 break;
             }

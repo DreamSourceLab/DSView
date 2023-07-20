@@ -20,20 +20,17 @@
  */
 
 #include "mathoptions.h"
-#include "../sigsession.h"
-#include "../view/view.h"
-#include "../view/mathtrace.h"
-#include "../data/mathstack.h"
-
 #include <QCheckBox>
 #include <QVariant>
 #include <QLabel>
 #include <QTabBar>
 #include <QBitmap>
-
+#include "../appcore/sigsession.h"
+#include "../view/view.h"
+#include "../view/mathtrace.h"
+#include "../data/mathstack.h"
 #include "../ui/langresource.h"
   
-
 using namespace boost;
 using namespace std;
 using namespace dsv::view;

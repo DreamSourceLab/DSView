@@ -24,21 +24,6 @@
 #define __STDC_FORMAT_MACROS
 
 #include "storesession.h"
-#include "sigsession.h"
-
-#include "data/logicsnapshot.h"
-#include "data/dsosnapshot.h"
-#include "data/analogsnapshot.h"
-#include "data/decoderstack.h"
-#include "data/decode/decoder.h"
-#include "data/decode/row.h"
-#include "view/trace.h"
-#include "view/signal.h"
-#include "view/logicsignal.h"
-#include "view/dsosignal.h"
-#include "view/decodetrace.h"
-#include "dock/protocoldock.h" 
- 
 #include <QFileDialog>
 #include <QDir>
 #include <QJsonDocument>
@@ -48,23 +33,39 @@
 #include <math.h>
 #include <QTextStream>
 #include <list>
+#include <libsigrokdecode.h>
+
+#include "../appcore/sigsession.h"
+#include "../data/logicsnapshot.h"
+#include "../data/dsosnapshot.h"
+#include "../data/analogsnapshot.h"
+#include "../data/decoderstack.h"
+#include "../decode/decoder.h"
+#include "../decode/row.h"
+#include "../view/trace.h"
+#include "../view/signal.h"
+#include "../view/logicsignal.h"
+#include "../view/dsosignal.h"
+#include "../view/decodetrace.h"
+#include "../dock/protocoldock.h" 
 
 #ifdef _WIN32
 #include <QTextCodec>
 #endif
  
-#include <libsigrokdecode.h>
-#include "config/appconfig.h"
-#include "dsvdef.h"
-#include "utility/encoding.h"
-#include "utility/path.h"
-#include "log.h" 
-
-#include "ui/langresource.h"
+#include "../config/appconfig.h"
+#include "../basedef.h"
+#include "../utility/encoding.h"
+#include "../utility/path.h"
+#include "../log.h"
+#include "../ui/langresource.h"
 
 #define DEOCDER_CONFIG_VERSION  2
- 
-namespace dsv { 
+
+using namespace dsv::config;
+
+namespace dsv {
+namespace com {
 
 StoreSession::StoreSession(SigSession *session) :
 	_session(session),
@@ -210,7 +211,7 @@ bool StoreSession::save_start()
     return false;
 }
 
-void StoreSession::save_logic(pv::data::LogicSnapshot *logic_snapshot)
+void StoreSession::save_logic(dsv::data::LogicSnapshot *logic_snapshot)
 {
     char chunk_name[20] = {0};
     uint16_t to_save_probes = 0;
@@ -294,7 +295,7 @@ void StoreSession::save_logic(pv::data::LogicSnapshot *logic_snapshot)
     } 
 }
 
-void StoreSession::save_analog(pv::data::AnalogSnapshot *analog_snapshot)
+void StoreSession::save_analog(dsv::data::AnalogSnapshot *analog_snapshot)
 {
     char chunk_name[20] = {0};
     int num = 0;
@@ -381,7 +382,7 @@ void StoreSession::save_analog(pv::data::AnalogSnapshot *analog_snapshot)
     } 
 }
 
-void StoreSession::save_dso(pv::data::DsoSnapshot *dso_snapshot)
+void StoreSession::save_dso(dsv::data::DsoSnapshot *dso_snapshot)
 {
     char chunk_name[20] = {0};
     int ret = SR_ERR; 
@@ -1093,7 +1094,7 @@ bool StoreSession::gen_decoders_json(QJsonArray &array)
 
         auto rows = stack->get_rows_gshow();
         for (auto i = rows.begin(); i != rows.end(); i++) {
-            pv::data::decode::Row _row = (*i).first;
+            dsv::decode::Row _row = (*i).first;
             QString kn = _row.title_id();
             show_obj[kn] = QJsonValue::fromVariant((*i).second);
         }
@@ -1124,7 +1125,7 @@ bool StoreSession::load_decoders(dock::ProtocolDock *widget, QJsonArray &dec_arr
     {
         QJsonObject dec_obj = dec_value.toObject(); 
         std::vector<view::DecodeTrace*> &pre_dsigs = _session->get_decode_signals();
-        std::list<pv::data::decode::Decoder*> sub_decoders;
+        std::list<dsv::decode::Decoder*> sub_decoders;
 
         //get sub decoders
         if (dec_obj.contains("stacked decoders")) {
@@ -1137,7 +1138,7 @@ bool StoreSession::load_decoders(dock::ProtocolDock *widget, QJsonArray &dec_arr
                         assert(d);
 
                         if (QString::fromUtf8(d->id) == stacked_obj["id"].toString()) {
-                            sub_decoders.push_back(new data::decode::Decoder(d));
+                            sub_decoders.push_back(new decode::Decoder(d));
                             break;
                         }
                     }
@@ -1324,7 +1325,7 @@ bool StoreSession::load_decoders(dock::ProtocolDock *widget, QJsonArray &dec_arr
 
             if (dec_obj.contains("show")) {
                 QJsonObject show_obj = dec_obj["show"].toObject();
-                std::map<const pv::data::decode::Row, bool> rows = stack->get_rows_gshow();
+                std::map<const dsv::decode::Row, bool> rows = stack->get_rows_gshow();
 
                 for (auto i = rows.begin();i != rows.end(); i++) {
                     QString key;
@@ -1336,7 +1337,7 @@ bool StoreSession::load_decoders(dock::ProtocolDock *widget, QJsonArray &dec_arr
 
                     if (show_obj.contains(key)) {
                         bool bShow = show_obj[key].toBool();
-                        const pv::data::decode::Row r = (*i).first;
+                        const dsv::decode::Row r = (*i).first;
                         stack->set_rows_gshow(r, bShow);
                     }
                 }
@@ -1560,4 +1561,5 @@ void StoreSession::MakeChunkName(char *chunk_name, int chunk_num, int index, int
     }
 }
 
-} // pv
+} //namespace com
+} //namespace dsv

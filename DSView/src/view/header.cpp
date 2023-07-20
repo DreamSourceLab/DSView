@@ -20,8 +20,7 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
  */
 
-#include "header.h" 
-  
+#include "header.h"  
 #include <QColorDialog>
 #include <QInputDialog>
 #include <QMenu>
@@ -33,7 +32,6 @@
 #include <assert.h>
 #include <algorithm>
 #include <QFont>
-
 #include "view.h"
 #include "trace.h"
 #include "dsosignal.h"
@@ -41,14 +39,15 @@
 #include "analogsignal.h"
 #include "groupsignal.h"
 #include "decodetrace.h"
-#include "../sigsession.h"
-#include "../dsvdef.h"
+#include "../appcore/sigsession.h"
+#include "../basedef.h"
 #include "../ui/langresource.h"
-#include "../appcontrol.h"
+#include "../appcore/appcontrol.h"
 #include "../config/appconfig.h"
 #include "../ui/fn.h"
  
 using namespace std;
+using namespace dsv::config;
 
 namespace dsv {
 namespace view {
@@ -95,7 +94,7 @@ int Header::get_nameEditWidth()
         return 0;
 }
 
-pv::view::Trace* Header::get_mTrace(int &action, const QPoint &pt)
+dsv::view::Trace* Header::get_mTrace(int &action, const QPoint &pt)
 {
     const int w = width();
     std::vector<Trace*> traces;
@@ -112,7 +111,7 @@ pv::view::Trace* Header::get_mTrace(int &action, const QPoint &pt)
 
 void Header::paintEvent(QPaintEvent*)
 { 
-    using pv::view::Trace;
+    using dsv::view::Trace;
 
     QStyleOption o;
     o.initFrom(this);

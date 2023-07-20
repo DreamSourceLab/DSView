@@ -21,14 +21,13 @@
  */
 
 #include "xcursor.h"
-
+#include <QPainter>
 #include "view.h"
 #include "ruler.h"
 #include "dsosignal.h"
 #include "../log.h"
+#include "../appcore/sigsession.h"
 
-#include <QPainter>
-  
 using namespace std;
 
 namespace dsv {

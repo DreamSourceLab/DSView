@@ -31,7 +31,7 @@
 #include <assert.h>
 #include <string.h>
 #include <stdlib.h>
-#include "../../config/appconfig.h"
+#include "../config/appconfig.h"
 #include "decoderstatus.h"
 #include "../basedef.h"
  

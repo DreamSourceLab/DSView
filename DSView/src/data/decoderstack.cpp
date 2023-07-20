@@ -40,15 +40,13 @@ using namespace boost;
 
 namespace dsv {
 namespace data {
-
-using namespace decode;
-
+    
 const double DecoderStack::DecodeMargin = 1.0;
 const double DecoderStack::DecodeThreshold = 0.2;
 const int64_t DecoderStack::DecodeChunkLength = 4 * 1024; 
 const unsigned int DecoderStack::DecodeNotifyPeriod = 1024;
  
-DecoderStack::DecoderStack(pv::SigSession *session,
+DecoderStack::DecoderStack(SigSession *session,
 	const srd_decoder *const dec, DecoderStatus *decoder_status) :
 	_session(session)
 {
@@ -215,7 +213,7 @@ int64_t DecoderStack::samples_decoded()
 }
 
 void DecoderStack::get_annotation_subset(
-	std::vector<pv::data::decode::Annotation*> &dest,
+	std::vector<dsv::decode::Annotation*> &dest,
 	const Row &row, uint64_t start_sample,
 	uint64_t end_sample)
 {  
@@ -332,7 +330,7 @@ uint64_t DecoderStack::list_annotation_size(uint16_t row_index)
     return 0;
 }
 
-bool DecoderStack::list_annotation(pv::data::decode::Annotation &ann,
+bool DecoderStack::list_annotation(dsv::decode::Annotation &ann,
                                   uint16_t row_index, uint64_t col_index)
 { 
     for (auto i = _rows.begin(); i != _rows.end(); i++) {
@@ -441,7 +439,7 @@ void DecoderStack::do_decode_work()
             for(auto s :  _session->get_signals()) {
                 if(s->get_index() == (*dec->channels().begin()).second && s->signal_type() == SR_CHANNEL_LOGIC)
                 { 
-                    _snapshot = ((pv::view::LogicSignal*)s)->data();
+                    _snapshot = ((dsv::view::LogicSignal*)s)->data();
                     if (_snapshot != NULL)
                         break;
                 }

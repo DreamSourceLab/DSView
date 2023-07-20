@@ -26,8 +26,8 @@
 #include <vector>
 #include <QString>
 #include <string>
-#include "string_ids.h"
 #include <mutex>
+#include "string_ids.h"
 
 struct lang_key_item
 {

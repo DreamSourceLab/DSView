@@ -25,12 +25,10 @@
 
 #include <boost/function.hpp>
 #include <boost/optional.hpp>
-
 #include <QString>
 #include <libsigrok.h> 
 #include "binding.h"
 
-class DeviceAgent;
 
 namespace dsv {
 namespace prop {
@@ -72,7 +70,6 @@ private:
 
 protected:
 	struct sr_channel *const _probe;
-	DeviceAgent *_device_agent;
 };
 
 } // binding

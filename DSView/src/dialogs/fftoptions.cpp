@@ -22,14 +22,13 @@
 #include "fftoptions.h"
 #include <QFormLayout>
 #include <QListWidget>
-#include "../sigsession.h"
+#include "../appcore/sigsession.h"
 #include "../data/spectrumstack.h"
 #include "../view/trace.h"
 #include "../view/dsosignal.h"
 #include "../view/spectrumtrace.h"
-#include "../dsvdef.h"
+#include "../basedef.h"
 #include "../log.h"
-
 #include "../ui/langresource.h"
 
 

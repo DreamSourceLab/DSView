@@ -32,15 +32,14 @@
 #include <QDialogButtonBox>
 #include <QScrollArea>
 #include <QApplication>
-
 #include "logicsignal.h"
 #include "view.h"
 #include "cursor.h"
 #include "../appcore/sigsession.h"
 #include "../data/decoderstack.h"
-#include "../data/decode/decoder.h"
+#include "../decode/decoder.h"
 #include "../data/logicsnapshot.h"
-#include "../data/decode/annotation.h"
+#include "../decode/annotation.h"
 #include "../widgets/decodergroupbox.h"
 #include "../widgets/decodermenu.h"
 #include "../toolbars/titlebar.h"
@@ -114,8 +113,8 @@ const QColor DecodeTrace::OutlineColours[16] = {
 const QString DecodeTrace::RegionStart = QT_TR_NOOP("Start");
 const QString DecodeTrace::RegionEnd = QT_TR_NOOP("End  ");
 
-DecodeTrace::DecodeTrace(pv::SigSession *session,
-	pv::data::DecoderStack *decoder_stack, int index) :
+DecodeTrace::DecodeTrace(SigSession *session,
+	DecoderStack *decoder_stack, int index) :
 	Trace(QString::fromUtf8(decoder_stack->stack().front()->decoder()->name), index, SR_CHANNEL_DECODER)
 {
     assert(decoder_stack);
@@ -147,7 +146,7 @@ bool DecodeTrace::enabled()
 	return true;
 }
   
-void DecodeTrace::set_view(pv::view::View *view)
+void DecodeTrace::set_view(View *view)
 {
 	assert(view);
 	Trace::set_view(view);
@@ -215,9 +214,7 @@ void DecodeTrace::paint_back(QPainter &p, int left, int right, QColor fore, QCol
 }
 
 void DecodeTrace::paint_mid(QPainter &p, int left, int right, QColor fore, QColor back)
-{
-    using namespace dsv::data::decode;
-
+{ 
     assert(_decoder_stack);
     const QString err = _decoder_stack->error_message();
     if (!err.isEmpty())
@@ -263,8 +260,8 @@ void DecodeTrace::paint_mid(QPainter &p, int left, int right, QColor fore, QColo
 
     for(auto dec :_decoder_stack->stack()) {
         if (dec->shown()) {
-            const std::map<const pv::data::decode::Row, bool> rows = _decoder_stack->get_rows_gshow();
-            for (std::map<const pv::data::decode::Row, bool>::const_iterator i = rows.begin();
+            const std::map<const Row, bool> rows = _decoder_stack->get_rows_gshow();
+            for (std::map<const Row, bool>::const_iterator i = rows.begin();
                 i != rows.end(); i++) {
                 if ((*i).first.decoder() == dec->decoder() &&
                     _decoder_stack->has_annotations((*i).first)) {
@@ -315,9 +312,7 @@ void DecodeTrace::paint_mid(QPainter &p, int left, int right, QColor fore, QColo
 }
 
 void DecodeTrace::paint_fore(QPainter &p, int left, int right, QColor fore, QColor back)
-{
-	using namespace dsv::data::decode;
-
+{ 
     (void)p;
     (void)left;
 	(void)right;
@@ -325,7 +320,7 @@ void DecodeTrace::paint_fore(QPainter &p, int left, int right, QColor fore, QCol
     (void)back;
 }
  
-void DecodeTrace::draw_annotation(const pv::data::decode::Annotation &a,
+void DecodeTrace::draw_annotation(const Annotation &a,
     QPainter &p, QColor text_color, int h, int left, int right,
     double samples_per_pixel, double pixels_offset, int y,
     size_t base_colour, double min_annWidth, QColor fore, QColor back, double &last_x)
@@ -423,7 +418,7 @@ void DecodeTrace::draw_nodetail(QPainter &p,
     p.drawText(nodetail_rect, Qt::AlignCenter | Qt::AlignVCenter, info);
 }
 
-void DecodeTrace::draw_instant(const pv::data::decode::Annotation &a, QPainter &p,
+void DecodeTrace::draw_instant(const Annotation &a, QPainter &p,
     QColor fill, QColor outline, QColor text_color, int h, double x, int y, double min_annWidth)
 {
     (void)outline;
@@ -444,7 +439,7 @@ void DecodeTrace::draw_instant(const pv::data::decode::Annotation &a, QPainter &
 	p.drawText(rect, Qt::AlignCenter | Qt::AlignVCenter, text);
 }
 
-void DecodeTrace::draw_range(const pv::data::decode::Annotation &a, QPainter &p,
+void DecodeTrace::draw_range(const Annotation &a, QPainter &p,
 	QColor fill, QColor outline, QColor text_color, int h, double start,
     double end, int y, QColor fore, QColor back)
 {
@@ -567,8 +562,7 @@ void DecodeTrace::on_decode_done()
 }
   
 int DecodeTrace::rows_size()
-{
-    using pv::data::decode::Decoder;
+{ 
     int size = 0;
 
     for(auto dec : _decoder_stack->stack()) {
@@ -576,7 +570,7 @@ int DecodeTrace::rows_size()
             auto rows = _decoder_stack->get_rows_gshow();
 
             for (auto i = rows.begin(); i != rows.end(); i++) {
-                pv::data::decode::Row _row = (*i).first;
+                Row _row = (*i).first;
                 if (_row.decoder() == dec->decoder() &&
                     _decoder_stack->has_annotations((*i).first) &&
                     (*i).second)

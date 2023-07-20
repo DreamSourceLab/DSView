@@ -25,7 +25,6 @@
 #define DSVIEW_PV_PROP_BINDING_BINDING_H
 
 #include <glib.h>
-
 #include <vector>
 #include <map> 
 #include <QFont>

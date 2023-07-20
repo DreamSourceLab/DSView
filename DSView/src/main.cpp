@@ -27,14 +27,13 @@
 #include <QStyle> 
 #include <QGuiApplication>
 #include <QScreen>
-#include "dsapplication.h"
 #include "mystyle.h" 
-#include "pv/mainframe.h"
+#include "appcore/mainframe.h"
 #include "config/appconfig.h"
 #include "config.h"
-#include "pv/appcontrol.h"
-#include "pv/log.h" 
-#include "pv/ui/langresource.h"
+#include "appcore/appcontrol.h"
+#include "log.h" 
+#include "ui/langresource.h"
 #include <QDateTime>
 #include <string>
 #include <ds_types.h>
@@ -176,36 +175,36 @@ bool bHighScale = true;
     QApplication::setOrganizationDomain("www.DreamSourceLab.com");
 
 	//----------------------init log
-	dsv_log_init(); // Don't call before QApplication be inited
+	dsv::dsv_log_init(); // Don't call before QApplication be inited
 
 	if (bStoreLog && logLevel < XLOG_LEVEL_DBG){
 		logLevel = XLOG_LEVEL_DBG;
 	}
 	if (logLevel != -1){
-		dsv_log_level(logLevel);
+		dsv::dsv_log_level(logLevel);
 	}
 
 	#ifdef DEBUG_INFO
 		if (XLOG_LEVEL_INFO > logLevel){
-			dsv_log_level(XLOG_LEVEL_INFO); // on develop mode, set the default log level
+            dsv::dsv_log_level(XLOG_LEVEL_INFO); // on develop mode, set the default log level
 			logLevel = XLOG_LEVEL_INFO;
 		}
 	#endif
 
 	if (bStoreLog){
-		dsv_log_enalbe_logfile(true);
+		dsv::dsv_log_enalbe_logfile(true);
 	} 
 
-	AppControl *control = AppControl::Instance();	
-	AppConfig &app = AppConfig::Instance(); 
+	auto control = dsv::appcore::AppControl::Instance();	
+	dsv::config::AppConfig &app = dsv::config::AppConfig::Instance(); 
 	app.LoadAll(); //load app config
 	LangResource::Instance()->Load(app.frameOptions.language);
 
 	if (app.appOptions.ableSaveLog){
-		dsv_log_enalbe_logfile(app.appOptions.appendLogMode);
+		dsv::dsv_log_enalbe_logfile(app.appOptions.appendLogMode);
 
 		if (app.appOptions.logLevel >= logLevel){
-			dsv_log_level(app.appOptions.logLevel);
+			dsv::dsv_log_level(app.appOptions.logLevel);
 		}
 	}
 
@@ -235,7 +234,7 @@ bool bHighScale = true;
 
 	try
 	{   
-		pv::MainFrame w;
+		dsv::appcore::MainFrame w;
 		control->Start();
 		w.show(); 
 		w.readSettings();
@@ -257,7 +256,7 @@ bool bHighScale = true;
 
 	dsv_info("Uninit log.");
 
-	dsv_log_uninit();
+	dsv::dsv_log_uninit();
  
 	return ret;
 }

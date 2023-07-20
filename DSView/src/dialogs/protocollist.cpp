@@ -20,17 +20,13 @@
  */
 
 #include "protocollist.h"
- 
-
 #include <QFormLayout>
 #include <QListWidget>
-
-#include "../sigsession.h"
+#include "../appcore/sigsession.h"
 #include "../data/decoderstack.h"
-#include "../data/decode/row.h"
+#include "../decode/row.h"
 #include "../view/decodetrace.h"
 #include "../data/decodermodel.h"
-
 #include "../ui/langresource.h"
 
 using namespace boost;
@@ -45,7 +41,7 @@ ProtocolList::ProtocolList(QWidget *parent, SigSession *session) :
     _button_box(QDialogButtonBox::Ok,
         Qt::Horizontal, this)
 {
-    pv::data::DecoderModel* decoder_model = _session->get_decoder_model();
+    dsv::data::DecoderModel* decoder_model = _session->get_decoder_model();
 
     _map_zoom_combobox = new DsComboBox(this);
     _map_zoom_combobox->addItem(L_S(STR_PAGE_DLG, S_ID(IDS_DLG_FIT_TO_WINDOW), "Fit to Window"));
@@ -129,7 +125,7 @@ void ProtocolList::set_protocol(int index)
     }
     _show_label_list.clear();
 
-    pv::data::DecoderStack *decoder_stack = NULL;
+    dsv::data::DecoderStack *decoder_stack = NULL;
     const auto &decode_sigs = _session->get_decode_signals();
     int cur_index = 0;
 
@@ -171,7 +167,7 @@ void ProtocolList::on_row_check(bool show)
     QVariant id = sc->property("index");
     int index = id.toInt();
 
-    pv::data::DecoderStack *decoder_stack = NULL;
+    dsv::data::DecoderStack *decoder_stack = NULL;
     const auto &decode_sigs = _session->get_decode_signals();
     int cur_index = 0;
 
@@ -186,8 +182,8 @@ void ProtocolList::on_row_check(bool show)
     if (!decoder_stack)
         return;
 
-    std::map<const pv::data::decode::Row, bool> rows = decoder_stack->get_rows_lshow();
-    for (std::map<const pv::data::decode::Row, bool>::const_iterator i = rows.begin();
+    std::map<const dsv::decode::Row, bool> rows = decoder_stack->get_rows_lshow();
+    for (std::map<const dsv::decode::Row, bool>::const_iterator i = rows.begin();
         i != rows.end(); i++) {
         if (index-- == 0) {
             decoder_stack->set_rows_lshow((*i).first, show);
