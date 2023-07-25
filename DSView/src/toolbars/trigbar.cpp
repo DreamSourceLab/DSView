@@ -123,7 +123,7 @@ TrigBar::TrigBar(SigSession *session, QWidget *parent) :
     connect(_light_style, SIGNAL(triggered()), this, SLOT(on_actionLight_triggered()));
     connect(_action_dispalyOptions, SIGNAL(triggered()), this, SLOT(on_display_setting()));
 
-    update_font();
+    UpdateFont();
 }
 
 //语言变化
@@ -371,7 +371,7 @@ void TrigBar::update_checked_status()
     _search_button.setChecked(opt->searchDock);
 }
 
-void TrigBar::update_font()
+void TrigBar::UpdateFont()
 { 
     QFont font = this->font();
     font.setPointSizeF(AppConfig::Instance().appOptions.fontSize);

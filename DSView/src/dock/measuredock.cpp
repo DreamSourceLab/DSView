@@ -150,7 +150,7 @@ MeasureDock::MeasureDock(QWidget *parent, View &view, SigSession *session) :
     connect(_fen_checkBox, SIGNAL(stateChanged(int)), &_view, SLOT(set_measure_en(int)));
     connect(&_view, SIGNAL(measure_updated()), this, SLOT(measure_updated()));
 
-    update_font();
+    UpdateFont();
 }
 
 MeasureDock::~MeasureDock()
@@ -827,7 +827,7 @@ void MeasureDock::del_cursor()
     _view.update();
 }
 
-void MeasureDock::update_font()
+void MeasureDock::UpdateFont()
 {
     QFont font = this->font();
     font.setPointSizeF(AppConfig::Instance().appOptions.fontSize);

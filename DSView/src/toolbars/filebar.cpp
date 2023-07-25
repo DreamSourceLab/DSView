@@ -96,7 +96,7 @@ FileBar::FileBar(SigSession *session, QWidget *parent) :
     connect(_action_export, SIGNAL(triggered()), this, SIGNAL(sig_export()));
     connect(_action_capture, SIGNAL(triggered()), this, SLOT(on_actionCapture_triggered()));
 
-    update_font();
+    UpdateFont();
 }
 
 void FileBar::changeEvent(QEvent *event)
@@ -256,7 +256,7 @@ void FileBar::update_view_status()
     _menu_session->setEnabled(bEnable && is_hardware); 
 }
 
-void FileBar::update_font()
+void FileBar::UpdateFont()
 { 
     QFont font = this->font();
     font.setPointSizeF(AppConfig::Instance().appOptions.fontSize);

@@ -130,7 +130,7 @@ namespace dsv
             _instant_action = addWidget(&_instant_button); 
 
             update_view_status();
-            update_font();
+            UpdateFont();
 
             connect(&_device_selector, SIGNAL(currentIndexChanged(int)), this, SLOT(on_device_selected()));
             connect(&_configure_button, SIGNAL(clicked()), this, SLOT(on_configure()));
@@ -1257,7 +1257,7 @@ namespace dsv
             on_instant_stop();
         }
 
-        void SamplingBar::update_font()
+        void SamplingBar::UpdateFont()
         { 
             QFont font = this->font();
             font.setPointSizeF(AppConfig::Instance().appOptions.fontSize);

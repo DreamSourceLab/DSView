@@ -72,7 +72,7 @@ private:
     const struct dev_mode_name* get_mode_name(int mode);
 
     //IFontForm
-    void update_font() override;
+    void UpdateFont() override;
 
 public slots:
     void set_device();

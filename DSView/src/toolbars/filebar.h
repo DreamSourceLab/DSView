@@ -58,7 +58,7 @@ private:
     void reStyle(); 
 
     //IFontForm
-    void update_font() override;
+    void UpdateFont() override;
 
 signals:
     void sig_load_file(QString); 

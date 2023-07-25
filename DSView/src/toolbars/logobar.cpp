@@ -124,7 +124,7 @@ LogoBar::LogoBar(SigSession *session, QWidget *parent) :
     connect(_update, SIGNAL(triggered()), this, SLOT(on_action_update()));
     connect(_log, SIGNAL(triggered()), this, SLOT(on_action_setting_log()));
 
-    update_font();
+    UpdateFont();
 }
 
 void LogoBar::changeEvent(QEvent *event)
@@ -188,7 +188,7 @@ void LogoBar::on_actionEn_triggered()
         QIcon(":/icons/English.svg")));
 
     assert(_mainForm);
-    _mainForm->switchLanguage(LAN_EN);
+    _mainForm->SwitchLanguage(LAN_EN);
 }
 
 void LogoBar::on_actionCn_triggered()
@@ -196,7 +196,7 @@ void LogoBar::on_actionCn_triggered()
     _language->setIcon(QIcon::fromTheme("file",
         QIcon(":/icons/Chinese.svg")));
     assert(_mainForm);
-    _mainForm->switchLanguage(LAN_CN);  
+    _mainForm->SwitchLanguage(LAN_CN);  
 }
 
 void LogoBar::on_actionAbout_triggered()
@@ -348,7 +348,7 @@ void LogoBar::on_clear_log_file()
     }  
 }
 
-void LogoBar::update_font()
+void LogoBar::UpdateFont()
 { 
     QFont font = this->font();
     font.setPointSizeF(AppConfig::Instance().appOptions.fontSize);

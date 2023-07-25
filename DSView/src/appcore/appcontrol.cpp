@@ -181,7 +181,7 @@ void AppControl::remove_font_form(IFontForm *form)
 void AppControl::update_font_forms()
 {
     for (auto f : _font_forms){
-        f->update_font();
+        f->UpdateFont();
     }
 }
 

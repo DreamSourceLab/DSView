@@ -134,7 +134,7 @@ TriggerDock::TriggerDock(QWidget *parent, SigSession *session) :
 
     retranslateUi();
 
-    update_font();
+    UpdateFont();
 }
 
 TriggerDock::~TriggerDock()
@@ -1072,7 +1072,7 @@ void TriggerDock::on_serial_hex_changed()
     _is_serial_val_setting = false;
 }
 
-void TriggerDock::update_font()
+void TriggerDock::UpdateFont()
 {
     QFont font = this->font();
     font.setPointSizeF(AppConfig::Instance().appOptions.fontSize);

@@ -59,11 +59,6 @@ public:
     virtual void OnDlgResult(bool bYes)=0;
 };
 
-class IMainForm{
-public:
-    virtual void switchLanguage(int language)=0;
-};
-
 
 #define DSV_MSG_START_COLLECT_WORK_PREV 5001
 #define DSV_MSG_START_COLLECT_WORK      5002
@@ -106,12 +101,6 @@ class IDecoderPannel
 {
 public:
     virtual void update_deocder_item_name(void *trace_handel, const char *name)=0;
-};
-
-class IFontForm
-{
-public:
-    virtual void update_font()=0;
 };
 
 #endif

@@ -206,7 +206,7 @@ void DecoderOptionsDlg::load_options_view()
     confirm_button_box->addWidget(button_box, 0, Qt::AlignRight);
     form->addRow(confirm_button_box);
 
-    this->update_font();
+    this->UpdateFont();
 
     int real_content_width = _content_width;
     int content_height = _contentHeight;

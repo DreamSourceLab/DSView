@@ -71,7 +71,7 @@ public:
 
     void set_label_name(QString name);
 
-    void update_font();
+    void UpdateFont();
   
 private slots: 
     void on_set_protocol(); 

@@ -44,7 +44,7 @@ public:
     QString title();
 
     //IFontForm
-    void update_font() override;
+    void UpdateFont() override;
 
 private:
     void changeEvent(QEvent *event);

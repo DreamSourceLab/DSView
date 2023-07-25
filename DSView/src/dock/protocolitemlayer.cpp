@@ -73,7 +73,7 @@ ProtocolItemLayer::ProtocolItemLayer(QWidget *parent, QString protocolName, IPro
         connect(_set_button, SIGNAL(clicked()),this, SLOT(on_set_protocol()));
         connect(_format_combox, SIGNAL(currentIndexChanged(int)),this, SLOT(on_format_select_changed(int)));
 
-        update_font();
+        UpdateFont();
 }
 
 ProtocolItemLayer::~ProtocolItemLayer(){ 

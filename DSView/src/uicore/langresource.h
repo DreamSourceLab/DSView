@@ -27,7 +27,7 @@
 #include <QString>
 #include <string>
 #include <mutex>
-#include "string_ids.h"
+#include "lang_page_ids.h"
 
 struct lang_key_item
 {

@@ -139,7 +139,7 @@ signals:
 
 public:
     //IMainForm
-    void switchLanguage(int language) override;
+    void SwitchLanguage(int language) override;
     bool able_to_close(); 
    
 private: 

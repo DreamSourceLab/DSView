@@ -398,7 +398,7 @@ void DeviceOptions::logic_probes(QVBoxLayout &layout)
     enable_all_probes->setMaximumWidth(bt_width);
     disable_all_probes->setMaximumWidth(bt_width);
 
-    this->update_font(); 
+    this->UpdateFont(); 
 
     contentHeight += enable_all_probes->sizeHint().height();
     contentHeight += channel_line_height * row2 + 50;
@@ -734,7 +734,7 @@ void DeviceOptions::analog_probes(QGridLayout &layout)
 
     layout.addWidget(tabWidget, 0, 0, 1, 1);
 
-    this->update_font();
+    this->UpdateFont();
     _groupHeight2 = tabWidget->sizeHint().height() + 10;
     _dynamic_panel->setFixedHeight(_groupHeight2); 
 
@@ -836,7 +836,7 @@ void DeviceOptions::build_dynamic_panel()
 int bb = 0;
 void DeviceOptions::try_resize_scroll()
 {
-    this->update_font();
+    this->UpdateFont();
 
     // content area height
     int contentHeight = _groupHeight1 + _groupHeight2 + 20; // +space

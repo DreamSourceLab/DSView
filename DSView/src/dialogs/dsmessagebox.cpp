@@ -136,7 +136,7 @@ int DSMessageBox::exec()
     ui::set_form_font(this, font);
 
     if (_titlebar != NULL){
-        _titlebar->update_font();
+        _titlebar->UpdateFont();
     }
 
     return QDialog::exec();

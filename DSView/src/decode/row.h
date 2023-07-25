@@ -23,7 +23,6 @@
 #define DECODE_ROW_H
 
 #include <vector>
-
 #include "annotation.h"
 
 struct srd_decoder;

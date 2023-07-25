@@ -63,7 +63,7 @@ private:
     bool check_trig_channel();
 
     //IFontForm
-    void update_font() override;
+    void UpdateFont() override;
 
 signals:
     void set_trig_pos(int percent);

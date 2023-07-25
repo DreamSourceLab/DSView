@@ -1339,7 +1339,7 @@ int  View::get_body_height()
         _time_viewport->update();
  }
 
- void View::update_font()
+ void View::UpdateFont()
  {
     headerWidth();
  }

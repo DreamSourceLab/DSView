@@ -226,7 +226,7 @@ ProtocolDock::ProtocolDock(QWidget *parent, view::View &view, SigSession *sessio
 
     connect(_pro_search_button, SIGNAL(clicked()), this, SLOT(show_protocol_select()));
 
-    update_font();
+    UpdateFont();
 }
 
 ProtocolDock::~ProtocolDock()
@@ -1041,7 +1041,7 @@ bool ProtocolDock::protocol_sort_callback(const DecoderInfoItem *o1, const Decod
     }
  }
 
- void ProtocolDock::update_font()
+ void ProtocolDock::UpdateFont()
  {
     QFont font = this->font();
     font.setPointSizeF(AppConfig::Instance().appOptions.fontSize);
@@ -1049,7 +1049,7 @@ bool ProtocolDock::protocol_sort_callback(const DecoderInfoItem *o1, const Decod
     _table_view->setFont(font);
 
     for(auto lay : _protocol_lay_items){
-        lay->update_font();
+        lay->UpdateFont();
     }
 
     font.setPointSizeF(font.pointSizeF() + 1);

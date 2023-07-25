@@ -93,7 +93,7 @@ TitleBar::TitleBar(bool top, QWidget *parent, bool hasClose) :
 
     setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed); 
 
-    update_font();
+    UpdateFont();
 }
 
 TitleBar::~TitleBar(){ 
@@ -238,7 +238,7 @@ void TitleBar::mouseDoubleClickEvent(QMouseEvent *event)
     QWidget::mouseDoubleClickEvent(event);
 }
 
-void TitleBar::update_font()
+void TitleBar::UpdateFont()
 {  
     QFont font = this->font();
     font.setPointSizeF(AppConfig::Instance().appOptions.fontSize);

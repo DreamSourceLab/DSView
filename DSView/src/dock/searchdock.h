@@ -76,7 +76,7 @@ private:
     void reStyle();
 
     //IFontForm
-    void update_font() override;
+    void UpdateFont() override;
 
 public slots:
     void on_previous();

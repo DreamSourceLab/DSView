@@ -173,7 +173,7 @@ DsoTriggerDock::DsoTriggerDock(QWidget *parent, SigSession *session) :
 
     retranslateUi();
 
-    update_font();
+    UpdateFont();
 }
 
 DsoTriggerDock::~DsoTriggerDock()
@@ -488,7 +488,7 @@ void DsoTriggerDock::update_view()
     connect(_margin_slider, SIGNAL(valueChanged(int)), this, SLOT(margin_changed(int)));
 }
 
-void DsoTriggerDock::update_font()
+void DsoTriggerDock::UpdateFont()
 {
     QFont font = this->font();
     font.setPointSizeF(AppConfig::Instance().appOptions.fontSize);

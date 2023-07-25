@@ -106,7 +106,7 @@ Viewport::Viewport(View &parent, View_type type) :
     _xAction = xAction;
  
     setContextMenuPolicy(Qt::CustomContextMenu);
-    this->update_font();
+    this->UpdateFont();
 
     connect(&_trigger_timer, SIGNAL(timeout()),this, SLOT(on_trigger_timer()));
     connect(&_drag_timer, SIGNAL(timeout()),this, SLOT(on_drag_timer())); 
@@ -2001,7 +2001,7 @@ void Viewport::add_cursor_x()
     _view.show_xcursors(true);
 }
 
-void Viewport::update_font()
+void Viewport::UpdateFont()
 {
     QFont font = this->font();
     font.setPointSizeF(AppConfig::Instance().appOptions.fontSize);

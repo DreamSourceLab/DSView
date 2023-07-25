@@ -429,7 +429,7 @@ void MainFrame::readSettings()
     AppConfig &app = AppConfig::Instance(); 
    
     if (app.frameOptions.language > 0){
-         _mainWindow->switchLanguage(app.frameOptions.language);
+         _mainWindow->SwitchLanguage(app.frameOptions.language);
     }
 
       int left = app.frameOptions.left;

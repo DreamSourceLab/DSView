@@ -120,7 +120,7 @@ private:
     void update_deocder_item_name(void *trace_handel, const char *name) override;
 
     //IFontForm
-    void update_font() override;
+    void UpdateFont() override;
 
 signals:
     void protocol_updated();

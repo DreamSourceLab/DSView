@@ -116,7 +116,7 @@ public:
     void update_lang();
 
     //IFontForm
-    void update_font() override;
+    void UpdateFont() override;
 
 protected:
     bool event(QEvent *event) override;

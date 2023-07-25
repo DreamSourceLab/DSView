@@ -85,7 +85,7 @@ SearchDock::SearchDock(QWidget *parent, View &view, SigSession *session) :
 
     retranslateUi();
 
-    update_font();
+    UpdateFont();
 
     connect(&_pre_button, SIGNAL(clicked()), this, SLOT(on_previous()));
     connect(&_nxt_button, SIGNAL(clicked()),this, SLOT(on_next()));
@@ -254,7 +254,7 @@ void SearchDock::on_set()
     }
 }
 
-void SearchDock::update_font()
+void SearchDock::UpdateFont()
 {
     QFont font = this->font();
     font.setPointSizeF(AppConfig::Instance().appOptions.fontSize);

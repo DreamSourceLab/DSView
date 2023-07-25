@@ -129,7 +129,7 @@ int DSDialog::exec()
         connect(_base_button, SIGNAL(accepted()), this, SLOT(accept()));
     }
 
-    update_font();
+    UpdateFont();
  
     return QDialog::exec();
 }
@@ -175,20 +175,20 @@ void DSDialog::build_base(bool hasClose)
     _main_layout->setContentsMargins(10,5,10,10);   
 } 
 
-void DSDialog::update_font()
+void DSDialog::UpdateFont()
 {
     QFont font = this->font();
     font.setPointSizeF(AppConfig::Instance().appOptions.fontSize);
     ui::set_form_font(this, font);
 
     if (_titlebar != NULL){
-        _titlebar->update_font();
+        _titlebar->UpdateFont();
     }
 }
 
 void DSDialog::show()
 {
-    update_font();
+    UpdateFont();
     
     QWidget::show();
 }

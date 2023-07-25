@@ -238,7 +238,7 @@ namespace appcore {
 
         // defaut language
         AppConfig &app = AppConfig::Instance();
-        switchLanguage(app.frameOptions.language);
+        SwitchLanguage(app.frameOptions.language);
         switchTheme(app.frameOptions.style);
 
         retranslateUi();
@@ -1356,7 +1356,7 @@ namespace appcore {
         return false;
     }
 
-    void MainWindow::switchLanguage(int language)
+    void MainWindow::SwitchLanguage(int language)
     {
         if (language == 0)
             return;

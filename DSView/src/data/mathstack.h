@@ -29,18 +29,15 @@
 #include "signaldata.h"
 
 namespace dsv{
-	namespace appcore{
+    namespace appcore{
     	class SigSession; 
 	}
-}
-using namespace dsv::appcore;
-
-namespace dsv{
 	namespace view{
     	class DsoSignal;
         class dslDial;
 	}
 }
+using namespace dsv::appcore;
 using namespace dsv::view;
 
 namespace dsv {

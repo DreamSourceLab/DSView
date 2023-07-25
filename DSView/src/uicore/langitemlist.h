@@ -2,7 +2,7 @@
  * This file is part of the DSView project.
  * DSView is based on PulseView.
  *
- * Copyright (C) 2022 DreamSourceLab <support@dreamsourcelab.com>
+ * Copyright (C) 2023 DreamSourceLab <support@dreamsourcelab.com>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -19,14 +19,37 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
  */
 
-#ifndef STRING_IDS_H
-#define STRING_IDS_H
+#ifndef LANG_ITEM_LIST_H
+#define LANG_ITEM_LIST_H
 
-#define     STR_PAGE_MSG        1
-#define     STR_PAGE_TOOLBAR    2
-#define     STR_PAGE_DLG        3
-#define     STR_PAGE_DSL        100
-#define     STR_PAGE_DECODER    101
+#include <vector>
+#include "uitypes.h"
+#include "lang_page_ids.h"
 
-#define IDS_MSG_LOG_LEVEL
+struct LangItemInfo
+{
+    int         lang_page_id;
+    const char *key_id;
+    const char *default_str;
+    ILangSetter *setter;
+};
+
+class LangItemList
+{
+public:
+    LangItemList();
+    ~LangItemList();
+
+    void Clear();
+
+    void AddItem(int page_id, const char *key_id, const char *defaultStr, ILangSetter *setter);
+
+    void RemoveItemBySetterHandle(void *setterHandle);
+
+    void LoadAllText();
+
+private:
+    std::vector<LangItemInfo> m_items;
+};
+
 #endif
