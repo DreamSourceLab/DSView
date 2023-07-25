@@ -27,7 +27,7 @@
 #include "../decode/row.h"
 #include "../view/decodetrace.h"
 #include "../data/decodermodel.h"
-#include "../ui/langresource.h"
+#include "../uicore/langresource.h"
 
 using namespace boost;
 using namespace std;

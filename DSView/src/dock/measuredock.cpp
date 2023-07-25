@@ -34,7 +34,7 @@
 #include "../dialogs/dsdialog.h"
 #include "../dialogs/dsmessagebox.h"
 #include "../config/appconfig.h"
-#include "../ui/langresource.h"
+#include "../uicore/langresource.h"
 #include "../ui/msgbox.h"
 #include "../appcore/appcontrol.h"
 #include "../appcore/sigsession.h"

@@ -29,7 +29,7 @@
 #include "../appcore/sigsession.h"
 #include "../view/view.h"
 #include "../view/lissajoustrace.h"
-#include "../ui/langresource.h"
+#include "../uicore/langresource.h"
 
   
 using namespace boost;

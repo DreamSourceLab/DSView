@@ -29,7 +29,7 @@
 #include "../string.h"
 #include "../../data/decoderstack.h"
 #include "../../decode/decoder.h"
-#include "../../ui/langresource.h"
+#include "../../uicore/langresource.h"
 #include "../../config/appconfig.h"
 
 using namespace boost;

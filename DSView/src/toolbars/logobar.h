@@ -30,6 +30,7 @@
 #include <libsigrok.h> 
 #include <QPushButton>
 #include "../interface/icallbacks.h"
+#include "../uicore/uitypes.h"
 
 namespace dsv{
 	namespace appcore{

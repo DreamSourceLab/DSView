@@ -25,7 +25,7 @@
 #include "../dialogs/dsmessagebox.h"
 #include "../basedef.h"
 #include "../appcore/appcontrol.h"
-#include "langresource.h"
+#include "../uicore/langresource.h"
 
 //QMessageBox::information(NULL, "Title", "Content",QMessageBox::Yes | QMessageBox::No, QMessageBox::Yes);
 //QMessageBox::information(NULL, "Title", "Content",QMessageBox::Yes|QMessageBox::No);

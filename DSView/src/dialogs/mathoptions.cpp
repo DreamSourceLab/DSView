@@ -29,7 +29,7 @@
 #include "../view/view.h"
 #include "../view/mathtrace.h"
 #include "../data/mathstack.h"
-#include "../ui/langresource.h"
+#include "../uicore/langresource.h"
   
 using namespace boost;
 using namespace std;

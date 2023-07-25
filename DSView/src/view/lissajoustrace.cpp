@@ -26,7 +26,7 @@
 #include "../basedef.h"
 #include "../data/dsosnapshot.h"
 #include "../appcore/sigsession.h"
-#include "../ui/langresource.h"
+#include "../uicore/langresource.h"
  
 using namespace std;
 

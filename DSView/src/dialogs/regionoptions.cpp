@@ -23,7 +23,7 @@
 #include "../appcore/sigsession.h"
 #include "../view/cursor.h"
 #include "../view/view.h"
-#include "../ui/langresource.h"
+#include "../uicore/langresource.h"
 
 using namespace boost;
 using namespace std;

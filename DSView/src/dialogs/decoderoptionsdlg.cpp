@@ -45,7 +45,7 @@
 #include "../widgets/decodergroupbox.h"
 #include "../view/decodetrace.h"
 #include "../ui/msgbox.h"
-#include "../ui/langresource.h"
+#include "../uicore/langresource.h"
 #include "../config/appconfig.h"
 
 using namespace dsv::config;

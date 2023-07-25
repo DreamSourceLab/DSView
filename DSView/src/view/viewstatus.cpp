@@ -32,7 +32,7 @@
 #include "view.h"
 #include "trace.h"
 #include "../dialogs/dsomeasure.h"
-#include "../ui/langresource.h"
+#include "../uicore/langresource.h"
 #include "../log.h"
 #include "../config/appconfig.h"
 #include "../appcore/appcontrol.h"

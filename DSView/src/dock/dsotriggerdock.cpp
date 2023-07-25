@@ -31,8 +31,8 @@
 #include <QEvent>
 #include "../appcore/sigsession.h"
 #include "../dialogs/dsmessagebox.h"
-#include "../view/dsosignal.h" 
-#include "../ui/langresource.h"
+#include "../view/dsosignal.h"
+#include "../uicore/langresource.h"
 #include "../log.h"
 #include "../ui/msgbox.h"
 #include "../config/appconfig.h"

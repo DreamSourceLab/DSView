@@ -29,7 +29,7 @@
 #include "../dialogs/mathoptions.h"
 #include "../view/trace.h"
 #include "../dialogs/applicationpardlg.h"
-#include "../ui/langresource.h"
+#include "../uicore/langresource.h"
 #include "../config/appconfig.h"
 #include "../ui/fn.h"
 

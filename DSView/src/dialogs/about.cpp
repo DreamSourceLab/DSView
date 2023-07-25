@@ -34,7 +34,7 @@
 #include "../config/appconfig.h"
 #include "../basedef.h"
 #include "../utility/encoding.h"
-#include "../ui/langresource.h"
+#include "../uicore/langresource.h"
 
 using namespace dsv::config;
 

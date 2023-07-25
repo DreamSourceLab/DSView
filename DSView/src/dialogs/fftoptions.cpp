@@ -29,7 +29,7 @@
 #include "../view/spectrumtrace.h"
 #include "../basedef.h"
 #include "../log.h"
-#include "../ui/langresource.h"
+#include "../uicore/langresource.h"
 
 
 using namespace boost;

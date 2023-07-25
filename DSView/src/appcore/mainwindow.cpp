@@ -90,7 +90,7 @@
 #include "sigsession.h"
 #include "deviceagent.h"
 #include "../com/zipmaker.h"
-#include "../ui/langresource.h"
+#include "../uicore/langresource.h"
 #include "mainframe.h"
 #include "../basedef.h"
 #include "appcontrol.h"

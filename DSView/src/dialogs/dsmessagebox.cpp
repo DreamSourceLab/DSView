@@ -28,7 +28,7 @@
 #include <QAbstractButton>
 #include "shadow.h"
 #include "../basedef.h"
-#include "../ui/langresource.h"
+#include "../uicore/langresource.h"
 #include "../config/appconfig.h"
 #include "../ui/fn.h"
 

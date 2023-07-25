@@ -23,10 +23,10 @@
 
 #include <string>
 #include <vector>
+#include "../uicore/uitypes.h"
 
 struct sr_context;
 class QWidget;
-class IFontForm;
 
 namespace dsv {
 namespace appcore {

@@ -46,7 +46,7 @@
 #include "../config/appconfig.h"
 #include "../appcore/deviceagent.h"
 #include "../view/logicsignal.h"
-#include "../ui/langresource.h"
+#include "../uicore/langresource.h"
 #include "../ui/msgbox.h"
 #include "../log.h"
 #include "../decode/annotationrestable.h"

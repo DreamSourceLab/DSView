@@ -44,6 +44,7 @@
 #include "keywordlineedit.h"
 #include "searchcombobox.h"
 #include "../interface/icallbacks.h"
+#include "../uicore/uitypes.h"
 
 namespace dsv{
 	namespace appcore{

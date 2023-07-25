@@ -41,7 +41,7 @@
 #include "decodetrace.h"
 #include "../appcore/sigsession.h"
 #include "../basedef.h"
-#include "../ui/langresource.h"
+#include "../uicore/langresource.h"
 #include "../appcore/appcontrol.h"
 #include "../config/appconfig.h"
 #include "../ui/fn.h"

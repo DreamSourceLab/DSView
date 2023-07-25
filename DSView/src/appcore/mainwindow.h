@@ -140,6 +140,13 @@ signals:
 public:
     //IMainForm
     void SwitchLanguage(int language) override;
+
+    void AddLangForm(ILangForm *form) override{};
+    void RemoveLangForm(ILangForm *form)override{};    
+    void AddFontForm(IFontForm *form)override{};
+    void RemoveFontForm(IFontForm *form)override{};
+    void UpdateAllFontForm()override{};
+    
     bool able_to_close(); 
    
 private: 

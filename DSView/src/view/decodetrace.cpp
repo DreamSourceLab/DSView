@@ -47,7 +47,7 @@
 #include "../ui/msgbox.h"
 #include "../appcore/appcontrol.h"
 #include "../dialogs/decoderoptionsdlg.h"
-#include "../ui/langresource.h"
+#include "../uicore/langresource.h"
 #include "../config/appconfig.h"
 #include "../log.h"
 #include "../basedef.h" 

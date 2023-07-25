@@ -36,7 +36,7 @@
 #include "../log.h"
 #include "../appcore/deviceagent.h"
 #include "../ui/msgbox.h"
-#include "../ui/langresource.h"
+#include "../uicore/langresource.h"
 #include "../view/view.h"
 #include "../ui/fn.h"
 #include "../appcore/sigsession.h"

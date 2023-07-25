@@ -24,6 +24,7 @@
 #include <assert.h> 
 #include "../config/appconfig.h"
 #include "../decode/displaydataformat.h"
+#include "../uicore/uitypes.h"
 
 using namespace dsv::config;
  
@@ -167,7 +168,7 @@ void ProtocolItemLayer::LoadFormatSelect(bool bSingle)
     _protocol_label->setText(name);
  }
 
- void ProtocolItemLayer::update_font()
+ void ProtocolItemLayer::UpdateFont()
  {
     QFont font = _protocol_label->font();
     font.setPointSizeF(AppConfig::Instance().appOptions.fontSize);

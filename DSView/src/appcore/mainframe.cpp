@@ -47,7 +47,7 @@
 #include "../config/appconfig.h"
 #include "../ui/msgbox.h"
 #include "appcontrol.h"
-#include "../ui/langresource.h"
+#include "../uicore/langresource.h"
 #include "../log.h"
 
 using namespace dsv::config;

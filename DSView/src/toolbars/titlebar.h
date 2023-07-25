@@ -24,6 +24,7 @@
 
 #include <QWidget>
 #include "../interface/icallbacks.h"
+#include "../uicore/uitypes.h"
 
 class QToolButton;
 class QHBoxLayout;

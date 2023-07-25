@@ -33,6 +33,7 @@
 #include <QDialog>
 #include "../ui/dscombobox.h"
 #include "../interface/icallbacks.h"
+#include "../uicore/uitypes.h"
 
 struct st_dev_inst;
 class QAction;

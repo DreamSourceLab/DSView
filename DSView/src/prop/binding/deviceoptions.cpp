@@ -33,7 +33,7 @@
 #include "../../appcore/appcontrol.h"
 #include "../../appcore/sigsession.h"
 #include "../../appcore/deviceagent.h"
-#include "../../ui/langresource.h"
+#include "../../uicore/langresource.h"
  
 using namespace std;
 using namespace dsv::appcore;

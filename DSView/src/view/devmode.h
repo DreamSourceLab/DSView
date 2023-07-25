@@ -34,6 +34,7 @@
 #include <QLabel>
 #include <libsigrok.h> 
 #include "../interface/icallbacks.h"
+#include "../uicore/uitypes.h"
 
 namespace dsv{
 	namespace appcore{

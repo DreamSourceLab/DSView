@@ -29,7 +29,7 @@
 #include "../view/trace.h"
 #include "../view/dsosignal.h"
 #include "../config/appconfig.h"
-#include "../ui/langresource.h"
+#include "../uicore/langresource.h"
 #include "../appcore/appcontrol.h"
 #include "../appcore/sigsession.h"
 

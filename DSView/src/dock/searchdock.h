@@ -41,6 +41,7 @@
 #include "../widgets/fakelineedit.h"
 #include "../ui/dscombobox.h"
 #include "../interface/icallbacks.h"
+#include "../uicore/uitypes.h"
 
 namespace dsv{
 	namespace appcore{

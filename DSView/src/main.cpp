@@ -32,8 +32,8 @@
 #include "config/appconfig.h"
 #include "config.h"
 #include "appcore/appcontrol.h"
-#include "log.h" 
-#include "ui/langresource.h"
+#include "log.h"
+#include "uicore/langresource.h"
 #include <QDateTime>
 #include <string>
 #include <ds_types.h>

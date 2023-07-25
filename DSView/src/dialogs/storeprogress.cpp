@@ -32,7 +32,7 @@
 #include "../config/appconfig.h"
 #include "../interface/icallbacks.h"
 #include "../log.h"
-#include "../ui/langresource.h"
+#include "../uicore/langresource.h"
 
 using namespace dsv::config;
 

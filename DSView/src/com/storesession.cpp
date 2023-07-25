@@ -58,7 +58,7 @@
 #include "../utility/encoding.h"
 #include "../utility/path.h"
 #include "../log.h"
-#include "../ui/langresource.h"
+#include "../uicore/langresource.h"
 
 #define DEOCDER_CONFIG_VERSION  2
 

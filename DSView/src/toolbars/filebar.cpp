@@ -28,10 +28,10 @@
 #include "../ui/msgbox.h"
 #include "../config/appconfig.h"
 #include "../utility/path.h"
-#include "../ui/langresource.h"
+#include "../uicore/langresource.h"
 #include "../log.h" 
 #include "../ui/fn.h"
-#include "../appcore/sigsession.h" 
+#include "../appcore/sigsession.h"
 
 using namespace dsv::config;
 

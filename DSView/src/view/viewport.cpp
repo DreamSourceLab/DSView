@@ -39,8 +39,8 @@
 #include "../config/appconfig.h"
 #include "../basedef.h"
 #include "../appcore/appcontrol.h"
-#include "../log.h" 
-#include "../ui/langresource.h"
+#include "../log.h"
+#include "../uicore/langresource.h"
 #include "../ui/fn.h"
 #include "lissajoustrace.h"
 

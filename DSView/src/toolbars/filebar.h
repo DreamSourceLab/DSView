@@ -28,6 +28,7 @@
 #include <QAction>
 #include <QMenu>
 #include "../interface/icallbacks.h"
+#include "../uicore/uitypes.h"
 
 namespace dsv{
 	namespace appcore{

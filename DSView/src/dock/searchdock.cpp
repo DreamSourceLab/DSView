@@ -38,7 +38,7 @@
 #include "../data/logicsnapshot.h"
 #include "../dialogs/dsmessagebox.h"
 #include "../config/appconfig.h"
-#include "../ui/langresource.h"
+#include "../uicore/langresource.h"
 #include "../ui/msgbox.h"
 #include "../appcore/appcontrol.h"
 #include "../ui/fn.h"

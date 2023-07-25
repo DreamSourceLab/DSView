@@ -22,7 +22,7 @@
 #include "search.h"
 #include <assert.h>
 #include <QRegularExpressionValidator>
-#include "../ui/langresource.h"
+#include "../uicore/langresource.h"
 #include "../view/logicsignal.h"
 #include "../appcore/sigsession.h"
  

@@ -32,7 +32,7 @@
 #include <vector>
 #include <QGridLayout>
 #include "../config/appconfig.h"
-#include "../ui/langresource.h"
+#include "../uicore/langresource.h"
 #include "../appcore/appcontrol.h"
 #include "../appcore/sigsession.h"
 #include "../ui/dscombobox.h"

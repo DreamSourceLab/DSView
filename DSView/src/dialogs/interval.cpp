@@ -21,7 +21,7 @@
 
 #include "interval.h"
 #include <QGridLayout>
-#include "../ui/langresource.h"
+#include "../uicore/langresource.h"
 
 namespace dsv {
 namespace dialogs {

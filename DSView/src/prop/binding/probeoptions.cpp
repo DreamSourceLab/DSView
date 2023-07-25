@@ -31,7 +31,7 @@
 #include "../../log.h"
 #include "../../appcore/appcontrol.h"
 #include "../../appcore/sigsession.h"
-#include "../../ui/langresource.h"
+#include "../../uicore/langresource.h"
 
 using namespace std;
 using namespace dsv::appcore;

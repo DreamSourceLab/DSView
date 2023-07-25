@@ -28,7 +28,7 @@
 #include "../appcore/sigsession.h"
 #include "../view/view.h"
 #include "../basedef.h"
-#include "../ui/langresource.h"
+#include "../uicore/langresource.h"
 
 using namespace std;
 using namespace dsv::view;

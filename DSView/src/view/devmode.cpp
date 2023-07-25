@@ -32,7 +32,7 @@
 #include "../config/appconfig.h"
 #include "../ui/msgbox.h"
 #include "../log.h"
-#include "../ui/langresource.h"
+#include "../uicore/langresource.h"
 #include "../appcore/appcontrol.h"
 #include "../ui/fn.h"
 
