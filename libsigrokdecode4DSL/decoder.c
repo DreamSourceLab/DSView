@@ -457,10 +457,14 @@ static int get_annotations(struct srd_decoder *dec)
 
 		if (PyTuple_Size(py_ann) == 3) {
 			ann_type = 0;
-            for (j = 0; j < strlen(annpair[0]); j++)
+
+            for (j = 0; j < strlen(annpair[0]); j++){
                 ann_type = ann_type * 10 + (annpair[0][j] - '0');
+			}
+
             dec->ann_types = g_slist_append(dec->ann_types, GINT_TO_POINTER(ann_type));
-		} else if (PyTuple_Size(py_ann) == 2) {
+		}
+		else if (PyTuple_Size(py_ann) == 2) {
 			dec->ann_types = g_slist_append(dec->ann_types, GINT_TO_POINTER(ann_type));
 			ann_type++;
 		}

@@ -178,17 +178,16 @@ err:
  @obj is the fourth param from python calls put()
 */
 static int convert_annotation(struct srd_decoder_inst *di, PyObject *obj,
-		struct srd_proto_data *pdata)
+					struct srd_proto_data_annotation *pda)
 {
-	PyObject *py_tmp;
-	struct srd_proto_data_annotation *pda;
+	PyObject *py_tmp; 
 	int ann_class;
     char **ann_text;
 	gpointer ann_type_ptr;
 	PyGILState_STATE gstate;
-	int ann_size; 
+	int ann_size;
 
-	pda = pdata->data;
+	assert(pda);
 
 	gstate = PyGILState_Ensure();
 
@@ -255,6 +254,8 @@ static int convert_annotation(struct srd_decoder_inst *di, PyObject *obj,
 	pda->ann_class = ann_class;
 	pda->ann_type = GPOINTER_TO_INT(ann_type_ptr);
     pda->ann_text = ann_text;
+
+	//srd_info("class:%d, type:%d", ann_class, pda->ann_type);
 
 	PyGILState_Release(gstate);
 
@@ -458,9 +459,11 @@ static void release_meta(GVariant *gvar)
 	g_variant_unref(gvar);
 }
 
+//param list: start_sample, end_sample, output_type, [ann_class,[data]]
 static PyObject *Decoder_put(PyObject *self, PyObject *args)
 {
 	GSList *l;
+	GSList *l2;
 	PyObject *py_data, *py_res;
 	struct srd_decoder_inst *di, *next_di;
 	struct srd_pd_output *pdo;
@@ -468,9 +471,13 @@ static PyObject *Decoder_put(PyObject *self, PyObject *args)
 	struct srd_proto_data_annotation pda;
 	struct srd_proto_data_binary pdb;
 	uint64_t start_sample, end_sample;
-	int output_id;
+	int output_id; //The output type index.
 	struct srd_pd_callback *cb;
 	PyGILState_STATE gstate; 
+	struct srd_decoder_annotation_row *ann_row = NULL;
+	gpointer ann_row_index_ptr = 0;
+	int row_index;
+	int ann_class_tmp;
 
 	py_data = NULL; //the fourth param from python
 
@@ -518,10 +525,42 @@ static PyObject *Decoder_put(PyObject *self, PyObject *args)
 		if ((cb = srd_pd_output_callback_find(di->sess, pdo->output_type))) {
 			pdata.data = &pda;
 			/* Convert from PyDict to srd_proto_data_annotation. */
-			if (convert_annotation(di, py_data, &pdata) != SRD_OK) {
+			if (convert_annotation(di, py_data, &pda) != SRD_OK) {
 				/* An error was already logged. */
 				break;
 			}
+
+			//Get the row index.
+			pda.ann_row_index = -1;
+			row_index = 0; 
+
+			for (l = di->decoder->annotation_rows; l; l = l->next)
+			{
+				ann_row = l->data;
+
+				for (l2 = ann_row->ann_classes; l2; l2 = l2->next)
+				{
+					ann_class_tmp = GPOINTER_TO_INT(l2->data);
+
+					if (ann_class_tmp == pda.ann_class){
+						pda.ann_row_index = row_index;
+						break;
+					}
+				}
+				row_index++;
+
+				if (pda.ann_row_index != -1){
+					break;
+				}
+			} 
+
+			if (pda.ann_row_index == -1){
+				srd_err("\n\nERROR:The annotation have no row index!decoder:%s,ann-class:%d\n\n",
+						 di->decoder->id, pda.ann_class);
+				release_annotation(pdata.data);
+				goto err;
+			}
+
 			Py_BEGIN_ALLOW_THREADS
 			cb->cb(&pdata, cb->cb_data);
 			Py_END_ALLOW_THREADS
@@ -601,7 +640,7 @@ err:
 }
 
 /*
- return output info index
+ Returns the output type index
 */
 static PyObject *Decoder_register(PyObject *self, PyObject *args,
 		PyObject *kwargs)

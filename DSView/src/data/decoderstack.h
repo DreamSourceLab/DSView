@@ -82,7 +82,7 @@ public:
 
 public:
    	DecoderStack(SigSession *_session,
-		const srd_decoder *const decoder, DecoderStatus *decoder_status);
+		const srd_decoder *decoder, DecoderStatus *decoder_status);
 
 public:
 
@@ -213,6 +213,7 @@ private:
     bool            _is_capture_end;
     int             _progress;
     bool            _is_decoding;
+    const srd_decoder *m_decoder;
 };
 
 } // namespace data

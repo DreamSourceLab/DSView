@@ -47,8 +47,9 @@ const int64_t DecoderStack::DecodeChunkLength = 4 * 1024;
 const unsigned int DecoderStack::DecodeNotifyPeriod = 1024;
  
 DecoderStack::DecoderStack(SigSession *session,
-	const srd_decoder *const dec, DecoderStatus *decoder_status) :
-	_session(session)
+	const srd_decoder *dec, DecoderStatus *decoder_status) :
+	_session(session),
+    m_decoder(dec)
 {
     assert(session);
     assert(dec);
@@ -164,10 +165,12 @@ void DecoderStack::build_row()
             std::map<const decode::Row, bool>::const_iterator iter = _rows_gshow.find(row);
             if (iter == _rows_gshow.end()) {
                 _rows_gshow[row] = true;
+
                 if (row.title().contains("bit", Qt::CaseInsensitive) ||
                     row.title().contains("warning", Qt::CaseInsensitive)) {
                     _rows_lshow[row] = false;
-                } else {
+                }
+                else {
                     _rows_lshow[row] = true;
                 }
             }
@@ -344,7 +347,6 @@ bool DecoderStack::list_annotation(dsv::decode::Annotation &ann,
 
     return false;
 }
-
 
 bool DecoderStack::list_row_title(int row, QString &title)
 { 
@@ -780,6 +782,13 @@ void DecoderStack::annotation_callback(srd_proto_data *pdata, void *self)
         return;
     }
 
+    if (pdata->pdo->di->decoder != d->m_decoder){
+     //   dsv_err("ERROR:Is a invalid decoder instance.%p,%p",
+       //     pdata->pdo->di->decoder,
+       //     d->m_decoder);
+      //  assert(false);
+    } 
+
     Annotation *a = new Annotation(pdata, d->_decoder_status);
     if (a == NULL){
         d->_no_memory = true;
@@ -790,7 +799,7 @@ void DecoderStack::annotation_callback(srd_proto_data *pdata, void *self)
 	assert(pdata->pdo);
 	assert(pdata->pdo->di);
 	const srd_decoder *const decc = pdata->pdo->di->decoder;
-	assert(decc);
+    assert(decc);
 
     auto row_iter = d->_rows.end();
 	

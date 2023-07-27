@@ -347,7 +347,8 @@ struct srd_proto_data {
 };
 struct srd_proto_data_annotation {
 	int ann_class;
-    int ann_type; 
+    int ann_type;
+	int ann_row_index;
 	char str_number_hex[DECODE_NUM_HEX_MAX_LEN]; //numerical value hex format string
 	long long numberic_value;
 	char **ann_text; //text string lines
