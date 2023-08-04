@@ -57,6 +57,12 @@
 
 #define DS_VENDOR_ID	0x2A0E
 
+#ifdef _WIN32
+	#define UNREF_DEV_LIST_FALG		0
+#else
+	#define UNREF_DEV_LIST_FALG		1
+#endif
+
 enum device_transaction_types
 {
 	DEV_TRANS_NONE = 0,
