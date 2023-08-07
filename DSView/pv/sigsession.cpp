@@ -1325,6 +1325,7 @@ namespace pv
         if (packet->type != SR_DF_END &&
             packet->status != SR_PKT_OK)
         {
+            dsv_err("ERROR: packet.type != SR_DF_END and packet.status != SR_PKT_OK");
             _error = Pkt_data_err;
             _callback->session_error();
             return;
@@ -1381,6 +1382,7 @@ namespace pv
 
             if (packet->status != SR_PKT_OK)
             {
+                dsv_err("ERROR: packet.type == SR_DF_END but packet.status != SR_PKT_OK");
                 _error = Pkt_data_err;
                 _callback->session_error();
             }

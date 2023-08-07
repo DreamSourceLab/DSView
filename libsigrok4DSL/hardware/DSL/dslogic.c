@@ -1326,6 +1326,8 @@ static void report_overflow(struct DSL_context *devc)
     struct sr_datafeed_packet packet;
     struct sr_dev_inst *sdi = devc->cb_data;
 
+    sr_info("%s: ERROR: data overflow.", __func__);
+
     packet.status = SR_PKT_OK;
     packet.type = SR_DF_OVERFLOW;
     packet.payload = NULL;
