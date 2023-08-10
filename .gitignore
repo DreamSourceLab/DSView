@@ -18,8 +18,6 @@ Makefile
 *.cxx
 version.h
 config.guess
-config.h
-config.h.in
 config.log
 config.sub
 config.status
@@ -42,7 +40,6 @@ DSView/qrc_DSView.cpp
 DSView/qrc_style.cpp
 DSView/qrc_breeze.cpp
 DSView/qrc_language.cpp
-DSView/config.h
 
 moc_*.cpp
 moc_*.cpp_parameters
