@@ -421,7 +421,7 @@ SR_PRIV int ds_scan_all_device_list(libusb_context *usb_ctx,struct libusb_device
 
 	*count = wr;
 
-	libusb_free_device_list(devlist, 0);
+	libusb_free_device_list(devlist, UNREF_DEV_LIST_FALG);
 
 	return SR_OK;
 }

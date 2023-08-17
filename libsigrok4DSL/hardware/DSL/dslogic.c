@@ -455,9 +455,9 @@ static GSList *scan(GSList *options)
             }
 
             free(firmware);
-
-            libusb_unref_device(device_handle);
+            
 #ifdef _WIN32
+            libusb_unref_device(device_handle);
             libusb_unref_device(device_handle);
 #endif
 
@@ -465,7 +465,7 @@ static GSList *scan(GSList *options)
 		}
 	}
 
-	libusb_free_device_list(devlist, 0);
+	libusb_free_device_list(devlist, UNREF_DEV_LIST_FALG);
 
     if (conn_devices){
         g_slist_free_full(conn_devices, (GDestroyNotify)sr_usb_dev_inst_free);
@@ -1325,6 +1325,8 @@ static void report_overflow(struct DSL_context *devc)
 {
     struct sr_datafeed_packet packet;
     struct sr_dev_inst *sdi = devc->cb_data;
+
+    sr_info("%s: ERROR: data overflow.", __func__);
 
     packet.status = SR_PKT_OK;
     packet.type = SR_DF_OVERFLOW;

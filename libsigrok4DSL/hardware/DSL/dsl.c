@@ -2431,6 +2431,11 @@ static void receive_header(struct libusb_transfer *transfer)
     struct ds_trigger_pos *trigger_pos;
     const struct sr_dev_inst *sdi;
     uint64_t remain_cnt;
+    char *hex_buffer;
+    char *hex_write;
+    char *hex_end_ptr;
+    char *usb_data;
+    int usb_data_len;
 
     packet.status = SR_PKT_OK;
     devc = transfer->user_data;
@@ -2439,6 +2444,7 @@ static void receive_header(struct libusb_transfer *transfer)
 
     if (devc->status != DSL_ABORT)
         devc->status = DSL_ERROR;
+    
     if (!devc->abort && transfer->status == LIBUSB_TRANSFER_COMPLETED &&
         trigger_pos->check_id == TRIG_CHECKID) {
         sr_info("%llu: receive_trigger_pos(): status %d; timeout %d; received %d bytes.",
@@ -2462,8 +2468,38 @@ static void receive_header(struct libusb_transfer *transfer)
                 devc->status = DSL_DATA;
             }
         }
-    } else if (!devc->abort) {
+    }
+    else if (!devc->abort) {
         sr_err("%s: trigger packet data error.", __func__);
+        sr_err("The invalid trigger_pos->check_id:%02x, usb packet length:%d", 
+                trigger_pos->check_id,
+                transfer->actual_length);
+
+        usb_data_len = transfer->actual_length;
+        usb_data = transfer->buffer;
+        
+        if (usb_data_len > 0 && usb_data != NULL){
+            hex_buffer = (char*)malloc(usb_data_len * 2 + 1);
+            
+            if (hex_buffer != NULL){
+                hex_write = hex_buffer;
+                hex_end_ptr = hex_buffer + usb_data_len * 2;
+
+                while (hex_write < hex_end_ptr)
+                {
+                    sprintf(hex_write, "%02x", *(unsigned char*)usb_data);
+                    usb_data++;
+                    hex_write += 2;
+                }
+                *hex_write = 0;
+
+                sr_err("usb data packet:%s", hex_buffer); //print data packet.
+
+                free(hex_buffer);
+                hex_buffer = NULL;
+            }
+        }
+
         packet.type = SR_DF_TRIGGER;
         packet.payload = trigger_pos;
         packet.status = SR_PKT_DATA_ERROR;
