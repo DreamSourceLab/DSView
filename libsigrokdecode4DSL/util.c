@@ -404,7 +404,7 @@ SRD_PRIV int py_str_as_str(PyObject *py_str, char **outstr)
 
 	py_bytes = PyUnicode_AsUTF8String(py_str);
 	if (py_bytes) {
-		str = g_strdup(PyBytes_AsString(py_bytes));
+		str = str_clone(PyBytes_AsString(py_bytes));
 		Py_DECREF(py_bytes);
 		if (str) {
 			*outstr = str;
@@ -476,7 +476,7 @@ err:
 /**
  * Convert a Python list of unicode strings to a C string vector.
  * On success, a pointer to a newly allocated NULL-terminated array of
- * allocated C strings is written to @a out_strv. The caller must g_free()
+ * allocated C strings is written to @a out_strv. The caller must _free()
  * each string and the array itself.
  *
  * @param[in] py_strseq The sequence object.
@@ -511,7 +511,7 @@ SRD_PRIV int py_strseq_to_char(PyObject *py_strseq, char ***out_strv)
 		goto err;
 	}
 
-	strv = g_try_new0(char *, seq_len + 1);
+	strv = (char**)x_malloc_ptr_array(seq_len);
 	if (!strv) {
 		srd_err("Failed to allocate result string vector.");
 		ret = SRD_ERR_MALLOC;
@@ -530,7 +530,7 @@ SRD_PRIV int py_strseq_to_char(PyObject *py_strseq, char ***out_strv)
 			if (!py_bytes)
 				goto err;
 
-			str = g_strdup(PyBytes_AsString(py_bytes));
+			str = str_clone(PyBytes_AsString(py_bytes));
 			Py_DECREF(py_bytes);
 			if (!str)
 				goto err;
@@ -539,7 +539,7 @@ SRD_PRIV int py_strseq_to_char(PyObject *py_strseq, char ***out_strv)
 		{
 			lv = PyLong_AsLong(py_item);
 			sprintf(dec_buf, "%d", lv);
-			str = g_strdup(dec_buf);
+			str = str_clone(dec_buf);
 		}
 		else{
 			Py_DECREF(py_item);
@@ -556,7 +556,7 @@ SRD_PRIV int py_strseq_to_char(PyObject *py_strseq, char ***out_strv)
 
 err:
 	if (strv)
-		g_strfreev(strv);
+		x_free_ptr_array((void**)strv);
     srd_exception_catch(NULL, "Failed to obtain string item");
 	PyGILState_Release(gstate);
 	return ret;

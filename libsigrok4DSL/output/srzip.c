@@ -48,7 +48,7 @@ static int init(struct sr_output *o, GHashTable *options)
 {
 	struct out_context *outc;
 
-	outc = malloc(sizeof(struct out_context));
+	outc = x_malloc(sizeof(struct out_context));
 	if (outc == NULL){
 		sr_err("%s,ERROR:failed to alloc memory.", __func__);
 		return SR_ERR;
@@ -61,7 +61,7 @@ static int init(struct sr_output *o, GHashTable *options)
 	outc->meta = NULL;
 	outc->chunk_index = 0;
 
-    outc->filename = g_strdup(g_variant_get_bytestring(g_hash_table_lookup(options, "filename")));
+    outc->filename = str_clone(g_variant_get_bytestring(g_hash_table_lookup(options, "filename")));
 
 	if (strlen(outc->filename) == 0)
 		return SR_ERR_ARG;
@@ -201,7 +201,7 @@ static int create_archive(const struct sr_output *o)
 
 	s = sr_samplerate_string(outc->samplerate);
 	g_key_file_set_string(meta, devgroup, "samplerate", s);
-	g_free(s);
+	x_free(s);
 
 	for (l = o->sdi->channels; l; l = l->next) {
 		ch = l->data;
@@ -216,7 +216,7 @@ static int create_archive(const struct sr_output *o)
 
 		if (s) {
 			g_key_file_set_string(meta, devgroup, s, ch->name);
-			g_free(s);
+			x_free(s);
 		}
 	}
 	outc->meta = meta;
@@ -305,8 +305,8 @@ static int cleanup(struct sr_output *o)
 		zipClose(outc->zipArchive, NULL);
 	}
 
-	g_free(outc->filename);
-	g_free(outc);
+	x_free(outc->filename);
+	x_free(outc);
 	o->priv = NULL;
 
 	return SR_OK;

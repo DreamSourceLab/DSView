@@ -197,7 +197,7 @@ SR_API const struct sr_option **sr_output_options_get(const struct sr_output_mod
 
 	for (size = 0; mod_opts[size].id; size++);
 
-	opts = malloc((size + 1) * sizeof(struct sr_option *));
+	opts = x_malloc((size + 1) * sizeof(struct sr_option *));
 	if (opts == NULL){
 		sr_err("%s,ERROR:failed to alloc memory.", __func__);
 		return NULL;
@@ -234,7 +234,7 @@ SR_API void sr_output_options_free(const struct sr_option **options)
 			((struct sr_option *)options[i])->values = NULL;
 		}
 	}
-	g_free(options);
+	x_free(options);
 }
 
 /**
@@ -261,7 +261,7 @@ SR_API const struct sr_output* sr_output_new(const struct sr_output_module *omod
 	gpointer key, value;
 	int i;
 
-	op = malloc(sizeof(struct sr_output));
+	op = x_malloc(sizeof(struct sr_output));
 	if (op == NULL){
 		sr_err("%s,ERROR:failed to alloc memory.", __func__);
 		return NULL;
@@ -282,14 +282,14 @@ SR_API const struct sr_output* sr_output_new(const struct sr_output_module *omod
 				gvt = g_variant_get_type(mod_opts[i].def);
 				if (!g_variant_is_of_type(value, gvt)) {
 					sr_err("Invalid type for '%s' option.", key);
-					g_free(op);
+					x_free(op);
 					return NULL;
 				}
-				g_hash_table_insert(new_opts, g_strdup(mod_opts[i].id),
+				g_hash_table_insert(new_opts, str_clone(mod_opts[i].id),
 						g_variant_ref(value));
 			} else {
 				/* Option not given: insert the default value. */
-				g_hash_table_insert(new_opts, g_strdup(mod_opts[i].id),
+				g_hash_table_insert(new_opts, str_clone(mod_opts[i].id),
 						g_variant_ref(mod_opts[i].def));
 			}
 		}
@@ -301,7 +301,7 @@ SR_API const struct sr_output* sr_output_new(const struct sr_output_module *omod
 				if (!g_hash_table_lookup(new_opts, key)) {
 					sr_err("Output module '%s' has no option '%s'", omod->id, key);
 					g_hash_table_destroy(new_opts);
-					g_free(op);
+					x_free(op);
 					return NULL;
 				}
 			}
@@ -309,7 +309,7 @@ SR_API const struct sr_output* sr_output_new(const struct sr_output_module *omod
 	}
 
 	if (op->module->init && op->module->init(op, new_opts) != SR_OK) {
-		g_free(op);
+		x_free(op);
 		op = NULL;
 	}
 	if (new_opts)
@@ -347,7 +347,7 @@ SR_API int sr_output_free(const struct sr_output *o)
 	ret = SR_OK;
 	if (o->module->cleanup)
 		ret = o->module->cleanup((struct sr_output *)o);
-	g_free((gpointer)o);
+	x_free((gpointer)o);
 
 	return ret;
 }

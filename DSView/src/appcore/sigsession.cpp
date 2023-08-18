@@ -27,6 +27,7 @@
 #include <sys/stat.h>
 #include <map>
 #include <QString>
+#include <mem/alloc.h>
 #include "mainwindow.h"
 #include "../data/analogsnapshot.h"
 #include "../data/dsosnapshot.h"
@@ -199,7 +200,7 @@ namespace appcore {
         struct ds_device_base_info *dev = (array + count - 1);
         ds_device_handle dev_handle = dev->handle;
 
-        free(array);
+        x_free(array);
 
         if (set_device(dev_handle))
         {

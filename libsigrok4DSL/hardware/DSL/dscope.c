@@ -124,7 +124,7 @@ static struct DSL_context *DSCope_dev_new(const struct DSL_profile *prof)
 
     assert(prof);
 
-    if (!(devc = malloc(sizeof(struct DSL_context)))) {
+    if (!(devc = x_malloc(sizeof(struct DSL_context)))) {
         sr_err("Device context malloc failed.");
 		return NULL;
 	}
@@ -329,7 +329,7 @@ static GSList *scan(GSList *options)
                 prof->vendor, prof->model, prof->model_version);
 
             if (sdi == NULL) {
-                free(devc);
+                x_free(devc);
                 break;
             }
 
@@ -356,7 +356,7 @@ static GSList *scan(GSList *options)
         else {
             char *firmware;
             char *res_path = DS_RES_PATH;
-            if (!(firmware = malloc(strlen(res_path)+strlen(prof->firmware) + 5))) {
+            if (!(firmware = x_malloc(strlen(res_path)+strlen(prof->firmware) + 5))) {
                 sr_err("Firmware path malloc error!");
                 break;
             }
@@ -370,7 +370,7 @@ static GSList *scan(GSList *options)
                 sr_err("Firmware upload failed for device %s", prof->model);
             }
 
-            g_free(firmware);
+            x_free(firmware);
             
 #ifdef _WIN32
             libusb_unref_device(device_handle);
@@ -1896,7 +1896,7 @@ static void remove_sources(struct DSL_context *devc)
     /* Remove fds from polling. */
     for (i = 0; devc->usbfd[i] != -1; i++)
         sr_source_remove(devc->usbfd[i]);
-    g_free(devc->usbfd);
+    x_free(devc->usbfd);
 }
 
 static int receive_data(int fd, int revents, const struct sr_dev_inst *sdi)
@@ -2083,7 +2083,7 @@ static int dev_acquisition_start(struct sr_dev_inst *sdi, void *cb_data)
     lupfd = libusb_get_pollfds(drvc->sr_ctx->libusb_ctx);
     for (i = 0; lupfd[i]; i++);
 
-    if (!(devc->usbfd = malloc(sizeof(struct libusb_pollfd) * (i + 1)))){
+    if (!(devc->usbfd = x_malloc(sizeof(struct libusb_pollfd) * (i + 1)))){
         sr_err("%s,ERROR:failed to alloc memory.", __func__);
     	return SR_ERR;
     }
@@ -2095,7 +2095,7 @@ static int dev_acquisition_start(struct sr_dev_inst *sdi, void *cb_data)
     }
 
     devc->usbfd[i] = -1;
-    free(lupfd);
+    x_free(lupfd);
 
     wr_cmd.header.dest = DSL_CTL_START;
     wr_cmd.header.size = 0;

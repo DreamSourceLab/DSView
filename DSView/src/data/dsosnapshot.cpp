@@ -22,9 +22,9 @@
 #include "dsosnapshot.h"
 #include <assert.h>
 #include <string.h>
-#include <stdlib.h>
 #include <math.h>
 #include <algorithm>
+#include <mem/alloc.h>
 #include "../basedef.h"
 #include "../log.h"
 
@@ -65,7 +65,7 @@ void DsoSnapshot::free_envelop()
     for (unsigned int i = 0; i < _channel_num; i++) {
         for(auto &e : _envelope_levels[i]) {
             if (e.samples)
-                free(e.samples);
+                x_free(e.samples);
         }
     }
     memset(_envelope_levels, 0, sizeof(_envelope_levels));
@@ -110,7 +110,7 @@ void DsoSnapshot::free_data()
     for (int i=0; i<(int)_ch_data.size(); i++)
     {
         void *p = _ch_data[i];
-        free(p);
+        x_free(p);
     }
 
     _ch_data.clear();
@@ -161,7 +161,7 @@ void DsoSnapshot::first_payload(const sr_datafeed_dso &dso, uint64_t total_sampl
 
             if (probe->type == SR_CHANNEL_DSO && (probe->enabled || isFile)) {
                 
-                uint8_t *chan_buffer = (uint8_t*)malloc(total_sample_count + 1);
+                uint8_t *chan_buffer = (uint8_t*)x_malloc(total_sample_count + 1);
                 if (chan_buffer == NULL){
                     isOk = false;
                     dsv_err("DsoSnapshot::first_payload, Malloc memory failed!");
@@ -184,7 +184,7 @@ void DsoSnapshot::first_payload(const sr_datafeed_dso &dso, uint64_t total_sampl
                                         * EnvelopeDataUnit;
 
                     uint64_t buffer_len = envelop_count * sizeof(EnvelopeSample);
-                    _envelope_levels[i][level].samples = (EnvelopeSample*)malloc(buffer_len);
+                    _envelope_levels[i][level].samples = (EnvelopeSample*)x_malloc(buffer_len);
                     
                     if (_envelope_levels[i][level].samples == NULL) {
                         dsv_err("DsoSnapshot::first_payload, malloc failed!");

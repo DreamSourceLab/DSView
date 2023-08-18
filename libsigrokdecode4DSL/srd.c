@@ -108,7 +108,7 @@ static int searchpath_add_xdg_dir(const char *datadir)
 	else
 		ret = SRD_OK; /* Just ignore non-existing directory. */
 
-	g_free(decdir);
+	x_free(decdir);
 
 	return ret;
 }
@@ -365,7 +365,7 @@ SRD_PRIV int srd_decoder_searchpath_add(const char *path)
 	PyGILState_Release(gstate);
 
 	//append the directory to search list
-	searchpaths = g_slist_prepend(searchpaths, g_strdup(path));
+	searchpaths = g_slist_prepend(searchpaths, str_clone(path));
 
 	return SRD_OK;
 
@@ -387,7 +387,7 @@ SRD_API GSList *srd_searchpaths_get(void)
 	GSList *paths = NULL;
 
 	for (GSList *l = searchpaths; l; l = l->next)
-		paths = g_slist_append(paths, g_strdup(l->data));
+		paths = g_slist_append(paths, str_clone(l->data));
 
 	return paths;
 }

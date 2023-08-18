@@ -21,8 +21,8 @@
 
 #include "annotationrestable.h"
 #include <assert.h>
-#include <stdlib.h> 
 #include <math.h>
+#include <mem/alloc.h>
 #include "../log.h"
 #include "../basedef.h"
 #include "displaydataformat.h"
@@ -338,7 +338,7 @@ void AnnotationResTable::reset()
 	//release all resource
 	for (auto p : m_resourceTable){
 		if (p->str_number_hex)
-			free(p->str_number_hex);
+			x_free(p->str_number_hex);
 		delete p;
 	}
 	m_resourceTable.clear();

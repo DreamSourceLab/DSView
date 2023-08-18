@@ -251,7 +251,7 @@ SRD_API int srd_inst_channel_set_all(struct srd_decoder_inst *di,
 		return SRD_ERR_ARG;
 	}
 
-	new_channelmap = malloc(sizeof(int) * di->dec_num_channels);
+	new_channelmap = x_malloc(sizeof(int) * di->dec_num_channels);
 	if (new_channelmap == NULL){
 		srd_err("%s,ERROR:failed to alloc memory.", __func__);
 		return SRD_ERR;
@@ -271,7 +271,7 @@ SRD_API int srd_inst_channel_set_all(struct srd_decoder_inst *di,
 			/* Channel name was specified without a value. */
 			srd_err("No channel number was specified for %s.",
 					channel_id);
-			g_free(new_channelmap);
+			x_free(new_channelmap);
 			return SRD_ERR_ARG;
 		}
 		new_channelnum = g_variant_get_int32(channel_val);
@@ -282,7 +282,7 @@ SRD_API int srd_inst_channel_set_all(struct srd_decoder_inst *di,
 			     channel_id, (GCompareFunc)compare_channel_id))) {
 				srd_err("Protocol decoder %s has no channel "
 					"'%s'.", di->decoder->name, channel_id);
-				g_free(new_channelmap);
+				x_free(new_channelmap);
 				return SRD_ERR_ARG;
 			}
 		}
@@ -312,11 +312,11 @@ SRD_API int srd_inst_channel_set_all(struct srd_decoder_inst *di,
 		pdch = g_slist_nth(di->decoder->channels, i)->data;
 		srd_err("Required channel '%s' (index %d) was not specified.",
 			pdch->id, i);
-		g_free(new_channelmap);
+		x_free(new_channelmap);
 		return SRD_ERR;
 	}
 
-	g_free(di->dec_channelmap);
+	x_free(di->dec_channelmap);
 	di->dec_channelmap = new_channelmap;
 
 	return SRD_OK;
@@ -344,6 +344,7 @@ SRD_API struct srd_decoder_inst *srd_inst_new(struct srd_session *sess,
 	struct srd_decoder_inst *di;
 	char *inst_id;
 	PyGILState_STATE gstate;
+	char sz_buf[50];
 
 	i = 1;
 
@@ -355,7 +356,7 @@ SRD_API struct srd_decoder_inst *srd_inst_new(struct srd_session *sess,
 		return NULL;
 	}
 
-	di = malloc(sizeof(struct srd_decoder_inst));
+	di = x_malloc(sizeof(struct srd_decoder_inst));
 	if (di == NULL){
 		srd_err("%s,ERROR:failed to alloc memory.", __func__);
 		return NULL;
@@ -368,16 +369,19 @@ SRD_API struct srd_decoder_inst *srd_inst_new(struct srd_session *sess,
 	if (options) {
 		inst_id = g_hash_table_lookup(options, "id");
 		if (inst_id)
-			di->inst_id = g_strdup(inst_id);
+			di->inst_id = str_clone(inst_id);
 		g_hash_table_remove(options, "id");
 	}
 
 	/* Create a unique instance ID (as none was provided). */
 	if (!di->inst_id) {
-		di->inst_id = g_strdup_printf("%s-%d", decoder_id, i++);
+		sprintf(sz_buf, "%s-%d", decoder_id, i++);
+		di->inst_id = str_clone(sz_buf);
+
 		while (srd_inst_find_by_id(sess, di->inst_id)) {
-			g_free(di->inst_id);
-			di->inst_id = g_strdup_printf("%s-%d", decoder_id, i++);
+			x_free(di->inst_id);
+			sprintf(sz_buf, "%s-%d", decoder_id, i++);
+			di->inst_id = str_clone(sz_buf);
 		}
 	}
 
@@ -392,7 +396,7 @@ SRD_API struct srd_decoder_inst *srd_inst_new(struct srd_session *sess,
 			g_slist_length(di->decoder->opt_channels);
 			
 	if (di->dec_num_channels > 0) {
-		di->dec_channelmap = malloc(sizeof(int) * di->dec_num_channels);
+		di->dec_channelmap = x_malloc(sizeof(int) * di->dec_num_channels);
 
 		if (di->dec_channelmap == NULL){
 			PyGILState_Release(gstate);
@@ -456,8 +460,8 @@ SRD_API struct srd_decoder_inst *srd_inst_new(struct srd_session *sess,
 
 err:
     PyGILState_Release(gstate);
-    g_free(di->dec_channelmap);
-    g_free(di);
+    x_free(di->dec_channelmap);
+    x_free(di);
     return NULL;
 }
 
@@ -1102,10 +1106,10 @@ static gpointer di_thread(gpointer data)
 			PyObject *py_bytes = PyUnicode_AsUTF8String(py_res);
 			char *err_str = PyBytes_AsString(py_bytes);
 			srd_err("python method decode() returns an error:\n %s", err_str);
-			di->python_proc_error = g_strdup(err_str);
+			di->python_proc_error = str_clone(err_str);
 		}
 		else{
-			di->python_proc_error = g_strdup("python method decode() returns an unknown type error!");
+			di->python_proc_error = str_clone("python method decode() returns an unknown type error!");
 		}
 
 		Py_DecRef(py_res);
@@ -1207,15 +1211,15 @@ SRD_PRIV int srd_inst_decode(struct srd_decoder_inst *di,
 {
 	/* Return an error upon unusable input. */
 	if (!di) {
-        *error = g_strdup("empty decoder instance");
+        *error = str_clone("empty decoder instance");
 		return SRD_ERR_ARG;
 	}
 	if (!inbuf) {
-        *error = g_strdup("NULL buffer pointer");
+        *error = str_clone("NULL buffer pointer");
 		return SRD_ERR_ARG;
 	}
 	if (inbuflen == 0) {
-        *error = g_strdup("empty buffer");
+        *error = str_clone("empty buffer");
 		return SRD_ERR_ARG;
 	}
 
@@ -1364,20 +1368,20 @@ SRD_PRIV void srd_inst_free(struct srd_decoder_inst *di)
     }
 	PyGILState_Release(gstate);
 
-	g_free(di->inst_id);
-	g_free(di->dec_channelmap);
+	x_free(di->inst_id);
+	x_free(di->dec_channelmap);
 	g_slist_free(di->next_di);
 	for (l = di->pd_output; l; l = l->next) {
 		pdo = l->data;
-		g_free(pdo->proto_id);
+		x_free(pdo->proto_id);
         if (pdo->meta_name)
-            g_free(pdo->meta_name);
+            x_free(pdo->meta_name);
         if (pdo->meta_descr)
-            g_free(pdo->meta_descr);
-		g_free(pdo);
+            x_free(pdo->meta_descr);
+		x_free(pdo);
 	}
 	g_slist_free(di->pd_output);
-	g_free(di);
+	x_free(di);
 }
 
 /** @private */

@@ -21,6 +21,7 @@
 
 #include "mathstack.h"
 #include <math.h>
+#include <mem/alloc.h>
 #include  "dsosnapshot.h"
 #include  "../appcore/sigsession.h"
 #include  "../view/dsosignal.h"
@@ -100,7 +101,7 @@ void MathStack::free_envelop()
 {
     for(auto &e : _envelope_level) {
         if (e.samples)
-            free(e.samples);
+            x_free(e.samples);
     }
     memset(_envelope_level, 0, sizeof(_envelope_level));
 }
@@ -139,7 +140,7 @@ void MathStack::realloc(uint64_t num)
         for (unsigned int level = 0; level < ScaleStepCount; level++) {
             envelop_count = ((envelop_count + EnvelopeDataUnit - 1) /
                     EnvelopeDataUnit) * EnvelopeDataUnit;
-            _envelope_level[level].samples = (EnvelopeSample*)malloc(envelop_count * sizeof(EnvelopeSample));
+            _envelope_level[level].samples = (EnvelopeSample*)x_malloc(envelop_count * sizeof(EnvelopeSample));
             envelop_count = envelop_count / EnvelopeScaleFactor;
         }
     }

@@ -204,7 +204,7 @@ static struct DSL_context *DSLogic_dev_new(const struct DSL_profile *prof)
 
     assert(prof);
 
-    if (!(devc = malloc(sizeof(struct DSL_context)))) {
+    if (!(devc = x_malloc(sizeof(struct DSL_context)))) {
         sr_err("Device context malloc failed.");
 		return NULL;
 	}
@@ -413,7 +413,7 @@ static GSList *scan(GSList *options)
             sdi = sr_dev_inst_new(channel_modes[devc->ch_mode].mode, SR_ST_INITIALIZING,
                                 prof->vendor, prof->model, prof->model_version);
             if (sdi == NULL) {
-                free(devc);
+                x_free(devc);
                 break;
             }
 
@@ -440,7 +440,7 @@ static GSList *scan(GSList *options)
         else {
             char *firmware;
             char *res_path = DS_RES_PATH;
-            if (!(firmware = malloc(strlen(res_path)+strlen(prof->firmware) + 5))) {
+            if (!(firmware = x_malloc(strlen(res_path)+strlen(prof->firmware) + 5))) {
                 sr_err("Firmware path malloc error!");
                 break;
             }
@@ -454,7 +454,7 @@ static GSList *scan(GSList *options)
                 sr_err("Firmware upload failed for device %s.", prof->model);
             }
 
-            free(firmware);
+            x_free(firmware);
             
 #ifdef _WIN32
             libusb_unref_device(device_handle);
@@ -1068,7 +1068,7 @@ static int config_set(int id, GVariant *data, struct sr_dev_inst *sdi,
 
             char *fpga_bit;
             char *res_path = DS_RES_PATH;
-            if (!(fpga_bit = malloc(strlen(res_path) + strlen(devc->profile->fpga_bit33) + 5))) {
+            if (!(fpga_bit = x_malloc(strlen(res_path) + strlen(devc->profile->fpga_bit33) + 5))) {
                 sr_err("fpag_bit path malloc error!");
                 return SR_ERR_MALLOC;
             }
@@ -1088,7 +1088,7 @@ static int config_set(int id, GVariant *data, struct sr_dev_inst *sdi,
             }
 
             ret = dsl_fpga_config(usb->devhdl, fpga_bit);
-            g_free(fpga_bit);
+            x_free(fpga_bit);
             if (ret != SR_OK) {
                 sr_err("Configure FPGA failed!");
             }
@@ -1318,7 +1318,7 @@ static void remove_sources(struct DSL_context *devc)
     /* Remove fds from polling. */
     for (i = 0; devc->usbfd[i] != -1; i++)
         sr_source_remove(devc->usbfd[i]);
-    g_free(devc->usbfd);
+    x_free(devc->usbfd);
 }
 
 static void report_overflow(struct DSL_context *devc)
@@ -1490,7 +1490,7 @@ static int dev_acquisition_start(struct sr_dev_inst *sdi, void *cb_data)
     lupfd = libusb_get_pollfds(drvc->sr_ctx->libusb_ctx);
     for (i = 0; lupfd[i]; i++);
 
-    if (!(devc->usbfd = malloc(sizeof(struct libusb_pollfd) * (i + 1)))){
+    if (!(devc->usbfd = x_malloc(sizeof(struct libusb_pollfd) * (i + 1)))){
         sr_err("%s,ERROR:failed to alloc memory.", __func__);
     	return SR_ERR;
     }
@@ -1501,7 +1501,7 @@ static int dev_acquisition_start(struct sr_dev_inst *sdi, void *cb_data)
         devc->usbfd[i] = lupfd[i]->fd;
     }
     devc->usbfd[i] = -1;
-    free(lupfd);
+    x_free(lupfd);
 
     wr_cmd.header.dest = DSL_CTL_START;
     wr_cmd.header.size = 0;

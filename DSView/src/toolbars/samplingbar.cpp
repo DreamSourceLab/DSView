@@ -26,6 +26,7 @@
 #include <QAbstractItemView>
 #include <math.h>
 #include <libusb-1.0/libusb.h>
+#include <mem/alloc.h>
 #include "../dialogs/deviceoptions.h"
 #include "../dialogs/waitingdialog.h"
 #include "../dialogs/dsmessagebox.h"
@@ -1122,7 +1123,7 @@ namespace dsv
                 if (i == select_index)
                     cur_dev_handle = p->handle;
             }
-            free(array);
+            x_free(array);
 
             _device_selector.setCurrentIndex(select_index);
 

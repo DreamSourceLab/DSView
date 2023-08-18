@@ -51,7 +51,7 @@
 #include <glib.h>
 #include <list>
 #include <thread>
-#include <stdlib.h>
+#include <mem/alloc.h>
 
 //include with qt5
 #if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
@@ -944,7 +944,7 @@ namespace appcore {
                         probe->coupling = obj["coupling"].toDouble();
                         probe->vfactor = obj["vfactor"].toDouble();
                         probe->trig_value = obj["trigValue"].toDouble();
-                        probe->map_unit = g_strdup(obj["mapUnit"].toString().toStdString().c_str());
+                        probe->map_unit = str_clone(obj["mapUnit"].toString().toStdString().c_str());
                         probe->map_min = obj["mapMin"].toDouble();
                         probe->map_max = obj["mapMax"].toDouble();
                         probe->enabled = obj["enabled"].toBool();
@@ -975,12 +975,12 @@ namespace appcore {
                         }
                         
                         probe->enabled = obj["enabled"].toBool();
-                        probe->name = g_strdup(chan_name.toStdString().c_str());
+                        probe->name = str_clone(chan_name.toStdString().c_str());
                         probe->vdiv = obj["vdiv"].toDouble();
                         probe->coupling = obj["coupling"].toDouble();
                         probe->vfactor = obj["vfactor"].toDouble();
                         probe->trig_value = obj["trigValue"].toDouble();
-                        probe->map_unit = g_strdup(obj["mapUnit"].toString().toStdString().c_str());
+                        probe->map_unit = str_clone(obj["mapUnit"].toString().toStdString().c_str());
                         probe->map_min = obj["mapMin"].toDouble();
                         probe->map_max = obj["mapMax"].toDouble();
 

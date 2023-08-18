@@ -57,7 +57,7 @@ static int init(struct sr_input *in, const char *filename)
 
 	(void)filename;
 
-	if (!(ctx = malloc(sizeof(struct context)))) {
+	if (!(ctx = x_malloc(sizeof(struct context)))) {
 		sr_err("Input format context malloc failed.");
 		return SR_ERR_MALLOC;
 	}
@@ -142,7 +142,7 @@ static int loadfile(struct sr_input *in, const char *filename)
 	packet.type = SR_DF_END;
 	ds_data_forward(in->sdi, &packet);
 
-	g_free(ctx);
+	x_free(ctx);
 	in->internal = NULL;
 
 	return SR_OK;

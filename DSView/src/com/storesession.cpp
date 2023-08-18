@@ -34,6 +34,7 @@
 #include <QTextStream>
 #include <list>
 #include <libsigrokdecode.h>
+#include <mem/alloc.h>
 
 #include "../appcore/sigsession.h"
 #include "../data/logicsnapshot.h"
@@ -241,7 +242,7 @@ void StoreSession::save_logic(dsv::data::LogicSnapshot *logic_snapshot)
                 bool need_malloc = (buf == NULL);
                 
                 if (need_malloc) {
-                    buf = (uint8_t *)malloc(size);
+                    buf = (uint8_t *)x_malloc(size);
                     if (buf == NULL) {
                         _has_error = true;
                         _error = L_S(STR_PAGE_DLG, S_ID(IDS_MSG_STORESESS_SAVEPROC_ERROR1), 
@@ -273,7 +274,7 @@ void StoreSession::save_logic(dsv::data::LogicSnapshot *logic_snapshot)
                 }
 
                 if (need_malloc)
-                    free(buf);
+                    x_free(buf);
                 progress_updated();
             }
         }
@@ -326,7 +327,7 @@ void StoreSession::save_analog(dsv::data::AnalogSnapshot *analog_snapshot)
         for (int i = 0; !_canceled && i < num; i++) {
             const uint64_t size = analog_snapshot->get_block_size(i);
             if ((buf + size) > buf_end) {
-                uint8_t *tmp = (uint8_t *)malloc(size);
+                uint8_t *tmp = (uint8_t *)x_malloc(size);
                 if (tmp == NULL) {
                     _has_error = true;
                     _error = L_S(STR_PAGE_DLG, S_ID(IDS_MSG_STORESESS_SAVEPROC_ERROR1), 
@@ -341,7 +342,7 @@ void StoreSession::save_analog(dsv::data::AnalogSnapshot *analog_snapshot)
 
                 buf += (size - _unit_count);
                 if (tmp)
-                    free(tmp);
+                    x_free(tmp);
             } 
             else { 
                 MakeChunkName(chunk_name, i, 0, ch_type, HEADER_FORMAT_VERSION);
@@ -877,7 +878,7 @@ void StoreSession::export_proc(data::Snapshot *snapshot)
             for(uint64_t i = 0; !_canceled && i < buf_sample_num; i+=usize){
                 if(buf_sample_num - i < usize)
                     size = buf_sample_num - i;
-                uint8_t *xbuf = (uint8_t *)malloc(size * unitsize);
+                uint8_t *xbuf = (uint8_t *)x_malloc(size * unitsize);
                 if (xbuf == NULL) {
                     _has_error = true;
                     _error = L_S(STR_PAGE_DLG, S_ID(IDS_MSG_STORESESS_EXPORTPROC_ERROR2), "xbuffer malloc failed.");
@@ -910,7 +911,7 @@ void StoreSession::export_proc(data::Snapshot *snapshot)
 
                 _units_stored += size;
                 if (xbuf)
-                    free(xbuf);
+                    x_free(xbuf);
                 progress_updated();
             }
         }
@@ -921,7 +922,7 @@ void StoreSession::export_proc(data::Snapshot *snapshot)
         unsigned int size = usize;
         struct sr_datafeed_dso dp; 
 
-        uint8_t *ch_data_buffer = (uint8_t*)malloc(usize * dso_snapshot->get_channel_num() + 1);
+        uint8_t *ch_data_buffer = (uint8_t*)x_malloc(usize * dso_snapshot->get_channel_num() + 1);
         if (ch_data_buffer == NULL){
             dsv_err("StoreSession::export_proc, malloc failed.");
             return;
@@ -966,7 +967,7 @@ void StoreSession::export_proc(data::Snapshot *snapshot)
         }
 
         if (ch_data_buffer){
-            free(ch_data_buffer);
+            x_free(ch_data_buffer);
             ch_data_buffer = NULL;
         }
 

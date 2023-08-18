@@ -338,36 +338,17 @@ set(DSView_SOURCES
 )
 
 set(DSView_HEADERS
-	DSView/src/log.h
-	DSView/src/config.h
-	DSView/src/mystyle.h
-	DSView/src/basedef.h
-	DSView/src/utility/encoding.h
-	DSView/src/utility/path.h
-	DSView/src/utility/array.h
-	DSView/src/config/appconfig.h
-	DSView/src/decode/annotation.h
-	DSView/src/decode/displaydataformat.h
-	DSView/src/decode/annotationrestable.h
-	DSView/src/decode/row.h
-	DSView/src/decode/rowdata.h
-	DSView/src/decode/decoderstatus.h
-	DSView/src/decode/decoder.h
+	DSView/src/mystyle.h 
 	DSView/src/prop/double.h
 	DSView/src/prop/bool.h
 	DSView/src/prop/enum.h
 	DSView/src/prop/property.h
 	DSView/src/prop/int.h
 	DSView/src/prop/string.h
-	DSView/src/prop/binding/deviceoptions.h
-	DSView/src/prop/binding/probeoptions.h
-	DSView/src/prop/binding/decoderoptions.h
-	DSView/src/prop/binding/binding.h
 	DSView/src/dialogs/deviceoptions.h
 	DSView/src/dialogs/calibration.h
 	DSView/src/dialogs/protocollist.h
 	DSView/src/dialogs/waitingdialog.h
-	DSView/src/dialogs/applicationpardlg.h
 	DSView/src/dialogs/search.h
 	DSView/src/dialogs/regionoptions.h
 	DSView/src/dialogs/fftoptions.h
@@ -391,9 +372,7 @@ set(DSView_HEADERS
 	DSView/src/view/ruler.h
 	DSView/src/view/logicsignal.h
 	DSView/src/view/lissajoustrace.h
-	DSView/src/view/groupsignal.h
 	DSView/src/view/signal.h
-	DSView/src/view/dsldial.h
 	DSView/src/view/cursor.h
 	DSView/src/view/viewstatus.h
 	DSView/src/view/timemarker.h
@@ -401,26 +380,17 @@ set(DSView_HEADERS
 	DSView/src/view/analogsignal.h
 	DSView/src/view/dsosignal.h
 	DSView/src/view/header.h
-	DSView/src/view/view.h
-	DSView/src/interface/icallbacks.h
-	DSView/src/appcore/sigsession.h
+	DSView/src/view/view.h  
 	DSView/src/appcore/mainframe.h
 	DSView/src/appcore/eventobject.h
-	DSView/src/appcore/appcontrol.h
-	DSView/src/appcore/deviceagent.h
 	DSView/src/appcore/mainwindow.h
 	DSView/src/com/dstimer.h
-	DSView/src/com/zipmaker.h
 	DSView/src/com/storesession.h
 	DSView/src/widgets/fakelineedit.h
 	DSView/src/widgets/decodermenu.h
 	DSView/src/widgets/decodergroupbox.h
 	DSView/src/widgets/border.h
-	DSView/src/ui/langresource.h
-	DSView/src/ui/msgbox.h
-	DSView/src/ui/string_ids.h
 	DSView/src/ui/dscombobox.h
-	DSView/src/ui/fn.h
 	DSView/src/dock/searchdock.h
 	DSView/src/dock/protocolitemlayer.h
 	DSView/src/dock/searchcombobox.h
@@ -434,15 +404,10 @@ set(DSView_HEADERS
 	DSView/src/toolbars/titlebar.h
 	DSView/src/toolbars/filebar.h
 	DSView/src/toolbars/logobar.h
-	DSView/src/data/logicsnapshot.h
-	DSView/src/data/analogsnapshot.h
-	DSView/src/data/decoderstack.h
-	DSView/src/data/dsosnapshot.h
-	DSView/src/data/snapshot.h
-	DSView/src/data/decodermodel.h
-	DSView/src/data/mathstack.h
 	DSView/src/data/signaldata.h
+	DSView/src/data/decoderstack.h
 	DSView/src/data/spectrumstack.h
+	DSView/src/data/mathstack.h
 )
  
 #===============================================================================
@@ -478,15 +443,6 @@ set(libsigrok4DSL_SOURCES
 	libsigrok4DSL/hardware/DSL/dsl.c
 	libsigrok4DSL/lib_main.c
 )
-
-set(libsigrok4DSL_HEADERS
-	libsigrok4DSL/version.h
-	libsigrok4DSL/libsigrok-internal.h
-	libsigrok4DSL/libsigrok.h
-	libsigrok4DSL/config.h
-	libsigrok4DSL/hardware/DSL/command.h
-	libsigrok4DSL/hardware/DSL/dsl.h
-)
  
 #===============================================================================
 #= libsigrokdecode4DSL source
@@ -505,13 +461,6 @@ set(libsigrokdecode4DSL_SOURCES
 	libsigrokdecode4DSL/version.c
 )
 
-set(libsigrokdecode4DSL_HEADERS
-	libsigrokdecode4DSL/libsigrokdecode-internal.h
-	libsigrokdecode4DSL/libsigrokdecode.h
-	libsigrokdecode4DSL/config.h
-	libsigrokdecode4DSL/version.h
-)
-
 #===============================================================================
 #= common source
 #-------------------------------------------------------------------------------
@@ -521,13 +470,7 @@ set(common_SOURCES
 	common/minizip/unzip.c
 	common/minizip/ioapi.c
 	common/log/xlog.c
-)
-
-set(common_HEADERS
-	common/minizip/zip.h
-	common/minizip/unzip.h
-	common/minizip/ioapi.h
-	common/log/xlog.h
+	common/mem/alloc.c
 )
 
 #===============================================================================

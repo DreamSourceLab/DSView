@@ -173,7 +173,7 @@ SR_PRIV struct sr_config *sr_config_new(int key, GVariant *data)
 	struct sr_config *src;
 	assert(data);
 
-	if (!(src = malloc(sizeof(struct sr_config)))){
+	if (!(src = x_malloc(sizeof(struct sr_config)))){
 		sr_err("%s,ERROR:failed to alloc memory.", __func__);
 		return NULL;
 	}
@@ -193,7 +193,7 @@ SR_PRIV void sr_config_free(struct sr_config *src)
 	}
 
 	g_variant_unref(src->data);
-	g_free(src);
+	x_free(src);
 
 }
 

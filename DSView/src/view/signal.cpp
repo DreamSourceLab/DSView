@@ -22,6 +22,7 @@
 
 #include "signal.h"
 #include <math.h> 
+#include <mem/alloc.h>
 #include "view.h" 
 #include "../basedef.h"
 #include "../appcore/appcontrol.h"
@@ -52,8 +53,8 @@ bool Signal::enabled()
 void Signal::set_name(QString name)
 {
     Trace::set_name(name);
-    g_free(_probe->name);
-    _probe->name = g_strdup(name.toUtf8().data());
+    x_free(_probe->name);
+    _probe->name = str_clone(name.toUtf8().data());
 }
 } // namespace view
 } // namespace dsv

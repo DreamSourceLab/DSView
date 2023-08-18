@@ -96,7 +96,7 @@ static int init(struct sr_input *in, const char *filename)
 	if (get_wav_header(filename, buf) != SR_OK)
 		return SR_ERR;
 
-	if (!(ctx = malloc(sizeof(struct context)))){
+	if (!(ctx = x_malloc(sizeof(struct context)))){
 		sr_err("%s,ERROR:failed to alloc memory.", __func__);
 		return SR_ERR_MALLOC;
 	}

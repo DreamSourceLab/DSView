@@ -42,7 +42,7 @@ static char *py_stringify(PyObject *py_obj)
 	if (!py_bytes)
 		goto cleanup;
 
-	str = g_strdup(PyBytes_AsString(py_bytes));
+	str = str_clone(PyBytes_AsString(py_bytes));
 	Py_DECREF(py_bytes);
 
 cleanup:
@@ -73,7 +73,7 @@ static char *py_get_string_attr(PyObject *py_obj, const char *attr)
 	if (!py_bytes)
 		goto cleanup;
 
-	str = g_strdup(PyBytes_AsString(py_bytes));
+	str = str_clone(PyBytes_AsString(py_bytes));
 	Py_DECREF(py_bytes);
 
 cleanup:
@@ -125,8 +125,8 @@ SRD_PRIV void srd_exception_catch(char **error, const char *format, ...)
 	else
 		final_msg = g_strjoin(":", msg, etype_name_fallback, NULL);
 
-	g_free(evalue_str);
-	g_free(etype_name);
+	x_free(evalue_str);
+	x_free(etype_name);
 
 	srd_err("%s.", final_msg);
 
@@ -153,7 +153,7 @@ SRD_PRIV void srd_exception_catch(char **error, const char *format, ...)
 		ret = py_listitem_as_str(py_tracefmt, i, &outstr);
 		if (ret == 0) {
 			s = g_string_append(s, outstr);
-			g_free(outstr);
+			x_free(outstr);
 		}
 	}
 	srd_err("%s", s->str);
@@ -163,7 +163,7 @@ SRD_PRIV void srd_exception_catch(char **error, const char *format, ...)
 
 cleanup:
 	if (error)
-		*error = g_strdup(final_msg);
+		*error = str_clone(final_msg);
 	Py_XDECREF(py_func);
 	Py_XDECREF(py_mod);
 	Py_XDECREF(py_etraceback);
@@ -175,6 +175,6 @@ cleanup:
 
 	PyGILState_Release(gstate);
 
-	g_free(msg);
-	g_free(final_msg);
+	x_free(msg);
+	x_free(final_msg);
 }

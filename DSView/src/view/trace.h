@@ -62,12 +62,12 @@ protected:
     Trace(QString name, uint16_t index, int type);
     Trace(QString name, std::list<int> index_list, int type, int sec_index);
 
-    /**
+public:
+     /**
      * Copy constructor
      */
-    Trace(const Trace &t);
+    explicit Trace(const Trace &t);
 
-public:
 	/**
 	 * Gets the name of this signal.
 	 */

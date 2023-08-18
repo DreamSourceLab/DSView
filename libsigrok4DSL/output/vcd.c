@@ -65,7 +65,7 @@ static int init(struct sr_output *o, GHashTable *options)
 		return SR_ERR;
 	}
 
-	ctx = malloc(sizeof(struct context));
+	ctx = x_malloc(sizeof(struct context));
 	if (ctx == NULL){
 		sr_err("%s,ERROR:failed to alloc memory.", __func__);
 		return SR_ERR;
@@ -74,7 +74,7 @@ static int init(struct sr_output *o, GHashTable *options)
 
 	o->priv = ctx;
 	ctx->num_enabled_channels = num_enabled_channels;
-	ctx->channel_index = malloc(sizeof(int) * ctx->num_enabled_channels);
+	ctx->channel_index = x_malloc(sizeof(int) * ctx->num_enabled_channels);
 
 	if (ctx->channel_index == NULL){
 		sr_err("%s,ERROR:failed to alloc memory.", __func__);
@@ -111,10 +111,10 @@ static GString *gen_header(const struct sr_output *o)
 
 	/* timestamp */
 	t = time(NULL);
-	timestamp = g_strdup(ctime(&t));
+	timestamp = str_clone(ctime(&t));
 	timestamp[strlen(timestamp)-1] = 0;
 	g_string_printf(header, "$date %s $end\n", timestamp);
-	g_free(timestamp);
+	x_free(timestamp);
 
 	/* generator */
 	g_string_append_printf(header, "$version %s %s $end\n",
@@ -134,7 +134,7 @@ static GString *gen_header(const struct sr_output *o)
 	if (ctx->samplerate != 0) {
 		samplerate_s = sr_samplerate_string(ctx->samplerate);
 		g_string_append_printf(header, " at %s", samplerate_s);
-		g_free(samplerate_s);
+		x_free(samplerate_s);
 	}
 	g_string_append_printf(header, "\n$end\n");
 
@@ -148,7 +148,7 @@ static GString *gen_header(const struct sr_output *o)
 		ctx->period = SR_KHZ(1);
 	frequency_s = sr_period_string(ctx->period);
 	g_string_append_printf(header, "$timescale %s $end\n", frequency_s);
-	g_free(frequency_s);
+	x_free(frequency_s);
 
 	/* scope */
 	g_string_append_printf(header, "$scope module %s $end\n", PACKAGE);
@@ -211,7 +211,7 @@ static int receive(const struct sr_output *o, const struct sr_datafeed_packet *p
 
 		if (!ctx->prevsample) {
 			/* Can't allocate this until we know the stream's unitsize. */
-			ctx->prevsample = malloc(logic->unitsize);
+			ctx->prevsample = x_malloc(logic->unitsize);
 
 			if (ctx->prevsample == NULL){
 				sr_err("%s,ERROR:failed to alloc memory.", __func__);
@@ -275,9 +275,9 @@ static int cleanup(struct sr_output *o)
 		return SR_ERR_ARG;
 
 	ctx = o->priv;
-	g_free(ctx->prevsample);
-	g_free(ctx->channel_index);
-	g_free(ctx);
+	x_free(ctx->prevsample);
+	x_free(ctx->channel_index);
+	x_free(ctx);
 
 	return SR_OK;
 }

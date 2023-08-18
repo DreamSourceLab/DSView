@@ -23,9 +23,10 @@
 //#include <stdarg.h>
 #include <glib.h>
 #include <ds_types.h>
-#include "config.h" /* Needed for HAVE_LIBUSB_1_0 and others. */
+#include <mem/alloc.h>
 #include <libusb-1.0/libusb.h>
 #include "libsigrok.h"
+#include "config.h" /* Needed for HAVE_LIBUSB_1_0 and others. */
 
 /**
  * @file
@@ -52,7 +53,7 @@
 #define USB_EV_HOTPLUG_ATTACH		1
 #define USB_EV_HOTPLUG_DETTACH		2
 
-#define safe_free(p) 			if((p)) free((p)); ((p)) = NULL;
+#define safe_free(p) 			if((p)) x_free((p)); ((p)) = NULL;
 #define g_safe_free_list(p) 	if((p)) g_slist_free((p)); ((p)) = NULL;
 
 #define DS_VENDOR_ID	0x2A0E

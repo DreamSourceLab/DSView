@@ -24,7 +24,6 @@
 #include <math.h>
 #include <QTextStream>
 #include <boost/functional/hash.hpp>
-#include <stdlib.h>
 #include "../appcore/sigsession.h"
 #include "../data/dsosnapshot.h"
 #include "dsosignal.h"

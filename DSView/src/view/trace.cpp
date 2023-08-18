@@ -50,34 +50,39 @@ const QColor Trace::PROBE_COLORS[8] = {
 const int Trace::LabelHitPadding = 2;
 
 Trace::Trace(QString name, uint16_t index, int type) :
-    _view(NULL),
-	_name(name),
-    _v_offset(INT_MAX),
-    _type(type),
-    _sec_index(0),
-    _totalHeight(30),
-    _typeWidth(SquareNum)
+    QObject(NULL)
 {
     _index_list.push_back(index);
     _view_index = -1;
     _selected = false;
+
+    _view = NULL;
+	_name = name;
+    _v_offset = INT_MAX;
+    _type = type;
+    _sec_index = 0;
+    _totalHeight = 30;
+    _typeWidth = SquareNum;
 }
 
 Trace::Trace(QString name, std::list<int> index_list, int type, int sec_index) :
-    _view(NULL),
-    _name(name),
-    _v_offset(INT_MAX),
-    _type(type),
-    _index_list(index_list),
-    _sec_index(sec_index),
-    _totalHeight(30),
-    _typeWidth(SquareNum)
+    QObject(NULL)
 {
     _view_index = -1;
     _selected = false;
+
+    _view = NULL;
+	_name = name;
+    _v_offset = INT_MAX;
+    _type = type;
+    _sec_index = sec_index;
+    _totalHeight = 30;
+    _typeWidth = SquareNum;
+    _index_list = index_list;
 }
 
 Trace::Trace(const Trace &t) :
+    QObject(NULL),
     _view(t._view),
     _name(t._name),
     _colour(t._colour),
@@ -93,7 +98,6 @@ Trace::Trace(const Trace &t) :
     _view_index = -1;
     _selected = false;
 }
-
 
 int Trace::get_name_width()
 {

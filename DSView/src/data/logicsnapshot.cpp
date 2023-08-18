@@ -23,8 +23,8 @@
 #include "logicsnapshot.h"
 #include <assert.h>
 #include <string.h>
-#include <stdlib.h>
 #include <math.h>
+#include <mem/alloc.h>
 #include "../basedef.h"
 #include "../log.h"
 #include "../utility/array.h"
@@ -69,7 +69,7 @@ void LogicSnapshot::free_data()
         for(auto& iter_rn : iter) {
             for (unsigned int k = 0; k < Scale; k++){
                 if (iter_rn.lbp[k] != NULL)
-                    free(iter_rn.lbp[k]);
+                    x_free(iter_rn.lbp[k]);
             }
         }
         std::vector<struct RootNode> void_vector;
@@ -79,7 +79,7 @@ void LogicSnapshot::free_data()
     _sample_count = 0;
 
     for(void *p : _free_block_list){
-        free(p);
+        x_free(p);
     }
     _free_block_list.clear();
 }
@@ -118,7 +118,7 @@ void LogicSnapshot::first_payload(const sr_datafeed_logic &logic, uint64_t total
     _lst_free_block_index = 0;
 
     for(void *p : _free_block_list){
-        free(p);
+        x_free(p);
     }
     _free_block_list.clear();
 
@@ -270,7 +270,7 @@ void LogicSnapshot::append_cross_payload(const sr_datafeed_logic &logic)
 
             lbp = _ch_data[_ch_fraction][index0].lbp[index1];
             if (lbp == NULL){
-                lbp = malloc(LeafBlockSpace);
+                lbp = x_malloc(LeafBlockSpace);
                 if (lbp == NULL){
                     dsv_err("LogicSnapshot::append_cross_payload, Malloc memory failed!");
                     return;
@@ -318,7 +318,7 @@ void LogicSnapshot::append_cross_payload(const sr_datafeed_logic &logic)
     
     lbp = _ch_data[fill_chan][index0].lbp[index1];
     if (lbp == NULL){
-        lbp = malloc(LeafBlockSpace);
+        lbp = x_malloc(LeafBlockSpace);
         if (lbp == NULL){
             dsv_err("LogicSnapshot::append_cross_payload, Malloc memory failed!");
             return;
@@ -359,7 +359,7 @@ void LogicSnapshot::append_cross_payload(const sr_datafeed_logic &logic)
 
             lbp = _ch_data[fill_chan][index0].lbp[index1];
             if (lbp == NULL){
-                lbp = malloc(LeafBlockSpace);
+                lbp = x_malloc(LeafBlockSpace);
                 if (lbp == NULL){
                     dsv_err("LogicSnapshot::append_cross_payload, Malloc memory failed!");
                     return;
@@ -388,7 +388,7 @@ void LogicSnapshot::append_cross_payload(const sr_datafeed_logic &logic)
 
             lbp = _ch_data[fill_chan][index0].lbp[index1];
             if (lbp == NULL){
-                lbp = malloc(LeafBlockSpace);
+                lbp = x_malloc(LeafBlockSpace);
                 if (lbp == NULL){
                     dsv_err("LogicSnapshot::append_cross_payload, Malloc memory failed!");
                     return;
@@ -414,7 +414,7 @@ void LogicSnapshot::append_cross_payload(const sr_datafeed_logic &logic)
 
     lbp = _ch_data[_ch_fraction][index0].lbp[index1];
     if (lbp == NULL){
-        lbp = malloc(LeafBlockSpace);
+        lbp = x_malloc(LeafBlockSpace);
         if (lbp == NULL){
             dsv_err("LogicSnapshot::append_cross_payload, Malloc memory failed!");
             return;
@@ -563,7 +563,7 @@ void LogicSnapshot::calc_mipmap(unsigned int order, uint8_t index0, uint8_t inde
         uint64_t ref_lbp  = _cur_ref_block_indexs[order].lbp_index;
 
         if (_able_free || index0 > ref_root || (index0 == ref_root && index1 > ref_lbp))
-            free(_ch_data[order][index0].lbp[index1]);
+            x_free(_ch_data[order][index0].lbp[index1]);
         else
             _free_block_list.push_back(_ch_data[order][index0].lbp[index1]);
 
@@ -1432,7 +1432,7 @@ void LogicSnapshot::move_first_node_to_last()
         for (int x=0; x<(int)Scale; x++)
         {
             if (rn.lbp[x] != NULL){
-                free(rn.lbp[x]);
+                x_free(rn.lbp[x]);
                 rn.lbp[x] = NULL;
             }
         }
@@ -1450,7 +1450,7 @@ void LogicSnapshot::decode_end()
    std::lock_guard<std::mutex> lock(_mutex);
 
    for(void *p : _free_block_list){
-        free(p);
+        x_free(p);
     }
     _free_block_list.clear();
 }
@@ -1465,7 +1465,7 @@ void LogicSnapshot::free_decode_lpb(void *lbp)
     {
         if ((*it) == lbp){
             _free_block_list.erase(it);
-            free(lbp);
+            x_free(lbp);
             break;
         }
     }
@@ -1480,7 +1480,7 @@ void LogicSnapshot::free_head_blocks(int count)
     {
         for (int j=_lst_free_block_index; j<count; j++){
             if (_ch_data[i][0].lbp[j] != NULL){
-                free(_ch_data[i][0].lbp[j]);
+                x_free(_ch_data[i][0].lbp[j]);
                 _ch_data[i][0].lbp[j] = NULL;
             }
 

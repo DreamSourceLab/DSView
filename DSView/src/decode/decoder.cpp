@@ -23,6 +23,7 @@
 #include <libsigrokdecode.h>
 #include "decoder.h"
 #include <assert.h>
+#include <mem/alloc.h>
 
 namespace dsv{
 namespace decode{
@@ -109,7 +110,7 @@ srd_decoder_inst* Decoder::create_decoder_inst(srd_session *session)
 	{
 		GVariant *const value = (*i).second;
 		g_variant_ref(value);
-		g_hash_table_replace(opt_hash, (void*)g_strdup(
+		g_hash_table_replace(opt_hash, (void*)str_clone(
 			(*i).first.c_str()), value);
 	}
 

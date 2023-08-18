@@ -116,7 +116,7 @@ static void channel_free(void *data)
 	safe_free(ch->name);
 	safe_free(ch->id);
 	safe_free(ch->idn);
-	g_free(ch);
+	x_free(ch);
 }
 
 static void variant_free(void *data)
@@ -137,9 +137,9 @@ static void annotation_row_free(void *data)
 		return;
 
 	g_slist_free(row->ann_classes);
-	g_free(row->desc);
-	g_free(row->id);
-	g_free(row);
+	safe_free(row->desc);
+	x_free(row->id);
+	x_free(row);
 }
 
 static void decoder_option_free(void *data)
@@ -154,7 +154,7 @@ static void decoder_option_free(void *data)
 	safe_free(opt->desc);
 	safe_free(opt->id);
 	safe_free(opt->idn);
-	g_free(opt);
+	x_free(opt);
 }
 
 static void decoder_free(struct srd_decoder *dec)
@@ -170,22 +170,22 @@ static void decoder_free(struct srd_decoder *dec)
 	PyGILState_Release(gstate);
 
 	g_slist_free_full(dec->options, &decoder_option_free);
-	g_slist_free_full(dec->binary, (GDestroyNotify)&g_strfreev);
+	g_slist_free_full(dec->binary, (GDestroyNotify)&x_free_ptr_array);
 	g_slist_free_full(dec->annotation_rows, &annotation_row_free);
-	g_slist_free_full(dec->annotations, (GDestroyNotify)&g_strfreev);
+	g_slist_free_full(dec->annotations, (GDestroyNotify)&x_free_ptr_array);
 	g_slist_free_full(dec->opt_channels, &channel_free);
 	g_slist_free_full(dec->channels, &channel_free);
 
 	g_slist_free_full(dec->outputs, g_free);
 	g_slist_free_full(dec->inputs, g_free);
 	g_slist_free_full(dec->tags, g_free);
-	g_free(dec->license);
-	g_free(dec->desc);
-	g_free(dec->longname);
-	g_free(dec->name);
-	g_free(dec->id);
+	x_free(dec->license);
+	x_free(dec->desc);
+	x_free(dec->longname);
+	x_free(dec->name);
+	x_free(dec->id);
 
-	g_free(dec);
+	x_free(dec);
 }
 
 static int get_channels(const struct srd_decoder *d, const char *attr,
@@ -227,7 +227,7 @@ static int get_channels(const struct srd_decoder *d, const char *attr,
 				"a list of dict elements.", d->name, attr);
 			goto err_out;
 		}
-		pdch = malloc(sizeof(struct srd_channel));
+		pdch = x_malloc(sizeof(struct srd_channel));
 		if (pdch == NULL){
 			srd_err("%s,ERROR:failed to alloc memory.", __func__);
 			goto err_out;
@@ -312,7 +312,7 @@ static int get_options(struct srd_decoder *d)
 			goto err_out;
 		}
 
-		o = malloc(sizeof(struct srd_decoder_option));
+		o = x_malloc(sizeof(struct srd_decoder_option));
 		if (o == NULL){
 			srd_err("%s,ERROR:failed to alloc memory.", __func__);
 			goto err_out;
@@ -460,7 +460,8 @@ static int get_annotations(struct srd_decoder *dec)
             for (j = 0; j < strlen(annpair[0]); j++)
                 ann_type = ann_type * 10 + (annpair[0][j] - '0');
             dec->ann_types = g_slist_append(dec->ann_types, GINT_TO_POINTER(ann_type));
-		} else if (PyTuple_Size(py_ann) == 2) {
+		}
+		else if (PyTuple_Size(py_ann) == 2) {
 			dec->ann_types = g_slist_append(dec->ann_types, GINT_TO_POINTER(ann_type));
 			ann_type++;
 		}
@@ -475,7 +476,7 @@ except_out:
     srd_exception_catch(NULL, "Failed to get %s decoder annotations", dec->name);
 
 err_out:
-	g_slist_free_full(annotations, (GDestroyNotify)&g_strfreev);
+	g_slist_free_full(annotations, (GDestroyNotify)&x_free_ptr_array);
 	Py_XDECREF(py_annlist);
 	PyGILState_Release(gstate);
 
@@ -522,7 +523,7 @@ static int get_annotation_rows(struct srd_decoder *dec)
 				dec->name);
 			goto err_out;
 		}
-		ann_row = malloc(sizeof(struct srd_decoder_annotation_row));
+		ann_row = x_malloc(sizeof(struct srd_decoder_annotation_row));
 		if (ann_row == NULL){
 			srd_err("%s,ERROR:failed to alloc memory.", __func__);
 			goto err_out;
@@ -648,7 +649,7 @@ except_out:
 			dec->name);
 
 err_out:
-	g_slist_free_full(bin_classes, (GDestroyNotify)&g_strfreev);
+	g_slist_free_full(bin_classes, (GDestroyNotify)&x_free_ptr_array);
 	Py_XDECREF(py_bin_classes);
 	PyGILState_Release(gstate);
 
@@ -749,7 +750,7 @@ SRD_API int srd_decoder_load(const char *module_name)
 		return SRD_OK;
 	}
 
-	d = malloc(sizeof(struct srd_decoder));
+	d = x_malloc(sizeof(struct srd_decoder));
 	if (d == NULL){
 		srd_err("%s,ERROR:failed to alloc memory.", __func__);
 		goto err_out;
@@ -1074,17 +1075,17 @@ static void srd_decoder_load_all_zip_path(char *zip_path)
 					Py_DECREF(modname);
 				}
 			}
-			g_free(path);
+			x_free(path);
 		}
 	}
-	g_free(prefix);
+	x_free(prefix);
 
 	while ((modname = PySet_Pop(set))) {
 		char *modname_str;
 		if (py_str_as_str(modname, &modname_str) == SRD_OK) {
 			/* The directory name is the module name (e.g. "i2c"). */
 			srd_decoder_load(modname_str);
-			g_free(modname_str);
+			x_free(modname_str);
 		}
 		Py_DECREF(modname);
 	}

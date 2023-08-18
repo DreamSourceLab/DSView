@@ -305,7 +305,7 @@ SR_API int ds_get_device_list(struct ds_device_base_info **out_list, int *out_co
 		return SR_OK;
 	}
 
-	buf = malloc(sizeof(struct ds_device_base_info) * (num + 1));
+	buf = x_malloc(sizeof(struct ds_device_base_info) * (num + 1));
 	if (buf == NULL)
 	{	
 		sr_err("%s,ERROR:failed to alloc memory.", __func__);

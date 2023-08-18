@@ -24,13 +24,12 @@
 
 #include <vector>
 #include <assert.h>
-
+#include <mem/alloc.h>
 #include "annotation.h"
 #include "annotationrestable.h"
 #include <cstring>
 #include <assert.h>
 #include <string.h>
-#include <stdlib.h>
 #include "../config/appconfig.h"
 #include "decoderstatus.h"
 #include "../basedef.h"
@@ -88,7 +87,7 @@ Annotation::Annotation(const srd_proto_data *const pdata, DecoderStatus *status)
 			int str_len = strlen(pda->str_number_hex);
 
 			if (str_len <= DECODER_MAX_DATA_BLOCK_LEN){
-				resItem->str_number_hex = (char*)malloc(str_len + 1);
+				resItem->str_number_hex = (char*)x_malloc(str_len + 1);
 			
 				if (resItem->str_number_hex != NULL){
 					strcpy(resItem->str_number_hex, pda->str_number_hex);
@@ -152,8 +151,8 @@ const std::vector<QString>& Annotation::annotations() const
 				 if (textlen >= text_format_buf_len)
 				 {
 					if (text_format_buf)
-						free(text_format_buf);
-					text_format_buf = (char*)malloc(textlen + 8);
+						x_free(text_format_buf);
+					text_format_buf = (char*)x_malloc(textlen + 8);
 					text_format_buf_len = textlen + 8;
 
 					assert(text_format_buf);
@@ -164,7 +163,7 @@ const std::vector<QString>& Annotation::annotations() const
 			 }
 
 			 if (text_format_buf)
-				free(text_format_buf);
+				x_free(text_format_buf);
 		 }
 		 else{
 			 //have only numberic value

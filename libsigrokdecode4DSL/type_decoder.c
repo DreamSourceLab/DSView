@@ -52,7 +52,7 @@ static void release_annotation(struct srd_proto_data_annotation *pda)
 	if (!pda)
 		return;
 	if (pda->ann_text)
-		g_strfreev(pda->ann_text);
+		x_free_ptr_array((void**)pda->ann_text);
 }
 
 static int py_parse_ann_data(PyObject *list_obj, char ***out_strv, int list_size, char *hex_str_buf, long long *numberic_value)
@@ -110,19 +110,19 @@ static int py_parse_ann_data(PyObject *list_obj, char ***out_strv, int list_size
 	}
  
 	//more annotation text
-	strv = g_try_new0(char *, text_num + 1);
+	strv = (char**)x_malloc_ptr_array(text_num);
 	if (!strv) {
 		srd_err("Failed to allocate result string vector.");
 		ret = SRD_ERR_MALLOC;
 		goto err;
-	}
+	} 
 
 	for (i = 0; i < text_num; i++) { 
 		py_bytes = PyUnicode_AsUTF8String(text_items[i]);
 		if (!py_bytes)
 			goto err;
 
-		str = g_strdup(PyBytes_AsString(py_bytes));
+		str = str_clone(PyBytes_AsString(py_bytes));
 		Py_DECREF(py_bytes);
 		if (!str)
 			goto err;
@@ -153,8 +153,8 @@ static int py_parse_ann_data(PyObject *list_obj, char ***out_strv, int list_size
 			}
 			else if (nstr > 0){
 				// Remove the first letter.
-				str_tmp = g_strdup(str+1);
-				free(str);
+				str_tmp = str_clone(str+1);
+				x_free(str);
 				str = str_tmp;
 			}						
 		}
@@ -168,7 +168,7 @@ static int py_parse_ann_data(PyObject *list_obj, char ***out_strv, int list_size
 
 err:
 	if (strv)
-		g_strfreev(strv);
+		x_free_ptr_array((void**)strv);
     srd_exception_catch(NULL, "Failed to obtain string item");
 	PyGILState_Release(gstate);
 	return ret;
@@ -270,7 +270,7 @@ static void release_binary(struct srd_proto_data_binary *pdb)
 {
 	if (!pdb)
 		return;
-	g_free((void *)pdb->data);
+	x_free((void *)pdb->data);
 }
 
 static int convert_binary(struct srd_decoder_inst *di, PyObject *obj,
@@ -337,7 +337,7 @@ static int convert_binary(struct srd_decoder_inst *di, PyObject *obj,
 	pdb = pdata->data;
 	pdb->bin_class = bin_class;
 	pdb->size = size;
-	if (!(pdb->data = malloc(pdb->size))){
+	if (!(pdb->data = x_malloc(pdb->size))){
 		srd_err("%s,ERROR:failed to alloc memory.", __func__);
 		return SRD_ERR_MALLOC;
 	}
@@ -675,7 +675,7 @@ static PyObject *Decoder_register(PyObject *self, PyObject *args,
 		return py_new_output_id;
 	}
 
-	pdo = malloc(sizeof(struct srd_pd_output));
+	pdo = x_malloc(sizeof(struct srd_pd_output));
 	if (pdo == NULL){
 		PyGILState_Release(gstate);
 		srd_err("%s,ERROR:failed to alloc memory.", __func__);
@@ -687,14 +687,14 @@ static PyObject *Decoder_register(PyObject *self, PyObject *args,
 	pdo->pdo_id = g_slist_length(di->pd_output);
 	pdo->output_type = output_type;
 	pdo->di = di;
-	pdo->proto_id = g_strdup(proto_id);
+	pdo->proto_id = str_clone(proto_id);
     pdo->meta_name = NULL;
     pdo->meta_descr = NULL;
 
 	if (output_type == SRD_OUTPUT_META) {
 		pdo->meta_type = meta_type_gv;
-		pdo->meta_name = g_strdup(meta_name);
-		pdo->meta_descr = g_strdup(meta_descr);
+		pdo->meta_name = str_clone(meta_name);
+		pdo->meta_descr = str_clone(meta_descr);
 	}
 
 	di->pd_output = g_slist_append(di->pd_output, pdo);
@@ -826,7 +826,7 @@ static int create_term_list(PyObject *py_dict, GSList **term_list, gboolean cur_
 				goto err;
 			} 
 
-			term = malloc(sizeof(struct srd_term));
+			term = x_malloc(sizeof(struct srd_term));
 			if (term != NULL){
                 memset(term, 0, sizeof(struct srd_term));
 				term->type = get_term_type(term_str);
@@ -836,7 +836,7 @@ static int create_term_list(PyObject *py_dict, GSList **term_list, gboolean cur_
 				srd_err("%s,ERROR:failed to alloc memory.", __func__);
 			}
 			
-			g_free(term_str);
+			x_free(term_str);
 
 		} else if (PyUnicode_Check(py_key)) {
 			/* The key is a string. */
@@ -845,7 +845,7 @@ static int create_term_list(PyObject *py_dict, GSList **term_list, gboolean cur_
 				srd_err("Failed to get number of samples to skip.");
 				goto err;
 			}
-			term = malloc(sizeof(struct srd_term));
+			term = x_malloc(sizeof(struct srd_term));
 			if (term != NULL){
                 memset(term, 0, sizeof(struct srd_term));
 				term->type = SRD_TERM_SKIP;
@@ -1016,7 +1016,7 @@ static int set_skip_condition(struct srd_decoder_inst *di, uint64_t count)
 
 	condition_list_free(di);
 
-	term = malloc(sizeof(struct srd_term));
+	term = x_malloc(sizeof(struct srd_term));
 	if (term != NULL){
 		memset(term, 0, sizeof(struct srd_term));
 		term->type = SRD_TERM_SKIP;

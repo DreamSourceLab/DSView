@@ -75,7 +75,7 @@ SR_PRIV struct sr_session *sr_session_new(void)
 		sr_session_destroy(); // Destory the old.
 	}
 
-	session = malloc(sizeof(struct sr_session));
+	session = x_malloc(sizeof(struct sr_session));
 	if (session == NULL) {
 		sr_err("%s,ERROR:failed to alloc memory.", __func__);
 		return NULL;
@@ -105,12 +105,12 @@ SR_PRIV int sr_session_destroy(void)
 	} 
 
     if (session->sources) {
-        g_free(session->sources);
+        x_free(session->sources);
         session->sources = NULL;
     }
 
     if (session->pollfds) {
-        g_free(session->pollfds);
+        x_free(session->pollfds);
         session->pollfds = NULL;
     }
 
@@ -118,7 +118,7 @@ SR_PRIV int sr_session_destroy(void)
 
     g_mutex_clear(&session->stop_mutex);
 
-	g_free(session);
+	x_free(session);
 	session = NULL;
 
 	return SR_OK;
@@ -351,14 +351,14 @@ static int _sr_session_source_add(GPollFD *pollfd, int timeout,
 
 	/* Note: cb_data can be NULL, that's not a bug. */
 
-	new_pollfds = g_try_realloc(session->pollfds,
+	new_pollfds = x_realloc(session->pollfds,
 			sizeof(GPollFD) * (session->num_sources + 1));
 	if (!new_pollfds) {
 		sr_err("%s: new_pollfds malloc failed", __func__);
 		return SR_ERR_MALLOC;
 	}
 
-	new_sources = g_try_realloc(session->sources, sizeof(struct source) *
+	new_sources = x_realloc(session->sources, sizeof(struct source) *
 			(session->num_sources + 1));
 	if (!new_sources) {
 		sr_err("%s: new_sources malloc failed", __func__);
@@ -489,8 +489,8 @@ static int _sr_session_source_remove(gintptr poll_object)
 
     if (session->num_sources == 0) {
         session->source_timeout = -1;
-        g_free(session->pollfds);
-        g_free(session->sources);
+        x_free(session->pollfds);
+        x_free(session->sources);
         session->pollfds = NULL;
         session->sources = NULL;
     } 
@@ -502,13 +502,13 @@ static int _sr_session_source_remove(gintptr poll_object)
                 (session->num_sources - old) * sizeof(struct source));
         }
 
-        new_pollfds = g_try_realloc(session->pollfds, sizeof(GPollFD) * session->num_sources);
+        new_pollfds = x_realloc(session->pollfds, sizeof(GPollFD) * session->num_sources);
         if (!new_pollfds && session->num_sources > 0) {
             sr_err("%s: new_pollfds malloc failed", __func__);
             return SR_ERR_MALLOC;
         }
 
-        new_sources = g_try_realloc(session->sources, sizeof(struct source) * session->num_sources);
+        new_sources = x_realloc(session->sources, sizeof(struct source) * session->num_sources);
         if (!new_sources && session->num_sources > 0) {
             sr_err("%s: new_sources malloc failed", __func__);
             return SR_ERR_MALLOC;

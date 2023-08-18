@@ -105,7 +105,7 @@ SR_PRIV void dsl_probe_init(struct sr_dev_inst *sdi)
             for (i = 0; devc->profile->dev_caps.vdivs[i]; i++){
             }
 
-            probe->vga_ptr = malloc((i+1)*sizeof(struct DSL_vga));
+            probe->vga_ptr = x_malloc((i+1)*sizeof(struct DSL_vga));
             if (probe->vga_ptr == NULL){
                 sr_err("%s,ERROR:failed to alloc memory.", __func__);
                 return;
@@ -1320,7 +1320,7 @@ SR_PRIV int dsl_fpga_config(struct libusb_device_handle *hdl, const char *filena
 
     filesize = (uint64_t)f_stat.st_size;
 
-    if ((buf = malloc(filesize)) == NULL) {
+    if ((buf = x_malloc(filesize)) == NULL) {
         sr_err("FPGA configure buf malloc failed.");
         fclose(fw);
         return SR_ERR;
@@ -1333,7 +1333,7 @@ SR_PRIV int dsl_fpga_config(struct libusb_device_handle *hdl, const char *filena
 
     if ((ret = command_ctl_wr(hdl, wr_cmd)) != SR_OK){
         fclose(fw);
-        g_free(buf);
+        x_free(buf);
 		return SR_ERR;
     }
 
@@ -1344,7 +1344,7 @@ SR_PRIV int dsl_fpga_config(struct libusb_device_handle *hdl, const char *filena
 
     if ((ret = command_ctl_wr(hdl, wr_cmd)) != SR_OK){
         fclose(fw);
-        g_free(buf);
+        x_free(buf);
 		return SR_ERR;
     }
 
@@ -1355,7 +1355,7 @@ SR_PRIV int dsl_fpga_config(struct libusb_device_handle *hdl, const char *filena
 
     if ((ret = command_ctl_wr(hdl, wr_cmd)) != SR_OK){
         fclose(fw);
-        g_free(buf);
+        x_free(buf);
 		return SR_ERR;
     }
 
@@ -1368,7 +1368,7 @@ SR_PRIV int dsl_fpga_config(struct libusb_device_handle *hdl, const char *filena
     while(1) {
         if ((ret = command_ctl_rd(hdl, rd_cmd)) != SR_OK){
             fclose(fw);
-            g_free(buf);
+            x_free(buf);
 			return SR_ERR;
         }
         if (rd_cmd_data & bmFPGA_INIT_B)
@@ -1382,7 +1382,7 @@ SR_PRIV int dsl_fpga_config(struct libusb_device_handle *hdl, const char *filena
 
     if ((ret = command_ctl_wr(hdl, wr_cmd)) != SR_OK){
         fclose(fw);
-        g_free(buf);
+        x_free(buf);
         return SR_ERR;
     }
 
@@ -1395,7 +1395,7 @@ SR_PRIV int dsl_fpga_config(struct libusb_device_handle *hdl, const char *filena
     if ((ret = command_ctl_wr(hdl, wr_cmd)) != SR_OK) {
         sr_err("Configure FPGA error: send command fpga_config failed.");
         fclose(fw);
-        g_free(buf);
+        x_free(buf);
 		return SR_ERR;
     }
 
@@ -1405,13 +1405,13 @@ SR_PRIV int dsl_fpga_config(struct libusb_device_handle *hdl, const char *filena
     if (chunksize == EOF){
         sr_err("dsl_fpga_config(), f-read returns EOF.");
         fclose(fw);
-        g_free(buf);
+        x_free(buf);
 		return SR_ERR;	
     }
 
     if (chunksize == 0){
         fclose(fw);
-        g_free(buf);
+        x_free(buf);
 		return SR_ERR;
     }
 
@@ -1419,7 +1419,7 @@ SR_PRIV int dsl_fpga_config(struct libusb_device_handle *hdl, const char *filena
                                buf, chunksize,
                                &transferred, 1000);
     fclose(fw);
-    g_free(buf);
+    x_free(buf);
     fw = NULL;
     buf = NULL;
 
@@ -1894,7 +1894,7 @@ SR_PRIV int dsl_dev_open(struct sr_dev_driver *di, struct sr_dev_inst *sdi, gboo
             char *fpga_bit;
             char *res_path = DS_RES_PATH;
 
-            if (!(fpga_bit = malloc(strlen(res_path)+strlen(devc->profile->fpga_bit33) + 5))) {
+            if (!(fpga_bit = x_malloc(strlen(res_path)+strlen(devc->profile->fpga_bit33) + 5))) {
                 sr_err("fpag_bit path malloc error!");
                 return SR_ERR_MALLOC;
             }
@@ -1913,7 +1913,7 @@ SR_PRIV int dsl_dev_open(struct sr_dev_driver *di, struct sr_dev_inst *sdi, gboo
             }
 
             ret = dsl_fpga_config(usb->devhdl, fpga_bit);
-            g_free(fpga_bit);
+            x_free(fpga_bit);
 
             if (ret != SR_OK) {
                 sr_err("%s:%d, Configure FPGA failed!",
@@ -2156,7 +2156,7 @@ static void finish_acquisition(struct DSL_context *devc)
 
     if (devc->num_transfers != 0) {
         devc->num_transfers = 0;
-        g_free(devc->transfers);
+        x_free(devc->transfers);
     }
 
     devc->status = DSL_FINISH;
@@ -2169,7 +2169,7 @@ static void free_transfer(struct libusb_transfer *transfer, int force)
 
     devc = transfer->user_data;
 
-    g_free(transfer->buffer);
+    x_free(transfer->buffer);
     transfer->buffer = NULL;
     libusb_free_transfer(transfer);
 
@@ -2434,7 +2434,7 @@ static void receive_header(struct libusb_transfer *transfer)
     char *hex_buffer;
     char *hex_write;
     char *hex_end_ptr;
-    char *usb_data;
+    unsigned char *usb_data;
     int usb_data_len;
 
     packet.status = SR_PKT_OK;
@@ -2479,7 +2479,7 @@ static void receive_header(struct libusb_transfer *transfer)
         usb_data = transfer->buffer;
         
         if (usb_data_len > 0 && usb_data != NULL){
-            hex_buffer = (char*)malloc(usb_data_len * 2 + 1);
+            hex_buffer = (char*)x_malloc(usb_data_len * 2 + 1);
             
             if (hex_buffer != NULL){
                 hex_write = hex_buffer;
@@ -2495,7 +2495,7 @@ static void receive_header(struct libusb_transfer *transfer)
 
                 sr_err("usb data packet:%s", hex_buffer); //print data packet.
 
-                free(hex_buffer);
+                x_free(hex_buffer);
                 hex_buffer = NULL;
             }
         }
@@ -2527,12 +2527,12 @@ SR_PRIV int dsl_start_transfers(const struct sr_dev_inst *sdi)
     size = get_buffer_size(sdi);
 
     /* trigger packet transfer */
-    if (!(trigger_pos = malloc(dsl_header_size(devc)))) {
+    if (!(trigger_pos = x_malloc(dsl_header_size(devc)))) {
         sr_err("%s: USB trigger_pos buffer malloc failed.", __func__);
         return SR_ERR_MALLOC;
     }
 
-    devc->transfers = malloc(sizeof(*devc->transfers) * (num_transfers + 1));
+    devc->transfers = x_malloc(sizeof(*devc->transfers) * (num_transfers + 1));
     if (!devc->transfers) {
         sr_err("%s: USB transfer malloc failed.", __func__);
         return SR_ERR_MALLOC;
@@ -2545,7 +2545,7 @@ SR_PRIV int dsl_start_transfers(const struct sr_dev_inst *sdi)
         sr_err("%s: Failed to submit trigger_pos transfer: %s.",
                __func__, libusb_error_name(ret));
         libusb_free_transfer(transfer);
-        g_free(trigger_pos);
+        x_free(trigger_pos);
         devc->status = DSL_ERROR;
         return SR_ERR;
     } else {
@@ -2556,7 +2556,7 @@ SR_PRIV int dsl_start_transfers(const struct sr_dev_inst *sdi)
 
     /* data packet transfer */
     for (i = 1; i <= num_transfers; i++) {
-        if (!(buf = malloc(size))) {
+        if (!(buf = x_malloc(size))) {
             sr_err("%s: USB transfer buffer malloc failed.", __func__);
             return SR_ERR_MALLOC;
         }
@@ -2568,7 +2568,7 @@ SR_PRIV int dsl_start_transfers(const struct sr_dev_inst *sdi)
             sr_err("%s: Failed to submit transfer: %s.",
                    __func__, libusb_error_name(ret));
             libusb_free_transfer(transfer);
-            g_free(buf);
+            x_free(buf);
             devc->status = DSL_ERROR;
             devc->abort = TRUE;
             return SR_ERR;

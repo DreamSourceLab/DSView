@@ -21,10 +21,10 @@
 
 #include "zipmaker.h" 
 #include <assert.h>
-#include <stdlib.h>
 #include <string.h>
 #include <sys/stat.h>
 #include <time.h>
+#include <mem/alloc.h>
 
 namespace dsv {
 namespace com {
@@ -138,7 +138,7 @@ bool ZipMaker::AddFromFile(const char *localFile, const char *innerFile)
         return -1;
     } 
 
-    if ((data = (char*)malloc((size_t)st.st_size)) == NULL) {
+    if ((data = (char*)x_malloc((size_t)st.st_size)) == NULL) {
         strcpy(m_error, "can't malloc buffer");
         fclose(fp);
         return false;
@@ -146,7 +146,7 @@ bool ZipMaker::AddFromFile(const char *localFile, const char *innerFile)
 
     if (fread(data, 1, (size_t)st.st_size, fp) < (size_t)st.st_size) {
         strcpy(m_error, "fread error");
-        free(data);
+        x_free(data);
         fclose(fp);
         return false;
     }
@@ -176,7 +176,7 @@ ZipInnerFileData::ZipInnerFileData(char *data, int size)
 ZipInnerFileData::~ZipInnerFileData()
 {
     if (_data != NULL){
-        free(_data);
+        x_free(_data);
         _data = NULL;
     }
 }
@@ -226,7 +226,7 @@ ZipInnerFileData* ZipReader::GetInnterFileData(const char *innerFile)
         return NULL;
     }
 
-    if (fileInfo.uncompressed_size > 0 && (metafile = (char *)malloc(fileInfo.uncompressed_size)))
+    if (fileInfo.uncompressed_size > 0 && (metafile = (char *)x_malloc(fileInfo.uncompressed_size)))
     {
         unzReadCurrentFile(m_archive, metafile, fileInfo.uncompressed_size);
         unzCloseCurrentFile(m_archive);

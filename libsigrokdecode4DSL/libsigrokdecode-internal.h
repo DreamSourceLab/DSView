@@ -28,8 +28,9 @@
 #include <Python.h> /* First, so we avoid a _POSIX_C_SOURCE warning. */
 #include "libsigrokdecode.h"
 #include <structmember.h>
+#include <mem/alloc.h>
 
-#define safe_free(p) if((p)){free((p)); (p) = NULL;}
+#define safe_free(p) if((p)){x_free((p)); (p) = NULL;}
 
 enum {
 	SRD_TERM_HIGH,
@@ -117,7 +118,7 @@ SRD_PRIV int py_strseq_to_char(PyObject *py_strseq, char ***out_strv);
 SRD_PRIV GVariant *py_obj_to_variant(PyObject *py_obj);
 
 /*
-	python string object to c string, free by g_free()
+	python string object to c string, free by _free()
 	if success, return 0;
 */
 #define py_object_to_str_alloc py_str_as_str

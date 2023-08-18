@@ -56,7 +56,7 @@ SR_PRIV int ds_trigger_init(void)
     int i, j;
 
     if (!trigger) {
-        if (!(trigger = malloc(sizeof(struct ds_trigger)))) {
+        if (!(trigger = x_malloc(sizeof(struct ds_trigger)))) {
             sr_err("Trigger malloc failed.");
             return SR_ERR_MALLOC;
         }
@@ -87,7 +87,7 @@ SR_PRIV int ds_trigger_init(void)
 SR_PRIV int ds_trigger_destroy(void)
 {
     if (trigger)
-        g_free(trigger);
+        x_free(trigger);
     trigger = NULL;
     return SR_OK;
 }

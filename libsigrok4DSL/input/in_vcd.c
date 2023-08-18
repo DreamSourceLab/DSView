@@ -178,15 +178,15 @@ struct context
 static void free_probe(void *data)
 {
 	struct probe *probe = data;
-	g_free(probe->name);
-	g_free(probe->identifier);
-	g_free(probe);
+	x_free(probe->name);
+	x_free(probe->identifier);
+	x_free(probe);
 }
 
 static void release_context(struct context *ctx)
 {
 	g_slist_free_full(ctx->probes, free_probe);
-	g_free(ctx);
+	x_free(ctx);
 }
 
 /* Remove empty parts from an array returned by g_strsplit. */
@@ -272,11 +272,11 @@ static gboolean parse_header(FILE *file, struct context *ctx)
 			else
 			{
 				sr_info("Probe %d is '%s' identified by '%s'.", ctx->probecount, parts[3], parts[2]);
-				probe = malloc(sizeof(struct probe));
+				probe = x_malloc(sizeof(struct probe));
 				
 				if (probe != NULL){
-					probe->identifier = g_strdup(parts[2]);
-					probe->name = g_strdup(parts[3]);
+					probe->identifier = str_clone(parts[2]);
+					probe->name = str_clone(parts[3]);
 					ctx->probes = g_slist_append(ctx->probes, probe);
 					ctx->probecount++;
 				}
@@ -288,12 +288,12 @@ static gboolean parse_header(FILE *file, struct context *ctx)
 			g_strfreev(parts);
 		}
 		
-		g_free(name); name = NULL;
-		g_free(contents); contents = NULL;
+		x_free(name); name = NULL;
+		x_free(contents); contents = NULL;
 	}
 	
-	g_free(name);
-	g_free(contents);
+	x_free(name);
+	x_free(contents);
 	
 	return status;
 }
@@ -314,8 +314,8 @@ static int format_match(const char *filename)
 	status = parse_section(file, &name, &contents);
 	status = status && (*name != '\0');
 	
-	g_free(name);
-	g_free(contents);
+	x_free(name);
+	x_free(contents);
 	fclose(file);
 	
 	return status;
@@ -331,7 +331,7 @@ static int init(struct sr_input *in, const char *filename)
 
 	(void)filename;
 
-	if (!(ctx = malloc(sizeof(struct context)))) {
+	if (!(ctx = x_malloc(sizeof(struct context)))) {
 		sr_err("Input format context malloc failed.");
 		return SR_ERR_MALLOC;
 	}

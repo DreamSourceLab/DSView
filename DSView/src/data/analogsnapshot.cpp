@@ -23,9 +23,9 @@
 #include "analogsnapshot.h"
 #include <assert.h>
 #include <string.h>
-#include <stdlib.h>
 #include <math.h>
 #include <algorithm>
+#include <mem/alloc.h>
 #include "../basedef.h"
 
 using namespace std;
@@ -57,7 +57,7 @@ void AnalogSnapshot::free_envelop()
     for (unsigned int i = 0; i < _channel_num; i++) {
         for(auto &e : _envelope_levels[i]) {
             if (e.samples)
-                free(e.samples);
+                x_free(e.samples);
         }
     }
     memset(_envelope_levels, 0, sizeof(_envelope_levels));
@@ -92,7 +92,7 @@ void AnalogSnapshot::free_data()
     Snapshot::free_data();
 
     if (_data != NULL){
-        free(_data);
+        x_free(_data);
         _data = NULL;
     }
 }
@@ -125,7 +125,7 @@ void AnalogSnapshot::first_payload(const sr_datafeed_analog &analog, uint64_t to
     uint64_t size = _total_sample_count * _channel_num * _unit_bytes + sizeof(uint64_t);
     if (size != _capacity) {
         free_data();
-        _data = malloc(size);
+        _data = x_malloc(size);
         if (_data) {
             free_envelop();
             for (unsigned int i = 0; i < _channel_num; i++) {
@@ -134,7 +134,7 @@ void AnalogSnapshot::first_payload(const sr_datafeed_analog &analog, uint64_t to
                     _envelope_levels[i][level].count = envelop_count;
                     if (envelop_count == 0)
                         break;
-                    _envelope_levels[i][level].samples = (EnvelopeSample*)malloc(envelop_count * sizeof(EnvelopeSample));
+                    _envelope_levels[i][level].samples = (EnvelopeSample*)x_malloc(envelop_count * sizeof(EnvelopeSample));
                     if (!_envelope_levels[i][level].samples) {
                         isOk = false;
                         break;

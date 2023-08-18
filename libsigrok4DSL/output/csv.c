@@ -73,7 +73,7 @@ static int init(struct sr_output *o, GHashTable *options)
 	if (!o || !o->sdi)
 		return SR_ERR_ARG;
 
-	ctx = malloc(sizeof(struct context));
+	ctx = x_malloc(sizeof(struct context));
     if (ctx == NULL){
         sr_err("%s,ERROR:failed to alloc memory.", __func__);
         return SR_ERR;
@@ -96,12 +96,12 @@ static int init(struct sr_output *o, GHashTable *options)
 		ctx->num_enabled_channels++;
 	}
 
-	ctx->channel_index = malloc(sizeof(int) * ctx->num_enabled_channels);
-    ctx->channel_unit = malloc(sizeof(int) * ctx->num_enabled_channels);
-    ctx->channel_scale = malloc(sizeof(float) * ctx->num_enabled_channels);
-    ctx->channel_offset = malloc(sizeof(uint16_t) * ctx->num_enabled_channels);
-    ctx->channel_mmax = malloc(sizeof(double) * ctx->num_enabled_channels);
-    ctx->channel_mmin = malloc(sizeof(double) * ctx->num_enabled_channels);
+	ctx->channel_index = x_malloc(sizeof(int) * ctx->num_enabled_channels);
+    ctx->channel_unit = x_malloc(sizeof(int) * ctx->num_enabled_channels);
+    ctx->channel_scale = x_malloc(sizeof(float) * ctx->num_enabled_channels);
+    ctx->channel_offset = x_malloc(sizeof(uint16_t) * ctx->num_enabled_channels);
+    ctx->channel_mmax = x_malloc(sizeof(double) * ctx->num_enabled_channels);
+    ctx->channel_mmin = x_malloc(sizeof(double) * ctx->num_enabled_channels);
 
     if (ctx->channel_index == NULL || ctx->channel_mmin == NULL){
         sr_err("%s,ERROR:failed to alloc memory.", __func__);
@@ -159,11 +159,11 @@ static GString *gen_header(const struct sr_output *o)
 
     char *samplerate_s = sr_samplerate_string(ctx->samplerate);
     g_string_append_printf(header, "; Sample rate: %s\n", samplerate_s);
-    g_free(samplerate_s);
+    x_free(samplerate_s);
 
     char *depth_s = sr_samplecount_string(ctx->limit_samples);
     g_string_append_printf(header, "; Sample count: %s\n", depth_s);
-    g_free(depth_s);
+    x_free(depth_s);
 
     if (ctx->type == SR_CHANNEL_LOGIC)
         g_string_append_printf(header, "Time(s),");
@@ -320,8 +320,8 @@ static int cleanup(struct sr_output *o)
 
 	if (o->priv) {
 		ctx = o->priv;
-		g_free(ctx->channel_index);
-		g_free(o->priv);
+		x_free(ctx->channel_index);
+		x_free(o->priv);
 		o->priv = NULL;
 	}
 
