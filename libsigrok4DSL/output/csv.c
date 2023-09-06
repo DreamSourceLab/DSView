@@ -205,6 +205,7 @@ static int receive(const struct sr_output *o, const struct sr_datafeed_packet *p
 	uint64_t i, j;
     unsigned char *p, c;
     double tmpv;
+    struct sr_channel *ch;
 
 	*out = NULL;
 	if (!o || !o->sdi)
@@ -291,14 +292,44 @@ static int receive(const struct sr_output *o, const struct sr_datafeed_packet *p
            *out = g_string_sized_new(512);
        }
 
+       int enalbe_channel_flags[8];
+       int ch_num = 0;
+
+       for (l = o->sdi->channels; l; l = l->next){
+            ch = l->data;
+            enalbe_channel_flags[ch_num++] = ch->enabled;
+       }
+
+       double max_min_ref = (double)(ctx->ref_max - ctx->ref_min);
+       double vf = 0;
+       int ch_cfg_dex = 0;
+       double hw_offset = 0;
+       double mapRange = 0;
+
        for (i = 0; i < (uint64_t)analog->num_samples; i++) {
-           for (j = 0; j < ctx->num_enabled_channels; j++) {
-               idx = ctx->channel_index[j];
-               p = analog->data + i * ctx->num_enabled_channels + idx * ((ctx->num_enabled_channels > 1) ? 1 : 0);
-               g_string_append_printf(*out, "%0.5f",  (ctx->channel_offset[j] - *p) *
-                                                      (ctx->channel_mmax[j] - ctx->channel_mmin[j]) /
-                                                      (ctx->ref_max - ctx->ref_min));
+            ch_cfg_dex = 0;
+
+           for (j = 0; j < ch_num; j++) {
+              // idx = ctx->channel_index[j];
+             //  p = analog->data + i * ctx->num_enabled_channels + idx * ((ctx->num_enabled_channels > 1) ? 1 : 0);
+
+                // g_string_append_printf(*out, "%0.5f",  (ctx->channel_offset[j] - *p) *
+                //                                      (ctx->channel_mmax[j] - ctx->channel_mmin[j]) /
+                //                                      (ctx->ref_max - ctx->ref_min));
+
+               if (enalbe_channel_flags[j] == 0){
+                    continue;
+               }
+
+               p = analog->data + i * ch_num + j;
+               hw_offset = (double)ctx->channel_offset[ch_cfg_dex];
+               mapRange = (ctx->channel_mmax[ch_cfg_dex] - ctx->channel_mmin[ch_cfg_dex]);
+               vf = (hw_offset - (double)(*p)) * mapRange / max_min_ref;
+
+               g_string_append_printf(*out, "%0.5f",  vf);
                g_string_append_c(*out, ctx->separator);
+
+               ch_cfg_dex++;
            }
 
            /* Drop last separator. */

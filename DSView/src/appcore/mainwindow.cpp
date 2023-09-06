@@ -1862,8 +1862,11 @@ namespace appcore {
                     }                    
                 }
 
-                _view->update_all_trace_postion();                
-                _session->start_capture(true);
+                _view->update_all_trace_postion();      
+
+                QTimer::singleShot(100, this, [this](){
+                    _session->start_capture(true);
+                });
             }
             else if (_device_agent->is_demo())
             {

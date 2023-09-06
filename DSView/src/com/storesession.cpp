@@ -836,6 +836,7 @@ void StoreSession::export_proc(data::Snapshot *snapshot)
     p.payload = &meta;
     p.bExportOriginalData = 0;
     _outModule->receive(&output, &p, &data_out);
+
     if(data_out){
         out << QString::fromUtf8((char*) data_out->str);
         g_string_free(data_out,TRUE);
@@ -977,21 +978,31 @@ void StoreSession::export_proc(data::Snapshot *snapshot)
         unsigned int usize = 8192;
         unsigned int size = usize;
         struct sr_datafeed_analog ap;
+        uint64_t unit_count = _unit_count;
+ 
+        int ch_count = snapshot->get_channel_num();  
+        uint64_t i = 0;
 
-        for(uint64_t i = 0; !_canceled && i < _unit_count; i+=usize){
-            if(_unit_count - i < usize)
-                size = _unit_count - i;
-            ap.data = &datat[i*snapshot->get_channel_num()];
+        for(i = 0; i < unit_count; i+=usize){
+            
+            if (_canceled)
+                break;
+
+            if(unit_count - i < usize)
+                size = unit_count - i;
+             
+            ap.data = &datat[i*ch_count];
             ap.num_samples = size;
             p.type = SR_DF_ANALOG;
             p.status = SR_PKT_OK;
             p.payload = &ap;
             p.bExportOriginalData = 0;
             _outModule->receive(&output, &p, &data_out);
+
             if(data_out){
                 out << (char*) data_out->str;
                 g_string_free(data_out,TRUE);
-            }
+            }           
 
             _units_stored += size;
             progress_updated();
