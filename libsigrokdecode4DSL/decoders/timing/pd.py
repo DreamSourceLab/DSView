@@ -45,6 +45,56 @@ def normalize_time(t):
     else:
         return '%f' % t
 
+def terse_times(t, fmt):
+    # Strictly speaking these variants are not used in the current
+    # implementation, but can reduce diffs during future maintenance.
+    if fmt == 'full':
+        return [normalize_time(t)]
+    # End of "forward compatibility".
+
+    if fmt == 'samples':
+        # See below. No unit text, on purpose.
+        return ['{:d}'.format(t)]
+
+    # Use caller specified scale, or automatically find one.
+    scale, unit = None, None
+    if fmt == 'terse-auto':
+        if abs(t) >= 1e0:
+            scale, unit = 1e0, 's'
+        elif abs(t) >= 1e-3:
+            scale, unit = 1e3, 'ms'
+        elif abs(t) >= 1e-6:
+            scale, unit = 1e6, 'us'
+        elif abs(t) >= 1e-9:
+            scale, unit = 1e9, 'ns'
+        elif abs(t) >= 1e-12:
+            scale, unit = 1e12, 'ps'
+    # Beware! Uses unit-less text when the user picked the scale. For
+    # more consistent output with less clutter, thus faster navigation
+    # by humans. Can also un-hide text at higher distance zoom levels.
+    elif fmt == 'terse-s':
+        scale, unit = 1e0, ''
+    elif fmt == 'terse-ms':
+        scale, unit = 1e3, ''
+    elif fmt == 'terse-us':
+        scale, unit = 1e6, ''
+    elif fmt == 'terse-ns':
+        scale, unit = 1e9, ''
+    elif fmt == 'terse-ps':
+        scale, unit = 1e12, ''
+    if scale:
+        t *= scale
+        return ['{:.0f}{}'.format(t, unit), '{:.0f}'.format(t)]
+
+    # Unspecified format, and nothing auto-detected.
+    return ['{:f}'.format(t)]
+
+class Pin:
+    (DATA,) = range(1)
+
+class Ann:
+    (TIME, TERSE, AVG, DELTA,) = range(4)
+
 class Decoder(srd.Decoder):
     api_version = 3
     id = 'timing'
@@ -60,18 +110,25 @@ class Decoder(srd.Decoder):
     )
     annotations = (
         ('time', 'Time'),
+        ('terse', 'Terse'),
         ('average', 'Average'),
         ('delta', 'Delta'),
     )
     annotation_rows = (
-        ('time', 'Time', (0,)),
-        ('average', 'Average', (1,)),
-        ('delta', 'Delta', (2,)),
+        ('times', 'Times', (Ann.TIME, Ann.TERSE,)),
+        ('averages', 'Averages', (Ann.AVG,)),
+        ('deltas', 'Deltas', (Ann.DELTA,)),
     )
     options = (
-        { 'id': 'avg_period', 'desc': 'Averaging period', 'default': 100 , 'idn':'dec_timing_opt_avg_period'},
-        { 'id': 'edge', 'desc': 'Edges to check', 'default': 'any', 'values': ('any', 'rising', 'falling') , 'idn':'dec_timing_opt_edge'},
-        { 'id': 'delta', 'desc': 'Show delta from last', 'default': 'no', 'values': ('yes', 'no') , 'idn':'dec_timing_opt_delta'},
+        { 'id': 'avg_period', 'desc': 'Averaging period', 'default': 100  , 'idn':'dec_timing_opt_avg_period'},
+        { 'id': 'edge', 'desc': 'Edges to check',
+          'default': 'any', 'values': ('any', 'rising', 'falling')  , 'idn':'dec_timing_opt_edge'},
+        { 'id': 'delta', 'desc': 'Show delta from last',
+          'default': 'no', 'values': ('yes', 'no') , 'idn':'dec_timing_opt_delta' },
+        { 'id': 'format', 'desc': 'Format of \'time\' annotation',
+          'default': 'full', 'values': ('full', 'terse-auto',
+          'terse-s', 'terse-ms', 'terse-us', 'terse-ns', 'terse-ps',
+          'samples') , 'idn':'dec_timing_opt_format'},
     )
 
     def __init__(self):
@@ -79,11 +136,6 @@ class Decoder(srd.Decoder):
 
     def reset(self):
         self.samplerate = None
-        self.last_samplenum = None
-        self.last_n = deque()
-        self.chunks = 0
-        self.level_changed = False
-        self.last_t = None
 
     def metadata(self, key, value):
         if key == srd.SRD_CONF_SAMPLERATE:
@@ -91,38 +143,52 @@ class Decoder(srd.Decoder):
 
     def start(self):
         self.out_ann = self.register(srd.OUTPUT_ANN)
-        self.edge = self.options['edge']
 
     def decode(self):
         if not self.samplerate:
             raise SamplerateError('Cannot decode without samplerate.')
+        edge = self.options['edge']
+        avg_period = self.options['avg_period']
+        delta = self.options['delta'] == 'yes'
+        fmt = self.options['format']
+        ss = None
+        last_n = deque()
+        last_t = None
         while True:
-            if self.edge == 'rising':
+            if edge == 'rising':
                 self.wait({0: 'r'})
-            elif self.edge == 'falling':
+            elif edge == 'falling':
                 self.wait({0: 'f'})
             else:
                 self.wait({0: 'e'})
 
-            if not self.last_samplenum:
-                self.last_samplenum = self.samplenum
+            if not ss:
+                ss = self.samplenum
                 continue
-            samples = self.samplenum - self.last_samplenum
-            t = samples / self.samplerate
+            es = self.samplenum
+            sa = es - ss
+            t = sa / self.samplerate
 
-            if t > 0:
-                self.last_n.append(t)
-            if len(self.last_n) > self.options['avg_period']:
-                self.last_n.popleft()
+            if fmt == 'full':
+                cls, txt = Ann.TIME, [normalize_time(t)]
+            elif fmt == 'samples':
+                cls, txt = Ann.TERSE, terse_times(sa, fmt)
+            else:
+                cls, txt = Ann.TERSE, terse_times(t, fmt)
+            if txt:
+                self.put(ss, es, self.out_ann, [cls, txt])
 
-            self.put(self.last_samplenum, self.samplenum, self.out_ann,
-                     [0, [normalize_time(t)]])
-            if self.options['avg_period'] > 0:
-                self.put(self.last_samplenum, self.samplenum, self.out_ann,
-                         [1, [normalize_time(sum(self.last_n) / len(self.last_n))]])
-            if self.last_t and self.options['delta'] == 'yes':
-                self.put(self.last_samplenum, self.samplenum, self.out_ann,
-                         [2, [normalize_time(t - self.last_t)]])
+            if avg_period > 0:
+                if t > 0:
+                    last_n.append(t)
+                if len(last_n) > avg_period:
+                    last_n.popleft()
+                average = sum(last_n) / len(last_n)
+                cls, txt = Ann.AVG, normalize_time(average)
+                self.put(ss, es, self.out_ann, [cls, [txt]])
+            if last_t and delta:
+                cls, txt = Ann.DELTA, normalize_time(t - last_t)
+                self.put(ss, es, self.out_ann, [cls, [txt]])
 
-            self.last_t = t
-            self.last_samplenum = self.samplenum
+            last_t = t
+            ss = es
