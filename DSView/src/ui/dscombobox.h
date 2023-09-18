@@ -27,6 +27,13 @@
 
 class DsComboBox : public QComboBox
 {
+public:
+    explicit DsComboBox(QWidget *parent = nullptr);
+};
+
+/*
+class DsComboBox : public QComboBox
+{
     Q_OBJECT
 
 public:
@@ -47,7 +54,6 @@ private:
     int     _contentWidth;
     bool    _bPopup;
 };
-
-
+*/
 
 #endif // DSCOMBOBOX_H

@@ -29,6 +29,13 @@
  
 using namespace dsv::config;
 
+DsComboBox::DsComboBox(QWidget *parent) 
+    : QComboBox(parent)
+{
+
+}
+
+/*
 DsComboBox::DsComboBox(QWidget *parent) : QComboBox(parent)
 {
     _contentWidth = 0;
@@ -92,4 +99,6 @@ DsComboBox::DsComboBox(QWidget *parent) : QComboBox(parent)
      QComboBox::hidePopup();
      _bPopup = false;
  }
+
+ */
  
