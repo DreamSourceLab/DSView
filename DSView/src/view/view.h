@@ -379,7 +379,7 @@ public slots:
     //
     void header_updated();
 
-    void receive_trigger(quint64 trig_pos);
+    void receive_trigger(quint64 trig_pos1);
 
     void receive_end();
 

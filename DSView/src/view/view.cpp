@@ -484,8 +484,12 @@ void View::receive_end()
     _time_viewport->unshow_wait_trigger();
 }
 
-void View::receive_trigger(quint64 trig_pos)
+void View::receive_trigger(quint64 trig_pos1)
 {
+    (void)trig_pos1;
+    
+    uint64_t trig_pos = _session->get_trigger_pos();
+
     const double time = trig_pos * 1.0 / _session->cur_snap_samplerate();
     _trig_cursor->set_index(trig_pos);
 

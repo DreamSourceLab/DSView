@@ -62,6 +62,7 @@ namespace appcore {
     {
         _cur_snap_samplerate = 0;
         _cur_samplelimits = 0;
+        _trig_pos = 0;
     }
 
     void SessionData::clear()
@@ -69,6 +70,7 @@ namespace appcore {
         logic.clear();
         analog.clear();
         dso.clear();
+        _trig_pos = 0;
     }
 
     // TODO: This should not be necessary
@@ -610,7 +612,7 @@ namespace appcore {
         }
         
         _capture_times++;
-        _is_triged = false;
+        _is_triged = false;    
 
         int mode = _device_agent.get_work_mode();
         bool bAddDecoder = false;
@@ -1080,8 +1082,7 @@ namespace appcore {
 
     void SigSession::feed_in_header(const sr_dev_inst *sdi)
     {
-        (void)sdi;
-        _trigger_pos = 0;
+        (void)sdi; 
         _callback->receive_header();
     }
 
@@ -1105,20 +1106,22 @@ namespace appcore {
 
     void SigSession::feed_in_trigger(const ds_trigger_pos &trigger_pos)
     {
-        _hw_replied = true;
+        _hw_replied = true; 
+
         if (_device_agent.get_work_mode() != DSO)
         {
             _trigger_flag = (trigger_pos.status & 0x01);
             if (_trigger_flag)
             {
-                _trigger_pos = trigger_pos.real_pos;
-                _callback->receive_trigger(_trigger_pos);
+                _capture_data->_trig_pos = trigger_pos.real_pos;
+                _callback->receive_trigger(_capture_data->_trig_pos);
             }
         }
         else
         {
             int probe_count = 0;
             int probe_en_count = 0;
+
             for (const GSList *l = _device_agent.get_channels(); l; l = l->next)
             {
                 const sr_channel *const probe = (const sr_channel *)l->data;
@@ -1129,8 +1132,9 @@ namespace appcore {
                         probe_en_count++;
                 }
             }
-            _trigger_pos = trigger_pos.real_pos * probe_count / probe_en_count;
-            _callback->receive_trigger(_trigger_pos);
+
+            _capture_data->_trig_pos = trigger_pos.real_pos * probe_count / probe_en_count;
+            _callback->receive_trigger(_capture_data->_trig_pos);
         }
     }
 

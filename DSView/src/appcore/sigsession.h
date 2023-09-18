@@ -121,6 +121,7 @@ public:
 public:
     uint64_t       _cur_snap_samplerate;
     uint64_t       _cur_samplelimits;
+    uint64_t       _trig_pos;
 
 private:
     data::LogicSnapshot   logic;
@@ -206,7 +207,7 @@ public:
     }
 
     inline uint64_t get_trigger_pos(){
-        return _trigger_pos;
+        return _view_data->_trig_pos;
     }
 
     bool is_first_store_confirm();
@@ -563,8 +564,7 @@ private:
 
     QDateTime   _session_time;
     QDateTime   _trig_time;
-    bool        _is_triged;
-    uint64_t    _trigger_pos;
+    bool        _is_triged; 
     bool        _trigger_flag;
     uint8_t     _trigger_ch;
     bool        _hw_replied;
