@@ -118,6 +118,8 @@ public:
     //IFontForm
     void update_font() override;
 
+    void measure();
+
 protected:
     bool event(QEvent *event) override;
     void paintEvent(QPaintEvent *event) override;
@@ -138,7 +140,7 @@ private:
     void paintMeasure(QPainter &p, QColor fore, QColor back);
     void paintCursors(QPainter &p);
 
-    void measure();
+   
     void start_trigger_timer(int msec);
 
     void get_captured_progress(double &progress, int &progress100);

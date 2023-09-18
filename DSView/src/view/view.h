@@ -322,6 +322,8 @@ public:
     //IFontForm
     void update_font() override;
 
+    void check_measure();
+
 signals:
 	void hover_point_changed();
     void cursor_update();
@@ -354,6 +356,8 @@ public:
     static bool compare_trace_y(const Trace *a, const Trace *b);
 
     void signals_changed(const Trace* eventTrace);
+
+
  
 public slots:
     void reload();

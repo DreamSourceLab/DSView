@@ -2088,7 +2088,11 @@ namespace appcore {
 
         case DSV_MSG_FONT_OPTIONS_CHANGED:
             AppControl::Instance()->update_font_forms(); 
-            break;          
+            break;
+
+        case DSV_MSG_DATA_POOL_CHANGED:
+            _view->check_measure();
+            break;
         }
     }
 

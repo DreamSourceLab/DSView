@@ -2194,6 +2194,8 @@ namespace appcore {
                         _view_data = _capture_data; 
                         attach_data_to_signal(_view_data); 
                         set_session_time(_trig_time);
+
+                        _callback->trigger_message(DSV_MSG_DATA_POOL_CHANGED);
                     }
 
                     for (auto de : _decode_traces)
