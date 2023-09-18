@@ -2448,5 +2448,20 @@ namespace appcore {
         }
     }
 
+    void SigSession::update_dso_data_scale()
+    {
+        if (_device_agent.get_work_mode() == DSO)
+        { 
+            for(auto s : _signals){
+                if (s->get_type() == SR_CHANNEL_DSO){
+                    view::DsoSignal *ch = (view::DsoSignal*)s;
+                   // uint64_t k = ch->get_vDial()->get_value();
+                   // _capture_data->get_dso()->set_measure_voltage_factor(k, ch->get_index()); 
+                    _capture_data->get_dso()->set_data_scale(ch->get_scale(), ch->get_index());                                                 
+                }
+            }
+        }
+    }
+
 } //namespace com
 } //namespace appcore

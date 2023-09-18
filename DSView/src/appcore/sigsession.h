@@ -438,6 +438,8 @@ public:
         _decoder_pannel = pannel;
     }
 
+    void update_dso_data_scale();
+
 private:
     void set_cur_samplelimits(uint64_t samplelimits);
     void set_cur_snap_samplerate(uint64_t samplerate);

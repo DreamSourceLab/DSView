@@ -777,6 +777,7 @@ void View::signals_changed(const Trace* eventTrace)
             }
         }
         _time_viewport->clear_measure();
+        _session->update_dso_data_scale();
     }
 
     header_updated();
