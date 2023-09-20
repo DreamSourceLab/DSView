@@ -1232,6 +1232,7 @@ namespace appcore {
         { 
             if (s->signal_type() == SR_CHANNEL_DSO && (s->enabled())){
                 view::DsoSignal *dsoSig = (view::DsoSignal*)s;
+                dsoSig->update_data_param();
                 dsoSig->paint_prepare();
             }                
         }

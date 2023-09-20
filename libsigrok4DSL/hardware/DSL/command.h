@@ -56,6 +56,7 @@
 #define EI2C_ADDR 0x60
 #define ADCC_ADDR 0x48
 #define HDL_VERSION_ADDR 0x04
+#define HW_STATUS_ADDR      0x05
 
 #define bmSECU_READY	(1 << 3)
 #define bmSECU_PASS		(1 << 4)

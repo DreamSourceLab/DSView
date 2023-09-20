@@ -246,6 +246,8 @@ public:
         _stop_scale = v;
     }
 
+    void update_data_param();
+
 protected:
     void paint_type_options(QPainter &p, int right, const QPoint pt, QColor fore);
 

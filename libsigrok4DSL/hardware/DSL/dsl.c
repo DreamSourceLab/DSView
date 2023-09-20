@@ -2025,6 +2025,20 @@ SR_PRIV int dsl_dev_acquisition_stop(const struct sr_dev_inst *sdi, void *cb_dat
             sr_err("%s: Sent acquisition stop command failed!", __func__);
         else
             sr_info("%s: Sent acquisition stop command!", __func__);
+
+        /* check a real stop of FPGA status*/
+        uint8_t hw_status = 1;
+        while (hw_status != 0) {
+            if (dsl_rd_reg(sdi, HW_STATUS_ADDR, &hw_status) != SR_OK)
+                sr_err("%s: Get hardware status command failed!", __func__);
+            else
+                sr_info("%s: Get hardware status command!", __func__);
+        }
+
+        /* adc power down*/
+        if (devc->profile->dev_caps.feature_caps & CAPS_FEATURE_HMCAD1511) {
+            dsl_config_adc(sdi, adc_power_down);
+        }
     }
 
     return SR_OK;
@@ -2391,8 +2405,13 @@ static void receive_transfer(struct libusb_transfer *transfer)
             }
 
             /* send data to session bus */
-            if (packet.status == SR_PKT_OK)
+            if (packet.status == SR_PKT_OK){
+               // sr_info("cur min0:%d", devc->mstatus.ch0_min);               
+               // sr_info("cur max0:%d", devc->mstatus.ch0_max);
+               // sr_info("cur min1:%d", devc->mstatus.ch1_min);
+               // sr_info("cur max1:%d", devc->mstatus.ch1_max);
                 ds_data_forward(sdi, &packet);
+            }
         }
 
         devc->num_samples += cur_sample_count;

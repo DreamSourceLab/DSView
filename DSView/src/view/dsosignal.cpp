@@ -812,55 +812,7 @@ void DsoSignal::paint_mid(QPainter &p, int left, int right, QColor fore, QColor 
             paint_envelope(p, _data, zeroY, left,
                 start_sample, end_sample, hw_offset,
                 pixels_offset, samples_per_pixel, enabled_channels);
-        }
-
-        sr_status status; 
-        
-        if (session->get_device()->get_device_status(status, false)) {
-            _mValid = true;
-            if (status.measure_valid) {
-                _min = (index == 0) ? status.ch0_min : status.ch1_min;
-                _max = (index == 0) ? status.ch0_max : status.ch1_max;
-
-                _level_valid = (index == 0) ? status.ch0_level_valid : status.ch1_level_valid;
-                _low = (index == 0) ? status.ch0_low_level : status.ch1_low_level;
-                _high = (index == 0) ? status.ch0_high_level : status.ch1_high_level;
-
-                const uint32_t count  = (index == 0) ? status.ch0_cyc_cnt : status.ch1_cyc_cnt;
-                const bool plevel = (index == 0) ? status.ch0_plevel : status.ch1_plevel;
-                const bool startXORend = (index == 0) ? (status.ch0_cyc_llen == 0) : (status.ch1_cyc_llen == 0);
-                uint16_t total_channels = g_slist_length(session->get_device()->get_channels());
-
-                if (total_channels == 1 && _data->is_file()){
-                    total_channels++;
-                }
-                
-                const double tfactor = (total_channels / enabled_channels) * SR_GHZ(1) * 1.0 / samplerate;
- 
-                double samples = (index == 0) ? status.ch0_cyc_tlen : status.ch1_cyc_tlen;
-                _period = ((count == 0) ? 0 : samples / count) * tfactor;
-
-                samples = (index == 0) ? status.ch0_cyc_flen : status.ch1_cyc_flen;
-                _rise_time = ((count == 0) ? 0 : samples / ((plevel && startXORend) ? count : count + 1)) * tfactor;
-                samples = (index == 0) ? status.ch0_cyc_rlen : status.ch1_cyc_rlen;
-                _fall_time = ((count == 0) ? 0 : samples / ((!plevel && startXORend) ? count : count + 1)) * tfactor;
-
-                samples = (index == 0) ? (status.ch0_plevel ? status.ch0_cyc_plen - status.ch0_cyc_llen :
-                                                              status.ch0_cyc_tlen - status.ch0_cyc_plen + status.ch0_cyc_llen) :
-                                         (status.ch1_plevel ? status.ch1_cyc_plen - status.ch1_cyc_llen :
-                                                              status.ch1_cyc_tlen - status.ch1_cyc_plen + status.ch1_cyc_llen);
-                _high_time = ((count == 0) ? 0 : samples / count) * tfactor;
-
-                samples = (index == 0) ? status.ch0_cyc_tlen + status.ch0_cyc_llen : status.ch1_cyc_flen + status.ch1_cyc_llen;
-                _burst_time = samples * tfactor;
-
-                _pcount = count + (plevel & !startXORend);
-                _rms = (index == 0) ? status.ch0_acc_square : status.ch1_acc_square;
-                _rms = sqrt(_rms / _data->get_sample_count());
-                _mean = (index == 0) ? status.ch0_acc_mean : status.ch1_acc_mean;
-                _mean = hw_offset - _mean / _data->get_sample_count();
-            }
-        }
+        } 
     }
 }
 
@@ -1546,6 +1498,74 @@ void DsoSignal::set_data(data::DsoSnapshot *data)
 {
     assert(data);
     _data = data;
+}
+
+void DsoSignal::update_data_param()
+{
+    const uint16_t enabled_channels = _data->get_channel_num();
+    int index = get_index();
+    const double samplerate = _data->samplerate();
+    const int hw_offset = get_hw_offset();
+
+    sr_status status; 
+        
+    if (session->get_device()->get_device_status(status, false)) {
+        _mValid = true;
+        if (status.measure_valid) {
+            _min = (index == 0) ? status.ch0_min : status.ch1_min;
+            _max = (index == 0) ? status.ch0_max : status.ch1_max;
+
+            /*
+            if (index == 0){
+                dsv_info("get min0:%d", status.ch0_min);
+                dsv_info("get max0:%d", status.ch0_max);
+                
+            }
+            else{
+                dsv_info("get min1:%d", status.ch1_min);
+                dsv_info("get max1:%d", status.ch1_max);
+            }
+            */
+
+            _level_valid = (index == 0) ? status.ch0_level_valid : status.ch1_level_valid;
+            _low = (index == 0) ? status.ch0_low_level : status.ch1_low_level;
+            _high = (index == 0) ? status.ch0_high_level : status.ch1_high_level;
+
+            const uint32_t count  = (index == 0) ? status.ch0_cyc_cnt : status.ch1_cyc_cnt;
+            const bool plevel = (index == 0) ? status.ch0_plevel : status.ch1_plevel;
+            const bool startXORend = (index == 0) ? (status.ch0_cyc_llen == 0) : (status.ch1_cyc_llen == 0);
+            uint16_t total_channels = g_slist_length(session->get_device()->get_channels());
+
+            if (total_channels == 1 && _data->is_file()){
+                total_channels++;
+            }
+            
+            const double tfactor = (total_channels / enabled_channels) * SR_GHZ(1) * 1.0 / samplerate;
+
+            double samples = (index == 0) ? status.ch0_cyc_tlen : status.ch1_cyc_tlen;
+            _period = ((count == 0) ? 0 : samples / count) * tfactor;
+
+            samples = (index == 0) ? status.ch0_cyc_flen : status.ch1_cyc_flen;
+            _rise_time = ((count == 0) ? 0 : samples / ((plevel && startXORend) ? count : count + 1)) * tfactor;
+            samples = (index == 0) ? status.ch0_cyc_rlen : status.ch1_cyc_rlen;
+            _fall_time = ((count == 0) ? 0 : samples / ((!plevel && startXORend) ? count : count + 1)) * tfactor;
+
+            samples = (index == 0) ? (status.ch0_plevel ? status.ch0_cyc_plen - status.ch0_cyc_llen :
+                                                            status.ch0_cyc_tlen - status.ch0_cyc_plen + status.ch0_cyc_llen) :
+                                        (status.ch1_plevel ? status.ch1_cyc_plen - status.ch1_cyc_llen :
+                                                            status.ch1_cyc_tlen - status.ch1_cyc_plen + status.ch1_cyc_llen);
+            _high_time = ((count == 0) ? 0 : samples / count) * tfactor;
+
+            samples = (index == 0) ? status.ch0_cyc_tlen + status.ch0_cyc_llen : status.ch1_cyc_flen + status.ch1_cyc_llen;
+            _burst_time = samples * tfactor;
+
+            _pcount = count + (plevel & !startXORend);
+            _rms = (index == 0) ? status.ch0_acc_square : status.ch1_acc_square;
+            _rms = sqrt(_rms / _data->get_sample_count());
+            _mean = (index == 0) ? status.ch0_acc_mean : status.ch1_acc_mean;
+            _mean = hw_offset - _mean / _data->get_sample_count();
+        }
+    }
 }
 
 } // namespace view
