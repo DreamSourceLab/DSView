@@ -2447,4 +2447,17 @@ namespace pv
         }
     }
 
+    void SigSession::update_dso_data_scale()
+    {
+        if (_device_agent.get_work_mode() == DSO)
+        { 
+            for(auto s : _signals){
+                if (s->get_type() == SR_CHANNEL_DSO){
+                    view::DsoSignal *ch = (view::DsoSignal*)s;
+                    _capture_data->get_dso()->set_data_scale(ch->get_scale(), ch->get_index());                                                 
+                }
+            }
+        }
+    }
+
 } // namespace pv

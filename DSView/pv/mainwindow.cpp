@@ -106,6 +106,10 @@
 namespace pv
 {
 
+    namespace{
+        QString tmp_file;
+    }
+
     MainWindow::MainWindow(toolbars::TitleBar *title_bar, QWidget *parent)
         : QMainWindow(parent)
     {
@@ -318,7 +322,12 @@ namespace pv
             if (QFile::exists(ldFileName))
             {              
                 dsv_info("Auto load file:%s", file_name.c_str());
-                on_load_file(ldFileName);
+                tmp_file = ldFileName;
+  
+                QTimer::singleShot(300, this, [this](){
+                    on_load_file(tmp_file);
+                    tmp_file = "";
+                });
             }
             else
             {
@@ -326,10 +335,8 @@ namespace pv
                 MsgBox::Show(L_S(STR_PAGE_MSG, S_ID(IDS_MSG_OPEN_FILE_ERROR), "Open file error!"), ldFileName, NULL);
             }
         }
-        else
-        {
-            _session->set_default_device();
-        }
+
+        _session->set_default_device();
     }
 
     //*
