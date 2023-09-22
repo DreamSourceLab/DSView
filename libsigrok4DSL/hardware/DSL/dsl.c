@@ -2025,6 +2025,20 @@ SR_PRIV int dsl_dev_acquisition_stop(const struct sr_dev_inst *sdi, void *cb_dat
             sr_err("%s: Sent acquisition stop command failed!", __func__);
         else
             sr_info("%s: Sent acquisition stop command!", __func__);
+
+        /* check a real stop of FPGA status*/
+        uint8_t hw_status = 1;
+        while (hw_status != 0) {
+            if (dsl_rd_reg(sdi, HW_STATUS_ADDR, &hw_status) != SR_OK)
+                sr_err("%s: Get hardware status command failed!", __func__);
+            else
+                sr_info("%s: Get hardware status command!", __func__);
+        }
+
+        /* adc power down*/
+        if (devc->profile->dev_caps.feature_caps & CAPS_FEATURE_HMCAD1511) {
+            dsl_config_adc(sdi, adc_power_down);
+        }        
     }
 
     return SR_OK;

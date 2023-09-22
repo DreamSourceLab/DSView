@@ -2115,11 +2115,7 @@ static int dev_acquisition_start(struct sr_dev_inst *sdi, void *cb_data)
 
 static int dev_acquisition_stop(const struct sr_dev_inst *sdi, void *cb_data)
 {
-    struct DSL_context *devc = sdi->priv;
     int ret = dsl_dev_acquisition_stop(sdi, cb_data);
-    if (devc->profile->dev_caps.feature_caps & CAPS_FEATURE_HMCAD1511) {
-        dsl_config_adc(sdi, adc_power_down);
-    }
     return ret;
 }
 
