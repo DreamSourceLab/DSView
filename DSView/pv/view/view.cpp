@@ -1349,5 +1349,11 @@ int  View::get_body_height()
     headerWidth();
  }
 
+void View::check_measure()
+{
+    _time_viewport->measure();
+    _time_viewport->update();
+}
+
 } // namespace view
 } // namespace pv
