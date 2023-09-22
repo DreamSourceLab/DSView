@@ -165,7 +165,7 @@ class Decoder(srd.Decoder):
             # Mark the INTERFRAME-TIME between bytes / INTERPACKET-TIME between packets.
             elif self.state == 'MARK IFT':
                 self.run_start = self.samplenum
-                if self.channel > 512:
+                if self.channel > 65535:
                     (dmx,) = self.wait({0: 'h' if inv else 'l'})
                     self.putr([8, ['Interpacket']])
                     self.state = 'FIND BREAK'
