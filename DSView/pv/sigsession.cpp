@@ -401,7 +401,7 @@ namespace pv
 
         int mode = _device_agent.get_work_mode();
 
-        if (mode == DSO || mode == ANALOG)
+        if (mode == DSO)
         { 
             for(auto s : _signals){
                 if (s->get_type() == SR_CHANNEL_DSO){
@@ -1117,7 +1117,11 @@ namespace pv
             if (_trigger_flag)
             {
                 _capture_data->_trig_pos = trigger_pos.real_pos;
-                _callback->receive_trigger(_capture_data->_trig_pos);
+
+                // Update trig position for current view.
+                if (_capture_data == _view_data){
+                    _callback->receive_trigger(_capture_data->_trig_pos);
+                }                
             }
         }
         else
@@ -2196,6 +2200,8 @@ namespace pv
                         attach_data_to_signal(_view_data); 
                         set_session_time(_trig_time);
 
+                        _callback->receive_trigger(_view_data->_trig_pos); //Update trig position.
+
                         _callback->trigger_message(DSV_MSG_DATA_POOL_CHANGED);
                     }
 
@@ -2453,7 +2459,7 @@ namespace pv
     {
         int mode = _device_agent.get_work_mode();
         
-        if (mode == DSO || mode == ANALOG)
+        if (mode == DSO)
         { 
             for(auto s : _signals){
                 if (s->get_type() == SR_CHANNEL_DSO){
