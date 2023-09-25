@@ -392,6 +392,11 @@ void Header::changeName(QMouseEvent *event)
 
 void Header::changeColor(QMouseEvent *event)
 {
+     if (_view.session().is_working() && _view.session().get_device()->get_work_mode() == ANALOG){
+        //Disable to select color when working on analog mode.
+        return;
+    }
+
     if ((event->button() == Qt::LeftButton)) {
         const QColor new_color = QColorDialog::getColor(_context_trace->get_colour(), this, L_S(STR_PAGE_DLG, S_ID(IDS_DLG_SET_CHANNEL_COLOUR), "Set Channel Colour"));
         if (new_color.isValid())
