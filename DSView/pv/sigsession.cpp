@@ -399,7 +399,9 @@ namespace pv
         _capture_data->get_analog()->set_samplerate(samplerate);
         _capture_data->get_dso()->set_samplerate(samplerate);
 
-        if (_device_agent.get_work_mode() == DSO)
+        int mode = _device_agent.get_work_mode();
+
+        if (mode == DSO || mode == ANALOG)
         { 
             for(auto s : _signals){
                 if (s->get_type() == SR_CHANNEL_DSO){
@@ -2449,7 +2451,9 @@ namespace pv
 
     void SigSession::update_dso_data_scale()
     {
-        if (_device_agent.get_work_mode() == DSO)
+        int mode = _device_agent.get_work_mode();
+        
+        if (mode == DSO || mode == ANALOG)
         { 
             for(auto s : _signals){
                 if (s->get_type() == SR_CHANNEL_DSO){

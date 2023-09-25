@@ -28,9 +28,7 @@
 #include <QPen>
 #include <QRect>
 #include <QString>
-
 #include <stdint.h>
-
 #include "selectableitem.h"
 #include "dsldial.h"
 

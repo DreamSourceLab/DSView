@@ -119,7 +119,7 @@ private:
 private:
     void *_data;
     struct Envelope _envelope_levels[DS_MAX_ANALOG_PROBES_NUM][ScaleStepCount];
-	friend class AnalogSnapshotTest::Basic;    
+	friend class AnalogSnapshotTest::Basic; 
 };
 
 } // namespace data

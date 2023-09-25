@@ -24,7 +24,6 @@
 #define DSVIEW_PV_ANALOGSIGNAL_H
 
 #include "signal.h"
- 
 
 namespace pv {
 

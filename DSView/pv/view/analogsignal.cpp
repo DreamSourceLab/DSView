@@ -407,7 +407,10 @@ void AnalogSignal::paint_mid(QPainter &p, int left, int right, QColor fore, QCol
     const float zeroY = ratio2pos(get_zero_ratio());
     const int width = right - left + 1;
 
+   // dsv_info("zeroY:%f", zeroY);
+
     const double scale = _view->scale();
+
     assert(scale > 0);
     const int64_t offset = _view->offset();
 
@@ -531,6 +534,7 @@ void AnalogSignal::paint_envelope(QPainter &p,
 
     if (!_rects)
         _rects = new QRectF[width+10];
+    
     QRectF *rect = _rects;
     int px = -1, pre_px;
     float y_min = zeroY, y_max = zeroY, pre_y_min = zeroY, pre_y_max = zeroY;
@@ -589,7 +593,7 @@ void AnalogSignal::paint_hover_measure(QPainter &p, QColor fore, QColor back)
     const int hw_offset = get_hw_offset();
     const int height = get_totalHeight();
     const float top = get_y() - height * 0.5;
-    const float bottom = get_y() + height * 0.5;
+    const float bottom = get_y() + height * 0.5; 
 
     // Hover measure
     if (_hover_en && _hover_point != QPointF(-1, -1)) {
@@ -655,9 +659,10 @@ QString AnalogSignal::get_voltage(double v, int p, bool scaled)
     const QString mapUnit = get_mapUnit();
 
     if (scaled)
-        v = v / get_totalHeight() * mapRange;
+        v = v / (double)get_totalHeight() * mapRange;
     else
-        v = v * _scale / get_totalHeight() * mapRange;
+        v = v * _scale / (double)get_totalHeight() * mapRange;    
+  
     return abs(v) >= 1000 ? QString::number(v/1000.0, 'f', p) + mapUnit : QString::number(v, 'f', p) + "m" + mapUnit;
 }
 

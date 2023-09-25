@@ -51,6 +51,8 @@ DsoSnapshot::DsoSnapshot() :
     _threshold = 0;
     _measure_voltage_factor1 = 0;
     _measure_voltage_factor2 = 0;
+    _data_scale1 = 0;
+    _data_scale2 = 0;  
     _is_file = false;
 
 	memset(_envelope_levels, 0, sizeof(_envelope_levels));

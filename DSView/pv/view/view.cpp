@@ -774,7 +774,7 @@ void View::signals_changed(const Trace* eventTrace)
             else if (t->signal_type() == SR_CHANNEL_ANALOG)
             {
                 auto sig = dynamic_cast<view::AnalogSignal*>(t);
-                sig->set_scale(sig->get_view_rect().height());
+                sig->set_scale(sig->get_totalHeight());
             }
         }
         _time_viewport->clear_measure();

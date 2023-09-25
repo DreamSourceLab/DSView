@@ -45,7 +45,7 @@ AnalogSnapshot::AnalogSnapshot() :
 {
 	memset(_envelope_levels, 0, sizeof(_envelope_levels));
     _unit_pitch = 0;
-    _data  = NULL;
+    _data  = NULL;   
 }
 
 AnalogSnapshot::~AnalogSnapshot()
