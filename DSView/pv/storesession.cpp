@@ -590,8 +590,10 @@ bool StoreSession::meta_gen(data::Snapshot *snapshot, std::string &str)
             sprintf(meta, " vTrig%d = %d\n", probecnt, probe->trig_value);
             str += meta;
 
-            if (_session->get_device()->get_device_status(status, false))
+            if (_session->dso_status_is_valid())
             {
+                sr_status status = _session->get_dso_status();
+                
                 if (probe->index == 0)
                 {
                     sprintf(meta, " period%d = %" PRIu32 "\n", probecnt, status.ch0_cyc_tlen);

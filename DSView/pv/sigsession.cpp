@@ -102,6 +102,7 @@ namespace pv
         _is_action = false;
         _decoder_pannel = NULL;
         _is_triged = false;
+        _dso_status_valid = false;
 
         _data_list.push_back(new SessionData());
         _data_list.push_back(new SessionData());
@@ -531,6 +532,7 @@ namespace pv
         _is_stream_mode = false;
         _capture_times = 0;
         _dso_packet_count = 0;
+        _dso_status_valid = false;
 
         _capture_data = _view_data;
         set_cur_snap_samplerate(_device_agent.get_sample_rate());
@@ -1202,6 +1204,15 @@ namespace pv
             return; // This dso packet was not expected.
         }
 
+        if (_is_instant == false){
+            sr_status status;
+
+            if (_device_agent.get_device_status(status, false)){
+                _dso_status_valid = true;
+                _dso_status = status;
+            }
+        }
+
         _dso_packet_count++;
 
         if (!_is_triged && o.num_samples > 0)
@@ -1403,13 +1414,22 @@ namespace pv
                     _callback->trigger_message(DSV_MSG_REV_END_PACKET);
                 }
                 else{
+                    if (mode == DSO && _is_instant){             
+                        sr_status status;
+
+                        if (_device_agent.get_device_status(status, false)){
+                            _dso_status_valid = true;
+                            _dso_status = status;
+                        }
+                    }
+
                     _callback->frame_ended();
                 }                     
-            }           
+            }
 
             break;
         }
-        }
+     }
     }
 
     void SigSession::data_feed_callback(const struct sr_dev_inst *sdi,

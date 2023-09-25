@@ -815,10 +815,12 @@ void DsoSignal::paint_mid(QPainter &p, int left, int right, QColor fore, QColor 
                 pixels_offset, samples_per_pixel, enabled_channels);
         }
 
-        sr_status status; 
+        sr_status status;
         
-        if (session->get_device()->get_device_status(status, false)) {
+        if (session->dso_status_is_valid()) {
             _mValid = true;
+            status = session->get_dso_status();
+
             if (status.measure_valid) {
                 _min = (index == 0) ? status.ch0_min : status.ch1_min;
                 _max = (index == 0) ? status.ch0_max : status.ch1_max;
@@ -1419,7 +1421,7 @@ void DsoSignal::auto_start()
 }
 
 bool DsoSignal::measure(const QPointF &p)
-{ 
+{
     _hover_en = false;
     
     if (!enabled() || !show())

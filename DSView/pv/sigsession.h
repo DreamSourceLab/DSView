@@ -431,6 +431,14 @@ public:
 
     void update_dso_data_scale();
 
+    inline sr_status get_dso_status(){
+        return _dso_status;
+    }
+
+    inline bool dso_status_is_valid(){
+        return _dso_status_valid;
+    }
+
 private:
     void set_cur_samplelimits(uint64_t samplelimits);
     void set_cur_snap_samplerate(uint64_t samplerate);
@@ -596,6 +604,8 @@ private:
     SessionData       *_capture_data;
     std::vector<SessionData*> _data_list;
     IDecoderPannel  *_decoder_pannel;
+    sr_status       _dso_status;
+    bool            _dso_status_valid;
    
 private:
 	// TODO: This should not be necessary. Multiple concurrent
