@@ -853,6 +853,8 @@ void DsoSignal::paint_mid(QPainter &p, int left, int right, QColor fore, QColor 
                                          (status.ch1_plevel ? status.ch1_cyc_plen - status.ch1_cyc_llen :
                                                               status.ch1_cyc_tlen - status.ch1_cyc_plen + status.ch1_cyc_llen);
                 _high_time = ((count == 0) ? 0 : samples / count) * tfactor;
+             //   dsv_info("samples:%f,count:%d,tfactor:%f",
+             //       samples, count, tfactor);
 
                 samples = (index == 0) ? status.ch0_cyc_tlen + status.ch0_cyc_llen : status.ch1_cyc_flen + status.ch1_cyc_llen;
                 _burst_time = samples * tfactor;

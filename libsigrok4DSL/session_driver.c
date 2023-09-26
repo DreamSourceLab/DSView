@@ -1061,6 +1061,7 @@ static int config_set(int id, GVariant *data, struct sr_dev_inst *sdi,
     struct session_vdev *vdev;
     const char *stropt;
     unsigned int i;
+    int pv;
 
     assert(sdi);
     assert(sdi->priv);
@@ -1198,10 +1199,11 @@ static int config_set(int id, GVariant *data, struct sr_dev_inst *sdi,
             vdev->mstatus.ch1_cyc_plen = g_variant_get_uint32(data);
         break;
     case SR_CONF_STATUS_LLEN:
+        pv = g_variant_get_uint32(data);
         if (ch->index == 0)
-            vdev->mstatus.ch0_cyc_llen = g_variant_get_uint32(data);
+            vdev->mstatus.ch0_cyc_llen = pv;
         else
-            vdev->mstatus.ch0_cyc_llen = g_variant_get_uint32(data);
+            vdev->mstatus.ch1_cyc_llen = pv;
         break;
     case SR_CONF_STATUS_LEVEL:
         if (ch->index == 0)
