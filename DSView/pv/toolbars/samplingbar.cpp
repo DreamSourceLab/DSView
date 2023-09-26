@@ -590,7 +590,7 @@ namespace pv
                 if (mode == DSO)
                     not_last = duration >= min_timebase;
                 else if (mode == ANALOG)
-                    not_last = (duration >= SR_MS(100)) &&
+                    not_last = (duration >= SR_MS(200)) &&
                                (duration / SR_SEC(1) * samplerate >= SR_KB(1));
                 else
                     not_last = (duration / SR_SEC(1) * samplerate >= SR_KB(1));
