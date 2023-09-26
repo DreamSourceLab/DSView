@@ -1261,6 +1261,13 @@ void DsoSignal::paint_hover_measure(QPainter &p, QColor fore, QColor back)
     // Hover measure
     if (_hover_en && _hover_point != QPointF(-1, -1)) {
         QString hover_str = get_voltage(hw_offset - _hover_value, 2);
+
+        //vf = (hw_offset - (double)(*p)) * mapRange / max_min_ref;
+        //v = v * data_scale * k * _vDial->get_factor() * DS_CONF_DSO_VDIVS / get_view_rect().height();
+
+      //   dsv_info("c:%d, hw_offset:%d",
+      //      hw_offset - _hover_value, hw_offset);
+
         const int hover_width = p.boundingRect(0, 0, INT_MAX, INT_MAX,
             Qt::AlignLeft | Qt::AlignTop, hover_str).width() + 10;
         const int hover_height = p.boundingRect(0, 0, INT_MAX, INT_MAX,

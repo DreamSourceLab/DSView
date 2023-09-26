@@ -305,6 +305,9 @@ static int receive(const struct sr_output *o, const struct sr_datafeed_packet *p
        int ch_cfg_dex = 0;
        double hw_offset = 0;
        double mapRange = 0;
+       double mmax = 0;
+       double mmin = 0;
+       void *ptr;
 
        for (i = 0; i < (uint64_t)analog->num_samples; i++) {
             ch_cfg_dex = 0;
@@ -321,9 +324,12 @@ static int receive(const struct sr_output *o, const struct sr_datafeed_packet *p
                     continue;
                }
 
-               p = analog->data + i * ch_num + j;
+               ptr = (unsigned char*)analog->data + i * ch_num + j;
+               p = (unsigned char*)ptr;
                hw_offset = (double)ctx->channel_offset[ch_cfg_dex];
-               mapRange = (ctx->channel_mmax[ch_cfg_dex] - ctx->channel_mmin[ch_cfg_dex]);
+               mmax = ctx->channel_mmax[ch_cfg_dex];
+               mmin = ctx->channel_mmin[ch_cfg_dex];
+               mapRange = (mmax - mmin);
                vf = (hw_offset - (double)(*p)) * mapRange / max_min_ref;
 
                g_string_append_printf(*out, "%0.5f",  vf);

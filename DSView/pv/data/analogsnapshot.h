@@ -109,6 +109,8 @@ public:
 
     void* get_data();
 
+    bool has_enabled_channel(int index);
+
 private:
     void append_data(void *data, uint64_t samples, uint16_t pitch);
     void free_envelop();
@@ -119,7 +121,8 @@ private:
 private:
     void *_data;
     struct Envelope _envelope_levels[DS_MAX_ANALOG_PROBES_NUM][ScaleStepCount];
-	friend class AnalogSnapshotTest::Basic; 
+	friend class AnalogSnapshotTest::Basic;
+    std::vector<int>        _enabled_channel_indexs;
 };
 
 } // namespace data

@@ -407,8 +407,6 @@ void AnalogSignal::paint_mid(QPainter &p, int left, int right, QColor fore, QCol
     const float zeroY = ratio2pos(get_zero_ratio());
     const int width = right - left + 1;
 
-   // dsv_info("zeroY:%f", zeroY);
-
     const double scale = _view->scale();
 
     assert(scale > 0);
@@ -417,6 +415,11 @@ void AnalogSignal::paint_mid(QPainter &p, int left, int right, QColor fore, QCol
     const int order = _data->get_ch_order(get_index());
     if (order == -1)
         return;
+
+    //The channel have no data.
+    if (_data->has_enabled_channel(get_index()) == false){
+        return;
+    }
 
     const double pixels_offset = offset;
     const double samplerate = _data->samplerate();
@@ -493,20 +496,27 @@ void AnalogSignal::paint_trace(QPainter &p,
         const int hw_offset = get_hw_offset();
         float x = start_pixel;
         double  pixels_per_sample = 1.0/samples_per_pixel;
+
         for (int64_t sample = 0; sample < sample_count; sample++) {
             uint64_t index = (yindex * channel_num + order) * unit_bytes;
             float yvalue = samples[index];
-            for(uint8_t i = 1; i < unit_bytes; i++)
+
+            for(uint8_t i = 1; i < unit_bytes; i++){
                 yvalue += (samples[++index] << i*8);
+            }
+
             yvalue = zeroY + (yvalue - hw_offset) * _scale;
             yvalue = min(max(yvalue, top), bottom);
             *point++ = QPointF(x, yvalue);
+
             if (yindex == pshot->get_ring_end())
                 break;
+
             yindex++;
             yindex %= pshot->get_sample_count();
             x += pixels_per_sample;
         }
+
         p.drawPolyline(points, point - points);
         delete[] points;
     }

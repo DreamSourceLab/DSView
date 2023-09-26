@@ -45,7 +45,7 @@ AnalogSnapshot::AnalogSnapshot() :
 {
 	memset(_envelope_levels, 0, sizeof(_envelope_levels));
     _unit_pitch = 0;
-    _data  = NULL;   
+    _data  = NULL; 
 }
 
 AnalogSnapshot::~AnalogSnapshot()
@@ -75,7 +75,7 @@ void AnalogSnapshot::init_all()
     _sample_count = 0;
     _ring_sample_count = 0;
     _memory_failed = false;
-    _last_ended = true;
+    _last_ended = true; 
 
     for (unsigned int i = 0; i < _channel_num; i++) {
         for (unsigned int level = 0; level < ScaleStepCount; level++) {
@@ -112,10 +112,12 @@ void AnalogSnapshot::first_payload(const sr_datafeed_analog &analog, uint64_t to
     _unit_bytes = (analog.unit_bits + 7) / 8;
     assert(_unit_bytes > 0);
     assert(_unit_bytes <= sizeof(uint64_t));
-    _channel_num = 0;
+
+    _channel_num = 0; // The enabled and disabled channels count.
+
     for (const GSList *l = channels; l; l = l->next) {
         sr_channel *const probe = (sr_channel*)l->data;
-        assert(probe);
+
         // TODO: data of disabled channels should not be captured.
         if (probe->type == SR_CHANNEL_ANALOG) {
             _channel_num ++;
@@ -124,54 +126,70 @@ void AnalogSnapshot::first_payload(const sr_datafeed_analog &analog, uint64_t to
 
     bool isOk = true;
     uint64_t size = _total_sample_count * _channel_num * _unit_bytes + sizeof(uint64_t);
+
     if (size != _capacity) {
         free_data();
         _data = malloc(size);
+
         if (_data) {
             free_envelop();
+
             for (unsigned int i = 0; i < _channel_num; i++) {
                 uint64_t envelop_count = _total_sample_count / EnvelopeScaleFactor;
                 for (unsigned int level = 0; level < ScaleStepCount; level++) {
                     _envelope_levels[i][level].count = envelop_count;
+
                     if (envelop_count == 0)
                         break;
+
                     _envelope_levels[i][level].samples = (EnvelopeSample*)malloc(envelop_count * sizeof(EnvelopeSample));
+                    
                     if (!_envelope_levels[i][level].samples) {
                         isOk = false;
                         break;
                     }
+
                     envelop_count = envelop_count / EnvelopeScaleFactor;
                 }
                 if (!isOk)
                     break;
             }
-        } else {
-            isOk = true;
+        }
+        else {
+            isOk = false;
         }
     }
 
     if (isOk) {
+        _ch_index.clear();
+        _enabled_channel_indexs.clear();
+
         for (const GSList *l = channels; l; l = l->next) {
             sr_channel *const probe = (sr_channel*)l->data;
-            assert(probe);
-            // TODO: data of disabled channels should not be captured.
+
+            // TODO: get the enabled channel index.
             if (probe->type == SR_CHANNEL_ANALOG) {
                 _ch_index.push_back(probe->index);
+
+                if (probe->enabled){
+                    _enabled_channel_indexs.push_back(probe->index);
+                }
             }
         }
+
         _capacity = size;
         _memory_failed = false;
         append_payload(analog);
         _last_ended = false;
-    } else {
+    }
+    else {
         free_data();
         free_envelop();
         _memory_failed = true;
     }
 }
 
-void AnalogSnapshot::append_payload(
-	const sr_datafeed_analog &analog)
+void AnalogSnapshot::append_payload(const sr_datafeed_analog &analog)
 {
     std::lock_guard<std::mutex> lock(_mutex);
     append_data(analog.data, analog.num_samples, analog.unit_pitch);
@@ -202,7 +220,8 @@ void AnalogSnapshot::append_data(void *data, uint64_t samples, uint16_t pitch)
                 data, samples * bytes_per_sample);
             _ring_sample_count += samples;
         }
-    } else {
+    }
+    else {
         while(samples--) {
             if (_unit_pitch == 0) {
                 if (_sample_count < _total_sample_count)
@@ -370,7 +389,7 @@ int AnalogSnapshot::get_scale_factor()
 
 bool AnalogSnapshot::has_data(int index)
 {
-    for (auto& iter:_ch_index) {
+    for (int iter : _ch_index) {
         if (iter == index)
             return true;
     }
@@ -399,8 +418,19 @@ uint64_t AnalogSnapshot::get_block_size(int block_index)
     }
 }
 
-void* AnalogSnapshot::get_data(){
+void* AnalogSnapshot::get_data()
+{
     return _data;
+}
+
+bool AnalogSnapshot::has_enabled_channel(int index)
+{
+
+    for (int iter : _enabled_channel_indexs) {
+        if (iter == index)
+            return true;
+    }
+    return false; 
 }
 
 } // namespace data

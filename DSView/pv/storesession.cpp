@@ -974,11 +974,12 @@ void StoreSession::export_proc(data::Snapshot *snapshot)
 
     } else if (channel_type == SR_CHANNEL_ANALOG) {
         _unit_count = snapshot->get_sample_count();
-        unsigned char* datat = (unsigned char*)analog_snapshot->get_data();
+        void* data_buffer = analog_snapshot->get_data();
         unsigned int usize = 8192;
         unsigned int size = usize;
         struct sr_datafeed_analog ap;
         uint64_t unit_count = _unit_count;
+        unsigned char* read_buf = (unsigned char*)data_buffer;
  
         int ch_count = snapshot->get_channel_num();  
         uint64_t i = 0;
@@ -991,7 +992,7 @@ void StoreSession::export_proc(data::Snapshot *snapshot)
             if(unit_count - i < usize)
                 size = unit_count - i;
              
-            ap.data = &datat[i*ch_count];
+            ap.data = (unsigned char*)data_buffer + i * ch_count;
             ap.num_samples = size;
             p.type = SR_DF_ANALOG;
             p.status = SR_PKT_OK;
