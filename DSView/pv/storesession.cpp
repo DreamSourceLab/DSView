@@ -974,39 +974,62 @@ void StoreSession::export_proc(data::Snapshot *snapshot)
 
     } else if (channel_type == SR_CHANNEL_ANALOG) {
         _unit_count = snapshot->get_sample_count();
-        void* data_buffer = analog_snapshot->get_data();
-        unsigned int usize = 8192;
-        unsigned int size = usize;
-        struct sr_datafeed_analog ap;
         uint64_t unit_count = _unit_count;
+        void* data_buffer = analog_snapshot->get_data();
+        unsigned int usize = 8192;        
+        struct sr_datafeed_analog ap;
+        
         unsigned char* read_buf = (unsigned char*)data_buffer;
+
+        const uint64_t ring_start = analog_snapshot->get_ring_start();
  
         int ch_count = snapshot->get_channel_num();  
-        uint64_t i = 0;
+    
+        void *block_buffer[2];
+        uint64_t block_samples[2];
+        block_buffer[0] =  (unsigned char*)data_buffer + ring_start * ch_count;
+        block_samples[0] = unit_count - ring_start;
+        block_buffer[1] = data_buffer;
+        block_samples[1] = ring_start;
 
-        for(i = 0; i < unit_count; i+=usize){
-            
-            if (_canceled)
+        for (int j=0; j<2; j++)
+        {  
+            uint64_t sample_count = block_samples[j];
+
+            if (sample_count == 0)
                 break;
 
-            if(unit_count - i < usize)
-                size = unit_count - i;
-             
-            ap.data = (unsigned char*)data_buffer + i * ch_count;
-            ap.num_samples = size;
-            p.type = SR_DF_ANALOG;
-            p.status = SR_PKT_OK;
-            p.payload = &ap;
-            p.bExportOriginalData = 0;
-            _outModule->receive(&output, &p, &data_out);
+            //dsv_info("sample_count:%llu,total:%llu", sample_count, unit_count);
 
-            if(data_out){
-                out << (char*) data_out->str;
-                g_string_free(data_out,TRUE);
-            }           
+            for(uint64_t i = 0; i < sample_count; i += usize){
+                
+                if (_canceled)
+                    break;
 
-            _units_stored += size;
-            progress_updated();
+                unsigned int size = usize;
+
+                if(sample_count - i < usize){
+                    size = sample_count - i;
+                }
+         
+                ap.data = (unsigned char*)block_buffer[j] + i * ch_count;
+                ap.num_samples = size;
+                p.type = SR_DF_ANALOG;
+                p.status = SR_PKT_OK;
+                p.payload = &ap;
+                p.bExportOriginalData = 0;
+                _outModule->receive(&output, &p, &data_out);
+
+                if(data_out){
+                    out << (char*) data_out->str;
+                    g_string_free(data_out,TRUE);
+                }           
+
+                _units_stored += size;
+                progress_updated();
+
+               // dsv_info("size:%llu;_units_stored:%llu", size, _units_stored);
+            }
         }
     }
 
