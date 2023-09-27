@@ -486,11 +486,16 @@ void View::receive_end()
     _time_viewport->unshow_wait_trigger();
 }
 
+
 void View::receive_trigger(quint64 trig_pos1)
 {
     (void)trig_pos1;
-    
     uint64_t trig_pos = _session->get_trigger_pos();
+    set_trig_cursor_posistion(trig_pos);
+}
+
+void View::set_trig_cursor_posistion(uint64_t trig_pos)
+{   
     const double time = trig_pos * 1.0 / _session->cur_snap_samplerate();
     _trig_cursor->set_index(trig_pos);
 
@@ -512,7 +517,10 @@ void View::receive_trigger(quint64 trig_pos1)
 void View::set_trig_pos(int percent)
 {
     uint64_t index = _session->cur_samplelimits() * percent / 100;
-    receive_trigger(index);
+
+    if (_session->have_view_data() == false){
+        set_trig_cursor_posistion(index);
+    }
 }
 
 void View::set_search_pos(uint64_t search_pos, bool hit)

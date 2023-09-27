@@ -396,10 +396,7 @@ private slots:
 	void v_scroll_value_changed(int value);
 
 	void marker_time_changed();
-
-    void on_traces_moved();
-
-   
+    void on_traces_moved();   
     void set_trig_pos(int percent);
  
     // calibration for oscilloscope
@@ -409,6 +406,9 @@ private slots:
     void on_measure_updated();
 
     void splitterMoved(int pos, int index);
+
+private:
+    void set_trig_cursor_posistion(uint64_t percent);
 
 public:
     void show_wait_trigger();
