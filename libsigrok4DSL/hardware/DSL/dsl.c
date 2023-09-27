@@ -1129,9 +1129,9 @@ SR_PRIV int dsl_fpga_arm(const struct sr_dev_inst *sdi)
 
     // trigger advanced configuration
     if (trigger->trigger_mode == SIMPLE_TRIGGER) {
-        qutr_trig = !(devc->profile->dev_caps.feature_caps & CAPS_FEATURE_USB30) && (setting.mode & (1 << QUAR_MODE_BIT));
-        half_trig = (!(devc->profile->dev_caps.feature_caps & CAPS_FEATURE_USB30) && setting.mode & (1 << HALF_MODE_BIT)) ||
-                    ((devc->profile->dev_caps.feature_caps & CAPS_FEATURE_USB30) && setting.mode & (1 << QUAR_MODE_BIT));
+        qutr_trig = !(devc->profile->dev_caps.feature_caps & CAPS_FEATURE_ADF4360) && (setting.mode & (1 << QUAR_MODE_BIT));
+        half_trig = (!(devc->profile->dev_caps.feature_caps & CAPS_FEATURE_ADF4360) && setting.mode & (1 << HALF_MODE_BIT)) ||
+                    ((devc->profile->dev_caps.feature_caps & CAPS_FEATURE_ADF4360) && setting.mode & (1 << QUAR_MODE_BIT));
 
         setting.trig_mask0[0] = ds_trigger_get_mask0(TriggerStages, TriggerProbes-1, 0, qutr_trig, half_trig);
         setting.trig_mask1[0] = ds_trigger_get_mask1(TriggerStages, TriggerProbes-1, 0, qutr_trig, half_trig);
@@ -1178,9 +1178,9 @@ SR_PRIV int dsl_fpga_arm(const struct sr_dev_inst *sdi)
                 qutr_trig = FALSE;
                 half_trig = FALSE;
             } else {
-                qutr_trig = !(devc->profile->dev_caps.feature_caps & CAPS_FEATURE_USB30) && (setting.mode & (1 << QUAR_MODE_BIT));
-                half_trig = (!(devc->profile->dev_caps.feature_caps & CAPS_FEATURE_USB30) && setting.mode & (1 << HALF_MODE_BIT)) ||
-                            ((devc->profile->dev_caps.feature_caps & CAPS_FEATURE_USB30) && setting.mode & (1 << QUAR_MODE_BIT));
+                qutr_trig = !(devc->profile->dev_caps.feature_caps & CAPS_FEATURE_ADF4360) && (setting.mode & (1 << QUAR_MODE_BIT));
+                half_trig = (!(devc->profile->dev_caps.feature_caps & CAPS_FEATURE_ADF4360) && setting.mode & (1 << HALF_MODE_BIT)) ||
+                            ((devc->profile->dev_caps.feature_caps & CAPS_FEATURE_ADF4360) && setting.mode & (1 << QUAR_MODE_BIT));
             }
 
             setting.trig_mask0[i] = ds_trigger_get_mask0(i, TriggerProbes-1 , 0, qutr_trig, half_trig);
@@ -1955,7 +1955,7 @@ SR_PRIV int dsl_dev_open(struct sr_dev_driver *di, struct sr_dev_inst *sdi, gboo
         return SR_ERR;
     }
 
-    if (devc->profile->dev_caps.feature_caps & CAPS_FEATURE_MAX25_VTH) {
+    if (devc->profile->dev_caps.feature_caps & CAPS_FEATURE_SECURITY) {
         ret = dsl_secuCheck(sdi, encryption, SECU_STEPS);
         if (ret != SR_OK){
             sr_err("Security check failed!");
