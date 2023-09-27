@@ -518,7 +518,8 @@ void View::set_trig_pos(int percent)
 {
     uint64_t index = _session->cur_samplelimits() * percent / 100;
 
-    if (_session->have_view_data() == false){
+    if (_session->have_view_data() == false
+        || _session->is_working()){
         set_trig_cursor_posistion(index);
     }
 }
