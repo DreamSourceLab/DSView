@@ -694,6 +694,33 @@ static const struct DSL_profile supported_DSLogic[] = {
       SR_GHZ(1)}
     },
 
+    {DS_VENDOR_ID, 0x002D, LIBUSB_SPEED_HIGH, "DreamSourceLab", "DSLogic U2Pro16", NULL,
+     "DSLogicU2Pro16.fw",
+     "DSLogicU2Pro16.bin",
+     "DSLogicU2Pro16.bin",
+     {CAPS_MODE_LOGIC,
+      CAPS_FEATURE_VTH | CAPS_FEATURE_BUF | CAPS_FEATURE_ADF4360 | CAPS_FEATURE_SECURITY,
+      (1 << DSL_STREAM20x16_3DN2) | (1 << DSL_STREAM25x12_3DN2) | (1 << DSL_STREAM50x6_3DN2) | (1 << DSL_STREAM100x3_3DN2) |
+      (1 << DSL_BUFFER500x16) | (1 << DSL_BUFFER1000x8),
+      16,
+      SR_GB(4),
+      0,
+      DSL_BUFFER500x16,
+      0,
+      samplerates1000,
+      0,
+      DSL_STREAM20x16_3DN2,
+      SR_MHZ(1),
+      SR_Mn(1),
+      0,
+      0,
+      0,
+      0,
+      0,
+      SR_MHZ(500),
+      SR_GHZ(1)}
+    },
+
     {0x2A0E, 0x0030, LIBUSB_SPEED_HIGH, "DreamSourceLab", "DSLogic PLus", NULL,
      "DSLogicPlus.fw",
      "DSLogicPlus-pgl12.bin",
