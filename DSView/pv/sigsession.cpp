@@ -1128,8 +1128,6 @@ namespace pv
         }
         else
         {
-            dsv_info("DSO triged position updated event.");
-
             int probe_count = 0;
             int probe_en_count = 0;
 
