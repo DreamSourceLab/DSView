@@ -1101,9 +1101,9 @@ static int config_set(int id, GVariant *data, struct sr_dev_inst *sdi,
         devc->vth = g_variant_get_double(data);
 
         if (devc->profile->dev_caps.feature_caps & CAPS_FEATURE_MAX25_VTH)
-            ret = dsl_wr_reg(sdi, VTH_ADDR, (uint8_t)(devc->vth/5.0*(2.5/3.3)*255));
+            ret = dsl_wr_reg(sdi, VTH_ADDR, (uint8_t)(devc->vth/3.3*(1.0/2.0)*255));
         else
-            ret = dsl_wr_reg(sdi, VTH_ADDR, (uint8_t)(devc->vth/5.0*255));
+            ret = dsl_wr_reg(sdi, VTH_ADDR, (uint8_t)(devc->vth/3.3*(1.5/2.5)*255));
     } 
     else if (id == SR_CONF_MAX_HEIGHT) {
         stropt = g_variant_get_string(data, NULL);
@@ -1273,9 +1273,9 @@ static int dev_open(struct sr_dev_inst *sdi)
 
     if ((ret = dsl_dev_open(di, sdi, &fpga_done)) == SR_OK) {        
         if (devc->profile->dev_caps.feature_caps & CAPS_FEATURE_MAX25_VTH)
-            ret = dsl_wr_reg(sdi, VTH_ADDR, (uint8_t)(devc->vth/5.0*(2.5/3.3)*255));
+            ret = dsl_wr_reg(sdi, VTH_ADDR, (uint8_t)(devc->vth/3.3*(1.0/2.0)*255));
         else
-            ret = dsl_wr_reg(sdi, VTH_ADDR, (uint8_t)(devc->vth/5.0*255));
+            ret = dsl_wr_reg(sdi, VTH_ADDR, (uint8_t)(devc->vth/3.3*(1.5/2.5)*255));
         
         if (ret != SR_OK){
             sr_err("%s:%d, Failed to call dsl_wr_reg()!",
