@@ -1,3 +1,28 @@
+v1.3.1 -- (2023-09-28)
+----------
+  --common
+  * Fix the erroneous bin files released for Linux/macOS systems
+
+  --for logic analyzer
+  * Add support for new hardware (USB2.0 interface/1G sampling rate)
+  * Fix the external clock issue with the U3Pro series
+  * Fix the issue with trigger position display in repeat mode
+  * Fix the problem with the mouse measurements in repeat mode
+  * Improve the accuracy of threshold voltage
+  * Fix the issue with the Timing decoder
+  * Expand the number of bytes decoded per frame for the DMX512 decoder
+
+  --for oscilloscope
+  * Fix the incorrect measurements on first trigger for U3P100
+  * Fix the error in measurements when the window size changes
+  * Fix the issue with saving measurements into DSL files
+  * Fix the loading error of duty cycle in DSL files
+
+  --for data acquisiton
+  * Fix the issue with incorrect values when export CSV file
+  * Fix the problem with waveform display when the window size changes
+  * Fix the issues with waveform when different channel are enabled
+
 v1.3.0 -- (2023-07-18)
 ----------
   --common
