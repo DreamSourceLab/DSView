@@ -313,6 +313,8 @@ namespace pv
 
         _logo_bar->set_mainform_callback(this);
 
+        bool bLoadFile = false;
+
         // Try load from file.
         QString ldFileName(AppControl::Instance()->_open_file_name.c_str());
         if (ldFileName != "")
@@ -323,7 +325,8 @@ namespace pv
             {              
                 dsv_info("Auto load file:%s", file_name.c_str());
                 tmp_file = ldFileName;
-  
+                bLoadFile = true;
+    
                 QTimer::singleShot(300, this, [this](){
                     on_load_file(tmp_file);
                     tmp_file = "";
@@ -336,7 +339,9 @@ namespace pv
             }
         }
 
-        _session->set_default_device();
+        if (!bLoadFile){
+            _session->set_default_device();
+        }
     }
 
     //*
