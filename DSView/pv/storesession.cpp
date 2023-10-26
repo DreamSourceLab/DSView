@@ -935,11 +935,19 @@ void StoreSession::export_proc(data::Snapshot *snapshot)
             if(_unit_count - i < usize)
                 size = _unit_count - i;
 
+            int ch = 0;
             // Make the cross data buffer.
-            for (int ch=0; ch<ch_num; ch++)
+           for(auto s : _session->get_signals())
             {
+                if (s->get_type() != SR_CHANNEL_DSO)
+                    continue;
+
+                if (!dso_snapshot->has_data(s->get_index()))
+                    continue;
+                
                 uint8_t *wr = ch_data_buffer + ch;
-                const uint8_t *rd = dso_snapshot->get_samples(0,0, ch) + i;
+                ch++;
+                const uint8_t *rd = dso_snapshot->get_samples(0,0, s->get_index()) + i;
                 const uint8_t *rd_end = rd + size;
                 
                 while (rd < rd_end)
