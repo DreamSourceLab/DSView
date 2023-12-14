@@ -153,6 +153,7 @@ void LogicSnapshot::first_payload(const sr_datafeed_logic &logic, uint64_t total
 
             if (probe->type == SR_CHANNEL_LOGIC && probe->enabled) {
                 std::vector<struct RootNode> root_vector;
+
                 for (uint64_t j = 0; j < rootnode_size; j++) {
                     struct RootNode rn;
                     rn.tog = 0;
@@ -234,9 +235,9 @@ void LogicSnapshot::append_cross_payload(const sr_datafeed_logic &logic)
 
     if (_is_loop)
     {
-        if (_loop_offset + samples >= LeafBlockSamples * Scale){        
+        if (_loop_offset >= LeafBlockSamples * Scale){        
             move_first_node_to_last();
-            _loop_offset -= LeafBlockSamples * Scale;
+            _loop_offset = 0;
             _lst_free_block_index = 0;
         }
         else{
@@ -316,6 +317,10 @@ void LogicSnapshot::append_cross_payload(const sr_datafeed_logic &logic)
     index0 =  align_sample_count / LeafBlockSamples / RootScale;
     index1 = (align_sample_count / LeafBlockSamples) % RootScale;
     offset =  align_sample_count % LeafBlockSamples;
+
+    if (index0 >= _ch_data[0].size()){
+        assert(false);
+    }
     
     lbp = _ch_data[fill_chan][index0].lbp[index1];
     if (lbp == NULL){
@@ -406,8 +411,8 @@ void LogicSnapshot::append_cross_payload(const sr_datafeed_logic &logic)
     _ring_sample_count = align_sample_count;
     _ring_sample_count -= _loop_offset;
 
-    if (align_sample_count > _total_sample_count){
-        _loop_offset = align_sample_count - _total_sample_count;
+    if (align_sample_count > _total_sample_count){        
+        _loop_offset = align_sample_count - _total_sample_count; 
         _ring_sample_count = _total_sample_count; 
     }
 
