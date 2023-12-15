@@ -145,8 +145,9 @@ void LogicSnapshot::first_payload(const sr_datafeed_logic &logic, uint64_t total
         _channel_num = channel_num;
         uint64_t rootnode_size = (_total_sample_count + RootNodeSamples - 1) / RootNodeSamples;
 
-        if (_is_loop)
-            rootnode_size++;
+        if (_is_loop){
+            rootnode_size += 2;
+        }
 
         for (const GSList *l = channels; l; l = l->next) {
             sr_channel *const probe = (sr_channel*)l->data;
@@ -233,11 +234,14 @@ void LogicSnapshot::append_cross_payload(const sr_datafeed_logic &logic)
         _sample_count = _total_sample_count;
     }
 
+    //dsv_info("_loop_offset:%llu, _total_sample_count:%llu, _ring_sample_count:%llu, cur samples:%llu",
+    //    _loop_offset, _total_sample_count, _ring_sample_count, samples);
+
     if (_is_loop)
     {
         if (_loop_offset >= LeafBlockSamples * Scale){        
             move_first_node_to_last();
-            _loop_offset = 0;
+            _loop_offset -= LeafBlockSamples * Scale;
             _lst_free_block_index = 0;
         }
         else{
