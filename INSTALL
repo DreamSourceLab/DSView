@@ -34,7 +34,7 @@ Debian/Ubuntu:
  	 	
    How to install qt on ubuntu?
    	qt5: qt5-default,qtbase5-dev
-   	qt6: qt6-base-dev,libQt6Svg*,libgl1-mesa-dev*
+   	qt6: qt6-base-dev,libQt6Svg*,libgl1-mesa-dev*,libxkbcommon-dev,libvulkan-dev
 
 Fedora (18, 19):
  $ sudo yum install git gcc g++ make cmake libtool pkgconfig glib2-devel \
