@@ -69,6 +69,7 @@ static int init(struct sr_output *o, GHashTable *options)
 	GSList *l;
 	int i;
     float range;
+    int ch_num;
 
 	if (!o || !o->sdi)
 		return SR_ERR_ARG;
@@ -85,6 +86,7 @@ static int init(struct sr_output *o, GHashTable *options)
     ctx->mask = 0;
     ctx->index = 0;
     ctx->type = g_variant_get_int16(g_hash_table_lookup(options, "type"));
+    ch_num = 0;
 
 	/* Get the number of channels, and the unitsize. */
 	for (l = o->sdi->channels; l; l = l->next) {
@@ -109,7 +111,9 @@ static int init(struct sr_output *o, GHashTable *options)
     }
 
 	/* Once more to map the enabled channels. */
-	for (i = 0, l = o->sdi->channels; l; l = l->next) {
+    i = 0;
+
+	for (l = o->sdi->channels; l; l = l->next) {
 		ch = l->data;
         if (ch->type != ctx->type)
 			continue;
@@ -121,6 +125,7 @@ static int init(struct sr_output *o, GHashTable *options)
         range = ch->vdiv * ch->vfactor * DS_CONF_DSO_VDIVS;
         ctx->channel_unit[i] = (range >= 5000000) ? 1000000 :
                                 (range >= 5000) ? 1000 : 1;
+       // sr_info("unit %d:%d", i, ctx->channel_unit[i]);
         ctx->channel_scale[i] = range / ctx->channel_unit[i];
         ctx->channel_offset[i] = ch->hw_offset;
         ctx->channel_mmax[i] = ch->map_max;
@@ -167,22 +172,33 @@ static GString *gen_header(const struct sr_output *o)
 
     if (ctx->type == SR_CHANNEL_LOGIC)
         g_string_append_printf(header, "Time(s),");
-    for (i = 0, l = o->sdi->channels; l; l = l->next, i++) {
+
+    i = 0;
+        
+    for (l = o->sdi->channels; l; l = l->next) {
         ch = l->data;
+
         if (ch->type != ctx->type)
             continue;
         if (!ch->enabled)
             continue;
+
         if (ctx->type == SR_CHANNEL_DSO) {
             char *unit_s = ctx->channel_unit[i] >= 1000000 ? "kV" :
                            ctx->channel_unit[i] >= 1000 ?  "V" : "mV";
+            //sr_info("head %d:%s", i, unit_s);
             g_string_append_printf(header, " %s (Unit: %s),", ch->name, unit_s);
-        } else if (ctx->type == SR_CHANNEL_ANALOG) {
+        }
+        else if (ctx->type == SR_CHANNEL_ANALOG) {
             g_string_append_printf(header, " %s (Unit: %s),", ch->name, ch->map_unit);
-        } else {
+        }
+        else {
             g_string_append_printf(header, " %s,", ch->name);
         }
+
+        i++;
     }
+
     if (o->sdi->channels)
         /* Drop last separator. */
         g_string_truncate(header, header->len - 1);
@@ -313,12 +329,6 @@ static int receive(const struct sr_output *o, const struct sr_datafeed_packet *p
             ch_cfg_dex = 0;
 
            for (j = 0; j < ch_num; j++) {
-              // idx = ctx->channel_index[j];
-             //  p = analog->data + i * ctx->num_enabled_channels + idx * ((ctx->num_enabled_channels > 1) ? 1 : 0);
-
-                // g_string_append_printf(*out, "%0.5f",  (ctx->channel_offset[j] - *p) *
-                //                                      (ctx->channel_mmax[j] - ctx->channel_mmin[j]) /
-                //                                      (ctx->ref_max - ctx->ref_min));
 
                if (enalbe_channel_flags[j] == 0){
                     continue;
