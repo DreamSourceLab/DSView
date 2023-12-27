@@ -621,8 +621,8 @@ QString DsoSignal::get_measure(enum DSO_MEASURE_TYPE type)
             break;
         case DSO_MS_PCNT:
             if (_level_valid)
-                mString = (_pcount > 1000000 ? QString::number(_pcount/1000000, 'f', 6) + "M" :
-                           _pcount > 1000 ? QString::number(_pcount/1000, 'f', 3) + "K" : QString::number(_pcount, 'f', 0));
+                mString = (_pcount > 1000000 ? QString::number((double)_pcount/1000000.0, 'f', 6) + "M" :
+                           _pcount > 1000 ? QString::number((double)_pcount/1000.0, 'f', 3) + "K" : QString::number((double)_pcount, 'f', 0));
             else
                 mString = mNone;
             break;
