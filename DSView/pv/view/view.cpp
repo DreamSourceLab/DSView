@@ -1273,9 +1273,9 @@ double View::index2pixel(uint64_t index, bool has_hoff)
 uint64_t View::pixel2index(double pixel)
 {
     const double samples_per_pixel = session().cur_snap_samplerate() * scale();
-    uint64_t index = (pixel + offset()) * samples_per_pixel - trig_hoff();
+    double index = (pixel + offset()) * samples_per_pixel - trig_hoff();
 
-    return index;
+    return (uint64_t)std::round(index);
 }
 
 void View::set_receive_len(uint64_t len)
