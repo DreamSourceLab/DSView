@@ -714,5 +714,9 @@
     {
         "id": "IDS_DLG_ABORT",
         "text": "放弃"
+    },
+    {
+        "id": "IDS_DLG_AUTO_SCROLL_LATEAST_DATA",
+        "text": "自动滚动到最新数据"
     }    
 ]

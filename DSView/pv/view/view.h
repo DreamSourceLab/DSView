@@ -153,6 +153,7 @@ public:
 
     int64_t get_min_offset();
     int64_t get_max_offset();
+    int64_t get_logic_lst_data_offset();
 
     void capture_init();
 
@@ -242,6 +243,8 @@ public:
     inline uint64_t get_search_pos(){
         return _search_pos;
     }
+
+    void scroll_to_logic_last_data_time();
 
     /*
      * horizental cursors

@@ -65,6 +65,7 @@ struct AppOptions
     bool  trigPosDisplayInMid;
     bool  displayProfileInBar;
     bool  swapBackBufferAlways;
+    bool  autoScrollLatestData;
     float fontSize;
 
     std::vector<StringPair> m_protocolFormats;

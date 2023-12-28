@@ -766,7 +766,7 @@ void Viewport::mousePressEvent(QMouseEvent *event)
     }
 }
 
-void Viewport::mouseMoveEvent(QMouseEvent *event)
+void Viewport:: mouseMoveEvent(QMouseEvent *event)
 {
 	assert(event);
     _hover_hit = false;
@@ -775,8 +775,8 @@ void Viewport::mouseMoveEvent(QMouseEvent *event)
     if (event->buttons() & Qt::LeftButton) {
         if (_type == TIME_VIEW) {
             if (_action_type == NO_ACTION) {
-                _view.set_scale_offset(_view.scale(),
-                    _mouse_down_offset + (_mouse_down_point - event->pos()).x());
+                int64_t x = _mouse_down_offset + (_mouse_down_point - event->pos()).x();
+                _view.set_scale_offset(_view.scale(), x);
             }
             _drag_strength = (_mouse_down_point - event->pos()).x();
         }
@@ -1385,7 +1385,9 @@ void Viewport::set_receive_len(quint64 length)
             _sample_received += length;
     }
 
-    if (_view.session().get_device()->get_work_mode() == LOGIC)
+    int mode = _view.session().get_device()->get_work_mode();
+
+    if (mode == LOGIC)
     {   
         if (_view.session().get_device()->is_file() == false)
         {
@@ -1419,6 +1421,12 @@ void Viewport::set_receive_len(quint64 length)
             }
         }      
     }
+
+    if (mode == LOGIC && AppConfig::Instance().appOptions.autoScrollLatestData
+        && _view.session().is_realtime_refresh())
+    {
+        _view.scroll_to_logic_last_data_time();
+    }    
 
     // Received new data, and refresh the view.
     update();

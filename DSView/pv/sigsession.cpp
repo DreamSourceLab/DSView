@@ -386,6 +386,11 @@ namespace pv
         return cur_samplelimits() * 1.0 / cur_snap_samplerate();
     }
 
+    double SigSession::get_logic_data_view_time()
+    {
+        return _view_data->get_logic()->get_ring_sample_count() * 1.0 / cur_snap_samplerate();
+    }
+
     double SigSession::cur_view_time()
     {
         return _device_agent.get_time_base() * DS_CONF_DSO_HDIVS * 1.0 / SR_SEC(1);

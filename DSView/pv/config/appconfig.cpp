@@ -122,6 +122,7 @@ static void _loadApp(AppOptions &o, QSettings &st)
     getFiled("displayProfileInBar", st, o.displayProfileInBar, false);
     getFiled("swapBackBufferAlways", st, o.swapBackBufferAlways, false);
     getFiled("fontSize", st, o.fontSize, 9.0);
+    getFiled("autoScrollLatestData", st, o.autoScrollLatestData, true);
 
     o.warnofMultiTrig = true;
 
@@ -148,6 +149,7 @@ static void _saveApp(AppOptions &o, QSettings &st)
     setFiled("displayProfileInBar", st, o.displayProfileInBar);
     setFiled("swapBackBufferAlways", st, o.swapBackBufferAlways);
     setFiled("fontSize", st, o.fontSize);
+    setFiled("autoScrollLatestData", st, o.autoScrollLatestData);
 
     QString fmt =  FormatArrayToString(o.m_protocolFormats);
     setFiled("protocalFormats", st, fmt);

@@ -714,5 +714,9 @@
     {
         "id": "IDS_DLG_ABORT",
         "text": "Abort"
+    },
+    {
+        "id": "IDS_DLG_AUTO_SCROLL_LATEAST_DATA",
+        "text": "Auto scroll to latest data"
     }
 ]

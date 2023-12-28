@@ -439,6 +439,8 @@ public:
         return _dso_status_valid;
     }
 
+    double get_logic_data_view_time();
+
 private:
     void set_cur_samplelimits(uint64_t samplelimits);
     void set_cur_snap_samplerate(uint64_t samplerate);

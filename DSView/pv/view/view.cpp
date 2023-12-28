@@ -1132,6 +1132,16 @@ int64_t View::get_max_offset()
                 (get_view_width() * MaxViewRate));
 }
 
+int64_t View::get_logic_lst_data_offset(){
+    return ceil((_session->get_logic_data_view_time() / _scale) -
+                (get_view_width() * MaxViewRate));
+}
+
+void View::scroll_to_logic_last_data_time()
+{
+    set_scale_offset(scale(), get_logic_lst_data_offset() + 10);
+}
+
 // -- calibration dialog
 void View::show_calibration()
 {

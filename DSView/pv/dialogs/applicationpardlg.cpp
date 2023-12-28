@@ -124,6 +124,9 @@ bool ApplicationParamDlg::ShowDlg(QWidget *parent)
     QCheckBox *ck_abortData = new QCheckBox();
     ck_abortData->setChecked(app.appOptions.swapBackBufferAlways);
 
+    QCheckBox *ck_autoScrollLatestData = new QCheckBox();
+    ck_autoScrollLatestData->setChecked(app.appOptions.autoScrollLatestData);
+
     QComboBox *ftCbSize = new DsComboBox();
     ftCbSize->setFixedWidth(50);
     bind_font_size_list(ftCbSize, app.appOptions.fontSize);
@@ -137,6 +140,8 @@ bool ApplicationParamDlg::ShowDlg(QWidget *parent)
     logicLay->addWidget(ck_quickScroll, 0, 1, Qt::AlignRight);
     logicLay->addWidget(new QLabel(L_S(STR_PAGE_DLG, S_ID(IDS_DLG_USE_ABORT_DATA_REPEAT), "Used abort data")), 1, 0, Qt::AlignLeft); 
     logicLay->addWidget(ck_abortData, 1, 1, Qt::AlignRight);
+    logicLay->addWidget(new QLabel(L_S(STR_PAGE_DLG, S_ID(IDS_DLG_AUTO_SCROLL_LATEAST_DATA), "Auto scoll latest")), 2, 0, Qt::AlignLeft); 
+    logicLay->addWidget(ck_autoScrollLatestData, 2, 1, Qt::AlignRight);
     lay->addWidget(logicGroup);
 
     //Scope group
@@ -189,6 +194,10 @@ bool ApplicationParamDlg::ShowDlg(QWidget *parent)
         if (app.appOptions.fontSize != fSize){
             app.appOptions.fontSize = fSize;
             bFontChanged = true;
+        }
+        if (app.appOptions.autoScrollLatestData != ck_autoScrollLatestData->isChecked()){
+            app.appOptions.autoScrollLatestData = ck_autoScrollLatestData->isChecked();
+            bAppChanged = true;
         }
  
         if (bAppChanged){
