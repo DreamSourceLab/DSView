@@ -2,7 +2,7 @@
 ## This file is part of the libsigrokdecode project.
 ##
 ## Copyright (C) 2014 Guenther Wenninger <robin@bitschubbser.org>
-## Copyright (C) 2022 DreamSourceLab <support@dreamsourcelab.com>
+## Copyright (C) 2023 DreamSourceLab <support@dreamsourcelab.com>
 ##
 ## This program is free software; you can redistribute it and/or modify
 ## it under the terms of the GNU General Public License as published by
@@ -17,6 +17,10 @@
 ## You should have received a copy of the GNU General Public License
 ## along with this program; if not, see <http://www.gnu.org/licenses/>.
 ##
+
+#
+# 2023/12/19 bug fixed: Aux Data Error
+#
 
 import sigrokdecode as srd
 
@@ -264,6 +268,7 @@ class Decoder(srd.Decoder):
                 for a in aux_audio_data:
                     sam = sam + str(a[0])
                     sam_rot = str(a[0]) + sam_rot
+
                 sample = subframe[4:24]
                 for s in sample:
                     sam = sam + str(s[0])
@@ -274,7 +279,7 @@ class Decoder(srd.Decoder):
                 parity = subframe[27:28]
 
                 self.putx(aux_audio_data[0][1], aux_audio_data[3][2], \
-                        [3, ['Aux 0x%x' % int(sam, 2), '0x%x' % int(sam, 2)]])
+                      [3, ['Aux 0x%x' % int(sam[:4], 2), '0x%x' % int(sam[:4], 2)]])
                 self.putx(sample[0][1], sample[19][2], \
                         [3, ['Sample 0x%x' % int(sam, 2), '0x%x' % int(sam, 2)]])
                 self.putx(aux_audio_data[0][1], sample[19][2], \
@@ -354,7 +359,7 @@ class Decoder(srd.Decoder):
             parity = self.subframe[27:28]
 
             self.putx(aux_audio_data[0][1], aux_audio_data[3][2], \
-                      [3, ['Aux 0x%x' % int(sam, 2), '0x%x' % int(sam, 2)]])
+                      [3, ['Aux 0x%x' % int(sam[:4], 2), '0x%x' % int(sam[:4], 2)]])
             self.putx(sample[0][1], sample[19][2], \
                       [3, ['Sample 0x%x' % int(sam, 2), '0x%x' % int(sam, 2)]])
             self.putx(aux_audio_data[0][1], sample[19][2], \

@@ -256,15 +256,11 @@ class Decoder(srd.Decoder):
                 self.put_payload()
 
     def decode(self):
-        bMoreMatch = False
-
         while True:
             if self.timeout == 0:
                 rising_edge, = self.wait({0: 'e'})
-                bMoreMatch = False
             else:
                 rising_edge, = self.wait([{0: 'e'}, {'skip': self.timeout}])
-                bMoreMatch = True
 
             # If this is the first edge, we only update ss
             if self.ss == 0:
