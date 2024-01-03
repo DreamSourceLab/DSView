@@ -61,13 +61,12 @@ class Decoder(srd.Decoder):
 
     def reset(self):
         self.samplerate = None
-        self.samplenum = None
         self.edges, self.bits, self.ss_es_bits = [], [], []
         self.state = 'IDLE'
 
     def start(self):
         self.out_ann = self.register(srd.OUTPUT_ANN)
-        self.old_ir = 1 if self.options['polarity'] == 'active-low' else 0
+        self.next_edge = 'l' if self.options['polarity'] == 'active-low' else 'h'
 
     def metadata(self, key, value):
         if key == srd.SRD_CONF_SAMPLERATE:
@@ -143,11 +142,7 @@ class Decoder(srd.Decoder):
             raise SamplerateError('Cannot decode without samplerate.')
         while True:
 
-            (self.ir,) = self.wait()
-
-            # Wait for any edge (rising or falling).
-            if self.old_ir == self.ir:
-                continue
+            (self.ir,) = self.wait({0: self.next_edge})
 
             # State machine.
             if self.state == 'IDLE':
@@ -155,7 +150,7 @@ class Decoder(srd.Decoder):
                 self.edges.append(self.samplenum)
                 self.bits.append([self.samplenum, bit])
                 self.state = 'MID1'
-                self.old_ir = self.ir
+                self.next_edge = 'l' if self.ir else 'h'
                 continue
             edge = self.edge_type()
             if edge == 'e':
@@ -184,4 +179,4 @@ class Decoder(srd.Decoder):
                 self.handle_bits()
                 self.reset_decoder_state()
 
-            self.old_ir = self.ir
+            self.next_edge = 'l' if self.ir else 'h'

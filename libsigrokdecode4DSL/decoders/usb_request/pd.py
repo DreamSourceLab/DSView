@@ -120,16 +120,22 @@ class Decoder(srd.Decoder):
     license = 'gplv2+'
     inputs = ['usb_packet']
     outputs = ['usb_request']
+    options = (
+        {'id': 'in_request_start', 'desc': 'Start IN requests on',
+            'default': 'submit', 'values': ('submit', 'first-ack'), 'idn':'dec_usb_request_opt_in_request_start'},
+    )
     tags = ['PC']
     annotations = (
         ('request-setup-read', 'Setup: Device-to-host'),
         ('request-setup-write', 'Setup: Host-to-device'),
         ('request-bulk-read', 'Bulk: Device-to-host'),
         ('request-bulk-write', 'Bulk: Host-to-device'),
-        ('errors', 'Unexpected packets'),
+        ('error', 'Unexpected packet'),
     )
     annotation_rows = (
-        ('request', 'USB requests', tuple(range(4))),
+        ('request-setup', 'USB SETUP', (0, 1)),
+        ('request-in', 'USB BULK IN', (2,)),
+        ('request-out', 'USB BULK OUT', (3,)),
         ('errors', 'Errors', (4,)),
     )
     binary = (
@@ -178,6 +184,7 @@ class Decoder(srd.Decoder):
     def start(self):
         self.out_binary = self.register(srd.OUTPUT_BINARY)
         self.out_ann = self.register(srd.OUTPUT_ANN)
+        self.in_request_start = self.options['in_request_start']
 
     def handle_transfer(self):
         request_started = 0
@@ -195,7 +202,7 @@ class Decoder(srd.Decoder):
         if not (addr, ep) in self.request:
             self.request[(addr, ep)] = {'setup_data': [], 'data': [],
                 'type': None, 'ss': self.ss_transaction, 'es': None,
-                'id': self.request_id, 'addr': addr, 'ep': ep}
+                'ss_data': None, 'id': self.request_id, 'addr': addr, 'ep': ep}
             self.request_id += 1
             request_started = 1
         request = self.request[(addr,ep)]
@@ -207,11 +214,14 @@ class Decoder(srd.Decoder):
         # BULK or INTERRUPT transfer
         if request['type'] in (None, 'BULK IN') and self.transaction_type == 'IN':
             request['type'] = 'BULK IN'
+            if len(request['data']) == 0 and len(self.transaction_data) > 0:
+                request['ss_data'] = self.ss_transaction
             request['data'] += self.transaction_data
             self.handle_request(request_started, request_end)
         elif request['type'] in (None, 'BULK OUT') and self.transaction_type == 'OUT':
             request['type'] = 'BULK OUT'
-            request['data'] += self.transaction_data
+            if self.handshake == 'ACK':
+                request['data'] += self.transaction_data
             self.handle_request(request_started, request_end)
 
         # CONTROL, SETUP stage
@@ -231,7 +241,8 @@ class Decoder(srd.Decoder):
             request['data'] += self.transaction_data
 
         elif request['type'] == 'SETUP OUT' and self.transaction_type == 'OUT':
-            request['data'] += self.transaction_data
+            if self.handshake == 'ACK':
+                request['data'] += self.transaction_data
             if request['wLength'] == len(request['data']):
                 self.handle_request(1, 0)
 
@@ -275,7 +286,9 @@ class Decoder(srd.Decoder):
         addr = self.transaction_addr
         request = self.request[(addr, ep)]
 
-        ss, es = request['ss'], request['es']
+        ss, es, ss_data = request['ss'], request['es'], request['ss_data']
+        if self.in_request_start == 'submit':
+            ss_data = ss
 
         if request_start == 1:
             # Issue PCAP 'SUBMIT' packet.
@@ -292,7 +305,7 @@ class Decoder(srd.Decoder):
             elif request['type'] == 'SETUP OUT':
                 self.putr(ss, es, [1, ['SETUP out: %s' % summary]])
             elif request['type'] == 'BULK IN':
-                self.putr(ss, es, [2, ['BULK in: %s' % summary]])
+                self.putr(ss_data, es, [2, ['BULK in: %s' % summary]])
             elif request['type'] == 'BULK OUT':
                 self.putr(ss, es, [3, ['BULK out: %s' % summary]])
 
@@ -339,6 +352,8 @@ class Decoder(srd.Decoder):
             self.es_transaction = es
             self.transaction_state = 'TOKEN RECEIVED'
             self.transaction_ep = ep
+            if ep > 0 and pname == 'IN':
+                self.transaction_ep = ep + 0x80
             self.transaction_addr = addr
             self.transaction_type = pname # IN OUT SETUP
 

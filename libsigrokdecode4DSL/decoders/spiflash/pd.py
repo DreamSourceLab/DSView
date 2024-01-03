@@ -1,7 +1,7 @@
 ##
 ## This file is part of the libsigrokdecode project.
 ##
-## Copyright (C) 2011-2016 Uwe Hermann <uwe@hermann-uwe.de>
+## Copyright (C) 2011-2020 Uwe Hermann <uwe@hermann-uwe.de>
 ##
 ## This program is free software; you can redistribute it and/or modify
 ## it under the terms of the GNU General Public License as published by
@@ -18,16 +18,14 @@
 ##
 
 import sigrokdecode as srd
+import re
+from common.srdhelper import SrdIntEnum
 from .lists import *
 
 L = len(cmds)
 
-# Don't forget to keep this in sync with 'cmds' is lists.py.
-class Ann:
-    WRSR, PP, READ, WRDI, RDSR, WREN, FAST_READ, SE, RDSCUR, WRSCUR, \
-    RDSR2, CE, ESRY, DSRY, WRITE1, WRITE2, REMS, RDID, RDP_RES, CP, ENSO, DP, \
-    READ2X, EXSO, CE2, STATUS, BE, REMS2, \
-    BIT, FIELD, WARN = range(L + 3)
+a = [re.sub('\/', '_', c[0]).replace('2READ', 'READ2X') for c in cmds.values()] + ['BIT', 'FIELD', 'WARN']
+Ann = SrdIntEnum.from_list('Ann', a)
 
 def cmd_annotation_classes():
     return tuple([tuple([cmd[0].lower(), cmd[1]]) for cmd in cmds.values()])
@@ -73,9 +71,9 @@ def decode_status_reg(data):
 class Decoder(srd.Decoder):
     api_version = 3
     id = 'spiflash'
-    name = 'SPI flash'
-    longname = 'SPI flash chips'
-    desc = 'xx25 series SPI (NOR) flash chip protocol.'
+    name = 'SPI flash/EEPROM'
+    longname = 'SPI flash/EEPROM chips'
+    desc = 'xx25 series SPI (NOR) flash/EEPROM chip protocol.'
     license = 'gplv2+'
     inputs = ['spi']
     outputs = []
@@ -164,17 +162,15 @@ class Decoder(srd.Decoder):
         self.addr |= (mosi << ((4 - self.cmdstate) * 8))
         b = ((3 - (self.cmdstate - 2)) * 8) - 1
         self.putx([Ann.BIT,
-            ['Address bits %d..%d: {$}' % (b, b - 7),
-             'Addr bits %d..%d: {$}' % (b, b - 7),
-             'Addr bits %d..%d' % (b, b - 7), 
-             'A%d..A%d' % (b, b - 7),
-             '@%02X' % mosi
-             ]])
+            ['Address bits %d..%d: 0x%02x' % (b, b - 7, mosi),
+             'Addr bits %d..%d: 0x%02x' % (b, b - 7, mosi),
+             'Addr bits %d..%d' % (b, b - 7), 'A%d..A%d' % (b, b - 7)]])
         if self.cmdstate == 2:
             self.ss_field = self.ss
         if self.cmdstate == 4:
             self.es_field = self.es
-            self.putf([Ann.FIELD, ['Address: {$}', 'Addr: {$}', '{$}', '@%06x' % self.addr]])
+            self.putf([Ann.FIELD, ['Address: 0x%06x' % self.addr,
+                'Addr: 0x%06x' % self.addr, '0x%06x' % self.addr]])
 
     def handle_wren(self, mosi, miso):
         self.putx([Ann.WREN, self.cmd_ann_list()])
@@ -190,14 +186,14 @@ class Decoder(srd.Decoder):
             self.emit_cmd_byte()
         elif self.cmdstate == 2:
             # Byte 2: Slave sends the JEDEC manufacturer ID.
-            self.putx([Ann.FIELD, ['Manufacturer ID: {$}', '@%02x' % miso]])
+            self.putx([Ann.FIELD, ['Manufacturer ID: 0x%02x' % miso]])
         elif self.cmdstate == 3:
             # Byte 3: Slave sends the memory type.
-            self.putx([Ann.FIELD, ['Memory type: {$}', '@%02x' % miso]])
+            self.putx([Ann.FIELD, ['Memory type: 0x%02x' % miso]])
         elif self.cmdstate == 4:
             # Byte 4: Slave sends the device ID.
             self.device_id = miso
-            self.putx([Ann.FIELD, ['Device ID: {$}', '@%02x' % miso]])
+            self.putx([Ann.FIELD, ['Device ID: 0x%02x' % miso]])
 
         if self.cmdstate == 4:
             self.es_cmd = self.es
@@ -318,7 +314,7 @@ class Decoder(srd.Decoder):
             # Bytes 2/3/4: Master sends read address (24bits, MSB-first).
             self.emit_addr_bytes(mosi)
         elif self.cmdstate == 5:
-            self.putx([Ann.BIT, ['Dummy byte: {$}', '@%02x' % mosi]])
+            self.putx([Ann.BIT, ['Dummy byte: 0x%02x' % mosi]])
         elif self.cmdstate >= 6:
             # Bytes 6-x: Master reads data bytes (until CS# de-asserted).
             self.es_field = self.es # Will be overwritten for each byte.
@@ -348,7 +344,7 @@ class Decoder(srd.Decoder):
             # Byte 5: Dummy byte. Also handle byte 4 (address LSB) here.
             self.emit_addr_bytes(b1)
             self.cmdstate = 5
-            self.putx([Ann.BIT, ['Dummy byte: {$}', '@%02x' % b2]])
+            self.putx([Ann.BIT, ['Dummy byte: 0x%02x' % b2]])
         elif self.cmdstate >= 6:
             # Bytes 6-x: Master reads data bytes (until CS# de-asserted).
             self.es_field = self.es # Will be overwritten for each byte.
@@ -370,7 +366,7 @@ class Decoder(srd.Decoder):
             self.es_field = self.es
             if self.cmdstate == 2:
                 self.ss_field = self.ss
-            self.putx([Ann.BIT, ['Status register byte %d: {$}' % ((self.cmdstate % 2) + 1, '@%02x' % miso)]])
+            self.putx([Ann.BIT, ['Status register byte %d: 0x%02x' % ((self.cmdstate % 2) + 1, miso)]])
         self.cmdstate += 1
 
     # TODO: Warn/abort if we don't see the necessary amount of bytes.
@@ -386,8 +382,8 @@ class Decoder(srd.Decoder):
 
         if self.cmdstate == 4:
             self.es_cmd = self.es
-            d = ['Erase sector %d ({$})' % self.addr, '@%06x' % self.addr]
-            self.putc([Ann.SE, d])
+            d = 'Erase sector %d (0x%06x)' % (self.addr, self.addr)
+            self.putc([Ann.SE, [d]])
             # TODO: Max. size depends on chip, check that too if possible.
             if self.addr % 4096 != 0:
                 # Sector addresses must be 4K-aligned (same for all 3 chips).
@@ -439,7 +435,7 @@ class Decoder(srd.Decoder):
             self.emit_cmd_byte()
         elif self.cmdstate in (2, 3, 4):
             # Bytes 2/3/4: Master sends three dummy bytes.
-            self.putx([Ann.FIELD, ['Dummy byte: {$}', '@%02x' % mosi]])
+            self.putx([Ann.FIELD, ['Dummy byte: %02x' % mosi]])
         elif self.cmdstate == 5:
             # Byte 5: Slave sends device ID.
             self.es_cmd = self.es
@@ -456,7 +452,7 @@ class Decoder(srd.Decoder):
             self.emit_cmd_byte()
         elif self.cmdstate in (2, 3):
             # Bytes 2/3: Master sends two dummy bytes.
-            self.putx([Ann.FIELD, ['Dummy byte: {$}', '@%02X' % mosi]])
+            self.putx([Ann.FIELD, ['Dummy byte: 0x%02x' % mosi]])
         elif self.cmdstate == 4:
             # Byte 4: Master sends 0x00 or 0x01.
             # 0x00: Master wants manufacturer ID as first reply byte.
@@ -468,12 +464,12 @@ class Decoder(srd.Decoder):
             # Byte 5: Slave sends manufacturer ID (or device ID).
             self.ids = [miso]
             d = 'Manufacturer' if self.manufacturer_id_first else 'Device'
-            self.putx([Ann.FIELD, ['%s ID: {$}' % d, '@%02X' % miso]])
+            self.putx([Ann.FIELD, ['%s ID: 0x%02x' % (d, miso)]])
         elif self.cmdstate == 6:
             # Byte 6: Slave sends device ID (or manufacturer ID).
             self.ids.append(miso)
             d = 'Device' if self.manufacturer_id_first else 'Manufacturer'
-            self.putx([Ann.FIELD, ['%s ID: {$}' % d, '@%02X' % miso]])
+            self.putx([Ann.FIELD, ['%s ID: 0x%02x' % (d, miso)]])
 
         if self.cmdstate == 6:
             id_ = self.ids[1] if self.manufacturer_id_first else self.ids[0]
@@ -514,7 +510,8 @@ class Decoder(srd.Decoder):
         else:
             s = ''.join(map(chr, self.data))
         self.putf([Ann.FIELD, ['%s (%d bytes)' % (label, len(self.data))]])
-        self.putc([idx, ['%s (addr {$}, %d bytes): %s' % (cmds[self.state][1], len(self.data), s), '@%06x' % self.addr]])
+        self.putc([idx, ['%s (addr 0x%06x, %d bytes): %s' % \
+                   (cmds[self.state][1], self.addr, len(self.data), s)]])
 
     def decode(self, ss, es, data):
         ptype, mosi, miso = data
@@ -536,5 +533,5 @@ class Decoder(srd.Decoder):
         try:
             self.cmd_handlers[self.state](mosi, miso)
         except KeyError:
-            self.putx([Ann.BIT, ['Unknown command: {$}', '@%02x' % mosi]])
+            self.putx([Ann.BIT, ['Unknown command: 0x%02x' % mosi]])
             self.state = None
