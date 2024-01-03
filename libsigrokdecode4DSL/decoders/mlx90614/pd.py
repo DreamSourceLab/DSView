@@ -30,8 +30,12 @@ class Decoder(srd.Decoder):
     outputs = []
     tags = ['IC', 'Sensor']
     annotations = (
-        ('celsius', 'Temperature in degrees Celsius'),
-        ('kelvin', 'Temperature in Kelvin'),
+        ('celsius', 'Temperature / °C'),
+        ('kelvin', 'Temperature / K'),
+    )
+    annotation_rows = (
+        ('temps-celsius', 'Temperature / °C', (0,)),
+        ('temps-kelvin', 'Temperature / K', (1,)),
     )
 
     def __init__(self):

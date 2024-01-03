@@ -20,6 +20,8 @@
 import sigrokdecode as srd
 from .lists import *
 
+TX, RX = range(2)
+
 class Decoder(srd.Decoder):
     api_version = 3
     id = 'mrf24j40'
@@ -31,16 +33,30 @@ class Decoder(srd.Decoder):
     outputs = []
     tags = ['IC', 'Wireless/RF']
     annotations = (
-        ('sread', 'Short register read commands'),
-        ('swrite', 'Short register write commands'),
-        ('lread', 'Long register read commands'),
-        ('lwrite', 'Long register write commands'),
-        ('warning', 'Warnings'),
+        ('sread', 'Short register read'),
+        ('swrite', 'Short register write'),
+        ('lread', 'Long register read'),
+        ('lwrite', 'Long register write'),
+        ('warning', 'Warning'),
+        ('tx-frame', 'TX frame'),
+        ('rx-frame', 'RX frame'),
+        ('tx-retry-1', '1x TX retry'),
+        ('tx-retry-2', '2x TX retry'),
+        ('tx-retry-3', '3x TX retry'),
+        ('tx-fail', 'TX fail (too many retries)'),
+        ('ccafail', 'CCAFAIL (channel busy)'),
     )
     annotation_rows = (
-        ('read', 'Read', (0, 2)),
-        ('write', 'Write', (1, 3)),
+        ('reads', 'Reads', (0, 2)),
+        ('writes', 'Writes', (1, 3)),
         ('warnings', 'Warnings', (4,)),
+        ('tx-frames', 'TX frames', (5,)),
+        ('rx-frames', 'RX frames', (6,)),
+        ('tx-retries-1', '1x TX retries', (7,)),
+        ('tx-retries-2', '2x TX retries', (8,)),
+        ('tx-retries-3', '3x TX retries', (9,)),
+        ('tx-fails', 'TX fails', (10,)),
+        ('ccafails', 'CCAFAILs', (11,)),
     )
 
     def __init__(self):
@@ -48,8 +64,9 @@ class Decoder(srd.Decoder):
 
     def reset(self):
         self.ss_cmd, self.es_cmd = 0, 0
-        self.mosi_bytes = []
-        self.miso_bytes = []
+        self.ss_frame, self.es_frame = [0, 0], [0, 0]
+        self.mosi_bytes, self.miso_bytes = [], []
+        self.framecache = [[], []]
 
     def start(self):
         self.out_ann = self.register(srd.OUTPUT_ANN)
@@ -68,10 +85,34 @@ class Decoder(srd.Decoder):
         write = self.mosi_bytes[0] & 0x1
         reg = (self.mosi_bytes[0] >> 1) & 0x3f
         reg_desc = sregs.get(reg, 'illegal')
+        for rxtx in (RX, TX):
+            if self.framecache[rxtx] == []:
+                continue
+            bit0 = self.mosi_bytes[1] & (1 << 0)
+            if rxtx == TX and not (reg_desc == 'TXNCON' and bit0 == 1):
+                continue
+            if rxtx == RX and not (reg_desc == 'RXFLUSH' and bit0 == 1):
+                continue
+            idx = 5 if rxtx == TX else 6
+            xmitdir = 'TX' if rxtx == TX else 'RX'
+            frame = ' '.join(['%02X' % b for b in self.framecache[rxtx]])
+            self.put(self.ss_frame[rxtx], self.es_frame[rxtx], self.out_ann,
+                [idx, ['%s frame: %s' % (xmitdir, frame)]])
+            self.framecache[rxtx] = []
         if write:
-            self.putx([1, ['%s: {$}' % reg_desc, '@%02X' % self.mosi_bytes[1]]])
+            self.putx([1, ['%s: {$}' % (reg_desc, '@%02X' % self.mosi_bytes[1])]])
         else:
             self.putx([0, ['%s: {$}' % reg_desc, '@%02X' % self.miso_bytes[1]]])
+            numretries = (self.miso_bytes[1] & 0xc0) >> 6
+            if reg_desc == 'TXSTAT' and numretries > 0:
+                txfail = 1 if ((self.miso_bytes[1] & (1 << 0)) != 0) else 0
+                idx = 6 + numretries + txfail
+                if txfail:
+                    self.putx([idx, ['TX fail (>= 4 retries)', 'TX fail']])
+                else:
+                    self.putx([idx, ['TX retries: %d' % numretries]])
+            if reg_desc == 'TXSTAT' and (self.miso_bytes[1] & (1 << 5)) != 0:
+                self.putx([11, ['CCAFAIL (channel busy)', 'CCAFAIL']])
 
     def handle_long(self):
         dword = self.mosi_bytes[0] << 8 | self.mosi_bytes[1]
@@ -98,6 +139,16 @@ class Decoder(srd.Decoder):
             self.putx([3, ['%s: {$}' % reg_desc, '@%02X' % self.mosi_bytes[2]]])
         else:
             self.putx([2, ['%s: {$}' % reg_desc, '@%02X' % self.miso_bytes[2]]])
+
+        for rxtx in (RX, TX):
+            if rxtx == RX and reg_desc[:3] != 'RX:':
+                continue
+            if rxtx == TX and reg_desc[:3] != 'TX:':
+                continue
+            if len(self.framecache[rxtx]) == 0:
+                self.ss_frame[rxtx] = self.ss_cmd
+            self.es_frame[rxtx] = self.es_cmd
+            self.framecache[rxtx] += [self.mosi_bytes[2]] if rxtx == TX else [self.miso_bytes[2]]
 
     def decode(self, ss, es, data):
         ptype = data[0]
