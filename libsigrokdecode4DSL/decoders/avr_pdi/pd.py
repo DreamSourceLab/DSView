@@ -3,7 +3,7 @@
 ##
 ## Copyright (C) 2011-2014 Uwe Hermann <uwe@hermann-uwe.de>
 ## Copyright (C) 2016 Gerhard Sittig <gerhard.sittig@gmx.net>
-## Copyright (C) 2019 DreamSourceLab <support@dreamsourcelab.com>
+## Copyright (C) 2023 DreamSourceLab <support@dreamsourcelab.com>
 ##
 ## This program is free software; you can redistribute it and/or modify
 ## it under the terms of the GNU General Public License as published by
@@ -71,6 +71,10 @@
 #   to component names, or even register names and bit fields(?). It's
 #   quite deep a rabbithole though...
 
+#
+# 2023/12/29  bug fixed: memory erroy when the value of insn_rep_count too large
+#
+
 import sigrokdecode as srd
 from collections import namedtuple
 
@@ -86,7 +90,6 @@ class Ann:
         BIN_BYTES,
     ) = range(1)
 
-#元组
 Bit = namedtuple('Bit', 'val ss es')
 
 class PDI:
@@ -176,17 +179,12 @@ class Decoder(srd.Decoder):
         self.break_es = None
         self.clear_insn()
 
-
-
-
     def clear_insn(self):
         # Collect instructions and their arguments,
         # properties of the current instructions.
         self.insn_rep_count = 0
 
         self.insn_opcode = None
-        self.insn_wr_counts = []
-        self.insn_rd_counts = []
         # Accumulation of data items as bytes pass by.
         self.insn_dat_bytes = []
         self.insn_dat_count = 0
@@ -196,7 +194,6 @@ class Decoder(srd.Decoder):
         self.cmd_insn_parts_nice = []
         self.cmd_insn_parts_terse = []
 
-        #new
         self.insn_write_counts = 0
         self.insn_read_counts = 0
         self.width_addr = 0

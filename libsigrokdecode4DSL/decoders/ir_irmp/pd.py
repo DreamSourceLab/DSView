@@ -3,6 +3,7 @@
 ##
 ## Copyright (C) 2014 Gump Yang <gump.yang@gmail.com>
 ## Copyright (C) 2019 Rene Staffen
+## Copyright (C) 2020-2021 Gerhard Sittig <gerhard.sittig@gmx.net>
 ##
 ## This program is free software; you can redistribute it and/or modify
 ## it under the terms of the GNU General Public License as published by
@@ -97,7 +98,7 @@ class Decoder(srd.Decoder):
         self.reset()
 
     def reset(self):
-        self.want_reset = True
+        pass
 
     def start(self):
         self.out_ann = self.register(srd.OUTPUT_ANN)
@@ -113,25 +114,26 @@ class Decoder(srd.Decoder):
             except Exception as e:
                 txt = e.args[0]
                 raise LibraryError(txt)
-        if self.irmp:
-            self.lib_rate = self.irmp.get_sample_rate()
-        if not self.irmp or not self.lib_rate:
-            raise LibraryError('Cannot access IRMP library. One instance limit exceeded?')
+        if not self.irmp:
+            raise LibraryError('Cannot access IRMP library.')
         if not self.samplerate:
             raise SamplerateError('Cannot decode without samplerate.')
-        if self.samplerate % self.lib_rate:
-            raise SamplerateError('Capture samplerate must be multiple of library samplerate ({})'.format(self.lib_rate))
-        self.rate_factor = int(self.samplerate / self.lib_rate)
-        if self.want_reset:
-            self.irmp.reset_state()
-            self.want_reset = False
+        lib_rate = self.irmp.get_sample_rate()
+        if not lib_rate:
+            raise LibraryError('Cannot determine IRMP library\'s samplerate.')
+        if self.samplerate % lib_rate:
+            raise SamplerateError('Capture samplerate must be multiple of library samplerate ({})'.format(lib_rate))
 
-        self.active = 0 if self.options['polarity'] == 'active-low' else 1
+        self.rate_factor = int(self.samplerate / lib_rate)
+        active = 0 if self.options['polarity'] == 'active-low' else 1
+
         ir, = self.wait()
-        while True:
-            if self.active == 1:
-                ir = 1 - ir
-            if self.irmp.add_one_sample(ir):
-                data = self.irmp.get_result_data()
-                self.putframe(data)
-            ir, = self.wait([{'skip': self.rate_factor}])
+        with self.irmp:
+            self.irmp.reset_state()
+            while True:
+                if active == 1:
+                    ir = 1 - ir
+                if self.irmp.add_one_sample(ir):
+                    data = self.irmp.get_result_data()
+                    self.putframe(data)
+                ir, = self.wait([{'skip': self.rate_factor}])

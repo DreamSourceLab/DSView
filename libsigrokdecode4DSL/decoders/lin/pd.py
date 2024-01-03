@@ -214,7 +214,7 @@ class Decoder(srd.Decoder):
 
     def end(self):
         if self.done_break and len(self.lin_rsp):
-            self.handle_checksum();
+            self.handle_checksum()
 
     def decode(self, ss, es, data):
         ptype, rxtx, pdata = data

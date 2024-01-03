@@ -19,6 +19,10 @@
 ## along with this program; if not, see <http://www.gnu.org/licenses/>.
 ##
 
+##
+## 2023/12/29 add parity check and graycode check
+##
+
 from common.srdhelper import bitpack_msb
 import sigrokdecode as srd
 
@@ -27,6 +31,24 @@ class SamplerateError(Exception):
 
 def dlc2len(dlc):
     return [0, 1, 2, 3, 4, 5, 6, 7, 8, 12, 16, 20, 24, 32, 48, 64][dlc]
+
+def ParityCheck(value):
+    paritycheck = False
+    parity = [0,3,5,6,9,10,12,15]
+    for parityvalue in parity:
+        if parityvalue == value:
+            paritycheck = True
+            break
+    return paritycheck
+
+def gray_to_binary(gray_code):
+    binary_code = gray_code[0]
+    for i in range(1, len(gray_code)):
+        if gray_code[i] == '0':
+            binary_code += binary_code[i - 1]
+        else:
+            binary_code += '1' if binary_code[i - 1] == '0' else '0'
+    return binary_code
 
 class Decoder(srd.Decoder):
     api_version = 3
@@ -90,12 +112,15 @@ class Decoder(srd.Decoder):
     def set_nominal_bitrate(self):
         self.set_bit_rate(self.options['nominal_bitrate'])
 
+
     def set_fast_bitrate(self):
         self.set_bit_rate(self.options['fast_bitrate'])
+
 
     def metadata(self, key, value):
         if key == srd.SRD_CONF_SAMPLERATE:
             self.samplerate = value
+
             self.bit_width = float(self.samplerate) / float(self.options['nominal_bitrate'])
             self.sample_point = (self.bit_width / 100.0) * self.options['sample_point']
 
@@ -140,6 +165,11 @@ class Decoder(srd.Decoder):
         self.rtr = None
         self.crc_data = []
 
+        #Parity Calculate
+        self.stuff_count_start = None
+        self.stuff_count = 0 
+
+
     # Poor man's clock synchronization. Use signal edges which change to
     # dominant state in rather simple ways. This naive approach is neither
     # aware of the SYNC phase's width nor the specific location of the edge,
@@ -150,7 +180,9 @@ class Decoder(srd.Decoder):
         self.dom_edge_bcount = self.curbit
 
     # Determine the position of the next desired bit's sample point.
+
     def get_sample_point(self, bitnum):
+
         samplenum = self.dom_edge_snum
         samplenum += self.bit_width * (bitnum - self.dom_edge_bcount)
         samplenum += self.sample_point
@@ -160,13 +192,19 @@ class Decoder(srd.Decoder):
         # CAN uses NRZ encoding and bit stuffing.
         # After 5 identical bits, a stuff bit of opposite value is added.
         # But not in the CRC delimiter, ACK, and end of frame fields.
+
+
         if len(self.bits) > self.last_databit + 17:
             return False
-        if self.fd and len(self.bits) > self.last_databit:
+
+        if self.fd and len(self.bits) > self.last_databit + 1:
             return False
+
         last_6_bits = self.rawbits[-6:]
         if last_6_bits not in ([0, 0, 0, 0, 0, 1], [1, 1, 1, 1, 1, 0]):
             return False
+
+        self.stuff_count = self.stuff_count + 1
 
         # Stuff bit. Keep it in self.rawbits, but drop it from self.bits.
         self.bits.pop() # Drop last bit.
@@ -184,11 +222,16 @@ class Decoder(srd.Decoder):
     # Both standard and extended frames end with CRC, CRC delimiter, ACK,
     # ACK delimiter, and EOF fields. Handle them in a common function.
     # Returns True if the frame ended (EOF), False otherwise.
+
+
     def decode_frame_end(self, can_rx, bitnum):
+
 
         # Remember start of CRC sequence (see below).
         if bitnum == (self.last_databit + 1):
+
             self.ss_block = self.samplenum
+
             if self.fd:
                 if dlc2len(self.dlc) <= 16:
                     self.crc_len = 27 # 17 + SBC + stuff bits
@@ -201,18 +244,35 @@ class Decoder(srd.Decoder):
 
         elif self.fd and bitnum == (self.last_databit + 2):
             self.ss_block = self.samplenum
+            # stuff count start
+            self.stuff_count_start = self.samplenum
+
 
         elif self.fd and bitnum == (self.last_databit + 4):
+
             stuff_bits = self.bits[-3:]
+
             stuff_count = '{0:b}'.format(bitpack_msb(stuff_bits))
             while len(stuff_count) != 3:
                 stuff_count = '0' + stuff_count
+
+            stuff_count_bin = gray_to_binary(stuff_count)
+            stuff_count_bin_val = int(stuff_count_bin,2)
+
+            if self.stuff_count %  8 != stuff_count_bin_val:
+                self.putb([16,['Gray Code Error','GCE','GCE']])
+            self.stuff_count = 0
 
             self.putb([11,['Stuff count: %s' % stuff_count,
                 'Stuff count: %s' % stuff_count, 'Stuff count']])
             self.ss_block = self.samplenum +int(self.bit_width)
 
+
         elif self.fd and bitnum == (self.last_databit + 5):
+            stuff_and_parity_bits = self.bits[-4:]
+            stuff_and_parity = bitpack_msb(stuff_and_parity_bits)
+            if ParityCheck(stuff_and_parity) == False:
+                self.putg(self.stuff_count_start,self.samplenum,[16,['Parity Check Error','PCE','PCE']])
             self.putx([11,['Parity:%d' % can_rx, 'P:%d' % can_rx, 'P']])
             self.ss_block = self.samplenum +int(self.bit_width)
 
@@ -222,7 +282,6 @@ class Decoder(srd.Decoder):
                 self.putx([15, ['Fixed stuff bit: %d' % can_rx, 'FSB: %d' % can_rx, '%d'%can_rx]])
             if(index%5 == 0):
                 self.crc_data += self.bits[-4:]
-
 
         # CRC sequence (15 bits, 17 bits or 21 bits)
         elif bitnum == (self.last_databit + self.crc_len):
@@ -329,14 +388,12 @@ class Decoder(srd.Decoder):
             self.putb([10, ['Data length code: %d' % self.dlc,
                             'DLC: %d' % self.dlc, 'DLC']])
             self.last_databit = self.dlc_start + 3 + (dlc2len(self.dlc) * 8)
-            #if rtr == remote then dlc = 0
             if self.dlc != 0 and self.rtr_type == 'remote':
                 self.putb([16, ['Data length code (DLC) != 0 is not allowed']])
                 self.dlc = 0
                 self.last_databit = self.dlc_start + 3 + (dlc2len(self.dlc) * 8)
-            #if dlc > 8 then dlc = 8
             elif self.dlc > 8 and not self.fd:
-                self.putb([16, ['Data length code (DLC) > 8 is not allowed']])
+                self.putb([16, ['CAN Data length code (DLC) > 8 is not allowed']])
                 self.dlc = 8
                 self.last_databit = self.dlc_start + 3 + (dlc2len(self.dlc) * 8)
 
@@ -369,7 +426,6 @@ class Decoder(srd.Decoder):
 
         # Remember start of EID (see below).
         if bitnum == 14:
-            self.printlog('samplenum:%d'%self.samplenum)
             self.ss_block = self.samplenum
             self.dlc_start = 35
 
@@ -481,7 +537,7 @@ class Decoder(srd.Decoder):
                     or bitnum == 35 and self.frame_type == 'extended':
                 self.dom_edge_seen(force=True)
                 self.set_fast_bitrate()
-            
+
         if self.is_stuff_bit():
             self.putx([15, [str(can_rx)]])
             self.curbit += 1 # Increase self.curbit (bitnum is not affected).
@@ -518,7 +574,7 @@ class Decoder(srd.Decoder):
             self.ss_bit12 = self.samplenum
 
         # Bit 13: Identifier extension (IDE) bit
-        # Standard frame: dominant, extended frame: recessive
+        # Standard frame: recessive , extended frame: dominant
         elif bitnum == 13:
             ide = self.frame_type = 'standard' if can_rx == 0 else 'extended'
             self.putx([6, ['Identifier extension bit: %s frame' % ide,
@@ -548,12 +604,14 @@ class Decoder(srd.Decoder):
             # State machine.
             if self.state == 'IDLE':
                 # Wait for a dominant state (logic 0) on the bus.
+                
                 (can_rx,) = self.wait({0: 'f'})
                 self.sof = self.samplenum
                 self.dom_edge_seen(force = True)
                 self.state = 'GET BITS'
             elif self.state == 'GET BITS':
                 # Wait until we're in the correct bit/sampling position.
+                
                 pos = self.get_sample_point(self.curbit)
                 (can_rx,) = self.wait([{'skip': pos - self.samplenum}, {0: 'f'}])
                 if (self.matched & (0b1 << 1)):

@@ -2,7 +2,8 @@
 ## This file is part of the libsigrokdecode project.
 ##
 ## Copyright (C) 2016 Fabian J. Stumpf <sigrok@fabianstumpf.de>
-##
+## Copyright (C) 2023 DreamSourceLab <support@dreamsourcelab.com>
+
 ## This program is free software; you can redistribute it and/or modify
 ## it under the terms of the GNU General Public License as published by
 ## the Free Software Foundation; either version 2 of the License, or
@@ -16,6 +17,10 @@
 ## You should have received a copy of the GNU General Public License
 ## along with this program; if not, see <http://www.gnu.org/licenses/>.
 ##
+
+#
+# 2023/12/29 bug fixed : bitvalue show in break
+#
 
 import sigrokdecode as srd
 
@@ -64,6 +69,7 @@ class Decoder(srd.Decoder):
         self.sample_usec = None
         self.run_start = -1
         self.state = 'FIND BREAK'
+        self.bit_pos = [[0, 0, 0] for _ in range(11)]
 
     def start(self):
         self.out_ann = self.register(srd.OUTPUT_ANN)
@@ -120,32 +126,44 @@ class Decoder(srd.Decoder):
                 (dmx,) = self.wait({'skip': round(self.skip_per_bit/2)})
                 bit_value = not dmx if inv else dmx
 
+                self.bit_pos[self.bit] = [bit_start,bit_end,bit_value]
+                
                 if self.bit == 0:
                     self.byte = 0
-                    self.put(bit_start, bit_end,
-                             self.out_ann, [3, ['Start bit']])
-                    if bit_value != 0:
+                    # self.put(bit_start, bit_end,self.out_ann, [3, ['Start bit']])
+                    # if bit_value != 0:
                         # (Possibly) invalid start bit, mark but don't fail.
-                        self.put(bit_start, bit_end,
-                                 self.out_ann, [10, ['Invalid start bit']])
+                        # self.put(bit_start, bit_end,self.out_ann, [10, ['Invalid start bit']])
                 elif self.bit >= 9:
-                    self.put(bit_start, bit_end,
-                             self.out_ann, [4, ['Stop bit']])
+                    # self.put(bit_start, bit_end,self.out_ann, [4, ['Stop bit']])
                     if bit_value != 1:
                         # Invalid stop bit, mark.
-                        self.put(bit_start, bit_end,
-                            self.out_ann, [10, ['Invalid stop bit']])
+                        # self.put(bit_start, bit_end,self.out_ann, [10, ['Invalid stop bit']])
                         if self.bit == 10:
                             # On invalid 2nd stop bit, search for new break.
                             self.state = 'FIND BREAK'
                 else:
                     # Label and process one bit.
-                    self.put(bit_start, bit_end,
-                             self.out_ann, [0, [str(bit_value)]])
+                    # self.put(bit_start, bit_end,self.out_ann, [0, [str(bit_value)]])
                     self.byte |= bit_value << (self.bit - 1)
 
                 # Label a complete byte.
                 if self.state == 'READ BYTE' and self.bit == 10:
+
+                    for index, value in enumerate(self.bit_pos):
+                        if index == 0:
+                            if value[2] == 0:
+                                self.put(value[0], value[1],self.out_ann, [3, ['Start bit']])
+                            else:
+                                self.put(value[0], value[1],self.out_ann, [10, ['Invalid start bit']])
+                        elif index >= 9:
+                            if value[2] == 1:
+                                self.put(value[0], value[1],self.out_ann, [4, ['Stop bit']])
+                            else:
+                                self.put(value[0], value[1],self.out_ann, [10, ['Invalid stop bit']])
+                        else:
+                            self.put(value[0], value[1],self.out_ann, [0, [str(value[2])]])
+
                     if self.channel == 0:
                         d = [5, ['Start code']]
                     else:

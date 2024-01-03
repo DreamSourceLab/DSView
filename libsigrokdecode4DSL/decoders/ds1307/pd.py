@@ -1,7 +1,7 @@
 ##
 ## This file is part of the libsigrokdecode project.
 ##
-## Copyright (C) 2012-2014 Uwe Hermann <uwe@hermann-uwe.de>
+## Copyright (C) 2012-2020 Uwe Hermann <uwe@hermann-uwe.de>
 ## Copyright (C) 2013 Matt Ranostay <mranostay@gmail.com>
 ##
 ## This program is free software; you can redistribute it and/or modify
@@ -20,7 +20,7 @@
 
 import re
 import sigrokdecode as srd
-from common.srdhelper import bcd2int
+from common.srdhelper import bcd2int, SrdIntEnum
 
 days_of_week = (
     'Sunday', 'Monday', 'Tuesday', 'Wednesday',
@@ -47,9 +47,14 @@ rates = {
 DS1307_I2C_ADDRESS = 0x68
 
 def regs_and_bits():
-    l = [('reg-' + r.lower(), r + ' register') for r in regs]
-    l += [('bit-' + re.sub('\/| ', '-', b).lower(), b + ' bit') for b in bits]
+    l = [('reg_' + r.lower(), r + ' register') for r in regs]
+    l += [('bit_' + re.sub('\/| ', '_', b).lower(), b + ' bit') for b in bits]
     return tuple(l)
+
+a = ['REG_' + r.upper() for r in regs] + \
+    ['BIT_' + re.sub('\/| ', '_', b).upper() for b in bits] + \
+    ['READ_DATE_TIME', 'WRITE_DATE_TIME', 'READ_REG', 'WRITE_REG', 'WARNING']
+Ann = SrdIntEnum.from_list('Ann', a)
 
 class Decoder(srd.Decoder):
     api_version = 3
@@ -62,17 +67,17 @@ class Decoder(srd.Decoder):
     outputs = []
     tags = ['Clock/timing', 'IC']
     annotations =  regs_and_bits() + (
-        ('read-datetime', 'Read date/time'),
-        ('write-datetime', 'Write date/time'),
-        ('reg-read', 'Register read'),
-        ('reg-write', 'Register write'),
-        ('warnings', 'Warnings'),
+        ('read_date_time', 'Read date/time'),
+        ('write_date_time', 'Write date/time'),
+        ('read_reg', 'Register read'),
+        ('write_reg', 'Register write'),
+        ('warning', 'Warning'),
     )
     annotation_rows = (
-        ('bits', 'Bits', tuple(range(9, 24))),
-        ('regs', 'Registers', tuple(range(9))),
-        ('date-time', 'Date/time', (24, 25, 26, 27)),
-        ('warnings', 'Warnings', (28,)),
+        ('bits', 'Bits', Ann.prefixes('BIT_')),
+        ('regs', 'Registers', Ann.prefixes('REG_')),
+        ('date_time', 'Date/time', Ann.prefixes('READ_ WRITE_')),
+        ('warnings', 'Warnings', (Ann.WARNING,)),
     )
 
     def __init__(self):
@@ -100,84 +105,85 @@ class Decoder(srd.Decoder):
 
     def putr(self, bit):
         self.put(self.bits[bit][1], self.bits[bit][2], self.out_ann,
-                 [11, ['Reserved bit', 'Reserved', 'Rsvd', 'R']])
+                 [Ann.BIT_RESERVED, ['Reserved bit', 'Reserved', 'Rsvd', 'R']])
 
     def handle_reg_0x00(self, b): # Seconds (0-59) / Clock halt bit
-        self.putd(7, 0, [0, ['Seconds', 'Sec', 'S']])
+        self.putd(7, 0, [Ann.REG_SECONDS, ['Seconds', 'Sec', 'S']])
         ch = 1 if (b & (1 << 7)) else 0
-        self.putd(7, 7, [9, ['Clock halt: %d' % ch, 'Clk hlt: %d' % ch,
-                        'CH: %d' % ch, 'CH']])
+        self.putd(7, 7, [Ann.BIT_CLOCK_HALT, ['Clock halt: %d' % ch,
+            'Clk hlt: %d' % ch, 'CH: %d' % ch, 'CH']])
         s = self.seconds = bcd2int(b & 0x7f)
-        self.putd(6, 0, [10, ['Second: %d' % s, 'Sec: %d' % s, 'S: %d' % s, 'S']])
+        self.putd(6, 0, [Ann.BIT_SECONDS, ['Second: %d' % s, 'Sec: %d' % s,
+            'S: %d' % s, 'S']])
 
     def handle_reg_0x01(self, b): # Minutes (0-59)
-        self.putd(7, 0, [1, ['Minutes', 'Min', 'M']])
+        self.putd(7, 0, [Ann.REG_MINUTES, ['Minutes', 'Min', 'M']])
         self.putr(7)
         m = self.minutes = bcd2int(b & 0x7f)
-        self.putd(6, 0, [12, ['Minute: %d' % m, 'Min: %d' % m, 'M: %d' % m, 'M']])
+        self.putd(6, 0, [Ann.BIT_MINUTES, ['Minute: %d' % m, 'Min: %d' % m, 'M: %d' % m, 'M']])
 
     def handle_reg_0x02(self, b): # Hours (1-12+AM/PM or 0-23)
-        self.putd(7, 0, [2, ['Hours', 'H']])
+        self.putd(7, 0, [Ann.REG_HOURS, ['Hours', 'H']])
         self.putr(7)
         ampm_mode = True if (b & (1 << 6)) else False
         if ampm_mode:
-            self.putd(6, 6, [13, ['12-hour mode', '12h mode', '12h']])
+            self.putd(6, 6, [Ann.BIT_12_24_HOURS, ['12-hour mode', '12h mode', '12h']])
             a = 'PM' if (b & (1 << 5)) else 'AM'
-            self.putd(5, 5, [14, [a, a[0]]])
+            self.putd(5, 5, [Ann.BIT_AM_PM, [a, a[0]]])
             h = self.hours = bcd2int(b & 0x1f)
-            self.putd(4, 0, [15, ['Hour: %d' % h, 'H: %d' % h, 'H']])
+            self.putd(4, 0, [Ann.BIT_HOURS, ['Hour: %d' % h, 'H: %d' % h, 'H']])
         else:
-            self.putd(6, 6, [13, ['24-hour mode', '24h mode', '24h']])
+            self.putd(6, 6, [Ann.BIT_12_24_HOURS, ['24-hour mode', '24h mode', '24h']])
             h = self.hours = bcd2int(b & 0x3f)
-            self.putd(5, 0, [15, ['Hour: %d' % h, 'H: %d' % h, 'H']])
+            self.putd(5, 0, [Ann.BIT_HOURS, ['Hour: %d' % h, 'H: %d' % h, 'H']])
 
     def handle_reg_0x03(self, b): # Day / day of week (1-7)
-        self.putd(7, 0, [3, ['Day of week', 'Day', 'D']])
+        self.putd(7, 0, [Ann.REG_DAY, ['Day of week', 'Day', 'D']])
         for i in (7, 6, 5, 4, 3):
             self.putr(i)
         w = self.days = bcd2int(b & 0x07)
         ws = days_of_week[self.days - 1]
-        self.putd(2, 0, [16, ['Weekday: %s' % ws, 'WD: %s' % ws, 'WD', 'W']])
+        self.putd(2, 0, [Ann.BIT_DAY, ['Weekday: %s' % ws, 'WD: %s' % ws, 'WD', 'W']])
 
     def handle_reg_0x04(self, b): # Date (1-31)
-        self.putd(7, 0, [4, ['Date', 'D']])
+        self.putd(7, 0, [Ann.REG_DATE, ['Date', 'D']])
         for i in (7, 6):
             self.putr(i)
         d = self.date = bcd2int(b & 0x3f)
-        self.putd(5, 0, [17, ['Date: %d' % d, 'D: %d' % d, 'D']])
+        self.putd(5, 0, [Ann.BIT_DATE, ['Date: %d' % d, 'D: %d' % d, 'D']])
 
     def handle_reg_0x05(self, b): # Month (1-12)
-        self.putd(7, 0, [5, ['Month', 'Mon', 'M']])
+        self.putd(7, 0, [Ann.REG_MONTH, ['Month', 'Mon', 'M']])
         for i in (7, 6, 5):
             self.putr(i)
         m = self.months = bcd2int(b & 0x1f)
-        self.putd(4, 0, [18, ['Month: %d' % m, 'Mon: %d' % m, 'M: %d' % m, 'M']])
+        self.putd(4, 0, [Ann.BIT_MONTH, ['Month: %d' % m, 'Mon: %d' % m, 'M: %d' % m, 'M']])
 
     def handle_reg_0x06(self, b): # Year (0-99)
-        self.putd(7, 0, [6, ['Year', 'Y']])
+        self.putd(7, 0, [Ann.REG_YEAR, ['Year', 'Y']])
         y = self.years = bcd2int(b & 0xff)
         self.years += 2000
-        self.putd(7, 0, [19, ['Year: %d' % y, 'Y: %d' % y, 'Y']])
+        self.putd(7, 0, [Ann.BIT_YEAR, ['Year: %d' % y, 'Y: %d' % y, 'Y']])
 
     def handle_reg_0x07(self, b): # Control Register
-        self.putd(7, 0, [7, ['Control', 'Ctrl', 'C']])
+        self.putd(7, 0, [Ann.REG_CONTROL, ['Control', 'Ctrl', 'C']])
         for i in (6, 5, 3, 2):
             self.putr(i)
         o = 1 if (b & (1 << 7)) else 0
         s = 1 if (b & (1 << 4)) else 0
         s2 = 'en' if (b & (1 << 4)) else 'dis'
         r = rates[b & 0x03]
-        self.putd(7, 7, [20, ['Output control: %d' % o,
+        self.putd(7, 7, [Ann.BIT_OUT, ['Output control: %d' % o,
             'OUT: %d' % o, 'O: %d' % o, 'O']])
-        self.putd(4, 4, [21, ['Square wave output: %sabled' % s2,
+        self.putd(4, 4, [Ann.BIT_SQWE, ['Square wave output: %sabled' % s2,
             'SQWE: %sabled' % s2, 'SQWE: %d' % s, 'S: %d' % s, 'S']])
-        self.putd(1, 0, [22, ['Square wave output rate: %s' % r,
+        self.putd(1, 0, [Ann.BIT_RS, ['Square wave output rate: %s' % r,
             'Square wave rate: %s' % r, 'SQW rate: %s' % r, 'Rate: %s' % r,
             'RS: %s' % s, 'RS', 'R']])
 
     def handle_reg_0x3f(self, b): # RAM (bytes 0x08-0x3f)
-        self.putd(7, 0, [8, ['RAM', 'R']])
-        self.putd(7, 0, [23, ['SRAM: 0x%02X' % b, '0x%02X' % b]])
+        self.putd(7, 0, [Ann.REG_RAM, ['RAM', 'R']])
+        self.putd(7, 0, [Ann.BIT_RAM, ['SRAM: 0x%02X' % b, '0x%02X' % b]])
 
     def output_datetime(self, cls, rw):
         # TODO: Handle read/write of only parts of these items.
@@ -201,7 +207,7 @@ class Decoder(srd.Decoder):
         if addr == DS1307_I2C_ADDRESS:
             return True
         self.put(self.ss_block, self.es, self.out_ann,
-                 [28, ['Ignoring non-DS1307 data (slave 0x%02X)' % addr]])
+                 [Ann.WARNING, ['Ignoring non-DS1307 data (slave 0x%02X)' % addr]])
         return False
 
     def decode(self, ss, es, data):
@@ -246,7 +252,7 @@ class Decoder(srd.Decoder):
             if cmd == 'DATA WRITE':
                 self.handle_reg(databyte)
             elif cmd == 'STOP':
-                self.output_datetime(25, 'Written')
+                self.output_datetime(Ann.WRITE_DATE_TIME, 'Written')
                 self.state = 'IDLE'
         elif self.state == 'READ RTC REGS':
             # Wait for an address read operation.
@@ -260,5 +266,5 @@ class Decoder(srd.Decoder):
             if cmd == 'DATA READ':
                 self.handle_reg(databyte)
             elif cmd == 'STOP':
-                self.output_datetime(24, 'Read')
+                self.output_datetime(Ann.READ_DATE_TIME, 'Read')
                 self.state = 'IDLE'

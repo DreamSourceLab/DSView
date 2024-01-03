@@ -21,6 +21,14 @@
 
 import sigrokdecode as srd
 
+NUM_OUTPUT_CHANNELS = 8
+
+def logic_channels(num_channels):
+    l = []
+    for i in range(num_channels):
+        l.append(tuple(['p%d' % i, 'P-port input/output %d' % i]))
+    return tuple(l)
+
 class Decoder(srd.Decoder):
     api_version = 3
     id = 'tca6408a'
@@ -34,8 +42,9 @@ class Decoder(srd.Decoder):
     annotations = (
         ('register', 'Register type'),
         ('value', 'Register value'),
-        ('warnings', 'Warning messages'),
+        ('warning', 'Warning'),
     )
+    logic_output_channels = logic_channels(NUM_OUTPUT_CHANNELS)
     annotation_rows = (
         ('regs', 'Registers', (0, 1)),
         ('warnings', 'Warnings', (2,)),
@@ -48,17 +57,33 @@ class Decoder(srd.Decoder):
         self.state = 'IDLE'
         self.chip = -1
 
+        self.logic_output_es = 0
+        self.logic_value = 0
+
     def start(self):
         self.out_ann = self.register(srd.OUTPUT_ANN)
+        self.out_logic = self.register(srd.OUTPUT_LOGIC)
+
+    def flush(self):
+        self.put_logic_states()
 
     def putx(self, data):
         self.put(self.ss, self.es, self.out_ann, data)
 
+    def put_logic_states(self):
+        if (self.es > self.logic_output_es):
+            data = bytes([self.logic_value])
+            self.put(self.logic_output_es, self.es, self.out_logic, [0, data])
+            self.logic_output_es = self.es
+
     def handle_reg_0x00(self, b):
         self.putx([1, ['State of inputs: %02X' % b]])
+        # TODO
 
     def handle_reg_0x01(self, b):
-        self.putx([1, ['Outputs set: %02X' % b ]])
+        self.put_logic_states()
+        self.putx([1, ['Outputs set: %02X' % b]])
+        self.logic_value = b
 
     def handle_reg_0x02(self, b):
         self.putx([1, ['Polarity inverted: %02X' % b]])

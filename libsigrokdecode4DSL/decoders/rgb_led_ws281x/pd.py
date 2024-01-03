@@ -2,8 +2,9 @@
 ## This file is part of the libsigrokdecode project.
 ##
 ## Copyright (C) 2016 Vladimir Ermakov <vooon341@gmail.com>
-## Copyright (C) 2023 DreamSourceLab <support@dreamsourcelab.com>
 ## Copyright (C) 2021 Michael Miller <makuna@live.com>
+## Copyright (C) 2023 DreamSourceLab <support@dreamsourcelab.com>
+
 ##
 ## This program is free software; you can redistribute it and/or modify
 ## it under the terms of the GNU General Public License as published by
