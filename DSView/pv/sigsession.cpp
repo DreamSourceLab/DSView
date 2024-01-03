@@ -2495,4 +2495,18 @@ namespace pv
         }
     }
 
+    int64_t SigSession::get_ring_sample_count()
+    {
+        int mode = _device_agent.get_work_mode();
+        if (mode == LOGIC){
+            return _view_data->get_logic()->get_ring_sample_count();
+        }
+        else if (mode == DSO){
+            return _view_data->get_dso()->get_ring_sample_count();
+        }
+        else{
+            return _view_data->get_analog()->get_ring_sample_count();
+        }
+    }
+
 } // namespace pv

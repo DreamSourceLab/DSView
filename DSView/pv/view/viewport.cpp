@@ -650,6 +650,7 @@ void Viewport::mousePressEvent(QMouseEvent *event)
             }
         }
     }
+
     if (_action_type == NO_ACTION &&
         event->button() == Qt::LeftButton &&
         _view.session().get_device()->get_work_mode() == DSO) {
@@ -668,16 +669,18 @@ void Viewport::mousePressEvent(QMouseEvent *event)
         }
     }
 
-    if (_action_type == NO_ACTION &&
-        event->button() == Qt::LeftButton) {
+    if (_action_type == NO_ACTION
+            && event->button() == Qt::LeftButton) {
         if (_action_type == NO_ACTION && _view.search_cursor_shown()) {
             const int64_t searchX = _view.index2pixel(_view.get_search_cursor()->index());
+
             if (_view.get_search_cursor()->grabbed()) {
                 _view.get_ruler()->rel_grabbed_cursor();
-            } else if (qAbs(searchX - event->pos().x()) <= HitCursorMargin) {
+            }
+            else if (qAbs(searchX - event->pos().x()) <= HitCursorMargin) {
                 _view.get_ruler()->set_grabbed_cursor(_view.get_search_cursor());
                 _action_type = CURS_MOVE;
-            }
+            }    
         }
  
         if (_action_type == NO_ACTION && _view.cursors_shown()) {
@@ -743,19 +746,23 @@ void Viewport::mousePressEvent(QMouseEvent *event)
                         }
                     }
                     break;
-                }else if ((*i)->grabbed() != XCursor::XCur_None) {
+                }
+                else if ((*i)->grabbed() != XCursor::XCur_None) {
                     (*i)->set_grabbed((*i)->grabbed(), false);
-                } else if (qAbs(cursorX - _view.hover_point().x()) <= HitCursorMargin &&
+                }
+                else if (qAbs(cursorX - _view.hover_point().x()) <= HitCursorMargin &&
                            _view.hover_point().y() > min(cursorY0, cursorY1) &&
                            _view.hover_point().y() < max(cursorY0, cursorY1)) {
                     (*i)->set_grabbed(XCursor::XCur_Y, true);
                     _action_type = CURS_MOVE;
                     break;
-                } else if (qAbs(cursorY0 - _view.hover_point().y()) <= HitCursorMargin) {
+                }
+                else if (qAbs(cursorY0 - _view.hover_point().y()) <= HitCursorMargin) {
                     (*i)->set_grabbed(XCursor::XCur_X0, true);
                     _action_type = CURS_MOVE;
                     break;
-                } else if (qAbs(cursorY1 - _view.hover_point().y()) <= HitCursorMargin) {
+                }
+                else if (qAbs(cursorY1 - _view.hover_point().y()) <= HitCursorMargin) {
                     (*i)->set_grabbed(XCursor::XCur_X1, true);
                     _action_type = CURS_MOVE;
                     break;
@@ -894,7 +901,7 @@ void Viewport:: mouseMoveEvent(QMouseEvent *event)
 
     measure();
    
-    update();
+    update(UpdateEventType::UPDATE_EV_MS_MOVE);
 }
 
 void Viewport::mouseReleaseEvent(QMouseEvent *event)
@@ -905,7 +912,7 @@ void Viewport::mouseReleaseEvent(QMouseEvent *event)
         bool isMaxWindow = AppControl::Instance()->TopWindowIsMaximized();
     
         if (_type != TIME_VIEW){
-            update();
+            update(UpdateEventType::UPDATE_EV_MS_UP);
             return;
         }
   
@@ -1124,7 +1131,16 @@ void Viewport::mouseReleaseEvent(QMouseEvent *event)
             _action_type = NO_ACTION;
         }
     
-    update();
+    if (_view.session().get_device()->get_work_mode() == LOGIC
+        && event->button() == Qt::LeftButton){
+            const int64_t index = _view.pixel2index(_clickX);
+            if (index > _view.session().get_ring_sample_count()){
+                _measure_type = MeasureType::NO_MEASURE;
+                _action_type = NO_ACTION;
+            }  
+    }
+ 
+    update(UpdateEventType::UPDATE_EV_MS_UP);
 }
 
 void Viewport::mouseDoubleClickEvent(QMouseEvent *event)
@@ -1179,7 +1195,7 @@ void Viewport::mouseDoubleClickEvent(QMouseEvent *event)
             _view.show_cursors(true);
         }
 
-        update();
+        update(UpdateEventType::UPDATE_EV_MS_CLICK);
     }
     else if (_view.session().get_device()->get_work_mode() == DSO
              && _view.session().is_init_status() == false
@@ -1429,13 +1445,18 @@ void Viewport::set_receive_len(quint64 length)
     }    
 
     // Received new data, and refresh the view.
-    update();
+    update(UpdateEventType::UPDATE_EV_GENERIC);
+}
+
+void Viewport::update(int event)
+{
+    QWidget::update();
 }
 
 void Viewport::clear_measure()
 {
     _measure_type = NO_MEASURE;
-    update();
+    update(UpdateEventType::UPDATE_EV_GENERIC);
 }
 
 void Viewport::clear_dso_xm()
@@ -1451,18 +1472,19 @@ void Viewport::clear_dso_xm()
 void Viewport::measure()
 {
     if (_view.session().is_data_lock())
-        return;
-        
-    if (_view.session().is_loop_mode() && _view.session().is_working())
+        return;        
+    if (_view.session().is_loop_mode()&& _view.session().is_working())
         return;
         
     _measure_type = NO_MEASURE;
+
     if (_type == TIME_VIEW) {
         const uint64_t sample_rate = _view.session().cur_snap_samplerate();
 
         for(auto s : _view.session().get_signals()) {
             if (s->signal_type() == SR_CHANNEL_LOGIC) {
                 view::LogicSignal *logicSig  = (view::LogicSignal*)s;
+                
                 if (_action_type == NO_ACTION) {
                     if (logicSig->measure(_mouse_point, _cur_sample, _nxt_sample, _thd_sample)) {
                         _measure_type = LOGIC_FREQ;
@@ -1479,14 +1501,16 @@ void Viewport::measure()
                         _mm_duty = _thd_sample != 0 ? QString::number((_nxt_sample - _cur_sample) * 100.0 / (_thd_sample - _cur_sample), 'f', 2)+"%" :
                                                      View::Unknown_Str;
                         break;
-                    } else {
+                    }
+                    else {
                         _measure_type = NO_MEASURE;
                         _mm_width = View::Unknown_Str;
                         _mm_period = View::Unknown_Str;
                         _mm_freq = View::Unknown_Str;
                         _mm_duty = View::Unknown_Str;
                     }
-                } else if (_action_type == LOGIC_EDGE) {
+                }
+                else if (_action_type == LOGIC_EDGE) {
                     if (logicSig->edges(_view.hover_point(), _edge_start, _edge_rising, _edge_falling)) {
                         _cur_preX = _view.index2pixel(_edge_start);
                         _cur_aftX = _view.hover_point().x();
@@ -1498,13 +1522,15 @@ void Viewport::measure()
 
                         break;
                     }
-                } else if (_action_type == LOGIC_JUMP) {
+                }
+                else if (_action_type == LOGIC_JUMP) {
                     if (logicSig->edge(_view.hover_point(), _edge_end, 10)) {
                         _cur_aftX = _view.index2pixel(_edge_end);
                         _cur_aftY = logicSig->get_y();
                         _edge_hit = true;
                         break;
-                    } else {
+                    }
+                    else {
                         _cur_preX = _view.index2pixel(_edge_start);
                         _cur_aftX = _view.hover_point().x();
                         _cur_aftY = _view.hover_point().y();
@@ -1775,7 +1801,8 @@ void Viewport::paintMeasure(QPainter &p, QColor fore, QColor back)
         measure_updated();
     }
 
-    if (_action_type == LOGIC_EDGE && _view.session().have_view_data()) {
+    if (_action_type == LOGIC_EDGE 
+            && _view.session().have_view_data()){
         p.setPen(active_color);
         p.drawLine(QLineF(_cur_preX, _cur_midY-5, _cur_preX, _cur_midY+5));
         p.drawLine(QLineF(_cur_aftX, _cur_midY-5, _cur_aftX, _cur_midY+5));
@@ -1810,7 +1837,6 @@ void Viewport::paintMeasure(QPainter &p, QColor fore, QColor back)
         p.drawText(measure1_rect, Qt::AlignRight | Qt::AlignVCenter, _em_edges);
         p.drawText(measure2_rect, Qt::AlignRight | Qt::AlignVCenter, _em_rising);
         p.drawText(measure3_rect, Qt::AlignRight | Qt::AlignVCenter, _em_falling);
-
     }
 
     if (_action_type == LOGIC_JUMP) {
@@ -1929,7 +1955,7 @@ void Viewport::on_trigger_timer()
         }
     }
 
-    update();  // To refresh the trigger status information.
+    update(UpdateEventType::UPDATE_EV_GENERIC);  // To refresh the trigger status information.
 }
 
 void Viewport::on_drag_timer()
@@ -1968,13 +1994,13 @@ void Viewport::show_wait_trigger()
 {
     _waiting_trig %= (WaitLoopTime / SigSession::FeedInterval) * 4;
     _waiting_trig++;
-    update();
+    update(UpdateEventType::UPDATE_EV_GENERIC);
 }
 
 void Viewport::unshow_wait_trigger()
 {   
     _waiting_trig = 0;
-    update();
+    update(UpdateEventType::UPDATE_EV_GENERIC);
 }
 
 bool Viewport::get_dso_trig_moved()

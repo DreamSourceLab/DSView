@@ -48,6 +48,14 @@ using std::chrono::milliseconds;
 namespace pv {
 namespace view {
 
+enum UpdateEventType
+{
+    UPDATE_EV_GENERIC,
+    UPDATE_EV_MS_CLICK,
+    UPDATE_EV_MS_MOVE,
+    UPDATE_EV_MS_UP,
+};
+
 class Signal;
 class View;
 
@@ -115,6 +123,8 @@ public:
     void update_font() override;
 
     void measure();
+
+    void update(int event);
 
 protected:
     bool event(QEvent *event) override;

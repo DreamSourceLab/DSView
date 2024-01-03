@@ -441,6 +441,8 @@ public:
 
     double get_logic_data_view_time();
 
+    int64_t get_ring_sample_count();
+
 private:
     void set_cur_samplelimits(uint64_t samplelimits);
     void set_cur_snap_samplerate(uint64_t samplerate);

@@ -1361,7 +1361,7 @@ int  View::get_body_height()
  void View::update_view_port()
  {
     if (_time_viewport)
-        _time_viewport->update();
+        _time_viewport->update(UpdateEventType::UPDATE_EV_GENERIC);
  }
 
  void View::update_font()
@@ -1372,7 +1372,7 @@ int  View::get_body_height()
 void View::check_measure()
 {
     _time_viewport->measure();
-    _time_viewport->update();
+    _time_viewport->update(UpdateEventType::UPDATE_EV_GENERIC);
 }
 
 } // namespace view
