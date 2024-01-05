@@ -45,6 +45,10 @@
 #include <QGuiApplication>
 #include <QFont>
 
+ #if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
+ #include <QDesktopWidget>
+ #endif
+
 #include "dsvdef.h"
 #include "config/appconfig.h"
 #include "ui/msgbox.h"
@@ -416,7 +420,7 @@ void MainFrame::writeSettings()
     app.frameOptions.isMax = isMaximized(); 
 
     if (!isMaximized()){
-          saveWindowRegion();
+        saveWindowRegion();
     }
   
     app.SaveFrame(); 
@@ -433,46 +437,57 @@ void MainFrame::readSettings()
          _mainWindow->switchLanguage(app.frameOptions.language);
     }
 
-      int left = app.frameOptions.left;
-      int top = app.frameOptions.top;
-      int right = app.frameOptions.right;
-      int bottom = app.frameOptions.bottom;
+    int left = app.frameOptions.left;
+    int top = app.frameOptions.top;
+    int right = app.frameOptions.right;
+    int bottom = app.frameOptions.bottom;
 
-      int screen_width = QGuiApplication::primaryScreen()->availableGeometry().width();
-      int screen_height = QGuiApplication::primaryScreen()->availableGeometry().height();
+    bool bReset = false;
+    int scrIndex = -1;
+    QRect lstInrc = {0,0,0,0};
+    QRect winRc = {left, top, right, bottom};
 
-      bool bReset = false;
+    for (int i=0; i<QGuiApplication::screens().size(); i++){
+        QRect rc  = QGuiApplication::screens().at(i)->availableGeometry();
+        QRect inrc = winRc.intersected(rc);
+        if (inrc.width() > 0){
+            if (inrc.width() > lstInrc.width()
+            || inrc.height() > lstInrc.height()){
+                lstInrc = inrc;
+                scrIndex = i;
+            }
+        }
+    }
 
-      //size from config is error
-      if (right == 0)
-      {
-          bReset = true;
-      }
-      if (right - left >= screen_width)
-      {
-          bReset = true;
-      }
-      int sp = 70;
-      if (right < sp || bottom < sp || left + sp >= screen_width || top + sp >= screen_height){
-          bReset = true;
-      }
+    if (scrIndex == -1){
+        bReset = true;
+        scrIndex = 0;
+    }
+    else{ 
+        QRect trc = QGuiApplication::screens().at(scrIndex)->availableGeometry();
+        QRect inrc = trc.intersected(winRc);
+        if (inrc.width() < 70 || inrc.height() < 70){
+            bReset = true;
+        }
+    }     
 
-      if (app.frameOptions.isMax)
-      {
-          showMaximized(); // show max by system api
-      }
-      else if (bReset)
-      { 
-          resize(screen_width / 2, screen_height / 1.5);
-          const int origX = std::max(0, (screen_width - width()) / 2);
-          const int origY = std::max(0, (screen_height - height()) / 2);
-          move(origX, origY);
-      }
-      else
-      {
-          resize(right - left, bottom - top);
-          move(left, top);
-      }
+    if (app.frameOptions.isMax)
+    {
+        showMaximized(); // show max by system api
+    }
+    else if (bReset)
+    { 
+        QRect trc = QGuiApplication::screens().at(scrIndex)->availableGeometry();
+        resize(trc.width() / 1.5, trc.height() / 1.5);
+        const int origX = std::max(0, (trc.width() - width()) / 2);
+        const int origY = std::max(0, (trc.height() - height()) / 2);
+        move(origX, origY);
+    }
+    else
+    {
+        resize(right - left, bottom - top);
+        move(left, top);
+    }
 
     // restore dockwidgets
     _mainWindow->restore_dock();
