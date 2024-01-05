@@ -222,8 +222,8 @@ void MainFrame::showMaximized()
     if (sk >= 1.5)
     {
         auto rect = QGuiApplication::primaryScreen()->availableGeometry();  
-        this->move(rect.left(), rect.top());
-        this->resize(rect.width(), rect.height());
+       // this->move(rect.left(), rect.top());
+        //this->resize(rect.width(), rect.height());
     }
 #endif
 
@@ -292,13 +292,13 @@ bool MainFrame::eventFilter(QObject *object, QEvent *event)
 
   if (type == QEvent::MouseMove) {
 
-#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
-    int x0 = (int)mouse_event->globalPosition().x();
-    int y0 = (int)mouse_event->globalPosition().y();
-#else
-    int x0 = mouse_event->globalX();
-    int y0 = mouse_event->globalY();
-#endif
+        #if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
+            int x0 = (int)mouse_event->globalPosition().x();
+            int y0 = (int)mouse_event->globalPosition().y();
+        #else
+            int x0 = mouse_event->globalX();
+            int y0 = mouse_event->globalY();
+        #endif
 
          if(mouse_event->buttons().testFlag(Qt::LeftButton)) {
             if (!_freezing) {

@@ -21,6 +21,14 @@
 
 
 #include "dscombobox.h"
+
+DsComboBox::DsComboBox(QWidget *parent) 
+    : QComboBox(parent)
+{ 
+}
+
+/*
+#include "dscombobox.h"
 #include <QFontMetrics>
 #include <QString>
 #include <QGuiApplication>
@@ -92,3 +100,4 @@ DsComboBox::DsComboBox(QWidget *parent) : QComboBox(parent)
      _bPopup = false;
  }
  
+*/
