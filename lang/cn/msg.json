@@ -152,7 +152,7 @@
     },
     {
         "id": "IDS_MSG_SEARCH_AT_START",
-        "text": "在起始位置搜索光标!"
+        "text": "搜索光标处于起始位置!"
     },
     {
         "id": "IDS_MSG_PATTERN_NOT_FOUND",
