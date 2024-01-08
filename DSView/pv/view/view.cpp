@@ -975,7 +975,7 @@ void View::on_traces_moved()
 void View::add_cursor(QColor color, uint64_t index)
 {
     Cursor *newCursor = new Cursor(*this, color, index);
-    _cursorList.push_back(newCursor);
+    get_cursorList().push_back(newCursor);
     cursor_update();
 }
 
@@ -991,26 +991,33 @@ void View::del_cursor(Cursor* cursor)
 {
     assert(cursor);
 
-    _cursorList.remove(cursor);
+    get_cursorList().remove(cursor);
     delete cursor;
     cursor_update();
 }
 
 void View::clear_cursors()
 {
-    for (auto c : _cursorList){
+    auto &lst = get_cursorList();
+    for (auto c : lst){
         delete c;
     }
-    _cursorList.clear();
+
+    lst.clear();
 }
 
 void View::set_cursor_middle(int index)
 {
-    assert(index < (int)_cursorList.size());
+    auto &lst = get_cursorList();
+    int size = lst.size();
+    assert(index < size);
 
-    auto i = _cursorList.begin();
-    while (index-- != 0)
-            i++;
+    auto i = lst.begin();
+
+    while (index-- != 0){
+        i++;
+    }
+
     set_scale_offset(_scale, (*i)->index() / (_session->cur_snap_samplerate() * _scale) - (get_view_width() / 2));
 }
 
@@ -1055,12 +1062,13 @@ QString View::get_index_delta(uint64_t start, uint64_t end)
 
 uint64_t View::get_cursor_samples(int index)
 {
-    assert(index < (int)_cursorList.size());
+    auto &lst = get_cursorList();
+    assert(index < (int)lst.size());
 
     uint64_t ret = 0;
     int curIndex = 0;
-    for (list<Cursor*>::iterator i = _cursorList.begin();
-         i != _cursorList.end(); i++) {
+    for (list<Cursor*>::iterator i = lst.begin();
+         i != lst.end(); i++) {
         if (index == curIndex) {
             ret = (*i)->index();
         }
@@ -1307,8 +1315,10 @@ void View::set_receive_len(uint64_t len)
 
 int View::get_cursor_index_by_key(uint64_t key)
 {
+    auto &lst = get_cursorList();
+
     int dex = 0;
-    for (auto c : _cursorList){
+    for (auto c : lst){
         if (c->get_key() == key){
             return dex;
         }
@@ -1381,6 +1391,16 @@ void View::check_measure()
 {
     _time_viewport->measure();
     _time_viewport->update(UpdateEventType::UPDATE_EV_GENERIC);
+}
+
+std::list<Cursor*>& View::get_cursorList()
+{   
+    if (_session->get_device()->get_work_mode() == LOGIC){
+        return _logic_cursors;
+    }
+    else{
+        return _dso_cursors;
+    }
 }
 
 } // namespace view

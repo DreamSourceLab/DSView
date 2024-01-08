@@ -217,9 +217,7 @@ public:
     /*
      * cursorList
      */
-    inline std::list<Cursor*>& get_cursorList(){
-        return _cursorList;
-    }
+    std::list<Cursor*>& get_cursorList();
 
     void add_cursor(QColor color, uint64_t index);
     void add_cursor(uint64_t index);
@@ -457,7 +455,8 @@ private:
     double      _trig_hoff;
 
 	bool        _show_cursors;
-    std::list<Cursor*> _cursorList;
+    std::list<Cursor*> _logic_cursors;
+    std::list<Cursor*> _dso_cursors;
     Cursor      *_trig_cursor;
     bool        _show_trig_cursor;
     Cursor      *_search_cursor;
