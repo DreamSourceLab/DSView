@@ -239,7 +239,7 @@ void TitleBar::mouseDoubleClickEvent(QMouseEvent *event)
 void TitleBar::update_font()
 {  
     QFont font = this->font();
-    font.setPointSizeF(AppConfig::Instance().appOptions.fontSize);
+    font.setPointSizeF(AppConfig::Instance().appOptions.fontSize+1);
     _title->setFont(font);
 }
  
