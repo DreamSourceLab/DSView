@@ -27,6 +27,8 @@
 #include <QWidget>
 #include <stdint.h>
 
+#define CURSOR_COLOR_TABLE_SIZE 22
+
 namespace pv {
 namespace view {
 
@@ -53,7 +55,7 @@ private:
     static const int CursorSelWidth;
 
 public:
-    static const QColor CursorColor[8];
+    static const QColor CursorColorTable[CURSOR_COLOR_TABLE_SIZE];
 
 public:
 	Ruler(View &parent);

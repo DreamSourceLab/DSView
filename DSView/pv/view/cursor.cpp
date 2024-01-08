@@ -96,12 +96,14 @@ void Cursor::paint_label(QPainter &p, const QRect &rect,
     const QRect close(get_close_rect(r));
 
     p.setPen(Qt::transparent);
+
     if (close.contains(QPoint(_view.hover_point().x(), _view.hover_point().y())))
-        p.setBrush(Ruler::CursorColor[(index - 1) % 8]);
+        p.setBrush(Ruler::CursorColorTable[(index - 1) % CURSOR_COLOR_TABLE_SIZE]);
     else if (r.contains(QPoint(_view.hover_point().x(), _view.hover_point().y())))
         p.setBrush(View::Orange);
     else
-        p.setBrush(Ruler::CursorColor[(index - 1) % 8]);
+        p.setBrush(Ruler::CursorColorTable[(index - 1) % CURSOR_COLOR_TABLE_SIZE]);
+
     p.drawRect(r);
 
     const QPoint points[] = {

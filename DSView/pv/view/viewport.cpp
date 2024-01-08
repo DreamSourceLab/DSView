@@ -645,7 +645,7 @@ void Viewport::mousePressEvent(QMouseEvent *event)
             if (_hover_hit) {
                 const int64_t index = _view.pixel2index(event->pos().x());
                 auto &cursor_list = _view.get_cursorList();
-                _view.add_cursor(view::Ruler::CursorColor[cursor_list.size() % 8], index);
+                _view.add_cursor(index);
                 _view.show_cursors(true);
             }
         }
@@ -1191,7 +1191,7 @@ void Viewport::mouseDoubleClickEvent(QMouseEvent *event)
             }
 
             auto &cursor_list = _view.get_cursorList();
-            _view.add_cursor(view::Ruler::CursorColor[cursor_list.size() % 8], index);
+            _view.add_cursor(view::Ruler::CursorColorTable[cursor_list.size() % CURSOR_COLOR_TABLE_SIZE], index);
             _view.show_cursors(true);
         }
 
@@ -1220,7 +1220,7 @@ void Viewport::mouseDoubleClickEvent(QMouseEvent *event)
             const double curX = event->pos().x();
             index = _view.pixel2index(curX);
             auto &cursor_list = _view.get_cursorList();
-            _view.add_cursor(view::Ruler::CursorColor[cursor_list.size() % 8], index);
+            _view.add_cursor(view::Ruler::CursorColorTable[cursor_list.size() % CURSOR_COLOR_TABLE_SIZE], index);
             _view.show_cursors(true);
         }
     }
@@ -2025,7 +2025,7 @@ void Viewport::add_cursor_y()
     //const double curX = _menu_pos.x();
     index = _view.pixel2index(_cur_preX);
     auto &cursor_list = _view.get_cursorList();
-    _view.add_cursor(view::Ruler::CursorColor[cursor_list.size() % 8], index);
+    _view.add_cursor(view::Ruler::CursorColorTable[cursor_list.size() % CURSOR_COLOR_TABLE_SIZE], index);
     _view.show_cursors(true);
 }
 
@@ -2033,7 +2033,7 @@ void Viewport::add_cursor_x()
 {
     double ypos = (_cur_preY - _view.get_view_rect().top()) * 1.0 / _view.get_view_height();
     auto &cursor_list = _view.get_cursorList();
-    _view.add_xcursor(view::Ruler::CursorColor[cursor_list.size() % 8], ypos, ypos);
+    _view.add_xcursor(view::Ruler::CursorColorTable[cursor_list.size() % CURSOR_COLOR_TABLE_SIZE], ypos, ypos);
     _view.show_xcursors(true);
 }
 

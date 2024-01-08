@@ -672,7 +672,7 @@ void MeasureDock::set_cursor_btn_color(QPushButton *btn)
 {
     bool ret;
     const unsigned int start = btn->text().toInt(&ret) - 1;
-    QColor cursor_color = ret ? view::Ruler::CursorColor[start%8] : QColor("#302F2F");
+    QColor cursor_color = ret ? view::Ruler::CursorColorTable[start%CURSOR_COLOR_TABLE_SIZE] : QColor("#302F2F");
     QString border_width = ret ? "0px" : "1px";
     QString normal = "{background-color:" + cursor_color.name() +
             "; color:black" + "; border-width:" + border_width + ";}";

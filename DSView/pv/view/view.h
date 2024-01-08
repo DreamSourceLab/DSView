@@ -222,6 +222,7 @@ public:
     }
 
     void add_cursor(QColor color, uint64_t index);
+    void add_cursor(uint64_t index);
     void del_cursor(Cursor* cursor);
     void clear_cursors();
     void set_cursor_middle(int index);

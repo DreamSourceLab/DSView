@@ -174,7 +174,7 @@ void XCursor::paint(QPainter &p, const QRect &rect, XCur_type highlight,  int or
     const int x = rect.left() + _yvalue * rect.width();
     const int y0 = rect.top() + _value0 * rect.height();
     const int y1 = rect.top() + _value1 * rect.height();
-    QColor color = (order == -1) ? _colour : Ruler::CursorColor[order%8];
+    QColor color = (order == -1) ? _colour : Ruler::CursorColorTable[order%CURSOR_COLOR_TABLE_SIZE];
     const bool hit0 = (_grabbed == XCur_X0) | (_grabbed == XCur_None && (highlight == XCur_X0 || highlight == XCur_All));
     p.setPen(hit0 ? QPen(color.lighter(), 2, Qt::DashLine) : QPen(color, 1, Qt::DashLine));
     p.drawLine(QPoint(0, y0), QPoint(rect.right()-_v0_size.width(), y0));

@@ -979,6 +979,14 @@ void View::add_cursor(QColor color, uint64_t index)
     cursor_update();
 }
 
+void View::add_cursor(uint64_t index)
+{
+    static int addIndex = 0;
+    QColor color = view::Ruler::CursorColorTable[addIndex%CURSOR_COLOR_TABLE_SIZE];
+    add_cursor(color, index);
+    addIndex++;
+}
+
 void View::del_cursor(Cursor* cursor)
 {
     assert(cursor);

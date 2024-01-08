@@ -62,15 +62,32 @@ const int Ruler::pricision = 2;
 const int Ruler::HoverArrowSize = 4;
 
 const int Ruler::CursorSelWidth = 20;
-const QColor Ruler::CursorColor[8] =
-    {QColor(25, 189, 155, 200),
-     QColor(46, 205, 113, 200),
-     QColor(53, 152, 220, 200),
-     QColor(154, 89, 181, 200),
-     QColor(52, 73, 94, 200),
-     QColor(242, 196, 15, 200),
-     QColor(231, 126, 34, 200),
-     QColor(232, 76, 61, 200)};
+
+const QColor Ruler::CursorColorTable[CURSOR_COLOR_TABLE_SIZE] =
+    {
+        QColor(154,205,50, 200), //YellowGreen
+        QColor(255,255,0, 200), //Yellow
+        QColor(245,222,179, 200), //Wheat
+        QColor(208,32,144, 200), //VioletRed
+        QColor(255,99,71, 200), //Tomato
+        QColor(0,128,128, 200), //Teal
+        QColor(70,130,180, 200), //SteelBlue
+        QColor(106,90,205, 200),//SlateBlue
+        QColor(160,82,45, 200), //Sienna
+        QColor(46,139,87, 200), //SeaGreen
+        QColor(128,0,128, 200), //Purple
+        QColor(127,255,0, 200), //Chartreuse
+        QColor(0,0,255, 200), //Blue
+        QColor(220,20,60, 200), //Crimson
+        QColor(184,134,11, 200), //DarkGoldenRod
+        QColor(139,0,139, 200), //DarkMagenta
+        QColor(255,20,147, 200), //DeepPink
+        QColor(34,139,34, 200), //ForestGreen
+        QColor(0,0,128, 200), //Navy
+        QColor(255,0,255, 200), //Fuchsia
+        QColor(255,127,80, 200), //Coral
+        QColor(255,69,0, 200), //OrangeRed
+     };
 
 Ruler::Ruler(View &parent) :
 	QWidget(&parent),
@@ -314,7 +331,7 @@ void Ruler::mouseReleaseEvent(QMouseEvent *event)
                     overCursor = in_cursor_sel_rect(event->pos());
 
                     if (overCursor == 0) {
-                        _view.add_cursor(CursorColor[cursor_list.size() % 8], index);
+                        _view.add_cursor(CursorColorTable[cursor_list.size() % CURSOR_COLOR_TABLE_SIZE], index);
                         _view.show_cursors(true);
                         updatedCursor = true;
                     }
@@ -703,7 +720,7 @@ void Ruler::draw_cursor_sel(QPainter &p)
             if (in_cursor_sel_rect(pos) == index)
                 p.setBrush(View::Orange);
             else
-                p.setBrush(CursorColor[(index - 1)%8]);
+                p.setBrush(CursorColorTable[(index - 1)%CURSOR_COLOR_TABLE_SIZE]);
 
             p.drawRect(cursorRect);
             p.setPen(Qt::black);

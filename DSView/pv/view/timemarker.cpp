@@ -82,7 +82,7 @@ void TimeMarker::paint(QPainter &p, const QRect &rect, const bool highlight, int
 {
     const int64_t x = _view.index2pixel(_index, trig_hoff);
     if (x <= rect.right()) {
-        QColor color = (order == -1) ? _colour : Ruler::CursorColor[order%8];
+        QColor color = (order == -1) ? _colour : Ruler::CursorColorTable[order%CURSOR_COLOR_TABLE_SIZE];
         p.setPen((_grabbed | highlight) ? QPen(color.lighter(), 2, Qt::DashLine) : QPen(color, 1, Qt::DashLine));
         p.drawLine(QPoint(x, 0), QPoint(x, rect.bottom()));
     }
