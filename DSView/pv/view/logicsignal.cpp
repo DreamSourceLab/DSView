@@ -171,7 +171,7 @@ void LogicSignal::paint_mid_align(QPainter &p, int left, int right, QColor fore,
         x = (*i).first;
         wave_lines.push_back(QLine(preX, preY, x, preY));
     }
-    else {
+    else if (_cur_pulses.size() > 0) {
         std::vector<std::pair<bool, bool>>::const_iterator i = _cur_pulses.begin();
         while (i != _cur_pulses.end() - 1) {
             if ((*i).first) {
