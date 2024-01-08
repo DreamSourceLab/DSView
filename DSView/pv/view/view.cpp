@@ -1403,5 +1403,10 @@ std::list<Cursor*>& View::get_cursorList()
     }
 }
 
+bool View::header_is_draging()
+{
+    return _header->mouse_is_down();
+}
+
 } // namespace view
 } // namespace pv

@@ -324,8 +324,8 @@ public:
 
     //IFontForm
     void update_font() override;
-
     void check_measure();
+    bool header_is_draging();
 
 signals:
 	void hover_point_changed();

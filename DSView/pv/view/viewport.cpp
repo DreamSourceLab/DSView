@@ -1230,6 +1230,10 @@ void Viewport::wheelEvent(QWheelEvent *event)
 {
     assert(event);
 
+    if (_view.header_is_draging()){
+        return;
+    }
+
     int x = 0;  //mouse x pos
     int delta = 0;
     bool isVertical = true;

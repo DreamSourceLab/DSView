@@ -69,6 +69,10 @@ public:
     int get_nameEditWidth();
     void header_resize();
 
+    inline bool mouse_is_down(){
+        return _mouse_is_down;
+    }
+
 private slots:
 	void on_action_set_name_triggered();
 
@@ -85,15 +89,12 @@ private:
     bool _moveFlag;
     bool _colorFlag;
     bool _nameFlag;
-
 	QPoint _mouse_point;
 	QPoint _mouse_down_point;
-
     QLineEdit *nameEdit;
-
     std::list<std::pair<Trace*, int> > _drag_traces;
-
     Trace *_context_trace;
+    bool    _mouse_is_down;
 };
 
 } // namespace view

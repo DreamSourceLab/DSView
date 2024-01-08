@@ -47,6 +47,7 @@
 #include "../appcontrol.h"
 #include "../config/appconfig.h"
 #include "../ui/fn.h"
+#include "../log.h"
  
 using namespace std;
 
@@ -61,6 +62,7 @@ Header::Header(View &parent) :
     _colorFlag = false;
     _nameFlag = false;
     _context_trace = NULL;
+    _mouse_is_down = false;
     
     nameEdit = new QLineEdit(this);
     nameEdit->setFixedWidth(100);
@@ -173,6 +175,8 @@ void Header::mousePressEvent(QMouseEvent *event)
 {
 	assert(event);
 
+    _mouse_is_down = true;
+
     std::vector<Trace*> traces;
     _view.get_traces(ALL_VIEW, traces);
     int action;
@@ -234,6 +238,8 @@ void Header::mousePressEvent(QMouseEvent *event)
 void Header::mouseReleaseEvent(QMouseEvent *event)
 {
 	assert(event);
+
+    _mouse_is_down = false;
 
     // judge for color / name / trigger / move
     int action;
