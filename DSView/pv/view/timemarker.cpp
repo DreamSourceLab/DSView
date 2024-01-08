@@ -72,8 +72,11 @@ uint64_t TimeMarker::index()
     return _index;
 }
 
-void TimeMarker::set_index(uint64_t index)
+void TimeMarker::set_index(int64_t index)
 {
+    if (index < 0){
+        index = 0;
+    }
    _index = index;
     time_changed();
 }

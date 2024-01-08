@@ -66,7 +66,7 @@ public:
 	/**
 	 * Sets the time of the marker.
 	 */
-    void set_index(uint64_t index);
+    void set_index(int64_t index);
 
     /**
      * Gets/Sets colour of the marker
