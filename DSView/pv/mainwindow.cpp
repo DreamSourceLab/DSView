@@ -1833,6 +1833,7 @@ namespace pv
                 _msg->close();
                 _msg = NULL;
             }
+            _view->hide_calibration();
 
             _protocol_widget->del_all_protocol();
             _view->reload();
@@ -1922,6 +1923,7 @@ namespace pv
             reset_all_view();
             load_device_config();
             update_title_bar_text();
+            _view->hide_calibration();
 
             update_toolbar_view_status();
             _sampling_bar->update_sample_rate_list();
