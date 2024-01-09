@@ -54,6 +54,9 @@ DsoSnapshot::DsoSnapshot() :
     _data_scale1 = 0;
     _data_scale2 = 0;  
     _is_file = false;
+    _ref_min = 0;
+    _ref_max = 0;
+    _data_out_off_range = false;
 
 	memset(_envelope_levels, 0, sizeof(_envelope_levels));
 }
@@ -233,6 +236,8 @@ void DsoSnapshot::append_data(void *data, uint64_t samples, bool instant)
 {
     uint64_t old_sample_count = _sample_count;
 
+    _data_out_off_range = false;
+
     if (instant) { 
         if(_sample_count + samples > _total_sample_count)
             samples = _total_sample_count - _sample_count;
@@ -256,6 +261,11 @@ void DsoSnapshot::append_data(void *data, uint64_t samples, bool instant)
         for (uint64_t i = 0; i < samples; i++)
         {
             *dest++ = *src;
+
+            if (*src > _ref_max || *src < _ref_min){
+                _data_out_off_range = true;
+            }
+            
             src += _channel_num;
         }  
     }

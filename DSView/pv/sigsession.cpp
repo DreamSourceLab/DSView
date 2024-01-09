@@ -578,6 +578,14 @@ namespace pv
                 _device_agent.set_config_bool(SR_CONF_LOOP_MODE, bv);
             }
         }
+
+        if (mode == DSO && _device_agent.is_hardware()){
+            uint32_t ref_max = 0;
+            uint32_t ref_min = 0;
+            _device_agent.get_config_uint32(SR_CONF_REF_MIN, ref_min);        
+            _device_agent.get_config_uint32(SR_CONF_REF_MAX, ref_max);
+            _view_data->get_dso()->set_ref_range(ref_max, ref_min);
+        }
        
         update_view();
 

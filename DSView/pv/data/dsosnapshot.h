@@ -131,6 +131,15 @@ public:
         return _is_file;
     }
 
+    inline void set_ref_range(uint32_t ref_max, uint32_t ref_min){
+        _ref_max = ref_max;
+        _ref_min = ref_min;
+    }
+
+    inline bool data_is_out_off_range(){
+        return _data_out_off_range;
+    }
+
 private:
     void append_data(void *data, uint64_t samples, bool instant);
     void free_envelop();
@@ -151,6 +160,9 @@ private:
     float _data_scale1 = 0;
     float _data_scale2 = 0;
     bool    _is_file;
+    uint32_t _ref_min;
+    uint32_t _ref_max;
+    bool _data_out_off_range;
  
     friend class DsoSnapshotTest::Basic;
 };

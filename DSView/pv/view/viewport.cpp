@@ -463,6 +463,17 @@ void Viewport::paintSignals(QPainter &p, QColor fore, QColor back)
             }
             p.setPen(fore);
             p.drawText(_view.get_view_rect(), Qt::AlignLeft | Qt::AlignTop, type_str);
+
+            if (_view.session().get_device()->is_hardware())
+            {
+                if (_view.session().dso_data_is_out_off_range()){
+                    QString data_status = L_S(STR_PAGE_DLG, S_ID(IDS_DLG_DATA_OUT_OFF_RANGE), "Out off range");
+                    data_status += "! ";
+                    p.setPen(QColor(255,0,0,200));
+                    p.drawText(_view.get_view_rect(), Qt::AlignRight | Qt::AlignTop, data_status);
+                    p.setPen(fore);
+                }                 
+            }           
         }
     }
 }

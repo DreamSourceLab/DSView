@@ -443,6 +443,10 @@ public:
 
     int64_t get_ring_sample_count();
 
+    inline bool dso_data_is_out_off_range(){
+        return _view_data->get_dso()->data_is_out_off_range();
+    }
+
 private:
     void set_cur_samplelimits(uint64_t samplelimits);
     void set_cur_snap_samplerate(uint64_t samplerate);

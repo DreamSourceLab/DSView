@@ -1491,6 +1491,14 @@ static int config_set(int id, GVariant *data, struct sr_dev_inst *sdi,
                 __func__, ch->index, ch->enabled);
     } else if (id == SR_CONF_PROBE_OFFSET) {
         ch->offset = g_variant_get_uint16(data);
+
+        if (ch->offset > devc->profile->dev_caps.ref_max){
+            ch->offset = devc->profile->dev_caps.ref_max;
+        }
+        if (ch->offset < devc->profile->dev_caps.ref_min){
+            ch->offset = devc->profile->dev_caps.ref_min;
+        }
+
         if (devc->status != DSL_FINISH)
             ret = dsl_wr_dso(sdi, dso_cmd_gen(sdi, ch, SR_CONF_PROBE_OFFSET));
         else
