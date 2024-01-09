@@ -50,7 +50,7 @@ ChannelLabel::ChannelLabel(IChannelCheck *check, QWidget *parent, int chanIndex)
 : QWidget(parent)
 {
     _checked = check;
-    _index = chanIndex;
+    _index = chanIndex;  
 
     QGridLayout *lay = new QGridLayout();
     lay->setContentsMargins(0,0,0,0);
@@ -100,6 +100,7 @@ DeviceOptions::DeviceOptions(QWidget *parent) :
     _container_lay = NULL;
     _isBuilding = false;
     _cur_analog_tag_index = 0;
+    _have_no_channel = false;
 
     SigSession *session = AppControl::Instance()->GetSession();
     _device_agent = session->get_device();
@@ -222,11 +223,14 @@ void DeviceOptions::accept()
             it++;
         }
 
-        QDialog::accept();
+        _have_no_channel = false;
+
+        QDialog::accept();        
     }
     else {
+        _have_no_channel = true;
         QString strMsg(L_S(STR_PAGE_MSG, S_ID(IDS_MSG_ALL_CHANNEL_DISABLE), "All channel disabled! Please enable at least one channel."));
-        MsgBox::Show(strMsg);
+        MsgBox::Show(strMsg);        
     }
 }
 
@@ -834,7 +838,6 @@ void DeviceOptions::build_dynamic_panel()
     _isBuilding = false;
 }
 
-int bb = 0;
 void DeviceOptions::try_resize_scroll()
 {
     this->update_font();
@@ -889,6 +892,16 @@ void DeviceOptions::try_resize_scroll()
         _scroll_panel->setFixedSize(w, contentHeight);
         _scroll->setFixedSize(sclw, contentHeight);
     }
+}
+
+void DeviceOptions::keyPressEvent(QKeyEvent *event) 
+{
+    if (event->key() == Qt::Key_Escape && _have_no_channel) {
+        event->ignore();
+        return;
+    }
+
+    QDialog::keyPressEvent(event);
 }
 
 } // namespace dialogs

@@ -111,6 +111,8 @@ private:
 
     void channel_checkbox_clicked(QCheckBox *sc);
 
+    void keyPressEvent(QKeyEvent *) override;
+
 private:
     //IChannelCheck
     void ChannelChecked(int index, QObject *object);
@@ -149,6 +151,7 @@ private:
     std::vector<pv::prop::binding::ProbeOptions *> _probe_options_binding_list;
     std::vector<ChannelModePair> _channel_mode_indexs;
     std::vector<struct sr_channel*>     _dso_channel_list;
+    bool    _have_no_channel;
 };
 
 } // namespace dialogs
