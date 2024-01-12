@@ -722,5 +722,13 @@
     {
         "id": "IDS_DLG_DATA_OUT_OFF_RANGE",
         "text": "数据超出量程"
-    } 
+    },
+    {
+        "id": "IDS_DLG_START_CURSOR",
+        "text": "开始"
+    },
+    {
+        "id": "IDS_DLG_END_CURSOR",
+        "text": "结束"
+    }
 ]

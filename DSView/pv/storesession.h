@@ -59,7 +59,7 @@ public:
 
     SigSession* session();
 
-	std::pair<uint64_t, uint64_t> progress();
+    void get_progress(uint64_t *writed, uint64_t *total);
 
 	const QString& error();
 
@@ -91,7 +91,11 @@ public:
         { return _file_name;}
 
     bool IsLogicDataType();
- 
+
+    inline void SetDataRange(uint64_t start_index, uint64_t end_index){
+        _start_index = start_index;
+        _end_index = end_index;
+    }
 
 private:
     QList<QString> getSuportedExportFormats();
@@ -119,6 +123,8 @@ private:
 	QString         _error;
     volatile bool   _canceled;
     ZipMaker        m_zipDoc;  
+    uint64_t        _start_index;
+    uint64_t        _end_index;
 };
 
 } // pv

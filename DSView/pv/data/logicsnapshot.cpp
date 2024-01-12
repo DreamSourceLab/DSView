@@ -1502,5 +1502,14 @@ void LogicSnapshot::free_head_blocks(int count)
     _lst_free_block_index = count;
 }
 
+int LogicSnapshot::get_block_with_sample(uint64_t index, uint64_t *out_offset)
+{
+    assert(out_offset);
+
+    int block =  index / LeafBlockSamples;
+    *out_offset = index % LeafBlockSamples;
+    return block;
+}
+
 } // namespace data
 } // namespace pv

@@ -88,6 +88,10 @@ static int init(struct sr_output *o, GHashTable *options)
     ctx->type = g_variant_get_int16(g_hash_table_lookup(options, "type"));
     ch_num = 0;
 
+    if (o->start_sample_index > 0){
+        ctx->index = o->start_sample_index;
+    }
+
 	/* Get the number of channels, and the unitsize. */
 	for (l = o->sdi->channels; l; l = l->next) {
 		ch = l->data;

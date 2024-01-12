@@ -75,6 +75,8 @@ StoreSession::StoreSession(SigSession *session) :
     _canceled(false)
 { 
     _sessionDataGetter = NULL;
+    _start_index = 0;
+    _end_index = 0;
 }
 
 StoreSession::~StoreSession()
@@ -87,9 +89,13 @@ SigSession* StoreSession::session()
     return _session;
 }
 
-std::pair<uint64_t, uint64_t> StoreSession::progress()
-{ 
-    return std::make_pair(_units_stored, _unit_count);
+void StoreSession::get_progress(uint64_t *writed, uint64_t *total)
+{
+    assert(writed);
+    assert(total);
+
+    *writed = _units_stored;
+    *total = _unit_count;
 }
 
 const QString& StoreSession::error()
@@ -226,6 +232,40 @@ void StoreSession::save_logic(pv::data::LogicSnapshot *logic_snapshot)
     _unit_count = logic_snapshot->get_ring_sample_count() / 8 * to_save_probes;
     num = logic_snapshot->get_block_num();
 
+    uint64_t start_index = _start_index;
+    uint64_t end_index = _end_index;
+    uint64_t start_offset = 0;
+    uint64_t end_offset = 0;
+    int start_block = 0;
+    int end_block = 0;
+
+    if (start_index > logic_snapshot->get_ring_sample_count()){
+        dsv_err("ERROR:the start curosr is invalid!");
+        _units_stored = -1;
+        progress_updated();
+        return;
+    }
+    if (end_index > logic_snapshot->get_ring_sample_count()){
+        end_index = 0;
+    }
+
+    if (start_index > 0){
+        start_block = LogicSnapshot::get_block_with_sample(start_index, &start_offset);
+    }
+    if (end_index > 0){
+        end_block = LogicSnapshot::get_block_with_sample(end_index, &end_offset);
+    }
+
+    if (start_index > 0 && end_index > 0){
+        _unit_count = (end_index - start_index) / 8 * to_save_probes;
+    }
+    else if (start_index > 0){
+        _unit_count = (logic_snapshot->get_ring_sample_count() - start_index) / 8 * to_save_probes;
+    }
+    else if (end_index > 0){
+        _unit_count = end_index / 8 * to_save_probes;
+    }
+
     for(auto s : _session->get_signals()) 
     {
         int ch_type = s->get_type();
@@ -234,7 +274,15 @@ void StoreSession::save_logic(pv::data::LogicSnapshot *logic_snapshot)
             if (!s->enabled() || !logic_snapshot->has_data(ch_index))
                 continue;
 
-            for (int i = 0; !_canceled && i < num; i++) {
+            for (int i = 0; !_canceled && i < num; i++) 
+            {
+                if (i < start_block){
+                    continue;
+                }
+                if (i > end_block && end_block > 0){
+                    break;
+                }
+
                 uint8_t *buf = logic_snapshot->get_block_buf(i, ch_index, sample);
                 uint64_t size = logic_snapshot->get_block_size(i);
                 bool need_malloc = (buf == NULL);
@@ -250,7 +298,7 @@ void StoreSession::save_logic(pv::data::LogicSnapshot *logic_snapshot)
                     }
                 }
                 
-                MakeChunkName(chunk_name, i, ch_index, ch_type, HEADER_FORMAT_VERSION);
+                MakeChunkName(chunk_name, i - start_block, ch_index, ch_type, HEADER_FORMAT_VERSION);
                 ret = m_zipDoc.AddFromBuffer(chunk_name, (const char*)buf, size) ? SR_OK : -1;
 
                 if (ret != SR_OK) {
@@ -266,7 +314,9 @@ void StoreSession::save_logic(pv::data::LogicSnapshot *logic_snapshot)
                 }
                 _units_stored += size;
 
-                if (_units_stored > _unit_count){
+                if (_units_stored > _unit_count 
+                        && start_index == 0
+                        && end_index == 0){
                     dsv_err("Read block data error!");
                     assert(false);
                 }
@@ -494,8 +544,38 @@ bool StoreSession::meta_gen(data::Snapshot *snapshot, std::string &str)
             if (probe->enabled && logic_snapshot->has_data(probe->index))
                 to_save_probes++;
         }
+
+        int block_count = logic_snapshot->get_block_num();
+
+        uint64_t start_index = _start_index;
+        uint64_t end_index = _end_index;
+        uint64_t start_offset = 0;
+        uint64_t end_offset = 0;
+        int start_block = 0;
+        int end_block = 0;
+
+        if (end_index > logic_snapshot->get_ring_sample_count()){
+            end_index = 0;
+        }
+        if (start_index > 0){
+            start_block = LogicSnapshot::get_block_with_sample(start_index, &start_offset);
+        }
+        if (end_index > 0){
+            end_block = LogicSnapshot::get_block_with_sample(end_index, &end_offset);
+        }
+
+        if (start_index > 0 && end_index > 0){
+            block_count = end_block - start_block + 1;
+        }
+        else if (start_index > 0){
+            block_count = block_count - start_block;
+        }
+        else if (end_index > 0){
+            block_count = end_block + 1;
+        }
+
         sprintf(meta, "total probes = %d\n", to_save_probes); str += meta;
-        sprintf(meta, "total blocks = %d\n", logic_snapshot->get_block_num()); str += meta;
+        sprintf(meta, "total blocks = %d\n", block_count); str += meta;
     }
 
     s = sr_samplerate_string(_session->cur_snap_samplerate());
@@ -775,6 +855,11 @@ void StoreSession::export_proc(data::Snapshot *snapshot)
     output.module = (sr_output_module*) _outModule;
     output.sdi = _session->get_device()->inst();
     output.param = NULL;
+    output.start_sample_index = 0;
+
+    if (channel_type == SR_CHANNEL_LOGIC){
+        output.start_sample_index = _start_index;
+    }
 
     if(_outModule->init){
        if(_outModule->init(&output, params) != SR_OK){
@@ -854,10 +939,49 @@ void StoreSession::export_proc(data::Snapshot *snapshot)
         std::vector<uint8_t *> buf_vec;
         std::vector<bool> buf_sample;
 
+        uint64_t start_index = _start_index;
+        uint64_t end_index = _end_index;
+        uint64_t start_offset = 0;
+        uint64_t end_offset = 0;
+        int start_block = 0;
+        int end_block = 0;
+
+        if (start_index > logic_snapshot->get_ring_sample_count()){
+            dsv_err("ERROR:the start curosr is invalid!");
+            _units_stored = -1;
+            progress_updated();
+            return;
+        }
+        if (end_index > logic_snapshot->get_ring_sample_count()){
+            end_index = 0;
+        }
+
+        if (start_index > 0){
+            start_block = LogicSnapshot::get_block_with_sample(start_index, &start_offset);
+        }
+        if (end_index > 0){
+            end_block = LogicSnapshot::get_block_with_sample(end_index, &end_offset);
+        }
+
+        if (start_index > 0 && end_index > 0){
+            _unit_count = (end_index - start_index);
+        }
+        else if (start_index > 0){
+            _unit_count = (logic_snapshot->get_ring_sample_count() - start_index);
+        }
+        else if (end_index > 0){
+            _unit_count = end_index;
+        }
+
         for (int blk = 0; !_canceled  &&  blk < blk_num; blk++) {
             uint64_t buf_sample_num = logic_snapshot->get_block_size(blk) * 8;
             buf_vec.clear();
             buf_sample.clear();
+
+            if (blk < start_block)
+                continue;
+            if (blk > end_block && end_block > 0)
+                break;
 
             for(auto s : _session->get_signals()) {
                 int ch_type = s->get_type();

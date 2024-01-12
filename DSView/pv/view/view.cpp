@@ -1408,5 +1408,19 @@ bool View::header_is_draging()
     return _header->mouse_is_down();
 }
 
+Cursor* View::get_cursor_by_index(int index)
+{
+    int dex = 0;
+    auto &cursors = get_cursorList();
+
+    for (auto c : cursors){
+        if (dex == index){
+            return c;
+        }
+        dex++;
+    }
+    return NULL;
+}
+
 } // namespace view
 } // namespace pv

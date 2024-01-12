@@ -636,6 +636,7 @@ static int receive_data_logic_dso_v2(int fd, int revents, const struct sr_dev_in
             if ((pack_buffer->block_data_len - pack_buffer->block_read_len) % 8 != 0)
             {
                 sr_err("The block data is not align with 8 byte.");
+                bToEnd = 1;
                 break;
             }  
         }

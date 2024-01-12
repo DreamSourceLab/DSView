@@ -229,6 +229,8 @@ public:
         return _trig_cursor;
     }
 
+    Cursor* get_cursor_by_index(int index);
+
     inline Cursor* get_search_cursor(){
         return _search_cursor;
     }

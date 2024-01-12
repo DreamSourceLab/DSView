@@ -377,5 +377,9 @@
     {
         "id": "IDS_MSG_DEVICE_USB_IO_ERROR",
         "text": "Error: USB读写错误!"
+    },
+    {
+        "id": "IDS_MSG_DATA_RANGE_ERROR",
+        "text": "数据范围设置错误!"
     }
 ]

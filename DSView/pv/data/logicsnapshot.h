@@ -150,6 +150,8 @@ public:
         return _loop_offset;
     }
 
+    static int get_block_with_sample(uint64_t index, uint64_t *out_offset);
+
 private:
     bool get_sample_unlock(uint64_t index, int sig_index);
     bool get_sample_self(uint64_t index, int sig_index);

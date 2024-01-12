@@ -28,10 +28,14 @@
 #include <QTextEdit>
 #include <QPushButton>
 #include <QRadioButton>
+#include <QComboBox>
+#include <QFormLayout>
 #include "../ui/msgbox.h"
 #include "../config/appconfig.h"
 #include "../interface/icallbacks.h"
 #include "../log.h"
+#include "../view/view.h"
+#include "../view/cursor.h"
 
 #include "../ui/langresource.h"
 
@@ -54,6 +58,10 @@ StoreProgress::StoreProgress(SigSession *session, QWidget *parent) :
     _isExport = false;
     _done = false;
     _isBusy = false;
+    _start_cursor = NULL;
+    _end_cursor = NULL;
+    _view = NULL;
+    _is_normal_end = false;
 
     QGridLayout *grid = new QGridLayout(); 
     _grid = grid;
@@ -104,8 +112,8 @@ StoreProgress::~StoreProgress()
     _store_session.wait();
 }
 
- void StoreProgress::on_change_file()
- {
+void StoreProgress::on_change_file()
+{
     QString file  = "";
     if (_isExport)
         file = _store_session.MakeExportFile(true);
@@ -121,7 +129,7 @@ StoreProgress::~StoreProgress()
             _ckCompress->setVisible(bFlag);
         }
     }          
- }
+}
 
 void StoreProgress::reject()
 {
@@ -164,6 +172,47 @@ void StoreProgress::accept()
         }
     }
 
+    // Get data range
+    if (_store_session.IsLogicDataType() && _view != NULL)
+    {
+        uint64_t start_index = 0;
+        uint64_t end_index = 0;
+
+        auto &cursor_list = _view->get_cursorList();
+
+        int dex1 = _start_cursor->currentIndex();
+        int dex2 = _end_cursor->currentIndex();
+
+        if (dex1 > 0)
+        {   
+            auto c = _view->get_cursor_by_index(dex1-1);
+            assert(c);
+            start_index = c->get_index();
+        }
+
+        if (dex2 > 0){
+            auto c = _view->get_cursor_by_index(dex2-1);
+            assert(c);
+            end_index = c->get_index();
+        }
+
+        if (dex1 > 0 && dex2 > 0)
+        {
+            if (dex1 == dex2){
+                QString mStr = L_S(STR_PAGE_MSG, S_ID(IDS_MSG_DATA_RANGE_ERROR), "Data range error");
+                MsgBox::Show(mStr);
+                return;
+            }
+            else if (start_index > end_index){
+                uint64_t tmp = start_index;
+                start_index = end_index;
+                end_index = tmp;
+            }
+        }
+
+        _store_session.SetDataRange(start_index, end_index);
+    }
+
     //start done 
     if (_isExport){
         if (_store_session.export_start()){
@@ -178,8 +227,8 @@ void StoreProgress::accept()
             show_error();
         }
     }
-    else{
-         if (_store_session.save_start()){
+    else{        
+        if (_store_session.save_start()){
             _isBusy = true;
             _store_session.session()->set_saving(true);
             QTimer::singleShot(100, this, SLOT(timeout()));
@@ -214,6 +263,32 @@ void StoreProgress::save_run(ISessionDataGetter *getter)
     QString file = _store_session.MakeSaveFile(false);
     _fileLab->setText(file); 
     _store_session._sessionDataGetter = getter;
+
+    if (_store_session.IsLogicDataType() && _view != NULL)
+    {
+        QFormLayout *lay = new QFormLayout();
+        lay->setContentsMargins(5, 0, 0, 0); 
+        _start_cursor = new QComboBox();
+        _end_cursor = new QComboBox();
+   
+        _start_cursor->addItem("-");
+        _end_cursor->addItem("-");
+        
+        auto &cursor_list = _view->get_cursorList();
+
+        for (int i=0; i<cursor_list.size(); i++){
+            //tr
+            QString cursor_name = L_S(STR_PAGE_DLG, S_ID(IDS_DLG_CURSOR), "Cursor") + 
+                                QString::number(i+1);
+            _start_cursor->addItem(cursor_name);
+            _end_cursor->addItem(cursor_name);
+        }
+
+        lay->addRow(L_S(STR_PAGE_DLG, S_ID(IDS_DLG_START_CURSOR), "Start") , _start_cursor);
+        lay->addRow(L_S(STR_PAGE_DLG, S_ID(IDS_DLG_END_CURSOR), "End"), _end_cursor);
+        _grid->addLayout(lay, 2, 0, 1, 2);
+    }
+
     show();  
 }
 
@@ -221,7 +296,7 @@ void StoreProgress::export_run()
 {
     if (_store_session.IsLogicDataType())
     { 
-        QGridLayout *lay = new QGridLayout();
+        QFormLayout *lay = new QFormLayout();
         lay->setContentsMargins(5, 0, 0, 0); 
         bool isOrg = AppConfig::Instance().appOptions.originalData;
 
@@ -233,8 +308,31 @@ void StoreProgress::export_run()
         _ckCompress->setText(L_S(STR_PAGE_DLG, S_ID(IDS_DLG_COMPRESSED_DATA), "Compressed data"));
         _ckCompress->setChecked(!isOrg);
 
-        lay->addWidget(_ckOrigin);
-        lay->addWidget(_ckCompress);
+        _start_cursor = new QComboBox();
+        _end_cursor = new QComboBox();
+   
+        _start_cursor->addItem("-");
+        _end_cursor->addItem("-");
+        
+        auto &cursor_list = _view->get_cursorList();
+        
+        for (int i=0; i<cursor_list.size(); i++){
+            //tr
+            QString cursor_name = L_S(STR_PAGE_DLG, S_ID(IDS_DLG_CURSOR), "Cursor") + 
+                                QString::number(i+1);
+            _start_cursor->addItem(cursor_name);
+            _end_cursor->addItem(cursor_name);
+        }
+
+        lay->addRow(L_S(STR_PAGE_DLG, S_ID(IDS_DLG_START_CURSOR), "Start") , _start_cursor);
+        lay->addRow(L_S(STR_PAGE_DLG, S_ID(IDS_DLG_END_CURSOR), "End"), _end_cursor);
+
+        QWidget *space = new QWidget();
+        space->setFixedHeight(5);
+        lay->addRow(space);
+
+        lay->addRow("",_ckOrigin);
+        lay->addRow("", _ckCompress);
         _grid->addLayout(lay, 2, 0, 1, 2);
 
         connect(_ckOrigin, SIGNAL(clicked(bool)), this, SLOT(on_ck_origin(bool)));
@@ -246,11 +344,11 @@ void StoreProgress::export_run()
     QString file = _store_session.MakeExportFile(false);
     _fileLab->setText(file); 
 
-     if (_ckOrigin != NULL){
-            bool bFlag = file.endsWith(".csv");
-            _ckOrigin->setVisible(bFlag);
-            _ckCompress->setVisible(bFlag);
-     }
+    if (_ckOrigin != NULL){
+        bool bFlag = file.endsWith(".csv");
+        _ckOrigin->setVisible(bFlag);
+        _ckCompress->setVisible(bFlag);
+    }
 
     show();
 }
@@ -265,26 +363,38 @@ void StoreProgress::show_error()
 
 void StoreProgress::closeEvent(QCloseEvent* e)
 { 
-    _store_session.cancel();
+    if (!_is_normal_end){
+        _store_session.cancel();
+    }
+   
     _store_session.session()->set_saving(false);
-    DSDialog::closeEvent(e);
+    save_done();
     _store_session.session()->broadcast_msg(DSV_MSG_SAVE_COMPLETE);
 }
 
 void StoreProgress::on_progress_updated()
 {
-    const std::pair<uint64_t, uint64_t> p = _store_session.progress();
-	assert(p.first <= p.second);
-    int percent = p.first * 1.0 / p.second * 100;
-    _progress.setValue(percent);
+    uint64_t writed = 0;
+    uint64_t total = 0;
+
+    _store_session.get_progress(&writed, &total);
+
+    if (writed < total){
+        int percent = writed * 1.0 / total * 100.0;
+        _progress.setValue(percent);
+    }
+    else{
+        _progress.setValue(100);
+    }
 
     const QString err = _store_session.error();
 	if (!err.isEmpty()) {
 		show_error();
 	}
 
-    if (p.first == p.second) {
-        _done = true;
+    if (writed >= total){
+        _is_normal_end = true;
+        _done = true; // Set end flag.
     }
 }
 

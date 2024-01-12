@@ -530,6 +530,8 @@ struct sr_output {
 	 * there, and only flush it when it reaches a certain size.
 	 */
 	void *priv;
+
+	uint64_t start_sample_index;
 };
 
 /** Generic option struct used by various subsystems. */

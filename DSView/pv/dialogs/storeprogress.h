@@ -33,6 +33,13 @@ class QRadioButton;
 class QGridLayout;
 class QPushButton;
 class QWidget;
+class QComboBox;
+
+namespace pv {
+    namespace view {
+        class View;
+    }
+}
 
 namespace pv {
 
@@ -50,6 +57,9 @@ public:
 
 	virtual ~StoreProgress();
 
+    inline void SetView(view::View *view){
+        _view = view;
+    }
  
 protected:
     void reject();
@@ -85,6 +95,11 @@ private:
     QGridLayout         *_grid;
     QWidget             *_space;
     bool                 _isBusy;
+    QComboBox           *_start_cursor;
+    QComboBox           *_end_cursor;
+    view::View          *_view;
+    bool                _is_normal_end;
+
 };
 
 } // dialogs

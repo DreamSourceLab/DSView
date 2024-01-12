@@ -626,6 +626,7 @@ namespace pv
         _session->set_saving(true);
 
         StoreProgress *dlg = new StoreProgress(_session, this);
+        dlg->SetView(_view);
         dlg->save_run(this);
     }
 
@@ -639,6 +640,7 @@ namespace pv
         }
 
         StoreProgress *dlg = new StoreProgress(_session, this);
+        dlg->SetView(_view);
         dlg->export_run();
     }
 
