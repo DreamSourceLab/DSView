@@ -68,16 +68,14 @@ MainFrame::MainFrame()
     _freezing = false; 
     _titleBar = NULL;
     _mainWindow = NULL;
+    _is_native_title = false;
 
     AppControl::Instance()->SetTopWindow(this);
 
-    setAttribute(Qt::WA_TranslucentBackground);
-    // Make this a borderless window which can't
-    // be resized or moved via the window system
-    #ifdef _WIN32
-    setWindowFlags(Qt::Window | Qt::FramelessWindowHint | Qt::WindowSystemMenuHint | Qt::WindowMinMaxButtonsHint);
+    #ifdef Q_OS_DARWIN
+        _is_native_title = false;       
     #else
-    setWindowFlags(Qt::Window | Qt::FramelessWindowHint | Qt::WindowSystemMenuHint);
+        _is_native_title = true;
     #endif
 
     setMinimumWidth(MainWindow::Min_Width);
@@ -91,6 +89,15 @@ MainFrame::MainFrame()
     // Title
     _titleBar = new toolbars::TitleBar(true, this);
 
+    if (_is_native_title){
+        _titleBar->setVisible(false);
+        _titleBar->set_native();
+    }
+    else{
+        setWindowFlags(Qt::Window | Qt::FramelessWindowHint | Qt::WindowSystemMenuHint);
+        setAttribute(Qt::WA_TranslucentBackground);
+    }    
+
     // MainWindow
     _mainWindow = new MainWindow(_titleBar, this);
     _mainWindow->setWindowFlags(Qt::Widget);
@@ -101,45 +108,52 @@ MainFrame::MainFrame()
     vbox->addWidget(_titleBar);
     vbox->addWidget(_mainWindow);
 
-    _top_left = new widgets::Border (TopLeft, this);
-    _top_left->setFixedSize(Margin, Margin);
-    _top_left->installEventFilter(this);
-    _top = new widgets::Border (Top, this);
-    _top->setFixedHeight(Margin);
-    _top->installEventFilter(this);
-    _top_right = new widgets::Border (TopRight, this);
-    _top_right->setFixedSize(Margin, Margin);
-    _top_right->installEventFilter(this);
-
-    _left = new widgets::Border (Left, this);
-    _left->setFixedWidth(Margin);
-    _left->installEventFilter(this);
-    _right = new widgets::Border (Right, this);
-    _right->setFixedWidth(Margin);
-    _right->installEventFilter(this);
-
-    _bottom_left = new widgets::Border (BottomLeft, this);
-    _bottom_left->setFixedSize(Margin, Margin);
-    _bottom_left->installEventFilter(this);
-    _bottom = new widgets::Border (Bottom, this);
-    _bottom->setFixedHeight(Margin);
-    _bottom->installEventFilter(this);
-    _bottom_right = new widgets::Border (BottomRight, this);
-    _bottom_right->setFixedSize(Margin, Margin);
-    _bottom_right->installEventFilter(this);
-
     _layout = new QGridLayout(this);
     _layout->setSpacing(0);
     _layout->setContentsMargins(0,0,0,0);
-    _layout->addWidget(_top_left, 0, 0);
-    _layout->addWidget(_top, 0, 1);
-    _layout->addWidget(_top_right, 0, 2);
-    _layout->addWidget(_left, 1, 0);
-    _layout->addLayout(vbox, 1, 1);
-    _layout->addWidget(_right, 1, 2);
-    _layout->addWidget(_bottom_left, 2, 0);
-    _layout->addWidget(_bottom, 2, 1);
-    _layout->addWidget(_bottom_right, 2, 2);
+
+    if (_is_native_title){
+        _layout->addLayout(vbox, 0, 0);
+    }
+    else
+    {
+        _top_left = new widgets::Border (TopLeft, this);
+        _top_left->setFixedSize(Margin, Margin);
+        _top_left->installEventFilter(this);
+        _top = new widgets::Border (Top, this);
+        _top->setFixedHeight(Margin);
+        _top->installEventFilter(this);
+        _top_right = new widgets::Border (TopRight, this);
+        _top_right->setFixedSize(Margin, Margin);
+        _top_right->installEventFilter(this);
+
+        _left = new widgets::Border (Left, this);
+        _left->setFixedWidth(Margin);
+        _left->installEventFilter(this);
+        _right = new widgets::Border (Right, this);
+        _right->setFixedWidth(Margin);
+        _right->installEventFilter(this);
+
+        _bottom_left = new widgets::Border (BottomLeft, this);
+        _bottom_left->setFixedSize(Margin, Margin);
+        _bottom_left->installEventFilter(this);
+        _bottom = new widgets::Border (Bottom, this);
+        _bottom->setFixedHeight(Margin);
+        _bottom->installEventFilter(this);
+        _bottom_right = new widgets::Border (BottomRight, this);
+        _bottom_right->setFixedSize(Margin, Margin);
+        _bottom_right->installEventFilter(this);
+
+        _layout->addWidget(_top_left, 0, 0);
+        _layout->addWidget(_top, 0, 1);
+        _layout->addWidget(_top_right, 0, 2);
+        _layout->addWidget(_left, 1, 0);
+        _layout->addLayout(vbox, 1, 1);
+        _layout->addWidget(_right, 1, 2);
+        _layout->addWidget(_bottom_left, 2, 0);
+        _layout->addWidget(_bottom, 2, 1);
+        _layout->addWidget(_bottom_right, 2, 2);
+    }
 
 #ifdef _WIN32
     _taskBtn = new QWinTaskbarButton(this);
@@ -185,6 +199,10 @@ void MainFrame::unfreezing()
 
 void MainFrame::hide_border()
 {
+    if (_is_native_title){
+        return;
+    }
+
     _top_left->setVisible(false);
     _top_right->setVisible(false);
     _top->setVisible(false);
@@ -197,6 +215,10 @@ void MainFrame::hide_border()
 
 void MainFrame::show_border()
 { 
+    if (_is_native_title){
+        return;
+    }
+
     _top_left->setVisible(true);
     _top_right->setVisible(true);
     _top->setVisible(true);
@@ -238,6 +260,10 @@ void MainFrame::showMinimized()
 
 bool MainFrame::eventFilter(QObject *object, QEvent *event)
 {
+    if (_is_native_title){
+        return QFrame::eventFilter(object, event);
+    }
+
     const QEvent::Type type = event->type();
     const QMouseEvent *const mouse_event = (QMouseEvent*)event;
     int newWidth;

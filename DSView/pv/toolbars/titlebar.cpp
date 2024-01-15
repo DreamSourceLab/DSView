@@ -50,6 +50,7 @@ TitleBar::TitleBar(bool top, QWidget *parent, bool hasClose) :
    _isTop = top;
    _hasClose = hasClose;
    _title = NULL;
+   _is_native = false;
 
    assert(parent);
 
@@ -159,12 +160,23 @@ void TitleBar::paintEvent(QPaintEvent *event)
 
 void TitleBar::setTitle(QString title)
 {
-    _title->setText(title);
+    if (!_is_native){
+        _title->setText(title);
+    }
+    else if (_parent != NULL){
+        _parent->setWindowTitle(title);
+    }    
 }
   
 QString TitleBar::title()
 {
-    return _title->text();
+    if (!_is_native){
+        return _title->text();
+    }
+    else if (_parent != NULL){
+        return _parent->windowTitle();
+    }
+    return "";
 }
 
 void TitleBar::showMaxRestore()

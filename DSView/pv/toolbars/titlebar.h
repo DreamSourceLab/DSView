@@ -46,6 +46,10 @@ public:
     //IFontForm
     void update_font() override;
 
+    inline void set_native(){
+        _is_native = true;
+    }
+
 private:
     void changeEvent(QEvent *event);
     void reStyle();
@@ -78,6 +82,7 @@ protected:
     QPoint      _clickPos;
     QPoint      _oldPos;
     QWidget     *_parent;
+    bool        _is_native;
 };
 
 } // namespace toolbars

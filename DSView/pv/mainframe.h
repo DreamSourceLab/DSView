@@ -116,6 +116,8 @@ private:
     QWinTaskbarButton *_taskBtn;
     QWinTaskbarProgress *_taskPrg;
 #endif
+
+    bool _is_native_title;
 };
 
 } // namespace pv
