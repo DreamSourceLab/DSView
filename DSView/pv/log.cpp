@@ -67,6 +67,14 @@ void dsv_log_enalbe_logfile(bool append)
         
         dsv_info("%s\"%s\"", "Store log to file: ", lf.toUtf8().data());
 
+        QFileInfo fileInfo(lf);
+        QString file_dir = fileInfo.absolutePath();
+
+        QDir dir;
+        if (!dir.exists(file_dir) && !dir.mkpath(file_dir)){
+            dsv_err("ERROR: failed to create log directory.");
+        }
+
         std::string log_file = pv::path::ToUnicodePath(lf);
 
         int ret = xlog_add_receiver_from_file(log_ctx, log_file.c_str(), &log_file_index, append);
