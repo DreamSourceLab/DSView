@@ -88,6 +88,8 @@ struct FrameOptions
   int         top;
   int         right;
   int         bottom;
+  int         x;
+  int         y;
   bool        isMax;
   QByteArray  windowState;
 

@@ -432,12 +432,16 @@ bool MainFrame::eventFilter(QObject *object, QEvent *event)
 
  void MainFrame::saveWindowRegion()
  {
-     AppConfig &app = AppConfig::Instance();    
-     QRect rc = geometry();
-     app.frameOptions.left = rc.left();
-     app.frameOptions.top = rc.top();
-     app.frameOptions.right = rc.right();
-     app.frameOptions.bottom = rc.bottom();
+    AppConfig &app = AppConfig::Instance();    
+    QRect rc = geometry();
+    app.frameOptions.left = rc.left();
+    app.frameOptions.top = rc.top();
+    app.frameOptions.right = rc.right();
+    app.frameOptions.bottom = rc.bottom();
+    
+    QRect frc = frameGeometry();
+    app.frameOptions.x = frc.x();
+    app.frameOptions.y = frc.y();
  }
 
 void MainFrame::writeSettings()
@@ -460,13 +464,15 @@ void MainFrame::readSettings()
     AppConfig &app = AppConfig::Instance(); 
    
     if (app.frameOptions.language > 0){
-         _mainWindow->switchLanguage(app.frameOptions.language);
+        _mainWindow->switchLanguage(app.frameOptions.language);
     }
 
     int left = app.frameOptions.left;
     int top = app.frameOptions.top;
     int right = app.frameOptions.right;
     int bottom = app.frameOptions.bottom;
+    int x = app.frameOptions.x;
+    int y = app.frameOptions.y;
 
     bool bReset = false;
     int scrIndex = -1;
@@ -499,7 +505,10 @@ void MainFrame::readSettings()
 
     if (app.frameOptions.isMax)
     {
+        QRect rc  = QGuiApplication::screens().at(scrIndex)->availableGeometry();
+        move(rc.left(), rc.top());
         showMaximized(); // show max by system api
+        dsv_info("show as max, screens:%s", QGuiApplication::screens().at(scrIndex)->name().toStdString().c_str());
     }
     else if (bReset)
     { 
@@ -508,11 +517,24 @@ void MainFrame::readSettings()
         const int origX = std::max(0, (trc.width() - width()) / 2);
         const int origY = std::max(0, (trc.height() - height()) / 2);
         move(origX, origY);
+        dsv_info("reset, screens:%s", QGuiApplication::screens().at(scrIndex)->name().toStdString().c_str());
     }
     else
-    {
+    {    
         resize(right - left, bottom - top);
+
+#ifdef _WIN32
+        if (y != -10000){
+            move(x, y);
+        }
+        else{
+            move(left, top);
+        }
+#else
         move(left, top);
+#endif
+
+        dsv_info("restore, screens:%s", QGuiApplication::screens().at(scrIndex)->name().toStdString().c_str());
     }
 
     // restore dockwidgets

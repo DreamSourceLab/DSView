@@ -188,6 +188,8 @@ static void _loadFrame(FrameOptions &o, QSettings &st)
     getFiled("top", st, o.top, 0);
     getFiled("right", st, o.right, 0);
     getFiled("bottom", st, o.bottom, 0);
+    getFiled("x", st, o.x, -10000);
+    getFiled("y", st, o.y, -10000);
 
     _loadDockOptions(o._logicDock, st, "LOGIC_DOCK");
     _loadDockOptions(o._analogDock, st, "ANALOG_DOCK");
@@ -217,6 +219,9 @@ static void _saveFrame(FrameOptions &o, QSettings &st)
     setFiled("top", st, o.top);
     setFiled("right", st, o.right);
     setFiled("bottom", st, o.bottom);
+    setFiled("x", st, o.x);
+    setFiled("y", st, o.y);
+
     st.setValue("windowState", o.windowState); 
 
     _saveDockOptions(o._logicDock, st, "LOGIC_DOCK");
