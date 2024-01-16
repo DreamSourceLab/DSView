@@ -150,17 +150,6 @@ void StoreProgress::accept()
 
     if (_isBusy)
         return;
-    
-     _progress.setVisible(true);
-     _fileLab->setVisible(false);     
-     _fileLab->setVisible(false);
-     _openButton->setVisible(false);
-
-     if (_ckOrigin != NULL){
-        _ckOrigin->setVisible(false);
-        _ckCompress->setVisible(false);
-     }
-     _space->setVisible(true);
 
 
     if (_isExport && _store_session.IsLogicDataType()){
@@ -212,6 +201,17 @@ void StoreProgress::accept()
 
         _store_session.SetDataRange(start_index, end_index);
     }
+
+    _progress.setVisible(true);
+    _fileLab->setVisible(false);     
+    _fileLab->setVisible(false);
+    _openButton->setVisible(false);
+
+    if (_ckOrigin != NULL){
+        _ckOrigin->setVisible(false);
+        _ckCompress->setVisible(false);
+    }
+    _space->setVisible(true);
 
     //start done 
     if (_isExport){
