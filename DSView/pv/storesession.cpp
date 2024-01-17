@@ -250,10 +250,20 @@ void StoreSession::save_logic(pv::data::LogicSnapshot *logic_snapshot)
     }
 
     if (start_index > 0){
+        start_index -= start_index % 64;         
         start_block = LogicSnapshot::get_block_with_sample(start_index, &start_offset);
     }
     if (end_index > 0){
-        end_block = LogicSnapshot::get_block_with_sample(end_index, &end_offset);
+        if (end_index % 64 != 0){
+            end_index += (64 - end_index % 64);
+        }        
+
+        if (end_index > logic_snapshot->get_ring_sample_count()){
+            end_index = 0;
+        }
+        else{
+            end_block = LogicSnapshot::get_block_with_sample(end_index, &end_offset);
+        }
     }
 
     if (start_index > 0 && end_index > 0){
@@ -286,6 +296,17 @@ void StoreSession::save_logic(pv::data::LogicSnapshot *logic_snapshot)
                 uint8_t *buf = logic_snapshot->get_block_buf(i, ch_index, sample);
                 uint64_t size = logic_snapshot->get_block_size(i);
                 bool need_malloc = (buf == NULL);
+
+                if (i == end_block && end_offset / 8 < size){
+                    size = end_offset / 8;
+                }
+
+                if (i == start_block){
+                    if (buf != NULL){
+                        buf += start_offset / 8;
+                    }
+                    size -= start_offset / 8;
+                }
                 
                 if (need_malloc) {
                     buf = (uint8_t *)malloc(size);
