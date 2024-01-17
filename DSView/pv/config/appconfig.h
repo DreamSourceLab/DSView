@@ -53,8 +53,11 @@ public:
 };
 
 
+#define APP_CONFIG_VERSION  3
+
 struct AppOptions
 {   
+    bool  version;
     bool  quickScroll;
     bool  warnofMultiTrig;
     bool  originalData;
@@ -148,6 +151,8 @@ public:
   {
     return frameOptions.language == LAN_CN;
   }
+
+  static void GetFontSizeRange(float *minSize, float *maxSize);
 
 public:
   AppOptions    appOptions;

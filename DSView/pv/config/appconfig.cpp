@@ -123,13 +123,23 @@ static void _loadApp(AppOptions &o, QSettings &st)
     getFiled("swapBackBufferAlways", st, o.swapBackBufferAlways, false);
     getFiled("fontSize", st, o.fontSize, 9.0);
     getFiled("autoScrollLatestData", st, o.autoScrollLatestData, true);
+    getFiled("version", st, o.version, 1);
 
     o.warnofMultiTrig = true;
 
     QString fmt;
     getFiled("protocalFormats", st, fmt, "");
     if (fmt != ""){
-         StringToFormatArray(fmt, o.m_protocolFormats);
+        StringToFormatArray(fmt, o.m_protocolFormats);
+    }
+
+    float minSize = 0;
+    float maxSize = 0;
+    AppConfig::GetFontSizeRange(&minSize, &maxSize);
+
+    if (o.version == 1 || o.fontSize < minSize || o.fontSize > maxSize)
+    {
+        o.fontSize = (maxSize + minSize) / 2;
     }
    
     st.endGroup();
@@ -150,6 +160,7 @@ static void _saveApp(AppOptions &o, QSettings &st)
     setFiled("swapBackBufferAlways", st, o.swapBackBufferAlways);
     setFiled("fontSize", st, o.fontSize);
     setFiled("autoScrollLatestData", st, o.autoScrollLatestData);
+    setFiled("version", st, APP_CONFIG_VERSION);
 
     QString fmt =  FormatArrayToString(o.m_protocolFormats);
     setFiled("protocalFormats", st, fmt);
@@ -391,6 +402,28 @@ std::string AppConfig::GetProtocolFormat(const std::string &protocolName)
     }
     return "";
 }
+
+void AppConfig::GetFontSizeRange(float *minSize, float *maxSize)
+{
+    assert(minSize);
+    assert(maxSize);
+
+#ifdef _WIN32
+        *minSize = 7;
+        *maxSize = 12;
+#endif
+
+#ifdef Q_OS_LINUX
+        *minSize = 8;
+        *maxSize = 14;
+#endif
+
+#ifdef Q_OS_DARWIN
+        *minSize = 9;
+        *maxSize = 15;
+#endif
+}
+
 
 //-------------api
 QString GetIconPath()
