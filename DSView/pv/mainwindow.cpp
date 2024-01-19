@@ -117,6 +117,7 @@ namespace pv
         _frame = parent;
 
         assert(title_bar);
+        assert(_frame);
 
         _title_bar = title_bar;
         AppControl::Instance()->add_font_form(title_bar);
@@ -1425,6 +1426,10 @@ namespace pv
         qApp->setStyleSheet(qss.readAll());
         qss.close();
 
+#ifdef _WIN32
+        setDark_Titlebar(reinterpret_cast<HWND>(_frame->winId()), style == THEME_STYLE_DARK);
+#endif
+
         data_updated();
     }
 
@@ -2190,5 +2195,29 @@ namespace pv
         
         _view->update_all_trace_postion();
     }
+
+#ifdef _WIN32
+    void MainWindow::setDark_Titlebar(HWND hwnd, bool isDarkStyle)
+    {
+        HMODULE hUxtheme = LoadLibraryExW(L"uxtheme.dll", NULL, LOAD_LIBRARY_SEARCH_SYSTEM32);
+        HMODULE hUser32 = GetModuleHandleW(L"user32.dll");
+        fnAllowDarkModeForWindow AllowDarkModeForWindow
+            = reinterpret_cast<fnAllowDarkModeForWindow>(GetProcAddress(hUxtheme, MAKEINTRESOURCEA(133)));
+        fnSetPreferredAppMode SetPreferredAppMode
+            = reinterpret_cast<fnSetPreferredAppMode>(GetProcAddress(hUxtheme, MAKEINTRESOURCEA(135)));
+        fnSetWindowCompositionAttribute SetWindowCompositionAttribute
+            = reinterpret_cast<fnSetWindowCompositionAttribute>(GetProcAddress(hUser32, "SetWindowCompositionAttribute"));
+
+        SetPreferredAppMode(AllowDark);
+        BOOL dark = isDarkStyle;
+        AllowDarkModeForWindow(hwnd, dark);
+        WINDOWCOMPOSITIONATTRIBDATA data = {
+            WCA_USEDARKMODECOLORS,
+            &dark,
+            sizeof(dark)
+        };
+        SetWindowCompositionAttribute(hwnd, &data);
+    }
+#endif
 
 } // namespace pv

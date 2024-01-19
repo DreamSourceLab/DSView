@@ -72,10 +72,10 @@ MainFrame::MainFrame()
 
     AppControl::Instance()->SetTopWindow(this);
 
-    #ifdef Q_OS_DARWIN
-        _is_native_title = false;       
+    #ifdef _WIN32
+        _is_native_title = true;       
     #else
-        _is_native_title = true;
+        _is_native_title = false;
     #endif
 
     setMinimumWidth(MainWindow::Min_Width);
