@@ -2,6 +2,7 @@
 ## This file is part of the libsigrokdecode project.
 ##
 ## Copyright (C) 2018 Steve R <steversig@virginmedia.com>
+## Copyright (C) 2023 DreamSourceLab <support@dreamsourcelab.com>
 ##
 ## This program is free software; you can redistribute it and/or modify
 ## it under the terms of the GNU General Public License as published by
@@ -16,6 +17,10 @@
 ## You should have received a copy of the GNU General Public License
 ## along with this program; if not, see <http://www.gnu.org/licenses/>.
 ##
+
+#
+# 2024/1/4 putp when end
+#
 
 import sigrokdecode as srd
 
@@ -63,16 +68,16 @@ class Decoder(srd.Decoder):
         ('info', 'Info'),
         ('1111', '1111'),
         ('1010', '1010'),
-        ('diffman', 'Diff Man'),
+        ('diffman', 'Diff man'),
         ('nrz', 'NRZ'),
     )
     annotation_rows = (
-        ('frame', 'Framing',(0,)),
-        ('info', 'Info', (1,)),
+        ('frames', 'Framing', (0,)),
+        ('info-vals', 'Info', (1,)),
         ('man1111', 'Man 1111', (2,)),
         ('man1010', 'Man 1010', (3,)),
-        ('diffman', 'Diff Man', (4,)),
-        ('nrz', 'NRZ', (5,)),
+        ('diffmans', 'Diff man', (4,)),
+        ('nrz-vals', 'NRZ', (5,)),
     )
     binary = (
         ('pulse-lengths', 'Pulse lengths'),
@@ -437,6 +442,9 @@ class Decoder(srd.Decoder):
         self.decoded = []                       # Decoded bits
         self.decoded_1010 = []                  # Decoded bits for man 1010
         self.pulse_lengths = []
+
+    def end(self):
+        self.putp(self.decoded)
 
     def decode(self):
         while True:
