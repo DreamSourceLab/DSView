@@ -523,7 +523,16 @@ void MainFrame::readSettings()
         move(left, top);
 #endif
         showMaximized(); // show max by system api
-        dsv_info("show as max, screen:%s", QGuiApplication::screens().at(scrIndex)->name().toStdString().c_str());
+
+        QString scrName;
+        if (scrIndex == -1){ 
+            scrName = QGuiApplication::primaryScreen()->name();
+        }
+        else{
+            scrName = QGuiApplication::screens().at(scrIndex)->name();
+        }
+
+        dsv_info("show as max, screen:%s", scrName.toStdString().c_str());
     }
     else if (bReset)
     { 
