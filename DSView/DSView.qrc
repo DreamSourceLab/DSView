@@ -1,5 +1,6 @@
 <RCC>
     <qresource prefix="/">
+    	<file>icons/win_title_logo.svg</file>
         <file>icons/Blackman.png</file>
         <file>icons/Flat_top.png</file>
         <file>icons/Hamming.png</file>

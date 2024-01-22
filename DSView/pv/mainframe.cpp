@@ -72,18 +72,30 @@ MainFrame::MainFrame()
 
     AppControl::Instance()->SetTopWindow(this);
 
+    bool is_win32 = false;
+
     #ifdef _WIN32
-        _is_native_title = true;       
+        _is_native_title = true;
+        is_win32 = true;
     #else
         _is_native_title = false;
     #endif
+
+    _is_native_title = true;
 
     setMinimumWidth(MainWindow::Min_Width);
     setMinimumHeight(MainWindow::Min_Height);  
   
     // Set the window icon
     QIcon icon;
-    icon.addFile(QString::fromUtf8(":/icons/logo.svg"), QSize(), QIcon::Normal, QIcon::Off);    
+
+    if (_is_native_title && is_win32){
+        icon.addFile(QString::fromUtf8(":/icons/win_title_logo.svg"), QSize(), QIcon::Normal, QIcon::Off);
+    }
+    else{
+        icon.addFile(QString::fromUtf8(":/icons/logo.svg"), QSize(), QIcon::Normal, QIcon::Off);
+    }
+
     setWindowIcon(icon);
     
     // Title
