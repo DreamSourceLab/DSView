@@ -447,12 +447,8 @@ bool MainFrame::eventFilter(QObject *object, QEvent *event)
 void MainFrame::writeSettings()
 {  
     AppConfig &app = AppConfig::Instance();
-    app.frameOptions.isMax = isMaximized(); 
-
-    if (!isMaximized()){
-        saveWindowRegion();
-    }
-  
+    app.frameOptions.isMax = isMaximized();
+    saveWindowRegion();
     app.SaveFrame(); 
 }
 
@@ -493,7 +489,6 @@ void MainFrame::readSettings()
 
     if (scrIndex == -1){
         bReset = true;
-        scrIndex = 0;
     }
     else{ 
         QRect trc = QGuiApplication::screens().at(scrIndex)->availableGeometry();
@@ -505,24 +500,45 @@ void MainFrame::readSettings()
 
     if (app.frameOptions.isMax)
     {
-        QRect rc  = QGuiApplication::screens().at(scrIndex)->availableGeometry();
-        move(rc.left(), rc.top());
+#ifdef _WIN32
+        if (y != -10000){
+            move(x, y);
+        }
+        else{
+            move(left, top);
+        }
+#else
+        move(left, top);
+#endif
         showMaximized(); // show max by system api
-        dsv_info("show as max, screens:%s", QGuiApplication::screens().at(scrIndex)->name().toStdString().c_str());
+        dsv_info("show as max, screen:%s", QGuiApplication::screens().at(scrIndex)->name().toStdString().c_str());
     }
     else if (bReset)
     { 
-        QRect trc = QGuiApplication::screens().at(scrIndex)->availableGeometry();
-        resize(trc.width() / 1.5, trc.height() / 1.5);
-        const int origX = std::max(0, (trc.width() - width()) / 2);
-        const int origY = std::max(0, (trc.height() - height()) / 2);
-        move(origX, origY);
-        dsv_info("reset, screens:%s", QGuiApplication::screens().at(scrIndex)->name().toStdString().c_str());
+        QRect rc;
+        QString scrName;
+
+        if (scrIndex == -1){
+            rc = QGuiApplication::primaryScreen()->availableGeometry();
+            scrName = QGuiApplication::primaryScreen()->name();
+        }
+        else{
+            rc = QGuiApplication::screens().at(scrIndex)->availableGeometry();
+            scrName = QGuiApplication::screens().at(scrIndex)->name();
+        }
+
+        int w = rc.width() / 1.5;
+        int h = rc.height() / 1.5;
+        const int x0 = rc.left() + (rc.width() - w) / 2;
+        const int y0 = rc.top() + (rc.height() - h) / 2;
+
+        move(x0, y0);
+        resize(w, h);
+
+        dsv_info("reset, screen:%s", scrName.toStdString().c_str());
     }
     else
-    {    
-        resize(right - left, bottom - top);
-
+    {
 #ifdef _WIN32
         if (y != -10000){
             move(x, y);
@@ -534,7 +550,9 @@ void MainFrame::readSettings()
         move(left, top);
 #endif
 
-        dsv_info("restore, screens:%s", QGuiApplication::screens().at(scrIndex)->name().toStdString().c_str());
+        resize(right - left, bottom - top);
+
+        dsv_info("restore, screen:%s", QGuiApplication::screens().at(scrIndex)->name().toStdString().c_str());
     }
 
     // restore dockwidgets
