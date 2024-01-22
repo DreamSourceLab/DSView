@@ -2,7 +2,7 @@
 ## This file is part of the libsigrokdecode project.
 ##
 ## Copyright (C) 2010-2016 Uwe Hermann <uwe@hermann-uwe.de>
-## Copyright (C) 2019 DreamSourceLab <support@dreamsourcelab.com>
+## Copyright (C) 2024 DreamSourceLab <support@dreamsourcelab.com>
 ##
 ## This program is free software; you can redistribute it and/or modify
 ## it under the terms of the GNU General Public License as published by
@@ -21,6 +21,10 @@
 # TODO: Look into arbitration, collision detection, clock synchronisation, etc.
 # TODO: Implement support for inverting SDA/SCL levels (0->1 and 1->0).
 # TODO: Implement support for detecting various bus errors.
+
+# 
+# DreamSourceLab :Choose hex, dec, oct, bin, or ascii to display the decoding result
+#
 
 import sigrokdecode as srd
 
