@@ -417,7 +417,10 @@ bool ProtocolDock::add_protocol_by_id(QString id, bool silent, std::list<pv::dat
     // progress connection
     const auto &decode_sigs = _session->get_decode_signals();   
     protocol_updated();
-    connect(decode_sigs.back(), SIGNAL(decoded_progress(int)), this, SLOT(decoded_progress(int)));
+    connect(decode_sigs.back(), SIGNAL(decoded_progress()), this, SLOT(decoded_progress()));
+
+    const auto _decoder_stack = _session->get_decoder_model()->getDecoderStack();
+    connect(_decoder_stack, SIGNAL(new_annotation()), this, SLOT(update_model()));
 
     return true;
 }
@@ -451,7 +454,7 @@ void ProtocolDock::del_all_protocol()
     }
 }
 
-void ProtocolDock::decoded_progress(int progress)
+void ProtocolDock::decoded_progress()
 {
     const auto &decode_sigs = _session->get_decode_signals();
     unsigned int index = 0;
@@ -477,10 +480,8 @@ void ProtocolDock::decoded_progress(int progress)
         index++;
     }
 
-    if (progress == 0 || progress % 10 == 1){
         update_model();
     }  
-}
 
 void ProtocolDock::set_model()
 {
@@ -1017,7 +1018,7 @@ bool ProtocolDock::protocol_sort_callback(const DecoderInfoItem *o1, const Decod
 
  void ProtocolDock::reset_view()
  {
-    decoded_progress(0);
+    decoded_progress();
     update();
  }
 

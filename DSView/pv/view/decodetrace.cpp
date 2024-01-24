@@ -547,7 +547,7 @@ void DecodeTrace::draw_unshown_row(QPainter &p, int y, int h, int left,
 
 void DecodeTrace::on_new_decode_data()
 {
-    decoded_progress(_decoder_stack->get_progress());
+    decoded_progress();
 
     if (_view && _view->session().is_stopped_status())
         _view->data_updated();

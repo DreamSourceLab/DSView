@@ -818,6 +818,7 @@ void DecoderStack::annotation_callback(srd_proto_data *pdata, void *self)
 	// Add the annotation 
     if (!(*row_iter).second->push_annotation(a))
         d->_no_memory = true; 
+    d->new_annotation();
 }
  
 void DecoderStack::frame_ended()
