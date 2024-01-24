@@ -54,6 +54,7 @@ public:
 
 
 #define APP_CONFIG_VERSION  3
+#define NO_POINT_VALUE  -10000
 
 struct AppOptions
 {   
@@ -93,6 +94,8 @@ struct FrameOptions
   int         bottom;
   int         x;
   int         y;
+  int         ox;
+  int         oy;
   bool        isMax;
   QByteArray  windowState;
 

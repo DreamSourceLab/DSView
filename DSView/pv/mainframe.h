@@ -78,19 +78,23 @@ protected:
     void showEvent(QShowEvent *event);
     #endif
 
+    void changeEvent(QEvent *event) override; 
+
 public slots:
-    void unfreezing();
+    void unfreezing();   
+    void show_doc();
+    void setTaskbarProgress(int progress);
+
     void showNormal();
     void showMaximized();
     void showMinimized();
-    void show_doc();
-    void setTaskbarProgress(int progress);
+    void moveToNormal();
 
 private:
     void hide_border();
     void show_border();
     void writeSettings();
-    void saveWindowRegion();
+    void saveNormalRegion();
 
 private:
     toolbars::TitleBar *_titleBar;
@@ -117,7 +121,11 @@ private:
     QWinTaskbarProgress *_taskPrg;
 #endif
 
-    bool _is_native_title;
+    bool    _is_native_title;
+    bool    _is_resize_ready; 
+    int     _move_event_count;
+    int     _resize_event_count;
+    bool    _is_resize_reset_timer;
 };
 
 } // namespace pv
