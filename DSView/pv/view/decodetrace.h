@@ -171,7 +171,7 @@ private:
  
 
 signals:
-    void decoded_progress(int progress);
+    void decoded_progress();
 
 private slots:
 	void on_new_decode_data();   

@@ -190,6 +190,7 @@ private:
 signals:
 	void new_decode_data();
     void decode_done();
+    void new_annotation();
   
 private: 
 	std::list<decode::Decoder*> _stack;

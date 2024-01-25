@@ -128,10 +128,11 @@ public slots:
 private slots:
     void on_add_protocol(); 
     void on_del_all_protocol();
-    void decoded_progress(int progress);
+    void decoded_progress();
     void set_model();   
     void export_table_view();
     void nav_table_view();
+    void auto_scroll();
     void item_clicked(const QModelIndex &index);
     void column_resize(int index, int old_size, int new_size);
     void search_pre();
@@ -164,6 +165,7 @@ private:
 
     QPushButton *_bot_set_button;
     QPushButton *_bot_save_button;
+    QPushButton *_auto_scroll_button;
     QPushButton *_dn_nav_button;
     QPushButton *_ann_search_button;
     std::vector<DecoderInfoItem*> _decoderInfoList;

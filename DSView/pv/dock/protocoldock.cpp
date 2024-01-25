@@ -140,6 +140,9 @@ ProtocolDock::ProtocolDock(QWidget *parent, view::View &view, SigSession *sessio
     _bot_set_button->setFlat(true);
     _bot_save_button = new QPushButton(bot_panel);
     _bot_save_button->setFlat(true);
+    _auto_scroll_button = new QPushButton(bot_panel);
+    _auto_scroll_button->setFlat(true);
+    _auto_scroll_button->setCheckable(true);
     _dn_nav_button = new QPushButton(bot_panel);
     _dn_nav_button->setFlat(true);
     _bot_title_label = new QLabel(bot_panel);
@@ -149,6 +152,7 @@ ProtocolDock::ProtocolDock(QWidget *parent, view::View &view, SigSession *sessio
     bot_title_layout->addWidget(_bot_set_button);
     bot_title_layout->addWidget(_bot_save_button);
     bot_title_layout->addWidget(_bot_title_label, 1);
+    bot_title_layout->addWidget(_auto_scroll_button);
     bot_title_layout->addWidget(_dn_nav_button);
     
     _pre_button = new QPushButton(bot_panel);
@@ -206,6 +210,7 @@ ProtocolDock::ProtocolDock(QWidget *parent, view::View &view, SigSession *sessio
 
     retranslateUi();
 
+    connect(_auto_scroll_button, SIGNAL(clicked()),this, SLOT(auto_scroll()));
     connect(_dn_nav_button, SIGNAL(clicked()),this, SLOT(nav_table_view()));
     connect(_bot_save_button, SIGNAL(clicked()),this, SLOT(export_table_view()));
     connect(_bot_set_button, SIGNAL(clicked()),this, SLOT(set_model()));
@@ -260,6 +265,7 @@ void ProtocolDock::reStyle()
     _del_all_button->setIcon(QIcon(iconPath+"/del.svg"));
     _bot_set_button->setIcon(QIcon(iconPath+"/gear.svg"));
     _bot_save_button->setIcon(QIcon(iconPath+"/save.svg"));
+    _auto_scroll_button->setIcon(QIcon(iconPath+"/loop.svg"));
     _dn_nav_button->setIcon(QIcon(iconPath+"/nav.svg"));
     _pre_button->setIcon(QIcon(iconPath+"/pre.svg"));
     _nxt_button->setIcon(QIcon(iconPath+"/next.svg"));
@@ -417,7 +423,10 @@ bool ProtocolDock::add_protocol_by_id(QString id, bool silent, std::list<pv::dat
     // progress connection
     const auto &decode_sigs = _session->get_decode_signals();   
     protocol_updated();
-    connect(decode_sigs.back(), SIGNAL(decoded_progress(int)), this, SLOT(decoded_progress(int)));
+    connect(decode_sigs.back(), SIGNAL(decoded_progress()), this, SLOT(decoded_progress()));
+
+    const auto _decoder_stack = _session->get_decoder_model()->getDecoderStack();
+    connect(_decoder_stack, SIGNAL(new_annotation()), this, SLOT(update_model()));
 
     return true;
 }
@@ -451,7 +460,7 @@ void ProtocolDock::del_all_protocol()
     }
 }
 
-void ProtocolDock::decoded_progress(int progress)
+void ProtocolDock::decoded_progress()
 {
     const auto &decode_sigs = _session->get_decode_signals();
     unsigned int index = 0;
@@ -477,10 +486,8 @@ void ProtocolDock::decoded_progress(int progress)
         index++;
     }
 
-    if (progress == 0 || progress % 10 == 1){
         update_model();
     }  
-}
 
 void ProtocolDock::set_model()
 {
@@ -522,6 +529,8 @@ void ProtocolDock::update_model()
     _model_proxy.setSourceModel(decoder_model);
     search_done();
     resize_table_view(decoder_model);
+
+    auto_scroll();
 }
 
 void ProtocolDock::resize_table_view(data::DecoderModel* decoder_model)
@@ -618,6 +627,14 @@ void ProtocolDock::export_table_view()
 {
     pv::dialogs::ProtocolExp *protocolexp_dlg = new pv::dialogs::ProtocolExp(this, _session);
     protocolexp_dlg->exec();
+}
+
+void ProtocolDock::auto_scroll()
+{
+    if (_auto_scroll_button->isChecked()) {
+        _table_view->scrollToBottom();
+        _table_view->clearSelection();
+    }
 }
 
 void ProtocolDock::nav_table_view()
@@ -1017,7 +1034,7 @@ bool ProtocolDock::protocol_sort_callback(const DecoderInfoItem *o1, const Decod
 
  void ProtocolDock::reset_view()
  {
-    decoded_progress(0);
+    decoded_progress();
     update();
  }
 
