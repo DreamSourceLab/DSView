@@ -229,6 +229,7 @@ void MainFrame::AttachNativeWindow()
                 setVisible(true);
 
                 if (_initWndInfo.isMaxSize){
+                    _initWndInfo.isMaxSize = false;
                     showMaximized();
                 }
             });
