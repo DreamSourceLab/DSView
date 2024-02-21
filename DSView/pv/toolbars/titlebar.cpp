@@ -20,7 +20,6 @@
  */
 
 #include "titlebar.h"
-
 #include <QStyle>
 #include <QLabel>
 #include <QToolButton>
@@ -31,6 +30,12 @@
 #include <QPainter>
 #include <QStyleOption>
 #include <assert.h>
+#include <QTimer>
+
+#ifdef _WIN32
+#include <windows.h>
+#endif
+
 #include "../config/appconfig.h"
 #include "../appcontrol.h"
 #include "../dsvdef.h"
@@ -39,18 +44,21 @@
 namespace pv {
 namespace toolbars {
 
-TitleBar::TitleBar(bool top, QWidget *parent, bool hasClose) :
+TitleBar::TitleBar(bool top, QWidget *parent, ITitleParent *titleParent, bool hasClose) :
     QWidget(parent)
 { 
    _minimizeButton = NULL;
    _maximizeButton = NULL;
    _closeButton = NULL;
    _moving = false;
+   _is_draging = false;
    _parent = parent;
    _isTop = top;
    _hasClose = hasClose;
    _title = NULL;
    _is_native = false;
+   _titleParent = titleParent;
+   _is_done_moved = false;
 
    assert(parent);
 
@@ -114,13 +122,23 @@ void TitleBar::reStyle()
 
     if (_isTop) {
         _minimizeButton->setIcon(QIcon(iconPath+"/minimize.svg"));
-        if (parentWidget()->isMaximized())
+        if (ParentIsMaxsized())
             _maximizeButton->setIcon(QIcon(iconPath+"/restore.svg"));
         else
             _maximizeButton->setIcon(QIcon(iconPath+"/maximize.svg"));
     }
     if (_isTop || _hasClose)
         _closeButton->setIcon(QIcon(iconPath+"/close.svg"));
+}
+
+bool TitleBar::ParentIsMaxsized()
+{
+    if (_titleParent != NULL){
+        return _titleParent->ParentIsMaxsized();
+    } 
+    else{
+        return parentWidget()->isMaximized();
+    }
 }
 
 void TitleBar::paintEvent(QPaintEvent *event)
@@ -182,7 +200,7 @@ QString TitleBar::title()
 void TitleBar::showMaxRestore()
 {
     QString iconPath = GetIconPath();
-    if (parentWidget()->isMaximized()) {
+    if (ParentIsMaxsized()) {
         _maximizeButton->setIcon(QIcon(iconPath+"/maximize.svg"));
         normalShow();
     } else {
@@ -203,7 +221,9 @@ void TitleBar::setRestoreButton(bool max)
   
 void TitleBar::mousePressEvent(QMouseEvent* event)
 { 
-    if(event->button() == Qt::LeftButton && !parentWidget()->isMaximized()) 
+    bool ableMove = !ParentIsMaxsized();
+
+    if(event->button() == Qt::LeftButton && ableMove) 
     {
         int x = event->pos().x();
         int y = event->pos().y(); 
@@ -212,9 +232,25 @@ void TitleBar::mousePressEvent(QMouseEvent* event)
         bool bClick = (x >= 6 && y >= 5 && x <= width() - 6);  //top window need resize hit check
  
         if (!bTopWidow || bClick ){
-            _moving = true; 
+            _is_draging = true;             
+
+#ifdef _WIN32 
+            POINT p;
+            GetCursorPos(&p);
+            _clickPos.setX(p.x);
+            _clickPos.setY(p.y);
+#else
             _clickPos = event->globalPos(); 
-            _oldPos = _parent->pos();     
+#endif 
+            if (_titleParent != NULL){
+                _oldPos = _titleParent->GetParentPos();
+            }
+            else{
+                _oldPos = _parent->pos(); 
+            }
+
+            _is_done_moved = false;
+                
             event->accept();
             return;
         } 
@@ -224,28 +260,74 @@ void TitleBar::mousePressEvent(QMouseEvent* event)
 
 void TitleBar::mouseMoveEvent(QMouseEvent *event)
 {  
-    if(_moving){  
-       int x = _oldPos.x() + (event->globalPos().x() - _clickPos.x());
-       int y = _oldPos.y() + (event->globalPos().y() - _clickPos.y());
-       _parent->move(x, y);  
-       event->accept();
-       return;
+    if(_is_draging){ 
+
+        int datX = 0;
+        int datY = 0;
+
+#ifdef _WIN32
+        POINT p;
+        GetCursorPos(&p);
+        int k =  window()->devicePixelRatio(); 
+        datX = (p.x - _clickPos.x()) / k;
+        datY = (p.y - _clickPos.y()) / k;
+       
+#else
+        datX = (event->globalPos().x() - _clickPos.x());
+        datY = (event->globalPos().y() - _clickPos.y());
+#endif
+
+        int x = _oldPos.x() + datX;
+        int y = _oldPos.y() + datY;
+
+        if (!_moving){
+            if (ABS_VAL(datX) >= 2 || ABS_VAL(datY) >= 2){
+                _moving = true;
+            }
+            else{
+                return;
+            }
+        }
+
+        if (_titleParent != NULL){
+
+            if (!_is_done_moved){
+                _is_done_moved = true;
+                _titleParent->MoveBegin();
+            }
+
+            _titleParent->MoveWindow(x, y);
+        }
+        else{
+            _parent->move(x, y);  
+        }
+        
+        event->accept();
+        return;
     } 
     QWidget::mouseMoveEvent(event);
 }
 
 void TitleBar::mouseReleaseEvent(QMouseEvent* event)
 {
+    if (_moving && _titleParent != NULL){
+        _titleParent->MoveEnd();
+    }
     _moving = false;
+    _is_draging = false;
     QWidget::mouseReleaseEvent(event);
 }
 
 void TitleBar::mouseDoubleClickEvent(QMouseEvent *event)
-{
-    if (_isTop){
-         showMaxRestore();
-    }       
-    QWidget::mouseDoubleClickEvent(event);
+{  
+    QWidget::mouseDoubleClickEvent(event); 
+
+    if (_isTop){ 
+
+      QTimer::singleShot(200, this, [this](){
+                showMaxRestore();
+            });
+    }
 }
 
 void TitleBar::update_font()

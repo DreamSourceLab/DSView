@@ -30,6 +30,17 @@ class QHBoxLayout;
 class QLabel;
 
 namespace pv {
+
+class ITitleParent
+{
+public: 
+    virtual void MoveWindow(int x, int y)=0;
+    virtual QPoint GetParentPos()=0;
+    virtual bool ParentIsMaxsized()=0;
+    virtual void MoveBegin()=0;
+    virtual void MoveEnd()=0;
+};
+
 namespace toolbars {
 
 class TitleBar : public QWidget, public IFontForm
@@ -37,7 +48,7 @@ class TitleBar : public QWidget, public IFontForm
     Q_OBJECT
 
 public:
-    TitleBar(bool top, QWidget *parent, bool hasClose = false);
+    TitleBar(bool top, QWidget *parent, ITitleParent *titleParent, bool hasClose);
     ~TitleBar();
     
     void setTitle(QString title); 
@@ -53,6 +64,8 @@ public:
 private:
     void changeEvent(QEvent *event);
     void reStyle();
+
+    bool ParentIsMaxsized();
 
 signals:
     void normalShow();
@@ -77,12 +90,15 @@ protected:
     QLabel      *_title;
   
     bool        _moving;
+    bool        _is_draging;
     bool        _isTop;
     bool        _hasClose;
     QPoint      _clickPos;
     QPoint      _oldPos;
     QWidget     *_parent;
     bool        _is_native;
+    ITitleParent    *_titleParent;
+    bool        _is_done_moved;
 };
 
 } // namespace toolbars

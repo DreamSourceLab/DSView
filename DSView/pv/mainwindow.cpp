@@ -186,6 +186,7 @@ namespace pv
         _view = new pv::view::View(_session, _sampling_bar, this);
         _vertical_layout->addWidget(_view);
 
+
         setIconSize(QSize(40, 40));
         addToolBar(_sampling_bar);
         addToolBar(_trig_bar);
@@ -254,6 +255,7 @@ namespace pv
         retranslateUi();
 
         _sampling_bar->set_view(_view);
+
 
         // Add the font form
         AppControl::Instance()->add_font_form(_protocol_widget);
@@ -1425,10 +1427,7 @@ namespace pv
         qss.open(QFile::ReadOnly | QFile::Text);
         qApp->setStyleSheet(qss.readAll());
         qss.close();
-
-#ifdef _WIN32
-        setDark_Titlebar(reinterpret_cast<HWND>(_frame->winId()), style == THEME_STYLE_DARK);
-#endif
+ 
 
         data_updated();
     }
@@ -2195,29 +2194,5 @@ namespace pv
         
         _view->update_all_trace_postion();
     }
-
-#ifdef _WIN32
-    void MainWindow::setDark_Titlebar(HWND hwnd, bool isDarkStyle)
-    {
-        HMODULE hUxtheme = LoadLibraryExW(L"uxtheme.dll", NULL, LOAD_LIBRARY_SEARCH_SYSTEM32);
-        HMODULE hUser32 = GetModuleHandleW(L"user32.dll");
-        fnAllowDarkModeForWindow AllowDarkModeForWindow
-            = reinterpret_cast<fnAllowDarkModeForWindow>(GetProcAddress(hUxtheme, MAKEINTRESOURCEA(133)));
-        fnSetPreferredAppMode SetPreferredAppMode
-            = reinterpret_cast<fnSetPreferredAppMode>(GetProcAddress(hUxtheme, MAKEINTRESOURCEA(135)));
-        fnSetWindowCompositionAttribute SetWindowCompositionAttribute
-            = reinterpret_cast<fnSetWindowCompositionAttribute>(GetProcAddress(hUser32, "SetWindowCompositionAttribute"));
-
-        SetPreferredAppMode(AllowDark);
-        BOOL dark = isDarkStyle;
-        AllowDarkModeForWindow(hwnd, dark);
-        WINDOWCOMPOSITIONATTRIBDATA data = {
-            WCA_USEDARKMODECOLORS,
-            &dark,
-            sizeof(dark)
-        };
-        SetWindowCompositionAttribute(hwnd, &data);
-    }
-#endif
-
+  
 } // namespace pv

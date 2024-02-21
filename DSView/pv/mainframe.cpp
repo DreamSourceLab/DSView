@@ -45,7 +45,6 @@
 #include <QGuiApplication>
 #include <QFont>
 
-
  #if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
  #include <QDesktopWidget>
  #endif
@@ -56,8 +55,11 @@
 #include "appcontrol.h"
 #include "ui/langresource.h"
 #include "log.h"
-
 #include <algorithm>
+
+#ifdef _WIN32
+#include "winnativewidget.h"
+#endif
 
 namespace pv {
 
@@ -70,52 +72,34 @@ MainFrame::MainFrame()
     _titleBar = NULL;
     _mainWindow = NULL;
     _is_native_title = false;
-    _is_resize_ready = false; 
-    _move_event_count = false;
-    _is_resize_reset_timer = false;
-    _resize_event_count = 0;
+    _is_resize_ready = false;   
+    _parentNativeWidget = NULL;
+    _mainWindow = NULL;
+    _is_max_status = false;  
 
     AppControl::Instance()->SetTopWindow(this);
+  
+    // Make this a borderless window which can't
+    // be resized or moved via the window system
+#ifdef _WIN32
+    setWindowFlags(Qt::Window | Qt::FramelessWindowHint | Qt::WindowSystemMenuHint | Qt::WindowMinMaxButtonsHint);
+    _is_native_title = true;
+    _taskBtn = NULL;
+#else
+    setWindowFlags(Qt::Window | Qt::FramelessWindowHint | Qt::WindowSystemMenuHint);
+    setAttribute(Qt::WA_TranslucentBackground);
+    _is_native_title = false;
+#endif
 
-    bool is_win32 = false;
-
-    #ifdef _WIN32
-        _is_native_title = true;
-        is_win32 = true;
-    #else
-        _is_native_title = false;
-    #endif
-
-    //_is_native_title = true;
-
-    setMinimumWidth(MainWindow::Min_Width);
-    setMinimumHeight(MainWindow::Min_Height);  
+   // setMinimumWidth(MainWindow::Min_Width);
+   // setMinimumHeight(MainWindow::Min_Height);  
   
     // Set the window icon
     QIcon icon;
-
-    if (_is_native_title && is_win32){
-        icon.addFile(QString::fromUtf8(":/icons/win_title_logo.svg"), QSize(), QIcon::Normal, QIcon::Off);
-    }
-    else{
-        icon.addFile(QString::fromUtf8(":/icons/logo.svg"), QSize(), QIcon::Normal, QIcon::Off);
-    }
-
+    icon.addFile(QString::fromUtf8(":/icons/logo.svg"), QSize(), QIcon::Normal, QIcon::Off);
     setWindowIcon(icon);
     
-    // Title
-    _titleBar = new toolbars::TitleBar(true, this);
-
-    if (_is_native_title){
-        _titleBar->setVisible(false);
-        _titleBar->set_native();
-    }
-    else{
-        setWindowFlags(Qt::Window | Qt::FramelessWindowHint | Qt::WindowSystemMenuHint);
-        setAttribute(Qt::WA_TranslucentBackground);
-    }    
-
-    // MainWindow
+    _titleBar = new toolbars::TitleBar(true, this, this, false);
     _mainWindow = new MainWindow(_titleBar, this);
     _mainWindow->setWindowFlags(Qt::Widget);
 
@@ -129,10 +113,7 @@ MainFrame::MainFrame()
     _layout->setSpacing(0);
     _layout->setContentsMargins(0,0,0,0);
 
-    if (_is_native_title){
-        _layout->addLayout(vbox, 0, 0);
-    }
-    else
+    if (true)
     {
         _top_left = new widgets::Border (TopLeft, this);
         _top_left->setFixedSize(Margin, Margin);
@@ -179,11 +160,184 @@ MainFrame::MainFrame()
 
     connect(&_timer, SIGNAL(timeout()), this, SLOT(unfreezing()));
 
-    QTimer::singleShot(500, this, [this](){
+    QTimer::singleShot(2000, this, [this](){
                 _is_resize_ready = true;
             });
 
     installEventFilter(this);
+
+    //PrintRegionProc();
+}
+
+void MainFrame::PrintRegionProc()
+{
+    PrintRegion();
+
+    QTimer::singleShot(4000, this, [this](){
+               PrintRegionProc();
+            });
+}   
+
+void MainFrame::PrintRegion()
+{
+    QRect rc = geometry();
+
+    int x = rc.left();
+    int y = rc.top();
+    int w = rc.width();
+    int h = rc.height();
+
+    dsv_info("print region, x:%d, y:%d, w:%d, h:%d",
+        x, y, w, h); 
+}
+ 
+void MainFrame::AttachNativeWindow()
+{
+#ifdef _WIN32 
+    int k = QApplication::desktop()->screen()->devicePixelRatio();
+   
+    QRect rc = geometry();
+
+    int x = rc.left() * k;
+    int y = rc.top() * k;
+    int w = rc.width() * k;
+    int h = rc.height() * k;
+
+    if (_parentNativeWidget != NULL){       
+        _parentNativeWidget->SetChildWidget(NULL);    
+        delete _parentNativeWidget;
+    }
+ 
+    _parentNativeWidget = new WinNativeWidget(x, y, w, h);
+    _parentNativeWidget->setGeometry(x, y, w, h);
+    _parentNativeWidget->SetChildWidget(this);
+
+    if (_parentNativeWidget->Handle())
+    {
+        _parentNativeWidget->Show(true);
+
+        setWindowFlags(Qt::FramelessWindowHint);
+        setProperty("_q_embedded_native_parent_handle", (WId)_parentNativeWidget->Handle());
+        SetWindowLong((HWND)winId(), GWL_STYLE, WS_CHILD | WS_CLIPCHILDREN | WS_CLIPSIBLINGS);
+ 
+        SetParent((HWND)winId(), _parentNativeWidget->Handle());
+        QEvent e(QEvent::EmbeddingControl);
+        QApplication::sendEvent(this, &e);
+
+        QTimer::singleShot(10, this, [this](){
+                move(0,0);
+                setVisible(true);
+
+                if (_initWndInfo.isMaxSize){
+                    showMaximized();
+                }
+            });
+    }
+
+#endif
+}
+
+void MainFrame::MoveWindow(int x, int y)
+{
+#ifdef _WIN32
+    if (_parentNativeWidget != NULL){
+        int k =  window()->devicePixelRatio(); 
+        _parentNativeWidget->Move(x * k, y * k);
+        return;
+    }
+#endif
+
+    move(x, y);
+}
+
+QPoint MainFrame::GetParentPos()
+{  
+#ifdef _WIN32
+    if (_parentNativeWidget != NULL){
+        RECT rc;
+        int k =  window()->devicePixelRatio(); 
+        GetWindowRect(_parentNativeWidget->Handle(), &rc); 
+        return QPoint(rc.left / k, rc.top / k);
+    }
+#endif
+    
+    return pos();
+}
+
+bool MainFrame::ParentIsMaxsized()
+{
+    return _is_max_status;
+}
+
+void MainFrame::MoveBegin()
+{
+   // dsv_info("Move begin.");
+
+#ifdef _WIN32
+    if (_parentNativeWidget != NULL)
+    {
+        POINT p;
+        GetCursorPos(&p);  
+ 
+        HMONITOR hMonitor = MonitorFromPoint(p, MONITOR_DEFAULTTOPRIMARY);
+        MONITORINFOEX inf;
+        inf.cbSize = sizeof(inf);
+        
+        if (GetMonitorInfo(hMonitor, &inf)) {
+            int x = inf.rcMonitor.left;
+            int y = inf.rcMonitor.top;
+            int w = inf.rcMonitor.right - inf.rcMonitor.left;
+            int h = inf.rcMonitor.bottom - inf.rcMonitor.top;
+             
+            _move_screen_region = QRect(x, y, w, h); 
+        } 
+    }
+
+#endif
+}
+ 
+void MainFrame::MoveEnd()
+{
+  //  dsv_info("Move end.");
+  
+#ifdef _WIN32
+    if (_parentNativeWidget != NULL){
+        
+        POINT p;
+        GetCursorPos(&p);  
+ 
+        HMONITOR hMonitor = MonitorFromPoint(p, MONITOR_DEFAULTTOPRIMARY);
+        MONITORINFOEX inf;
+        inf.cbSize = sizeof(inf);
+        
+        if (GetMonitorInfo(hMonitor, &inf)) {
+            int x = inf.rcMonitor.left;
+            int y = inf.rcMonitor.top;
+            int w = inf.rcMonitor.right - inf.rcMonitor.left;
+            int h = inf.rcMonitor.bottom - inf.rcMonitor.top;
+            
+            // End at the same screen.
+            if (x == _move_screen_region.left() && w == _move_screen_region.width()){
+                dsv_info("Move to the same screen.");
+                return;
+            }
+        } 
+
+        dsv_info("Move to another screen.");
+
+        QRect rc = GetFormRegion();
+
+        SetParent((HWND)winId(), NULL);
+        QEvent e(QEvent::EmbeddingControl);
+        QApplication::sendEvent(this, &e);
+        _parentNativeWidget->SetChildWidget(NULL);
+ 
+        setGeometry(rc.left(), rc.top(), rc.width(), rc.height());
+
+        this->AttachNativeWindow();
+    }
+    
+#endif
 }
  
 void MainFrame::resizeEvent(QResizeEvent *event)
@@ -194,28 +348,14 @@ void MainFrame::resizeEvent(QResizeEvent *event)
         return;
     }
 
-    if (isMaximized()) {
+    if (_is_max_status) {
         hide_border();
     }
     else {
         show_border();
-
-        _resize_event_count++;
-
-        if (_resize_event_count >= 2){
-            saveNormalRegion();
-        }
-        else if (!_is_resize_reset_timer){
-            _is_resize_reset_timer = true;
-
-            QTimer::singleShot(500, this, [this](){
-                _is_resize_reset_timer = false;
-                _resize_event_count = 0;
-            });
-        }
     }
 
-    _titleBar->setRestoreButton(isMaximized());
+    _titleBar->setRestoreButton(_is_max_status);
     _layout->update();
 }
 
@@ -224,6 +364,14 @@ void MainFrame::closeEvent(QCloseEvent *event)
     writeSettings();
 
     if (_mainWindow->able_to_close()){
+        
+#ifdef _WIN32
+        if (_parentNativeWidget != NULL){
+            _parentNativeWidget->SetChildWidget(NULL);
+            _parentNativeWidget->Show(false);
+        }
+#endif
+
         event->accept();
     }
     else{
@@ -237,11 +385,7 @@ void MainFrame::unfreezing()
 }
 
 void MainFrame::hide_border()
-{
-    if (_is_native_title){
-        return;
-    }
-
+{  
     _top_left->setVisible(false);
     _top_right->setVisible(false);
     _top->setVisible(false);
@@ -253,11 +397,7 @@ void MainFrame::hide_border()
 }
 
 void MainFrame::show_border()
-{ 
-    if (_is_native_title){
-        return;
-    }
-
+{  
     _top_left->setVisible(true);
     _top_right->setVisible(true);
     _top->setVisible(true);
@@ -271,77 +411,99 @@ void MainFrame::show_border()
 void MainFrame::showNormal()
 {
     show_border();  
+
+    dsv_info("Show as normal.");
+
+    _is_max_status = false;
+    
+#ifdef _WIN32
+    if (_parentNativeWidget){
+        _parentNativeWidget->ShowNormal(); 
+
+        return;
+    }
+#endif
+
     QFrame::showNormal();
 }
 
 void MainFrame::showMaximized()
-{
+{ 
     hide_border();
+
+    dsv_info("Show as maxsize.");
+
+    _is_max_status = true;
+
+#ifdef _WIN32
+    if (_parentNativeWidget){
+        _parentNativeWidget->ShowMax();
+        return;
+    }
+#endif
+
     QFrame::showMaximized(); 
 }
 
 void MainFrame::showMinimized()
-{
+{ 
+    dsv_info("Show as minsize.");
+
+#ifdef _WIN32
+    if (_parentNativeWidget){
+        _parentNativeWidget->ShowMin();
+        return;
+    }
+#endif
+
     QFrame::showMinimized();
 }
 
 void MainFrame::changeEvent(QEvent *event)
 {
-    if (event->type() == QEvent::WindowStateChange && _is_resize_ready) {        
+    if (event->type() == QEvent::WindowStateChange && _is_resize_ready) {     
+        //dsv_info("Window state changed.");
         QWindowStateChangeEvent *stateChangeEvent = static_cast<QWindowStateChangeEvent*>(event);
         if (stateChangeEvent->oldState() & Qt::WindowMaximized 
                 && !(windowState() & Qt::WindowMaximized)) {
-            moveToNormal();
+            
         }       
     }
     QFrame::changeEvent(event);
 }
 
-void MainFrame::moveToNormal()
+void MainFrame::moveToWinNaitiveNormal()
 {
-    AppConfig &app = AppConfig::Instance();    
-    int left = app.frameOptions.left;
-    int top = app.frameOptions.top;
-    int right = app.frameOptions.right;
-    int bottom = app.frameOptions.bottom;
-    int x = app.frameOptions.x;
-    int y = app.frameOptions.y;
-    
-    if (_is_native_title && y != NO_POINT_VALUE){
-        move(x, y);
-    }
-    else{
-        move(left, top);
-    }
+#ifdef _WIN32
+    if (_parentNativeWidget != NULL){
+        
+        int k = QApplication::desktop()->screen()->devicePixelRatio();
+          
+        int x = _normalRegion.x * k;
+        int y = _normalRegion.y * k;
+        int w = _normalRegion.w * k;
+        int h = _normalRegion.h * k;
 
-    if (right - left > 0){
-        resize(right - left, bottom - top);
-    }    
+        _parentNativeWidget->setGeometry(x, y, w, h);
+    }
+#endif
 }
 
 bool MainFrame::eventFilter(QObject *object, QEvent *event)
 {
     if (event->type() == QEvent::Move && _is_resize_ready){
-        if (isMaximized() == false){
-            _move_event_count++;
-            if (_move_event_count >= 2){
-                saveNormalRegion(); 
-            } 
+        if (_is_max_status == false && _titleBar->IsMoving()){
+            saveNormalRegion();
         }
         return QFrame::eventFilter(object, event);
-    }
-    _move_event_count = 0;
- 
-    if (_is_native_title){
-        return QFrame::eventFilter(object, event);
-    }
+    } 
 
     const QEvent::Type type = event->type();
     const QMouseEvent *const mouse_event = (QMouseEvent*)event;
-    int newWidth;
-    int newHeight;
-    int newLeft;
-    int newTop;
+    int newWidth = 0;
+    int newHeight = 0;
+    int newLeft = 0;
+    int newTop = 0;
 
     if (type != QEvent::MouseMove 
         && type != QEvent::MouseButtonPress 
@@ -351,7 +513,7 @@ bool MainFrame::eventFilter(QObject *object, QEvent *event)
     }
 
     //when window is maximized, or is moving, call return 
-    if (isMaximized() || _titleBar->IsMoving()){
+    if (_is_max_status || _titleBar->IsMoving()){
        return QFrame::eventFilter(object, event);
     }
  
@@ -389,103 +551,132 @@ bool MainFrame::eventFilter(QObject *object, QEvent *event)
     }
 
   if (type == QEvent::MouseMove) {
+ 
+        QPoint pt;
 
-        #if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
-            int x0 = (int)mouse_event->globalPosition().x();
-            int y0 = (int)mouse_event->globalPosition().y();
-        #else
-            int x0 = mouse_event->globalX();
-            int y0 = mouse_event->globalY();
-        #endif
+#ifdef _WIN32 
+        POINT p;
+        GetCursorPos(&p);
+        pt.setX(p.x);
+        pt.setY(p.y);
+#else
+        pt = mouse_event->globalPos();
+#endif 
+        int datX = pt.x() - _clickPos.x();
+        int datY = pt.y() - _clickPos.y();
+        int l = _dragStartRegion.left();
+        int t = _dragStartRegion.top();
+        int r = _dragStartRegion.right();
+        int b = _dragStartRegion.bottom();
 
          if(mouse_event->buttons().testFlag(Qt::LeftButton)) {
-            if (!_freezing) {
-                switch (_hit_border) {
+
+            // Do nothing this time.
+            if (_freezing){
+                return QFrame::eventFilter(object, event);         
+            }
+
+            int minW = MainWindow::Min_Width;
+            int minH = MainWindow::Min_Height;
+          
+            switch (_hit_border) {
                 case TopLeft:
-                    newWidth = std::max(_dragStartGeometry.right() - x0, minimumWidth());
-                    newHeight = std::max(_dragStartGeometry.bottom() - y0, minimumHeight());
-                    newLeft = geometry().left();
-                    newTop = geometry().top();
-                    if (newWidth > minimumWidth())
-                        newLeft = x0;
-                    if (newHeight > minimumHeight())
-                        newTop = y0;
-                    setGeometry(newLeft, newTop, newWidth, newHeight);              
+                    l += datX;
+                    t += datY;
+                    if (r - l < minW)
+                        l = r - minW;
+                    if (b - t < minH)
+                        t = b - minH;
                    break;
 
                 case BottomLeft:
-                    newWidth = std::max(_dragStartGeometry.right() - x0, minimumWidth());
-                    newHeight = std::max(y0 - _dragStartGeometry.top(), minimumHeight());
-                    newLeft = geometry().left();
-                    if (newWidth > minimumWidth())
-                        newLeft = x0;
-                    setGeometry(newLeft, _dragStartGeometry.top(), newWidth, newHeight);
+                    l += datX;
+                    b += datY;
+                    if (r - l < minW)
+                        l = r - minW;
+                    if (b - t < minH)
+                        b = t + minH;
                    break;
 
                 case TopRight:
-                    newWidth = std::max(x0 - _dragStartGeometry.left(), minimumWidth());
-                    newHeight = std::max(_dragStartGeometry.bottom() - y0, minimumHeight());
-                    newTop = geometry().top();
-                    if (newHeight > minimumHeight())
-                        newTop = y0;
-                    setGeometry(_dragStartGeometry.left(), newTop, newWidth, newHeight);
+                    r += datX;
+                    t += datY;
+                    if (r - l < minW)
+                        r = l + minW;
+                    if (b - t < minH)
+                        t = b - minH;
                    break;
 
                 case BottomRight:
-                    newWidth = std::max(x0 - _dragStartGeometry.left(), minimumWidth());
-                    newHeight = std::max(y0 - _dragStartGeometry.top(), minimumHeight());
-                    setGeometry(_dragStartGeometry.left(), _dragStartGeometry.top(), newWidth, newHeight);
+                    r += datX;
+                    b += datY;
+                    if (r - l < minW)
+                        r = l + minW;
+                    if (b - t < minH)
+                        b = t + minH;
                    break;
 
                 case Left:
-                    newWidth = _dragStartGeometry.right() - x0;
-                    if (newWidth > minimumWidth()){
-                         setGeometry(x0, _dragStartGeometry.top(), newWidth, height());
-                    }                       
+                    l += datX;
+                    if (r - l < minW)
+                        l = r - minW;                    
                    break;
 
                 case Right:
-                    newWidth = x0 - _dragStartGeometry.left();
-                    if (newWidth > minimumWidth()){
-                         setGeometry(_dragStartGeometry.left(), _dragStartGeometry.top(), newWidth, height());
-                    }                       
+                    r += datX; 
+                    if (r - l < minW)
+                        r = l + minW;                     
                    break;
 
-                case Top:
-                    newHeight = _dragStartGeometry.bottom() - y0;
-                    if (newHeight > minimumHeight()){
-                        setGeometry(_dragStartGeometry.left(), y0,width(), newHeight);
-                    }                        
+                case Top: 
+                    t += datY; 
+                    if (b - t < minH)
+                        t = b - minH;                    
                    break;
 
-                case Bottom:
-                    newHeight = y0 - _dragStartGeometry.top();
-                    if (newHeight > minimumHeight()){
-                        setGeometry(_dragStartGeometry.left(), _dragStartGeometry.top(), width(), newHeight);
-                    }                       
+                case Bottom: 
+                    b += datY; 
+                    if (b - t < minH)
+                        b = t + minH;                    
                    break;
 
                 default:
+                    r = l;
                    break;
-                }
-                _freezing = true;
-            } 
+            }
+
+            if (r != l){
+                SetFormRegion(l, t, r-l, b-t);
+                saveNormalRegion();
+            }            
+         
             return true;
         }
     }
-     else if (type == QEvent::MouseButtonPress) {
+    else if (type == QEvent::MouseButtonPress) {
         if (mouse_event->button() == Qt::LeftButton) 
         if (_hit_border != None)
             _bDraging = true;
-        _timer.start(50);
-        _dragStartGeometry = geometry();
+        _timer.start(50); 
+
+#ifdef _WIN32 
+        POINT p;
+        GetCursorPos(&p);
+        _clickPos.setX(p.x);
+        _clickPos.setY(p.y);
+#else
+        _clickPos = mouse_event->globalPos();
+#endif 
+
+        _dragStartRegion = GetFormRegion();
     } 
     else if (type == QEvent::MouseButtonRelease) {
         if (mouse_event->button() == Qt::LeftButton) {         
             _bDraging = false;
-            _timer.stop();
+            _timer.stop(); 
         }
-    } else if (!_bDraging && type == QEvent::Leave) {
+    }
+    else if (!_bDraging && type == QEvent::Leave) {
         _hit_border = None;
         setCursor(Qt::ArrowCursor);
     } 
@@ -499,38 +690,153 @@ void MainFrame::saveNormalRegion()
     if (!_is_resize_ready){
         return;
     } 
-    if (isMaximized()){
+    if (_is_max_status){
         return;
+    } 
+
+    AppConfig &app = AppConfig::Instance();  
+
+#ifdef _WIN32
+    if (_parentNativeWidget != NULL){
+        RECT rc; 
+        int k = QApplication::desktop()->screen()->devicePixelRatio();
+        
+        GetWindowRect(_parentNativeWidget->Handle(), &rc);
+        app.frameOptions.left = rc.left / k;
+        app.frameOptions.top = rc.top / k;
+        app.frameOptions.right = rc.right / k;
+        app.frameOptions.bottom = rc.bottom / k;
+        app.frameOptions.x = rc.left / k;
+        app.frameOptions.y = rc.top / k; 
     }
+#endif
 
-    AppConfig &app = AppConfig::Instance();    
-    QRect rc = geometry();
-    app.frameOptions.left = rc.left();
-    app.frameOptions.top = rc.top();
-    app.frameOptions.right = rc.right();
-    app.frameOptions.bottom = rc.bottom();
-
-    QRect frc = frameGeometry();
-    app.frameOptions.x = frc.x();
-    app.frameOptions.y = frc.y(); 
+    if (_parentNativeWidget == NULL){
+        QRect rc = geometry();
+        app.frameOptions.left = rc.left();
+        app.frameOptions.top = rc.top();
+        app.frameOptions.right = rc.right();
+        app.frameOptions.bottom = rc.bottom();
+        app.frameOptions.x = rc.left();
+        app.frameOptions.y = rc.top(); 
+    }
 }
 
 void MainFrame::writeSettings()
 {  
     AppConfig &app = AppConfig::Instance();
-    app.frameOptions.isMax = isMaximized();
+    app.frameOptions.isMax = _is_max_status;
 
-    if (isMaximized() == false && isVisible()){
+    if (_is_max_status == false && isVisible()){
         saveNormalRegion();
     }
-    app.SaveFrame(); 
+    app.SaveFrame();
+
+    int x = app.frameOptions.x;
+    int y = app.frameOptions.y;
+    int w = app.frameOptions.right - app.frameOptions.left;
+    int h = app.frameOptions.bottom - app.frameOptions.top;
+
+    dsv_info("Save form, x:%d, y:%d, w:%d, h:%d", x, y, w, h);
 }
 
-void MainFrame::readSettings()
-{
-    if (_layout == NULL)
-        return;
+void MainFrame::ShowFormInit()
+{ 
+    ReadSettings();
 
+    int x = _initWndInfo.r.x;
+    int y = _initWndInfo.r.y;
+    int w = _initWndInfo.r.w;
+    int h = _initWndInfo.r.h;
+
+    if (w % 2 == 0){
+        w++;
+    }
+    if (h % 2 == 0){
+        h++;
+    }
+
+    bool isWin32 = false;
+
+#ifdef _WIN32
+    isWin32 = true;
+#endif
+
+    if (_initWndInfo.isMaxSize)
+    {
+        if (isWin32 && _is_native_title){
+            hide_border();
+            move(_normalRegion.x, _normalRegion.y);
+            resize(_normalRegion.w, _normalRegion.h);
+        }
+        else{
+            move(x, y);
+            showMaximized();
+        }
+    }
+    else{
+        move(x, y);
+        resize(w, h);
+    }
+
+    QFrame::show();
+
+    dsv_info("Init form, x:%d, y:%d, w:%d, h:%d", x, y, w, h);
+
+    if (_is_native_title){
+        AttachNativeWindow();
+    }    
+}
+
+void MainFrame::SetFormRegion(int x, int y, int w, int h)
+{
+   #ifdef _WIN32
+
+   if (_parentNativeWidget != NULL){
+        int k = QApplication::desktop()->screen()->devicePixelRatio();
+        
+        x *= k;
+        y *= k;
+        w *= k;
+        h *= k;
+ 
+        _parentNativeWidget->setGeometry(x, y, w, h);
+
+        return;
+   } 
+   #endif
+  
+   setGeometry(x, y, w, h);
+}
+
+ QRect MainFrame::GetFormRegion()
+ {
+    QRect rc;
+
+#ifdef _WIN32
+
+    if (_parentNativeWidget != NULL){
+        int k = QApplication::desktop()->screen()->devicePixelRatio();
+        RECT r; 
+        GetWindowRect(_parentNativeWidget->Handle(), &r); 
+        int x = r.left;
+        int y = r.top;
+        int w = r.right-r.left;
+        int h = r.bottom-r.top;
+        rc = QRect(x/k, y/k, w/k, h/k);
+    }
+    else{
+        rc = geometry();
+    }
+#else
+    rc = geometry();  
+#endif
+
+    return rc;
+ }
+
+void MainFrame::ReadSettings()
+{
     AppConfig &app = AppConfig::Instance(); 
    
     if (app.frameOptions.language > 0){
@@ -542,22 +848,31 @@ void MainFrame::readSettings()
     int right = app.frameOptions.right;
     int bottom = app.frameOptions.bottom;
     int x = app.frameOptions.x;
-    int y = app.frameOptions.y;
-    int ox = app.frameOptions.ox;
-    int oy = app.frameOptions.oy;
+    int y = app.frameOptions.y; 
+
+    if (x == NO_POINT_VALUE){
+        x = left;
+        y = top;
+    }
+
+    dsv_info("Loaded region, x:%d, y:%d, w:%d, h:%d",
+        x, y, right-left, bottom-top);
 
     bool bReset = false;
     int scrIndex = -1;
 
-    QRect winRc = {left, top, right-left, bottom-top};
+    QRect winRc = {x, y, right-left, bottom-top};
 
     for (int i=0; i<QGuiApplication::screens().size(); i++){
         QRect rc  = QGuiApplication::screens().at(i)->availableGeometry();
         QRect inrc = rc.intersected(winRc);
+        QString name = QGuiApplication::screens().at(i)->name();
+
+        dsv_info("Screen name:%s, region, left:%d, top:%d, right:%d, bottom:%d",
+            name.toStdString().c_str(), rc.left(), rc.top(), rc.right(), rc.bottom() );
          
-        if (inrc.width() > 10 || inrc.height() > 10){
+        if (scrIndex == -1 && (inrc.width() > 10 || inrc.height() > 10)){
             scrIndex = i;
-            break;
         }
     }
 
@@ -567,10 +882,16 @@ void MainFrame::readSettings()
     else{        
         QRect rc = QGuiApplication::screens().at(scrIndex)->availableGeometry();
         QRect inrc = rc.intersected(winRc);
-        if (inrc.width() < 70 || inrc.height() < 70){
+        if (inrc.width() < 70 || inrc.height() < 70 || winRc.width() < 300){
             bReset = true;
         }
-    }     
+    }
+
+    _initWndInfo.r.x = 0;
+    _initWndInfo.r.y = 0;
+    _initWndInfo.r.w = 0;
+    _initWndInfo.r.h = 0;
+    _initWndInfo.isMaxSize = false;
 
     if (app.frameOptions.isMax)
     {
@@ -586,10 +907,25 @@ void MainFrame::readSettings()
             scrName = QGuiApplication::screens().at(scrIndex)->name();
         }
 
-        move(rc.left(), rc.top());
+        _initWndInfo.r.x = rc.left();
+        _initWndInfo.r.y = rc.top();
+        _initWndInfo.r.w = rc.width();
+        _initWndInfo.r.h = rc.height();
+        _initWndInfo.isMaxSize = true;
 
-        showMaximized(); // show max by system api
-        dsv_info("show as max, screen:%s", scrName.toStdString().c_str());
+        _normalRegion.x = x;
+        _normalRegion.y = y;
+        _normalRegion.w = right-left;
+        _normalRegion.h = bottom-top;
+
+        QRect inrc = rc.intersected(winRc);
+        if (inrc.width() < 70 || inrc.height() < 70 || winRc.width() < 300){
+            _normalRegion.x = rc.left() + (rc.width() - _normalRegion.w) / 2;
+            _normalRegion.y = rc.top() + (rc.height() - _normalRegion.h) / 2;
+        }
+
+        dsv_info("Show as max, screen:%s, x:%d, y:%d, w:%d, h:%d", 
+            scrName.toStdString().c_str(), rc.x(), rc.y(), rc.width(), rc.height());
     }
     else if (bReset)
     { 
@@ -610,30 +946,42 @@ void MainFrame::readSettings()
         const int x0 = rc.left() + (rc.width() - w) / 2;
         const int y0 = rc.top() + (rc.height() - h) / 2;
 
-        move(x0, y0);
-        resize(w, h);
+        _initWndInfo.r.x = x0;
+        _initWndInfo.r.y = y0;
+        _initWndInfo.r.w = w;
+        _initWndInfo.r.h = h;
+        _normalRegion = _initWndInfo.r;
 
-        dsv_info("reset, screen:%s", scrName.toStdString().c_str());
+        dsv_info("Reset, screen:%s, x:%d, y:%d, w:%d, h:%d", 
+            scrName.toStdString().c_str(), rc.left(), rc.top(), rc.width(), rc.height());
     }
     else
     {
 #ifdef _WIN32
         if (y != NO_POINT_VALUE){
-            move(x, y);
+            _initWndInfo.r.x = x;
+            _initWndInfo.r.y = y;
         }
         else{
-            move(left, top);
+            _initWndInfo.r.x = left;
+            _initWndInfo.r.y = top;
         }
 #else
-        move(left, top);
-#endif
-
-        if (right - left > 0){
-            resize(right - left, bottom - top);
-        }        
+        _initWndInfo.r.x = left;
+        _initWndInfo.r.y = top;
+#endif 
+        _initWndInfo.r.w = right - left;
+        _initWndInfo.r.h = bottom - top;
+        _normalRegion = _initWndInfo.r;
+        QString scrName = QGuiApplication::screens().at(scrIndex)->name();
+        QRect rc =  QGuiApplication::screens().at(scrIndex)->availableGeometry();
  
-        dsv_info("restore, screen:%s", QGuiApplication::screens().at(scrIndex)->name().toStdString().c_str());
+        dsv_info("Restore, screen:%s, x:%d, y:%d, w:%d, h:%d", 
+            scrName.toStdString().c_str() ,rc.left(), rc.top(), rc.width(), rc.height());
     }
+
+    dsv_info("Normal region, x:%d, y:%d, w:%d, h:%d",  
+       _normalRegion.x, _normalRegion.y, _normalRegion.w, _normalRegion.h);
 
     // restore dockwidgets
     _mainWindow->restore_dock();
@@ -644,7 +992,7 @@ void MainFrame::readSettings()
 void MainFrame::showEvent(QShowEvent *event)
 {
     // Taskbar Progress Effert for Win7 and Above
-    if (_taskBtn->window() == NULL) {
+    if (_taskBtn && _taskBtn->window() == NULL) {
         _taskBtn->setWindow(windowHandle());
         _taskPrg = _taskBtn->progress();
     }
@@ -664,6 +1012,13 @@ void MainFrame::setTaskbarProgress(int progress)
 #else
 	(void)progress;
 #endif
+}
+
+void MainFrame::ShowHelpDocAsync()
+{
+    QTimer::singleShot(300, this, [this](){
+                show_doc();
+            });
 }
 
 void MainFrame::show_doc()

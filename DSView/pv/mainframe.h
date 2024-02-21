@@ -28,25 +28,45 @@
 #include <QFrame>
 #include <QGridLayout>
 #include <QTimer>
+#include <QRect>
+
 #ifdef _WIN32
 #include <QWinTaskbarButton>
 #include <QWinTaskbarProgress>
 #endif
 
+#include "toolbars/titlebar.h"
+
 namespace pv {
  
 class MainWindow;
-
-namespace toolbars {
-class TitleBar;
-}
+class WinNativeWidget;
 
 namespace dialogs {
 class DSMessageBox;
 class DSDialog;
 }
+ 
+struct Point
+{
+    int x;
+    int y;
+};
 
-class MainFrame : public QFrame
+struct FormRegion{
+    int x;
+    int y;
+    int w;
+    int h;
+};
+
+struct FormInitInfo
+{
+    FormRegion r;
+    bool isMaxSize;
+};
+
+class MainFrame : public QFrame, public ITitleParent
 {
     Q_OBJECT
 
@@ -67,16 +87,20 @@ public:
 
 public:
     MainFrame();
-
-    void readSettings();
+ 
+    void ShowFormInit();
+    void ShowHelpDocAsync();
+    
+    void PrintRegionProc();
+    void PrintRegion();
 
 protected: 
     void resizeEvent(QResizeEvent *event);
     void closeEvent(QCloseEvent *event);
     bool eventFilter(QObject *object, QEvent *event);
-    #ifdef _WIN32
+#ifdef _WIN32
     void showEvent(QShowEvent *event);
-    #endif
+#endif
 
     void changeEvent(QEvent *event) override; 
 
@@ -88,13 +112,26 @@ public slots:
     void showNormal();
     void showMaximized();
     void showMinimized();
-    void moveToNormal();
+    void moveToWinNaitiveNormal();
 
 private:
     void hide_border();
     void show_border();
     void writeSettings();
     void saveNormalRegion();
+
+    void ReadSettings();
+    void AttachNativeWindow();
+
+    //ITitleParent
+    void MoveWindow(int x, int y) override;
+    QPoint GetParentPos() override;
+    bool ParentIsMaxsized() override;
+    void MoveBegin() override;
+    void MoveEnd() override;
+
+    void SetFormRegion(int x, int y, int w, int h);
+    QRect GetFormRegion();
 
 private:
     toolbars::TitleBar *_titleBar;
@@ -110,8 +147,7 @@ private:
     widgets::Border *_bottom_left;
     widgets::Border *_bottom_right;
  
-    bool    _bDraging; 
-    QRect   _dragStartGeometry;
+    bool    _bDraging;  
     int     _hit_border;
     QTimer  _timer;
     bool    _freezing; 
@@ -122,10 +158,15 @@ private:
 #endif
 
     bool    _is_native_title;
-    bool    _is_resize_ready; 
-    int     _move_event_count;
-    int     _resize_event_count;
-    bool    _is_resize_reset_timer;
+    bool    _is_resize_ready;    
+
+    WinNativeWidget *_parentNativeWidget; 
+    FormInitInfo    _initWndInfo;
+    FormRegion      _normalRegion;
+    bool            _is_max_status;
+    QPoint          _clickPos;
+    QRect           _dragStartRegion; 
+    QRect           _move_screen_region;
 };
 
 } // namespace pv
