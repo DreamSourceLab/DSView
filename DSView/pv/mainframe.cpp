@@ -75,7 +75,8 @@ MainFrame::MainFrame()
     _is_resize_ready = false;   
     _parentNativeWidget = NULL;
     _mainWindow = NULL;
-    _is_max_status = false;  
+    _is_max_status = false;
+    _move_start_screen = NULL;
 
     AppControl::Instance()->SetTopWindow(this);
   
@@ -90,6 +91,8 @@ MainFrame::MainFrame()
     setAttribute(Qt::WA_TranslucentBackground);
     _is_native_title = false;
 #endif
+
+ 
 
    // setMinimumWidth(MainWindow::Min_Width);
    // setMinimumHeight(MainWindow::Min_Height);  
@@ -229,7 +232,6 @@ void MainFrame::AttachNativeWindow()
                 setVisible(true);
 
                 if (_initWndInfo.isMaxSize){
-                    _initWndInfo.isMaxSize = false;
                     showMaximized();
                 }
             });
@@ -272,72 +274,26 @@ bool MainFrame::ParentIsMaxsized()
 
 void MainFrame::MoveBegin()
 {
-   // dsv_info("Move begin.");
-
 #ifdef _WIN32
-    if (_parentNativeWidget != NULL)
-    {
-        POINT p;
-        GetCursorPos(&p);  
- 
-        HMONITOR hMonitor = MonitorFromPoint(p, MONITOR_DEFAULTTOPRIMARY);
-        MONITORINFOEX inf;
-        inf.cbSize = sizeof(inf);
-        
-        if (GetMonitorInfo(hMonitor, &inf)) {
-            int x = inf.rcMonitor.left;
-            int y = inf.rcMonitor.top;
-            int w = inf.rcMonitor.right - inf.rcMonitor.left;
-            int h = inf.rcMonitor.bottom - inf.rcMonitor.top;
-             
-            _move_screen_region = QRect(x, y, w, h); 
-        } 
-    }
-
+     if (_parentNativeWidget != NULL){
+        _parentNativeWidget->SetMovingFlag(true);
+        _move_start_screen = _parentNativeWidget->GetPointScreen();
+     }
 #endif
 }
  
 void MainFrame::MoveEnd()
-{
-  //  dsv_info("Move end.");
-  
+{  
 #ifdef _WIN32
     if (_parentNativeWidget != NULL){
+        auto scr = _parentNativeWidget->GetPointScreen();
+        if (scr != _move_start_screen){
+            _parentNativeWidget->UpdateChildDpi();           
+        }
         
-        POINT p;
-        GetCursorPos(&p);  
- 
-        HMONITOR hMonitor = MonitorFromPoint(p, MONITOR_DEFAULTTOPRIMARY);
-        MONITORINFOEX inf;
-        inf.cbSize = sizeof(inf);
-        
-        if (GetMonitorInfo(hMonitor, &inf)) {
-            int x = inf.rcMonitor.left;
-            int y = inf.rcMonitor.top;
-            int w = inf.rcMonitor.right - inf.rcMonitor.left;
-            int h = inf.rcMonitor.bottom - inf.rcMonitor.top;
-            
-            // End at the same screen.
-            if (x == _move_screen_region.left() && w == _move_screen_region.width()){
-                dsv_info("Move to the same screen.");
-                return;
-            }
-        } 
-
-        dsv_info("Move to another screen.");
-
-        QRect rc = GetFormRegion();
-
-        SetParent((HWND)winId(), NULL);
-        QEvent e(QEvent::EmbeddingControl);
-        QApplication::sendEvent(this, &e);
-        _parentNativeWidget->SetChildWidget(NULL);
- 
-        setGeometry(rc.left(), rc.top(), rc.width(), rc.height());
-
-        this->AttachNativeWindow();
-    }
-    
+        _parentNativeWidget->ResizeChild();
+        _parentNativeWidget->SetMovingFlag(false);
+    }    
 #endif
 }
  
@@ -561,7 +517,7 @@ bool MainFrame::eventFilter(QObject *object, QEvent *event)
         pt.setX(p.x);
         pt.setY(p.y);
 #else
-        pt = mouse_event->globalPos();
+        pt = event->globalPos(); 
 #endif 
         int datX = pt.x() - _clickPos.x();
         int datY = pt.y() - _clickPos.y();
@@ -666,7 +622,7 @@ bool MainFrame::eventFilter(QObject *object, QEvent *event)
         _clickPos.setX(p.x);
         _clickPos.setY(p.y);
 #else
-        _clickPos = mouse_event->globalPos();
+        _clickPos = event->globalPos(); 
 #endif 
 
         _dragStartRegion = GetFormRegion();
@@ -810,8 +766,8 @@ void MainFrame::SetFormRegion(int x, int y, int w, int h)
    setGeometry(x, y, w, h);
 }
 
- QRect MainFrame::GetFormRegion()
- {
+QRect MainFrame::GetFormRegion()
+{
     QRect rc;
 
 #ifdef _WIN32
@@ -834,7 +790,7 @@ void MainFrame::SetFormRegion(int x, int y, int w, int h)
 #endif
 
     return rc;
- }
+}
 
 void MainFrame::ReadSettings()
 {

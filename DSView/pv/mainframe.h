@@ -165,8 +165,8 @@ private:
     FormRegion      _normalRegion;
     bool            _is_max_status;
     QPoint          _clickPos;
-    QRect           _dragStartRegion; 
-    QRect           _move_screen_region;
+    QRect           _dragStartRegion;
+    QScreen         *_move_start_screen;
 };
 
 } // namespace pv

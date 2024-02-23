@@ -21,10 +21,12 @@
  */
 
 
-#include "winnativewidget.h"
+#include "WinNativeWidget.h"
 #include <QApplication>
 #include <QDesktopWidget>
 #include <QScreen>
+#include <QGuiApplication>
+#include <QWindow>
 #include <dwmapi.h> 
 #include <assert.h>
 #include <QString>
@@ -40,8 +42,10 @@ WinNativeWidget::WinNativeWidget(const int x, const int y, const int width, cons
     _childWindow = nullptr;
     childWidget = nullptr;
     _hWnd = NULL;
+    _event_callback = NULL;
+    _is_moving = false;
 
-    HBRUSH windowBackground = CreateSolidBrush(RGB(255, 255, 255));
+    HBRUSH windowBackground = CreateSolidBrush(RGB(0, 0, 0));
     HINSTANCE hInstance = GetModuleHandle(nullptr);
     WNDCLASSEX wcx = { 0 };
 
@@ -146,27 +150,30 @@ LRESULT CALLBACK WinNativeWidget::WndProc(HWND hWnd, UINT message, WPARAM wParam
         case WM_SIZE:
         { 
             if (self->_childWindow != NULL){
-                self->ResizeChild(false);   
+                self->ResizeChild();   
             }
 
             break;
         }
+        case WM_DPICHANGED:
+            if (self->_is_moving == false){
+                self->UpdateChildDpi();
+                self->ResizeChild();
+                dsv_info("Dpi was changed.");
+            } 
+            break;
     }
 
     return DefWindowProc(hWnd, message, wParam, lParam);
 }
 
-void WinNativeWidget::ResizeChild(bool bManual)
+void WinNativeWidget::ResizeChild()
 {
     if (_childWindow != NULL){
  
             RECT rc;
             GetClientRect(_hWnd, &rc);
-
-            int k = QApplication::desktop()->screen()->devicePixelRatio();
-
-            k = childWidget->window()->devicePixelRatio();
-
+  
             int w = rc.right;
             int h = rc.bottom;
 
@@ -180,9 +187,8 @@ void WinNativeWidget::ResizeChild(bool bManual)
             }
             
             childWidget->adjustSize();           
-            MoveWindow(_childWindow, 0, 0, w , h , 1 );
- 
-           // dsv_info("resize child, w:%d, h:%d, k1:%d, k2:%d", w / k, h / k, k1, k2);
+            MoveWindow(_childWindow, 0, 0, w , h , 1); 
+          
     }
 }
 
@@ -227,6 +233,47 @@ void WinNativeWidget::ShowMin()
     if (_hWnd){
         SendMessage(_hWnd, WM_SYSCOMMAND, SC_MINIMIZE, 0);
     }
+}
+
+void WinNativeWidget::UpdateChildDpi()
+{
+    QScreen *scr = screenFromWindow(_hWnd);
+    if (scr != NULL && childWidget != NULL){
+        childWidget->windowHandle()->setScreen(scr);
+    }
+}
+
+QScreen* WinNativeWidget::screenFromWindow(HWND hwnd)
+{
+    if (hwnd == NULL)
+        return NULL;
+
+    HMONITOR monitor = MonitorFromWindow(hwnd, MONITOR_DEFAULTTONEAREST);
+
+    MONITORINFO monitor_info;
+    memset(&monitor_info, 0, sizeof(MONITORINFO));
+    monitor_info.cbSize = sizeof(MONITORINFO);
+
+    GetMonitorInfoW(monitor, &monitor_info);
+
+    QPoint top_left;
+    top_left.setX(monitor_info.rcMonitor.left);
+    top_left.setY(monitor_info.rcMonitor.top);
+
+    for (QScreen *screen : QGuiApplication::screens())
+    {
+        if (screen->geometry().topLeft() == top_left)
+        {
+            return screen;
+        }
+    }
+  
+    return NULL;
+}
+
+QScreen* WinNativeWidget::GetPointScreen()
+{
+    return screenFromWindow(_hWnd);
 }
 
 }

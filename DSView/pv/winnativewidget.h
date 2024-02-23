@@ -29,7 +29,17 @@
 #include <Windowsx.h>
 #include <QWidget>
 
+#ifndef WM_DPICHANGED
+#define WM_DPICHANGED 0x02E0
+#endif
+
 namespace pv {
+
+class IParentNaitveEventCallback
+{
+public:
+    virtual void OnParentNativeEvent(int msg)=0;
+};
 
 class WinNativeWidget
 {
@@ -55,12 +65,24 @@ public:
     void ShowMax();
     void ShowMin();
 
-    void ResizeChild(bool bManul);
+    void UpdateChildDpi();
+    void ResizeChild();
+
+    inline void SetMovingFlag(bool bMoving){
+        _is_moving = bMoving;
+    }
+
+    QScreen* GetPointScreen();
+
+private:   
+    QScreen* screenFromWindow(HWND hwnd);
 
 private: 
     QWidget*    childWidget;
     HWND        _childWindow;
     HWND        _hWnd;
+    IParentNaitveEventCallback *_event_callback;
+    bool        _is_moving;
 };
 
 }
