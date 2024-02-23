@@ -169,26 +169,26 @@ LRESULT CALLBACK WinNativeWidget::WndProc(HWND hWnd, UINT message, WPARAM wParam
 
 void WinNativeWidget::ResizeChild()
 {
-    if (_childWindow != NULL){
- 
-            RECT rc;
-            GetClientRect(_hWnd, &rc);
-  
-            int w = rc.right;
-            int h = rc.bottom;
+    if (_childWindow != NULL){ 
+        RECT rc;
+        GetClientRect(_hWnd, &rc);
 
-            WINDOWPLACEMENT wp;
-            wp.length = sizeof(WINDOWPLACEMENT);
-            GetWindowPlacement(_hWnd, &wp);
+        int w = rc.right;
+        int h = rc.bottom;
 
-            if (wp.showCmd == SW_MAXIMIZE) { 
-                w -= 8;
-                h -= 8;
-            }
-            
-            childWidget->adjustSize();           
-            MoveWindow(_childWindow, 0, 0, w , h , 1); 
-          
+        WINDOWPLACEMENT wp;
+        wp.length = sizeof(WINDOWPLACEMENT);
+        GetWindowPlacement(_hWnd, &wp);
+
+        if (wp.showCmd == SW_MAXIMIZE) { 
+            w -= 8;
+            h -= 8;
+        }
+        
+        //childWidget->adjustSize();           
+        MoveWindow(_childWindow, 0, 0, w - 1 , h - 1 , 1);
+        MoveWindow(_childWindow, 0, 0, w , h , 1); 
+        childWidget->updateGeometry();  
     }
 }
 
