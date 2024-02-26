@@ -23,11 +23,11 @@
 #ifndef DSVIEW_PV_TOOLBARS_TRIGBAR_H
 #define DSVIEW_PV_TOOLBARS_TRIGBAR_H
 
-#include <QToolBar>
-#include <QToolButton>
+#include <QToolBar> 
 #include <QAction>
 #include <QMenu>
 #include "../interface/icallbacks.h"
+#include "../ui/xtoolbutton.h"
 
 class DockOptions;
 
@@ -83,12 +83,12 @@ public slots:
 private:
     SigSession  *_session;
     bool        _enable;
-    QToolButton _trig_button;
-    QToolButton _protocol_button;
-    QToolButton _measure_button;
-    QToolButton _search_button;
-    QToolButton _function_button;
-    QToolButton _setting_button;
+    XToolButton _trig_button;
+    XToolButton _protocol_button;
+    XToolButton _measure_button;
+    XToolButton _search_button;
+    XToolButton _function_button;
+    XToolButton _setting_button;
     QAction     *_trig_action;
     QAction     *_protocol_action;
     QAction     *_measure_action;

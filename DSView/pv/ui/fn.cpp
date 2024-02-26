@@ -22,7 +22,6 @@
 #include "fn.h"
 #include <assert.h>
 #include <QPushButton>
-#include <QToolButton>
 #include <QComboBox>
 #include <QLabel>
 #include <QAction>
@@ -36,6 +35,7 @@
 #include <QCheckBox>
 
 #include "../config/appconfig.h"
+#include "../ui/xtoolbutton.h"
 
 namespace ui
 {

@@ -21,8 +21,7 @@
 
 #include "titlebar.h"
 #include <QStyle>
-#include <QLabel>
-#include <QToolButton>
+#include <QLabel> 
 #include <QHBoxLayout>
 #include <QVBoxLayout>
 #include <QEvent>
@@ -31,6 +30,7 @@
 #include <QStyleOption>
 #include <assert.h>
 #include <QTimer>
+
 
 #ifdef _WIN32
 #include <windows.h>
@@ -72,9 +72,9 @@ TitleBar::TitleBar(bool top, QWidget *parent, ITitleParent *titleParent, bool ha
     lay1->addWidget(_title);
 
     if (_isTop) {
-        _minimizeButton = new QToolButton(this);
+        _minimizeButton = new XToolButton(this);
         _minimizeButton->setObjectName("MinimizeButton");
-        _maximizeButton = new QToolButton(this);
+        _maximizeButton = new XToolButton(this);
         _maximizeButton->setObjectName("MaximizeButton");
 
         lay1->addWidget(_minimizeButton);
@@ -87,7 +87,7 @@ TitleBar::TitleBar(bool top, QWidget *parent, ITitleParent *titleParent, bool ha
     }
 
     if (_isTop || _hasClose) {
-        _closeButton= new QToolButton(this);
+        _closeButton= new XToolButton(this);
         _closeButton->setObjectName("CloseButton");
         lay1->addWidget(_closeButton);
         connect(_closeButton, SIGNAL( clicked()), parent, SLOT(close()));

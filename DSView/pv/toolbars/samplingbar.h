@@ -28,13 +28,13 @@
 #include <list>
 #include <map>
   
-#include <QToolBar>
-#include <QToolButton>
+#include <QToolBar> 
 #include <QAction>
 #include <QMenu>
 #include "../ui/dscombobox.h"
 #include "../interface/icallbacks.h"
 #include <QDialog>
+#include "../ui/xtoolbutton.h"
 
 struct st_dev_inst;
 class QAction;
@@ -141,14 +141,14 @@ namespace pv
         private:
             SigSession          *_session;
 
-            QToolButton         _device_type;
+            XToolButton         _device_type;
             DsComboBox          _device_selector;
-            QToolButton         _configure_button;           
+            XToolButton         _configure_button;           
             DsComboBox          _sample_count;
             DsComboBox          _sample_rate;          
-            QToolButton         _run_stop_button;
-            QToolButton         _instant_button;
-            QToolButton         _mode_button;
+            XToolButton         _run_stop_button;
+            XToolButton         _instant_button;
+            XToolButton         _mode_button;
 
             QAction             *_run_stop_action;
             QAction             *_instant_action;

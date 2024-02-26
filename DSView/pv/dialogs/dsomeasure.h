@@ -24,7 +24,6 @@
 #define DSVIEW_PV_DSOMEASURE_H
 
 #include <QVBoxLayout>
-#include <QToolButton>
 #include <QDialogButtonBox>
 #include <QTabWidget>
  

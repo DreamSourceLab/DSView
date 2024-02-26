@@ -61,7 +61,7 @@ DevMode::DevMode(QWidget *parent, SigSession *session) :
     layout->setSpacing(0);
     layout->setContentsMargins(2, 0, 0, 0);
 
-    _close_button = new QToolButton();
+    _close_button = new XToolButton();
     _close_button->setObjectName("FileCloseButton");
     _close_button->setContentsMargins(0, 0, 0, 0);
     _close_button->setFixedWidth(10);
@@ -70,7 +70,7 @@ DevMode::DevMode(QWidget *parent, SigSession *session) :
     _close_button->setToolButtonStyle(Qt::ToolButtonIconOnly); 
     _close_button->setMinimumWidth(10);
 
-    _mode_btn = new QToolButton();
+    _mode_btn = new XToolButton();
     _mode_btn->setObjectName("ModeButton");
     _mode_btn->setIconSize(QSize(height() * 1.5, height()));
     _mode_btn->setToolButtonStyle(Qt::ToolButtonTextBesideIcon);

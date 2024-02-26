@@ -348,6 +348,7 @@ set(DSView_SOURCES
     DSView/pv/deviceagent.cpp
     DSView/pv/ui/langresource.cpp
     DSView/pv/ui/fn.cpp
+    DSView/pv/ui/xtoolbutton.cpp
 )
 
 set(DSView_HEADERS

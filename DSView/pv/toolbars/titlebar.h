@@ -23,9 +23,10 @@
 #define DSVIEW_PV_TOOLBARS_TITLEBAR_H
 
 #include <QWidget>
- #include "../interface/icallbacks.h"
+#include "../interface/icallbacks.h"
+#include "../ui/xtoolbutton.h"
 
-class QToolButton;
+
 class QHBoxLayout;
 class QLabel;
 
@@ -84,9 +85,9 @@ protected:
     void mouseDoubleClickEvent(QMouseEvent *event);
  
     
-    QToolButton *_minimizeButton;
-    QToolButton *_maximizeButton;
-    QToolButton *_closeButton;
+    XToolButton *_minimizeButton;
+    XToolButton *_maximizeButton;
+    XToolButton *_closeButton;
     QLabel      *_title;
   
     bool        _moving;

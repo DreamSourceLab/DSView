@@ -32,6 +32,7 @@
 #include "../dsvdef.h"
 
 #include "../ui/langresource.h"
+#include "../ui/xtoolbutton.h"
 
 using namespace std;
 using namespace pv::view;
@@ -95,7 +96,7 @@ void DsoMeasure::add_measure(QWidget *widget, const view::DsoSignal *dsoSig)
     pv::view::DsoSignal *psig = const_cast<pv::view::DsoSignal*>(dsoSig);
     
     for (int i=DSO_MS_BEGIN+1; i<DSO_MS_END; i++) {
-        QToolButton *button = new QToolButton(this);
+        XToolButton *button = new XToolButton(this);
         button->setProperty("id", QVariant(i));
         button->setIconSize(QSize(48, 48));
         QPixmap msPix(get_ms_icon(i));
@@ -155,7 +156,7 @@ void DsoMeasure::accept()
 {
 	using namespace Qt;
 
-    QToolButton* sc = dynamic_cast<QToolButton*>(sender());
+    auto sc = dynamic_cast<QToolButton*>(sender());
     if(sc != NULL) {
         QVariant id = sc->property("id");
         enum DSO_MEASURE_TYPE ms_type = DSO_MEASURE_TYPE(id.toInt());

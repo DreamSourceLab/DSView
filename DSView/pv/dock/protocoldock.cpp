@@ -43,8 +43,7 @@
 #include <QSizePolicy>
 #include <assert.h>
 #include <map>
-#include <string>
-#include <QToolButton>
+#include <string> 
 #include <algorithm>
 #include <QTableWidgetItem>
 #include "../ui/msgbox.h"
@@ -122,7 +121,7 @@ ProtocolDock::ProtocolDock(QWidget *parent, view::View &view, SigSession *sessio
     _pro_keyword_edit = new KeywordLineEdit(top_panel, this);
     _pro_keyword_edit->setReadOnly(true); 
  
-    _pro_search_button = new QToolButton(top_panel);
+    _pro_search_button = new XToolButton(top_panel);
     QHBoxLayout *pro_search_lay = new QHBoxLayout();
     pro_search_lay->setSpacing(2);
     pro_search_lay->addWidget(_pro_add_button);

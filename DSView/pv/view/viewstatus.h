@@ -25,8 +25,7 @@
 #include <QWidget>
 #include <QLabel>
 #include <QDateTime>
-#include <QPushButton>
-#include <QToolButton> 
+#include <QPushButton> 
 #include <libsigrok.h> 
 
 namespace pv {

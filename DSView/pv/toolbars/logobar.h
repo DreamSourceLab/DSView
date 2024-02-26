@@ -23,8 +23,7 @@
 #ifndef DSVIEW_PV_TOOLBARS_LOGOBAR_H
 #define DSVIEW_PV_TOOLBARS_LOGOBAR_H
 
-#include <QToolBar>
-#include <QToolButton>
+#include <QToolBar> 
 #include <QAction>
 #include <QMenu>
 #include <libsigrok.h> 
@@ -32,6 +31,7 @@
 
 #include "../sigsession.h"
 #include "../interface/icallbacks.h"
+#include "../ui/xtoolbutton.h"
 
 namespace pv {
 namespace toolbars {
@@ -82,7 +82,7 @@ private:
     bool _connected;
     SigSession* _session;
 
-    QToolButton _logo_button;
+    XToolButton _logo_button;
 
     QMenu *_menu;
 

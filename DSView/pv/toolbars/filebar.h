@@ -24,12 +24,12 @@
 #define DSVIEW_PV_TOOLBARS_FILEBAR_H
 
 #include <QToolBar>
-#include <QToolButton>
 #include <QAction>
 #include <QMenu>
 
 #include "../sigsession.h" 
 #include "../interface/icallbacks.h"
+#include "../ui/xtoolbutton.h"
 
 namespace pv {
 namespace toolbars {
@@ -73,7 +73,7 @@ private slots:
 private:
     SigSession* _session;
 
-    QToolButton _file_button;
+    XToolButton _file_button;
     QMenu   *_menu;
     QMenu   *_menu_session; //when the hardware device is connected,it will be enable
     QAction *_action_load;

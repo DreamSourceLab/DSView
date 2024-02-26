@@ -23,8 +23,7 @@
 #ifndef DSVIEW_PV_LISSAJOUSOPTIONS_H
 #define DSVIEW_PV_LISSAJOUSOPTIONS_H
 
-#include <QGridLayout>
-#include <QToolButton>
+#include <QGridLayout> 
 #include <QDialogButtonBox>
 #include <QTabWidget>
 #include <QGroupBox>

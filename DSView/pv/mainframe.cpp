@@ -283,7 +283,10 @@ void MainFrame::MoveBegin()
 }
  
 void MainFrame::MoveEnd()
-{  
+{
+
+    saveNormalRegion();
+
 #ifdef _WIN32
     if (_parentNativeWidget != NULL){
         auto scr = _parentNativeWidget->GetPointScreen();
@@ -447,14 +450,7 @@ void MainFrame::moveToWinNaitiveNormal()
 }
 
 bool MainFrame::eventFilter(QObject *object, QEvent *event)
-{
-    if (event->type() == QEvent::Move && _is_resize_ready){
-        if (_is_max_status == false && _titleBar->IsMoving()){
-            saveNormalRegion();
-        }
-        return QFrame::eventFilter(object, event);
-    } 
-
+{ 
     const QEvent::Type type = event->type();
     const QMouseEvent *const mouse_event = (QMouseEvent*)event;
     int newWidth = 0;
@@ -517,7 +513,7 @@ bool MainFrame::eventFilter(QObject *object, QEvent *event)
         pt.setX(p.x);
         pt.setY(p.y);
 #else
-        pt = event->globalPos(); 
+        pt = mouse_event->globalPos(); 
 #endif 
         int datX = pt.x() - _clickPos.x();
         int datY = pt.y() - _clickPos.y();
@@ -622,7 +618,7 @@ bool MainFrame::eventFilter(QObject *object, QEvent *event)
         _clickPos.setX(p.x);
         _clickPos.setY(p.y);
 #else
-        _clickPos = event->globalPos(); 
+        _clickPos = mouse_event->globalPos();
 #endif 
 
         _dragStartRegion = GetFormRegion();

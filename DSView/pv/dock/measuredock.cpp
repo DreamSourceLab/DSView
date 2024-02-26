@@ -41,6 +41,7 @@
 #include "../appcontrol.h"
 #include "../ui/fn.h"
 #include "../log.h"
+#include "../ui/xtoolbutton.h"
 
 using namespace boost;
 
@@ -91,7 +92,7 @@ MeasureDock::MeasureDock(QWidget *parent, View &view, SigSession *session) :
     /* cursor distance group */
     _dist_groupBox = new QGroupBox(_widget);
     _dist_groupBox->setMinimumWidth(300);
-    _dist_add_btn = new QToolButton(_widget);   
+    _dist_add_btn = new XToolButton(_widget);   
 
     _dist_layout = new QGridLayout(_widget);
     _dist_layout->setVerticalSpacing(5);
@@ -107,7 +108,7 @@ MeasureDock::MeasureDock(QWidget *parent, View &view, SigSession *session) :
     /* cursor edges group */
     _edge_groupBox = new QGroupBox(_widget);
     _edge_groupBox->setMinimumWidth(300);
-    _edge_add_btn = new QToolButton(_widget);
+    _edge_add_btn = new XToolButton(_widget);
 
     _channel_label = new QLabel(_widget);
     _edge_label = new QLabel(_widget);
@@ -269,7 +270,7 @@ void MeasureDock::build_dist_pannel()
         row_widget->setLayout(row_layout);
 
         QString iconPath = GetIconPath();
-        QToolButton *del_btn = new QToolButton(row_widget);
+        XToolButton *del_btn = new XToolButton(row_widget);
         del_btn->setIcon(QIcon(iconPath+"/del.svg"));
         del_btn->setCheckable(true);
         //tr
@@ -346,7 +347,7 @@ void MeasureDock::add_dist_measure()
 
 void MeasureDock::del_dist_measure()
 {
-    QToolButton* src = dynamic_cast<QToolButton *>(sender());
+    auto src = dynamic_cast<QToolButton *>(sender());
     assert(src); 
 
     for (auto it =_dist_row_list.begin(); it != _dist_row_list.end(); it++)
@@ -392,7 +393,7 @@ void MeasureDock::build_edge_pannel()
         row_widget->setLayout(row_layout);
 
         QString iconPath = GetIconPath();
-        QToolButton *del_btn = new QToolButton(row_widget);
+        XToolButton *del_btn = new XToolButton(row_widget);
         del_btn->setIcon(QIcon(iconPath+"/del.svg"));
         del_btn->setCheckable(true);
         //tr
@@ -775,7 +776,7 @@ void MeasureDock::cursor_update()
     auto &cursor_list = _view.get_cursorList();
 
     for(auto it = cursor_list.begin(); it != cursor_list.end(); it++) {
-        QToolButton *del_btn = new QToolButton(_widget);
+        XToolButton *del_btn = new XToolButton(_widget);
         del_btn->setIcon(QIcon(iconPath+"/del.svg"));
         del_btn->setCheckable(true);
         QPushButton *cursor_pushButton = new QPushButton(QString::number(index), _widget);
@@ -805,7 +806,7 @@ void MeasureDock::cursor_update()
 
 void MeasureDock::del_cursor()
 {
-    QToolButton *src = qobject_cast<QToolButton *>(sender());
+    auto *src = qobject_cast<QToolButton *>(sender());
     assert(src);
     
     Cursor* cursor = NULL;

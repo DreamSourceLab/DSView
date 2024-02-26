@@ -2,7 +2,7 @@
  * This file is part of the DSView project.
  * DSView is based on PulseView.
  *
- * Copyright (C) 2021 DreamSourceLab <support@dreamsourcelab.com>
+ * Copyright (C) 2024 DreamSourceLab <support@dreamsourcelab.com>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -19,42 +19,22 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
  */
 
-#ifndef DSCOMBOBOX_H
-#define DSCOMBOBOX_H
+#ifndef XTOOLBUTTON_H
+#define XTOOLBUTTON_H
 
-#include <QComboBox>
-#include <QKeyEvent>
+#include <QWidget>
+#include <QToolButton>
+#include <QMouseEvent>
 
-class DsComboBox : public QComboBox
-{ 
-public:
-    explicit DsComboBox(QWidget *parent = nullptr);
-};
 
-/*
-class DsComboBox : public QComboBox
+class XToolButton : public QToolButton
 {
-    Q_OBJECT
-
 public:
-    explicit DsComboBox(QWidget *parent = nullptr);
-
-    void addItem(const QString &atext, const QVariant &userData = QVariant());
-
-public:
-    void showPopup() override;
-
-    void hidePopup() override;
-
-    inline bool  IsPopup(){
-        return _bPopup;
-    } 
-
-private:
-    int     _contentWidth;
-    bool    _bPopup;
+    XToolButton(QWidget *parent = nullptr);
+    
+protected:
+    void mousePressEvent(QMouseEvent *event);// override; 
 };
-*/
 
 
-#endif // DSCOMBOBOX_H
+#endif

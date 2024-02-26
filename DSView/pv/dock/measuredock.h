@@ -41,6 +41,7 @@
 
 #include "../ui/dscombobox.h"
 #include "../interface/icallbacks.h"
+#include "../ui/xtoolbutton.h"
 
 namespace pv {
 
@@ -55,7 +56,7 @@ namespace dock {
 
 struct cursor_row_info
 {
-    QToolButton     *del_bt;
+    XToolButton     *del_bt;
     QPushButton     *start_bt;
     QPushButton     *end_bt;
     QLabel          *r_label;
@@ -66,7 +67,7 @@ struct cursor_row_info
 
 struct cursor_opt_info
 { 
-    QToolButton     *del_bt;
+    XToolButton     *del_bt;
     QPushButton     *goto_bt;
     QLabel          *info_label;
     view::Cursor    *cursor;
@@ -135,10 +136,10 @@ private:
     QLabel *_add_dec_label;
     QGridLayout *_dist_layout;
     QGroupBox *_dist_groupBox;
-    QToolButton *_dist_add_btn;
+    XToolButton *_dist_add_btn;
     QGridLayout *_edge_layout;
     QGroupBox *_edge_groupBox;
-    QToolButton *_edge_add_btn;
+    XToolButton *_edge_add_btn;
     QPushButton *_sel_btn;
     QWidget     *_dist_pannel;
     QWidget     *_edge_pannel;

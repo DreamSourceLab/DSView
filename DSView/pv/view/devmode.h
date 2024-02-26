@@ -29,12 +29,12 @@
 #include <set>
 #include <QWidget>
 #include <QPushButton>
-#include <QVector>
-#include <QToolButton>
+#include <QVector> 
 #include <QLabel>
 #include <libsigrok.h> 
 
 #include "../interface/icallbacks.h"
+#include "../ui/xtoolbutton.h"
 
 struct dev_mode_name{
     int _mode;
@@ -86,10 +86,10 @@ private slots:
 private:
     SigSession *_session;
     std::map <QAction *, const sr_dev_mode *> _mode_list;
-    QToolButton     *_mode_btn;
+    XToolButton     *_mode_btn;
     QMenu           *_pop_menu;
     QPoint          _mouse_point;
-    QToolButton     *_close_button;
+    XToolButton     *_close_button;
     bool            _bFile;
 
     DeviceAgent     *_device_agent;

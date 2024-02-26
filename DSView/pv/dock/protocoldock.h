@@ -34,8 +34,7 @@
 #include <QSplitter>
 #include <QTableView>
 #include <QSortFilterProxyModel>
-#include <QLineEdit>
-#include <QToolButton>
+#include <QLineEdit> 
 
 #include <vector>
 #include <mutex>
@@ -46,6 +45,7 @@
 #include "keywordlineedit.h"
 #include "searchcombobox.h"
 #include "../interface/icallbacks.h"
+#include "../ui/xtoolbutton.h"
 
 struct DecoderInfoItem{
     void  *_data_handle; //srd_decoder* type
@@ -169,7 +169,7 @@ private:
     std::vector<DecoderInfoItem*> _decoderInfoList;
     KeywordLineEdit *_pro_keyword_edit;
     QString     _selected_protocol_id;
-    QToolButton *_pro_search_button; 
+    XToolButton *_pro_search_button; 
 
     mutable std::mutex _search_mutex;
     bool _search_edited; 

@@ -23,8 +23,7 @@
 #ifndef DSVIEW_PV_MATHOPTIONS_H
 #define DSVIEW_PV_MATHOPTIONS_H
 
-#include <QGridLayout>
-#include <QToolButton>
+#include <QGridLayout> 
 #include <QDialogButtonBox>
 #include <QTabWidget>
 #include <QGroupBox>
