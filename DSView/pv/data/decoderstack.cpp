@@ -554,6 +554,11 @@ void DecoderStack::decode_data(const uint64_t decode_start, const uint64_t decod
                     dsv_info("Reset the decode end sample, new:%llu, old:%llu", 
                         (u64_t)end_index, (u64_t)decode_end);
                 }
+
+                if (i >= align_sample_count){
+                    dsv_info("ERROR: the decoding sample index is out of range.");
+                    break;
+                }
             }
         }
         else if (i >= _snapshot->get_ring_sample_count())
