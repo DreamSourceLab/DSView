@@ -91,11 +91,12 @@ MainFrame::MainFrame()
     setAttribute(Qt::WA_TranslucentBackground);
     _is_native_title = false;
 #endif
-
- 
-
+  
    // setMinimumWidth(MainWindow::Min_Width);
    // setMinimumHeight(MainWindow::Min_Height);  
+
+    setMinimumWidth(300);
+    setMinimumHeight(400);  
   
     // Set the window icon
     QIcon icon;
@@ -199,12 +200,15 @@ void MainFrame::AttachNativeWindow()
 #ifdef _WIN32 
     int k = QApplication::desktop()->screen()->devicePixelRatio();
    
-    QRect rc = geometry();
+    int x = _initWndInfo.r.x;
+    int y = _initWndInfo.r.y;
+    int w = _initWndInfo.r.w;
+    int h = _initWndInfo.r.h;
 
-    int x = rc.left() * k;
-    int y = rc.top() * k;
-    int w = rc.width() * k;
-    int h = rc.height() * k;
+    x *= k;
+    y *= k;
+    w *= k;
+    h *= k;
 
     if (_parentNativeWidget != NULL){       
         _parentNativeWidget->SetChildWidget(NULL);    
@@ -234,6 +238,7 @@ void MainFrame::AttachNativeWindow()
                 if (_initWndInfo.isMaxSize){
                     showMaximized();
                 }
+                _parentNativeWidget->ResizeChild();
             });
     }
 
@@ -284,6 +289,13 @@ void MainFrame::MoveBegin()
  
 void MainFrame::MoveEnd()
 {
+    QRect rc = GetFormRegion();
+
+    if (rc.top() < 0){
+        dsv_info("The top is out of range.");
+        rc.setY(0);
+        SetFormRegion(rc.x(), rc.y(), rc.width(), rc.height());
+    }
 
     saveNormalRegion();
 
