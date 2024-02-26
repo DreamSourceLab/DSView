@@ -29,11 +29,13 @@
 
 class XToolButton : public QToolButton
 {
+    Q_OBJECT
+
 public:
     XToolButton(QWidget *parent = nullptr);
     
 protected:
-    void mousePressEvent(QMouseEvent *event);// override; 
+    void mousePressEvent(QMouseEvent *event) override;
 };
 
 

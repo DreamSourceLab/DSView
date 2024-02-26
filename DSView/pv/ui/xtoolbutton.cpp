@@ -21,6 +21,7 @@
 
 #include "xtoolbutton.h"
 #include <QMenu>
+#include "../log.h"
 
 
 XToolButton::XToolButton(QWidget *parent)
@@ -34,11 +35,10 @@ void XToolButton::mousePressEvent(QMouseEvent *event)
     if (event->button() == Qt::LeftButton)
     {
         QMenu* menu = this->menu();
-        if (menu)
-        { 
+        if (menu){
             QPoint pt = mapToGlobal(rect().bottomLeft());
-            menu->exec(pt);
-            return;
+            menu->popup(pt);
+            return; 
         }
     }
 
