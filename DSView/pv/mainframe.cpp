@@ -709,6 +709,10 @@ void MainFrame::ShowFormInit()
 { 
     ReadSettings();
 
+    if (_initWndInfo.r.y < 0){
+        _initWndInfo.r.y = 0;
+    }
+
     int x = _initWndInfo.r.x;
     int y = _initWndInfo.r.y;
     int w = _initWndInfo.r.w;
