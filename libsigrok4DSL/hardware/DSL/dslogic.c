@@ -403,7 +403,8 @@ static GSList *scan(GSList *options)
  
         if (dsl_check_conf_profile(device_handle)) {
 			/* Already has the firmware, so fix the new address. */
-            sr_info("Found a DSLogic device,name:\"%s\",handle:%p", prof->model,device_handle);
+            sr_info("Found a DSLogic device,name:\"%s\",handle:%p, pid:%02x", 
+                prof->model,device_handle, prof->pid);
 
             devc = DSLogic_dev_new(prof);
             if (devc == NULL){
@@ -1053,7 +1054,7 @@ static int config_set(int id, GVariant *data, struct sr_dev_inst *sdi,
             dsl_adjust_probes(sdi, channel_modes[devc->ch_mode].num);
             dsl_adjust_samplerate(devc);
         }
-        sr_dbg("%s: setting channel mode to %d",
+        sr_info("%s: setting channel mode to %d",
             __func__, devc->ch_mode);
     }
     else if (id == SR_CONF_THRESHOLD) {    

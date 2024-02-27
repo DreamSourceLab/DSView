@@ -167,6 +167,11 @@ void LogicSnapshot::first_payload(const sr_datafeed_logic &logic, uint64_t total
                 _ch_data.push_back(root_vector);
                 _ch_index.push_back(probe->index);
             }
+
+            if (_ch_index.size() == 0){
+                dsv_info("ERROR: all channels disalbed");
+                assert(0);
+            }
         }
     }
     else {

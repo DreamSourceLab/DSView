@@ -517,6 +517,11 @@ namespace pv
             return false;
         }
 
+        if (_signals.empty()){
+            dsv_info("ERROR: channel list is empty, unable to capture data.");
+            return false;
+        }
+
         // Check that a device instance has been selected.
         if (_device_agent.have_instance() == false)
         {
@@ -900,10 +905,24 @@ namespace pv
             }
         }
 
+        int mode = _device_agent.get_work_mode();
+
         for (GSList *l = _device_agent.get_channels(); l; l = l->next)
         {
             sr_channel *probe = (sr_channel *)l->data;
             assert(probe); 
+
+            if (mode == LOGIC && probe->type != SR_CHANNEL_LOGIC){
+                continue;
+            }
+            
+            if (mode == ANALOG && probe->type != SR_CHANNEL_ANALOG){
+                continue;
+            }
+
+            if (mode == DSO && probe->type != SR_CHANNEL_DSO){
+                continue;
+            }
 
             switch (probe->type)
             {
@@ -937,6 +956,10 @@ namespace pv
         spectrum_rebuild();
         lissajous_disable();
         math_disable();
+
+        if (_signals.empty()){
+            dsv_info("ERROR: Unable to create any channel.");
+        }        
     }
 
     void SigSession::reload()
@@ -952,20 +975,28 @@ namespace pv
         std::vector<view::Signal *> sigs;
         view::Signal *signal = NULL;
         int logic_chan_num = 0;
-        int dso_chan_num = 0;
-        int all_chann_num = 0;
+        int dso_chan_num = 0; 
         int start_view_dex = -1;
 
         set_cur_snap_samplerate(_device_agent.get_sample_rate());
         set_cur_samplelimits(_device_agent.get_sample_limit());
+
+        int mode = _device_agent.get_work_mode();
 
         // Make the logic probe list
         for (GSList *l = _device_agent.get_channels(); l; l = l->next)
         {
             sr_channel *probe = (sr_channel *)l->data;
   
-            signal = NULL;
-            all_chann_num++;
+            signal = NULL; 
+
+            if (mode == LOGIC && probe->type != SR_CHANNEL_LOGIC){
+                continue;
+            }
+
+            if (mode == ANALOG && probe->type != SR_CHANNEL_ANALOG){
+                continue;
+            }
  
             switch (probe->type)
             {
@@ -1041,17 +1072,18 @@ namespace pv
             _signals = sigs;
             make_channels_view_index(start_view_dex);
 
-            if (_device_agent.get_work_mode() == LOGIC){
+            if (mode == LOGIC){
                 for (unsigned int i=0; i<view_indexs.size() && i<_signals.size(); i++){
                     _signals[i]->set_view_index(view_indexs[i]);
                 }
             }
         }
+        else if (mode == LOGIC || mode == ANALOG){
+            dsv_info("ERROR: Unable to create any channel.");
+            _signals.clear();
+        }
 
         spectrum_rebuild();
-
-        //dsv_info("Rebuild channnel list, logic channel count:%d, dso channel count:%d, all:%d", 
-        //            logic_chan_num, dso_chan_num, all_chann_num);
     }
 
     void SigSession::refresh(int holdtime)
