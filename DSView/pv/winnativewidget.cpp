@@ -156,9 +156,15 @@ LRESULT CALLBACK WinNativeWidget::WndProc(HWND hWnd, UINT message, WPARAM wParam
             break;
         }
         case WM_DPICHANGED:
-            if (self->_is_moving == false){
-                self->UpdateChildDpi();
-                self->ResizeChild();
+            if (self->_is_moving == false){ 
+                if (self->_event_callback != NULL){
+                    self->_event_callback->OnParentNativeEvent(EV_SCREEN_DPI_CHANGED);
+                }
+                else{
+                    self->UpdateChildDpi();
+                    self->ResizeChild();
+                }
+
                 dsv_info("Dpi was changed.");
             } 
             break;

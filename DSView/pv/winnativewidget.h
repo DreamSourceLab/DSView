@@ -28,18 +28,13 @@
 #include <Windows.h>
 #include <Windowsx.h>
 #include <QWidget>
+#include "interface/icallbacks.h"
 
 #ifndef WM_DPICHANGED
 #define WM_DPICHANGED 0x02E0
 #endif
 
 namespace pv {
-
-class IParentNaitveEventCallback
-{
-public:
-    virtual void OnParentNativeEvent(int msg)=0;
-};
 
 class WinNativeWidget
 {
@@ -74,6 +69,10 @@ public:
 
     QScreen* GetPointScreen();
 
+    inline void SetNativeEventCallback(IParentNativeEventCallback *callback){
+        _event_callback = callback;
+    }
+
 private:   
     QScreen* screenFromWindow(HWND hwnd);
 
@@ -81,7 +80,7 @@ private:
     QWidget*    childWidget;
     HWND        _childWindow;
     HWND        _hWnd;
-    IParentNaitveEventCallback *_event_callback;
+    IParentNativeEventCallback *_event_callback;
     bool        _is_moving;
 };
 

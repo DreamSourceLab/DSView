@@ -27,7 +27,6 @@
 #include <QWidget>
 #include <QMessageBox>
 #include <QVBoxLayout>
-
 #include "../toolbars/titlebar.h"
 
 namespace pv {
@@ -42,7 +41,7 @@ class DSMessageBox : public QDialog
 public:
     DSMessageBox(QWidget *parent, const QString title=0);
 
-    ~DSMessageBox();
+    virtual ~DSMessageBox();
 
     QMessageBox *mBox(); 
 

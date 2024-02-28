@@ -44,6 +44,7 @@
 #include <QFile> 
 #include <QGuiApplication>
 #include <QFont>
+#include <algorithm>
 
  #if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
  #include <QDesktopWidget>
@@ -55,7 +56,9 @@
 #include "appcontrol.h"
 #include "ui/langresource.h"
 #include "log.h"
-#include <algorithm>
+#include "dialogs/dsdialog.h"
+#include "ui/popupdlglist.h"
+
 
 #ifdef _WIN32
 #include "winnativewidget.h"
@@ -170,6 +173,8 @@ MainFrame::MainFrame()
 
     installEventFilter(this);
 
+    connect(this, SIGNAL(sig_ParentNativeEvent(int)), this, SLOT(OnParentNaitveWindowEvent(int)));
+
     //PrintRegionProc();
 }
 
@@ -218,6 +223,7 @@ void MainFrame::AttachNativeWindow()
     _parentNativeWidget = new WinNativeWidget(x, y, w, h);
     _parentNativeWidget->setGeometry(x, y, w, h);
     _parentNativeWidget->SetChildWidget(this);
+    _parentNativeWidget->SetNativeEventCallback(this);
 
     if (_parentNativeWidget->Handle())
     {
@@ -309,6 +315,27 @@ void MainFrame::MoveEnd()
         _parentNativeWidget->ResizeChild();
         _parentNativeWidget->SetMovingFlag(false);
     }    
+#endif
+}
+
+void MainFrame::OnParentNativeEvent(ParentNativeEvent msg)
+{
+    sig_ParentNativeEvent((int)msg);
+}
+
+void MainFrame::OnParentNaitveWindowEvent(int msg)
+{
+#ifdef _WIN32
+    if (_parentNativeWidget != NULL){
+        if (msg == EV_SCREEN_DPI_CHANGED){
+            QTimer::singleShot(100, this, [this](){
+                _parentNativeWidget->UpdateChildDpi();
+                _parentNativeWidget->ResizeChild();
+                
+                PopupDlgList::TryCloseAllByScreenChanged();
+            });
+        }
+    }
 #endif
 }
  

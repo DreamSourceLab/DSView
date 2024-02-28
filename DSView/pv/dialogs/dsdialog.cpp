@@ -31,6 +31,7 @@
 #include "../dsvdef.h"
 #include "../config/appconfig.h"
 #include "../ui/fn.h"
+#include "../ui/popupdlglist.h"
 
 namespace pv {
 namespace dialogs {
@@ -81,6 +82,8 @@ DSDialog::~DSDialog()
     DESTROY_QT_OBJECT(_titlebar);
     DESTROY_QT_OBJECT(_shadow);
     DESTROY_QT_OBJECT(_base_button);
+
+    PopupDlgList::RemoveDlgFromList(this);
 }
 
 void DSDialog::accept()
@@ -129,6 +132,8 @@ int DSDialog::exec()
     }
 
     update_font();
+
+    PopupDlgList::AddDlgTolist(this);
  
     return QDialog::exec();
 }

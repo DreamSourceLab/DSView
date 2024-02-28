@@ -32,6 +32,7 @@
 #include "../ui/langresource.h"
 #include "../config/appconfig.h"
 #include "../ui/fn.h"
+#include "../ui/popupdlglist.h"
 
 namespace pv {
 namespace dialogs {
@@ -95,6 +96,8 @@ DSMessageBox::~DSMessageBox()
     DESTROY_QT_OBJECT(_titlebar);
     DESTROY_QT_OBJECT(_shadow);
     DESTROY_QT_OBJECT(_main_layout);
+
+    PopupDlgList::RemoveDlgFromList(this);
 }
 
 void DSMessageBox::accept()
@@ -137,6 +140,8 @@ int DSMessageBox::exec()
     if (_titlebar != NULL){
         _titlebar->update_font();
     }
+
+    PopupDlgList::AddDlgTolist(this);
 
     return QDialog::exec();
 }

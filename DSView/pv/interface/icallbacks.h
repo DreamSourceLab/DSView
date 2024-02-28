@@ -115,4 +115,14 @@ public:
     virtual void update_font()=0;
 };
 
+enum ParentNativeEvent{
+    EV_SCREEN_DPI_CHANGED = 0,
+};
+
+class IParentNativeEventCallback
+{
+public:
+    virtual void OnParentNativeEvent(ParentNativeEvent msg)=0;
+};
+
 #endif

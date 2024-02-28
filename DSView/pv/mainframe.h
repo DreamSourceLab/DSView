@@ -66,7 +66,10 @@ struct FormInitInfo
     bool isMaxSize;
 };
 
-class MainFrame : public QFrame, public ITitleParent
+class MainFrame : 
+    public QFrame,
+    public ITitleParent,
+    public IParentNativeEventCallback
 {
     Q_OBJECT
 
@@ -104,6 +107,9 @@ protected:
 
     void changeEvent(QEvent *event) override; 
 
+signals:
+    void sig_ParentNativeEvent(int msg);
+
 public slots:
     void unfreezing();   
     void show_doc();
@@ -113,6 +119,7 @@ public slots:
     void showMaximized();
     void showMinimized();
     void moveToWinNaitiveNormal();
+    void OnParentNaitveWindowEvent(int msg);
 
 private:
     void hide_border();
@@ -129,6 +136,9 @@ private:
     bool ParentIsMaxsized() override;
     void MoveBegin() override;
     void MoveEnd() override;
+
+    //IParentNativeEventCallback
+    void OnParentNativeEvent(ParentNativeEvent msg) override;
 
     void SetFormRegion(int x, int y, int w, int h);
     QRect GetFormRegion();

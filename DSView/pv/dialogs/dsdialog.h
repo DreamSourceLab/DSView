@@ -49,7 +49,7 @@ public:
     DSDialog(QWidget *parent);
     DSDialog(QWidget *parent, bool hasClose);
     DSDialog(QWidget *parent, bool hasClose, bool bBaseButton);
-    ~DSDialog();
+    virtual ~DSDialog();
 
     inline void SetCallback(IDlgCallback *callback){m_callback = callback;}
     inline QVBoxLayout *layout(){return _main_layout;}
