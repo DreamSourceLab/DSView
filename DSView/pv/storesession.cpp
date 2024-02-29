@@ -297,11 +297,11 @@ void StoreSession::save_logic(pv::data::LogicSnapshot *logic_snapshot)
                 uint64_t size = logic_snapshot->get_block_size(i);
                 bool need_malloc = (buf == NULL);
 
-                if (i == end_block && end_offset / 8 < size){
+                if (i == end_block && end_offset / 8 < size && end_offset > 0){
                     size = end_offset / 8;
                 }
 
-                if (i == start_block){
+                if (i == start_block && start_offset > 0){
                     if (buf != NULL){
                         buf += start_offset / 8;
                     }
