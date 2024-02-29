@@ -146,7 +146,8 @@ const std::vector<QString>& Annotation::annotations() const
 				 QString src = rd_src.replace("{$}", "%s");
 
 				 const char *num_str = _status->m_resTable.format_numberic(resItem.str_number_hex, resItem.cur_display_format);
-				 const char *src_str = src.toUtf8().data();
+				 QByteArray byteArray = src.toUtf8();
+				 const char *src_str = byteArray.data();
 				
 				 int textlen = strlen(src_str) + strlen(num_str);
 				 assert(textlen > 0);
