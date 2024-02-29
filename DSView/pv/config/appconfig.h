@@ -58,7 +58,7 @@ public:
 
 struct AppOptions
 {   
-    bool  version;
+    int   version;
     bool  quickScroll;
     bool  warnofMultiTrig;
     bool  originalData;
