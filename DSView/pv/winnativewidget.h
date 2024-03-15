@@ -28,19 +28,23 @@
 #include <Windows.h>
 #include <Windowsx.h>
 #include <QWidget>
+#include <QByteArray>
+
 #include "interface/icallbacks.h"
+#include "winshadow.h"
 
 #ifndef WM_DPICHANGED
 #define WM_DPICHANGED 0x02E0
 #endif
 
 namespace pv {
+ 
 
 class WinNativeWidget
 {
 public:
 
-    WinNativeWidget(const int x, const int y, const int width, const int height);
+    WinNativeWidget(const int x, const int y, const int width, const int heigh);
     ~WinNativeWidget();
 
     static LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam);
@@ -62,9 +66,11 @@ public:
 
     void UpdateChildDpi();
     void ResizeChild();
+    void ResizeSelf();
 
     inline void SetMovingFlag(bool bMoving){
         _is_moving = bMoving;
+        _cur_screen = NULL;
     }
 
     QScreen* GetPointScreen();
@@ -73,15 +79,32 @@ public:
         _event_callback = callback;
     }
 
+    void OnDisplayChanged();
+    bool IsMaxsized();
+    bool IsMinsized();
+    bool IsNormalsized();
+    
+    void MoveShadow();
+
+    inline WinShadow* Shadow(){
+        return _shadow;
+    }
+
+    bool isActiveWindow();
+
+    void BeginShowShadow();
+
 private:   
     QScreen* screenFromWindow(HWND hwnd);
-
+    
 private: 
     QWidget*    childWidget;
     HWND        _childWindow;
     HWND        _hWnd;
     IParentNativeEventCallback *_event_callback;
     bool        _is_moving;
+    WinShadow   *_shadow;
+    QScreen     *_cur_screen;
 };
 
 }

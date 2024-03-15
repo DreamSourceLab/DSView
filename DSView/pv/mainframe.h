@@ -64,6 +64,7 @@ struct FormInitInfo
 {
     FormRegion r;
     bool isMaxSize;
+    int k;
 };
 
 class MainFrame : 
@@ -93,20 +94,25 @@ public:
  
     void ShowFormInit();
     void ShowHelpDocAsync();
-    
-    void PrintRegionProc();
-    void PrintRegion();
+  
+    bool IsMaxsized();
+    bool IsNormalsized();
+    bool IsMoving();
+    int GetDevicePixelRatio();
+    void SetFormRegion(int x, int y, int w, int h);
+    QRect GetFormRegion();    
+    void saveNormalRegion();
 
 protected: 
     void resizeEvent(QResizeEvent *event);
     void closeEvent(QCloseEvent *event);
-    bool eventFilter(QObject *object, QEvent *event);
+    bool eventFilter(QObject *object, QEvent *event) override;
 #ifdef _WIN32
     void showEvent(QShowEvent *event);
 #endif
 
     void changeEvent(QEvent *event) override; 
-
+ 
 signals:
     void sig_ParentNativeEvent(int msg);
 
@@ -117,15 +123,14 @@ public slots:
 
     void showNormal();
     void showMaximized();
-    void showMinimized();
-    void moveToWinNaitiveNormal();
+    void showMinimized(); 
     void OnParentNaitveWindowEvent(int msg);
+    void OnMoveWinShadow();
 
 private:
     void hide_border();
     void show_border();
     void writeSettings();
-    void saveNormalRegion();
 
     void ReadSettings();
     void AttachNativeWindow();
@@ -139,10 +144,8 @@ private:
 
     //IParentNativeEventCallback
     void OnParentNativeEvent(ParentNativeEvent msg) override;
-
-    void SetFormRegion(int x, int y, int w, int h);
-    QRect GetFormRegion();
-
+ 
+ 
 private:
     toolbars::TitleBar *_titleBar;
     MainWindow *_mainWindow;
@@ -168,12 +171,11 @@ private:
 #endif
 
     bool    _is_native_title;
-    bool    _is_resize_ready;    
+    bool    _is_resize_ready; 
 
     WinNativeWidget *_parentNativeWidget; 
     FormInitInfo    _initWndInfo;
-    FormRegion      _normalRegion;
-    bool            _is_max_status;
+    FormRegion      _normalRegion; 
     QPoint          _clickPos;
     QRect           _dragStartRegion;
     QScreen         *_move_start_screen;

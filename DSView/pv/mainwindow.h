@@ -84,8 +84,8 @@ class MainWindow :
 	Q_OBJECT
 
 public:
-    static const int Min_Width  = 800;
-    static const int Min_Height = 520;
+    static const int Min_Width  = 350;
+    static const int Min_Height = 300;
     static const int Base_Height = 150;
     static const int Per_Chan_Height = 35;
      

@@ -30,13 +30,21 @@
 #include <dwmapi.h> 
 #include <assert.h>
 #include <QString>
+#include <QtCore>
+#include <QtGui>
+#include <QtWidgets>
+#include <qmath.h>
+
 #include "log.h"
 #include "../config.h"
 
-#define NAI_WIN_CREATE_STYLE WS_POPUP | WS_CAPTION | WS_SYSMENU | WS_MINIMIZEBOX | WS_MAXIMIZEBOX | WS_THICKFRAME | WS_CLIPCHILDREN
+#define FIXED_WIDTH(widget) (widget->minimumWidth() >= widget->maximumWidth())
+#define FIXED_HEIGHT(widget) (widget->minimumHeight() >= widget->maximumHeight())
+#define FIXED_SIZE(widget) (FIXED_WIDTH(widget) && FIXED_HEIGHT(widget))
 
 namespace pv {
- 
+
+//-----------------------------WinNativeWidget 
 WinNativeWidget::WinNativeWidget(const int x, const int y, const int width, const int height)
 {   
     _childWindow = nullptr;
@@ -44,6 +52,8 @@ WinNativeWidget::WinNativeWidget(const int x, const int y, const int width, cons
     _hWnd = NULL;
     _event_callback = NULL;
     _is_moving = false;
+    _shadow = NULL;
+    _cur_screen = NULL;
 
     HBRUSH windowBackground = CreateSolidBrush(RGB(0, 0, 0));
     HINSTANCE hInstance = GetModuleHandle(nullptr);
@@ -55,7 +65,7 @@ WinNativeWidget::WinNativeWidget(const int x, const int y, const int width, cons
     wcx.lpfnWndProc = WndProc;
     wcx.cbClsExtra = 0;
     wcx.cbWndExtra = 0;
-    wcx.lpszClassName = L"WindowClass";
+    wcx.lpszClassName = L"DSViewWindowClass";
     wcx.hbrBackground = windowBackground;
     wcx.hCursor = LoadCursor(hInstance, IDC_ARROW);
 
@@ -66,15 +76,12 @@ WinNativeWidget::WinNativeWidget(const int x, const int y, const int width, cons
         dsv_info("ERROR: can't register window class");
         assert(false);
     }
-
-    QString title = QApplication::applicationName() + " v" + QApplication::applicationVersion();
-    wchar_t title_string_buffer[50];
-    int title_len = title.toWCharArray(title_string_buffer);
-    title_string_buffer[title_len] = 0;
  
-    _hWnd = CreateWindow(L"WindowClass", title_string_buffer,
-            NAI_WIN_CREATE_STYLE, x, y, 
-            width, height, 0, 0, hInstance, nullptr);
+    _hWnd = CreateWindow(L"DSViewWindowClass", L"DSView",
+           // WS_POPUP | WS_CAPTION | WS_SYSMENU | WS_MINIMIZEBOX | WS_MAXIMIZEBOX | WS_THICKFRAME | WS_CLIPCHILDREN,
+            WS_OVERLAPPEDWINDOW | WS_CLIPCHILDREN | WS_CLIPSIBLINGS, 
+            x, y, width, height,
+            NULL, NULL, hInstance, NULL);
 
     if (!_hWnd)
     {
@@ -89,6 +96,11 @@ WinNativeWidget::WinNativeWidget(const int x, const int y, const int width, cons
 WinNativeWidget::~WinNativeWidget()
 {
     if (_hWnd){
+        if (_shadow){
+            _shadow->hide();
+            delete _shadow;
+            _shadow = NULL;
+        }
         Show(false);
         DestroyWindow(_hWnd);
     }  
@@ -101,6 +113,8 @@ void WinNativeWidget::SetChildWidget(QWidget *w)
 
     if (w != NULL){
         _childWindow = (HWND)w->winId();
+        _shadow = new WinShadow(_hWnd, w);
+        _shadow->createWinId();
     }    
 }
 
@@ -115,6 +129,22 @@ LRESULT CALLBACK WinNativeWidget::WndProc(HWND hWnd, UINT message, WPARAM wParam
 
     switch (message)
     { 
+        case WM_ACTIVATE:
+        {
+            switch (wParam)
+            {
+                case WA_ACTIVE:
+                case WA_CLICKACTIVE:
+                {
+                    self->BeginShowShadow();
+                    break;
+                }
+                case WA_INACTIVE:
+                {    
+                    break;
+                }
+            }
+        }
         case WM_SYSCOMMAND:
         {
             if (wParam == SC_KEYMENU)
@@ -122,12 +152,12 @@ LRESULT CALLBACK WinNativeWidget::WndProc(HWND hWnd, UINT message, WPARAM wParam
                 RECT winrect;
                 GetWindowRect(hWnd, &winrect);
                 TrackPopupMenu(GetSystemMenu(hWnd, false), TPM_TOPALIGN | TPM_LEFTALIGN, winrect.left + 5, winrect.top + 5, 0, hWnd, NULL);
-                break;
             }
             else
             {
                 return DefWindowProc(hWnd, message, wParam, lParam);
             }
+            break;;
         }
         case WM_NCCALCSIZE:
         { 
@@ -150,24 +180,76 @@ LRESULT CALLBACK WinNativeWidget::WndProc(HWND hWnd, UINT message, WPARAM wParam
         case WM_SIZE:
         { 
             if (self->_childWindow != NULL){
-                self->ResizeChild();   
+                self->ResizeChild();
+
+                if (self->_shadow){
+                    if (self->IsNormalsized()){
+                        self->_shadow->tryToShow();
+                    }
+                    else{
+                        self->_shadow->hide();
+                    }
+                }
+                
+                self->MoveShadow();
             }
 
             break;
         }
-        case WM_DPICHANGED:
-            if (self->_is_moving == false){ 
-                if (self->_event_callback != NULL){
-                    self->_event_callback->OnParentNativeEvent(EV_SCREEN_DPI_CHANGED);
-                }
-                else{
-                    self->UpdateChildDpi();
-                    self->ResizeChild();
-                }
+        case WM_GETMINMAXINFO:
+        {
+            if (self->childWidget)
+            {
+                auto gw = self->childWidget;
+                int k = gw->windowHandle()->devicePixelRatio();
+                MINMAXINFO *mmi = reinterpret_cast<MINMAXINFO*>(lParam);
 
-                dsv_info("Dpi was changed.");
+                int border_width = 0;
+                QSize minimum = gw->minimumSize();
+                QSize sizeHint = gw->minimumSizeHint();
+
+                mmi->ptMinTrackSize.x = qFloor(qMax(minimum.width(), sizeHint.width()) *
+                                            k) + border_width * 2;
+                mmi->ptMinTrackSize.y = qFloor(qMax(minimum.height(), sizeHint.height()) *
+                                            k) + border_width;
+
+                QSize maximum = gw->maximumSize();
+
+                mmi->ptMaxTrackSize.x = qFloor(maximum.width() * k) + border_width * 2;
+                mmi->ptMaxTrackSize.y = qFloor(maximum.height() * k) + border_width;
             } 
             break;
+        }
+        case WM_DISPLAYCHANGE:            
+        {
+            dsv_info("Display changed.");
+
+            if (self->_event_callback != NULL){
+                self->_event_callback->OnParentNativeEvent(PARENT_EVENT_DISPLAY_CHANGED);
+            }
+
+            break;
+        }
+        case WM_WINDOWPOSCHANGING:
+        {
+            int st = 3;
+            if (self->IsMaxsized())
+                st = 1;
+            else if (self->IsNormalsized())
+                st = 2;
+            
+            if (self->childWidget != NULL && self->_shadow){
+                if (st == 2){            
+                    if (self->childWidget->isVisible() && !self->_is_moving){                        
+                        self->_shadow->showLater();
+                    }
+                }
+                else {
+                    self->_shadow->hide();                   
+                }
+            }
+            break;
+        }
     }
 
     return DefWindowProc(hWnd, message, wParam, lParam);
@@ -177,25 +259,93 @@ void WinNativeWidget::ResizeChild()
 {
     if (_childWindow != NULL){ 
         RECT rc;
-        GetClientRect(_hWnd, &rc);
+        GetWindowRect(_hWnd, &rc);
 
-        int w = rc.right;
-        int h = rc.bottom;
-
-        WINDOWPLACEMENT wp;
-        wp.length = sizeof(WINDOWPLACEMENT);
-        GetWindowPlacement(_hWnd, &wp);
-
-        if (wp.showCmd == SW_MAXIMIZE) { 
+        int sp = 0;
+        int x = sp;
+        int y = sp;
+        int w = rc.right - rc.left - sp * 2;
+        int h = rc.bottom - rc.top - sp * 2;
+ 
+        if (IsMaxsized()) { 
             w -= 8;
             h -= 8;
         }
-        
-        //childWidget->adjustSize();           
-        MoveWindow(_childWindow, 0, 0, w - 1 , h - 1 , 1);
-        MoveWindow(_childWindow, 0, 0, w , h , 1); 
-        childWidget->updateGeometry();  
+                
+        MoveWindow(_childWindow, x, y, w - 1 , h - 1 , 1);
+        MoveWindow(_childWindow, x, y, w , h , 1); 
+        childWidget->updateGeometry();
     }
+}
+
+void WinNativeWidget::ResizeSelf()
+{
+    if (_hWnd)
+    {
+        RECT rc;
+        GetWindowRect(_hWnd, &rc);
+
+        int x = rc.left;
+        int y = rc.top;
+        int w = rc.right - rc.left;
+        int h = rc.bottom - rc.top;
+
+        static int times = 0;
+        times++;
+
+        if (times % 2 == 0){
+            w += 2;
+            h += 2;
+        }
+        else{
+            w -= 2;
+            h -= 2;
+        }
+        
+        MoveWindow(_hWnd, x, y, w , h , 1);
+    }
+}
+
+void WinNativeWidget::MoveShadow()
+{
+    if (!_shadow || !childWidget){
+        return;
+    }
+
+    if (IsNormalsized())
+    {  
+    
+        RECT rc;
+        GetWindowRect(_hWnd, &rc);
+
+        int bw = SHADOW_BORDER_WIDTH;
+
+       // bw = 20;
+
+        int x = rc.left;
+        int y = rc.top;
+        int w = rc.right - rc.left;
+        int h = rc.bottom - rc.top;
+
+        x -= bw;
+        y -= bw;
+        w += bw * 2;
+        h += bw * 2;
+
+        MoveWindow((HWND)_shadow->winId(), x, y, w , h , 1);
+        _shadow->setActive(isActiveWindow()); 
+    } 
+    else{
+        _shadow->hide();
+        _shadow->setActive(false);
+        _shadow->update();
+    }
+}
+
+bool WinNativeWidget::isActiveWindow()
+{ 
+    const HWND active_window = GetActiveWindow();
+    return ((active_window == _hWnd) || IsChild(_hWnd, active_window)); 
 }
 
 void WinNativeWidget::setGeometry(const int x, const int y, const int width, const int height)
@@ -210,6 +360,10 @@ void WinNativeWidget::Show(bool bShow)
 {
     if (_hWnd){
         ShowWindow(_hWnd, bShow ? SW_SHOW : SW_HIDE);
+
+        if (!bShow && _shadow){
+            _shadow->hide();
+        }
     }
 }
 
@@ -217,7 +371,20 @@ void WinNativeWidget::Show(bool bShow)
  {
     RECT rc;
     GetClientRect(_hWnd, &rc);
-    MoveWindow(_hWnd, x, y, rc.right, rc.bottom, 0);
+    int w = rc.right;
+    int h = rc.bottom;
+    MoveWindow(_hWnd, x, y, w, h, 1);
+
+    if (_shadow != NULL){
+        auto scr = GetPointScreen();
+
+        if (_cur_screen && scr && scr != _cur_screen){
+            _shadow->windowHandle()->setScreen(scr);
+        }
+        _cur_screen = scr;
+
+        MoveShadow();
+    }
  }
 
 void WinNativeWidget::ShowNormal()
@@ -246,6 +413,12 @@ void WinNativeWidget::UpdateChildDpi()
     QScreen *scr = screenFromWindow(_hWnd);
     if (scr != NULL && childWidget != NULL){
         childWidget->windowHandle()->setScreen(scr);
+        if (_shadow){
+            _shadow->windowHandle()->setScreen(scr);
+        }
+    }
+    else{
+        dsv_info("ERROR: failed to update child's screen.");
     }
 }
 
@@ -280,6 +453,50 @@ QScreen* WinNativeWidget::screenFromWindow(HWND hwnd)
 QScreen* WinNativeWidget::GetPointScreen()
 {
     return screenFromWindow(_hWnd);
+}
+
+void WinNativeWidget::OnDisplayChanged()
+{ 
+    UpdateChildDpi();
+    ResizeChild();
+
+    RECT rc;
+    GetWindowRect(_hWnd, &rc);
+    int w = rc.right - rc.left;
+    int h = rc.bottom - rc.top;
+    MoveWindow(_hWnd, rc.left, rc.top, w + 1, h + 1, 1);
+}
+
+bool WinNativeWidget::IsMaxsized()
+{
+    WINDOWPLACEMENT wp;
+    wp.length = sizeof(WINDOWPLACEMENT);
+    GetWindowPlacement(_hWnd, &wp);
+    return wp.showCmd == SW_MAXIMIZE;
+}
+
+bool WinNativeWidget::IsMinsized()
+{
+    WINDOWPLACEMENT wp;
+    wp.length = sizeof(WINDOWPLACEMENT);
+    GetWindowPlacement(_hWnd, &wp);
+    return wp.showCmd == SW_MINIMIZE;
+}
+
+bool WinNativeWidget::IsNormalsized()
+{
+    WINDOWPLACEMENT wp;
+    wp.length = sizeof(WINDOWPLACEMENT);
+    GetWindowPlacement(_hWnd, &wp);
+    return wp.showCmd == SW_SHOWNORMAL;
+}
+
+void WinNativeWidget::BeginShowShadow()
+{
+    if (_shadow){
+        _shadow->show();
+        _shadow->showLater();
+    }
 }
 
 }

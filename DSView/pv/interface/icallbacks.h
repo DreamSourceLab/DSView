@@ -116,7 +116,7 @@ public:
 };
 
 enum ParentNativeEvent{
-    EV_SCREEN_DPI_CHANGED = 0,
+    PARENT_EVENT_DISPLAY_CHANGED = 0,
 };
 
 class IParentNativeEventCallback
