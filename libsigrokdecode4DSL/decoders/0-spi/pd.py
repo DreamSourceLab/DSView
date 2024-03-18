@@ -3,7 +3,7 @@
 ##
 ## Copyright (C) 2011 Gareth McMullin <gareth@blacksphere.co.nz>
 ## Copyright (C) 2012-2014 Uwe Hermann <uwe@hermann-uwe.de>
-## Copyright (C) 2019 DreamSourceLab <support@dreamsourcelab.com>
+## Copyright (C) 2024 DreamSourceLab <support@dreamsourcelab.com>
 ##
 ## This program is free software; you can redistribute it and/or modify
 ## it under the terms of the GNU General Public License as published by
@@ -18,6 +18,10 @@
 ## You should have received a copy of the GNU General Public License
 ## along with this program; if not, see <http://www.gnu.org/licenses/>.
 ##
+
+#
+# 2024/3/18 DreamSourceLab : format output based on wordsize in hex
+#
 
 import sigrokdecode as srd
 from collections import namedtuple
@@ -151,9 +155,9 @@ class Decoder(srd.Decoder):
 
         # Dataword annotations.
         if self.have_miso:
-            self.put(ss, es, self.out_ann, [0, ['@%02X' % self.misodata]])
+            self.put(ss, es, self.out_ann, [0, ['@{1:0>{0}X}'.format(int((self.options['wordsize']+3)/4),self.misodata)]])
         if self.have_mosi:
-            self.put(ss, es, self.out_ann, [1, ['@%02X' % self.mosidata]])
+            self.put(ss, es, self.out_ann, [1, ['@{1:0>{0}X}'.format(int((self.options['wordsize']+3)/4),self.mosidata)]])
 
     def reset_decoder_state(self):
         self.misodata = 0 if self.have_miso else None
