@@ -764,7 +764,12 @@ void MainFrame::AttachNativeWindow()
             int h1 = full_rc.height() / 1.5;
             int x1 = full_rc.left() + (full_rc.width() - w1) / 2;
             int y1 = full_rc.top() + (full_rc.height() - h1) / 2; 
-            nativeWindow->setGeometry(x1 * k, y1 * k, w1 * k, h1 *k);
+            int x2 = full_rc.left() + (full_rc.width() - w1) / 2 * k;
+            int y2 = full_rc.top() + (full_rc.height() - h1) / 2 * k; 
+
+            this->move(x1, y1);
+            this->resize(w1,w1);
+            nativeWindow->setGeometry(x2 , y2 , w1 * k, h1 *k);
 
             dsv_info("%s:Reset the normal region, x:%d, y:%d, w:%d, h:%d",
                         scr->name().toStdString().c_str(),
