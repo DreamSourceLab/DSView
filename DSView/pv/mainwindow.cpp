@@ -114,7 +114,7 @@ namespace pv
         : QMainWindow(parent)
     {
         _msg = NULL;
-        _frame = parent;
+        _frame = parent; 
 
         assert(title_bar);
         assert(_frame);
@@ -1244,7 +1244,8 @@ namespace pv
             const auto &sigs = _session->get_signals();
             QKeyEvent *ke = (QKeyEvent *)event;
             
-            int modifier = ke->modifiers();
+            int modifier = ke->modifiers(); 
+ 
             if(modifier & Qt::ControlModifier || 
                modifier & Qt::ShiftModifier || 
                modifier & Qt::AltModifier)
@@ -1340,7 +1341,7 @@ namespace pv
                 update();
                 break;
 
-            case Qt::Key_Up:
+            case Qt::Key_Up: 
                 for (auto s : sigs)
                 {
                     if (s->signal_type() == SR_CHANNEL_DSO){
@@ -1369,7 +1370,7 @@ namespace pv
                     }
                 }
                 break;
-
+           
             default:
                 QWidget::keyPressEvent((QKeyEvent *)event);
             }

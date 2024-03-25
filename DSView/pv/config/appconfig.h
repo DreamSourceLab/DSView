@@ -97,6 +97,7 @@ struct FrameOptions
   int         ox;
   int         oy;
   bool        isMax;
+  QString     displayName;
   QByteArray  windowState;
 
   DockOptions   _logicDock;

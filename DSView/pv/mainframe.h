@@ -98,7 +98,6 @@ public:
     bool IsMaxsized();
     bool IsNormalsized();
     bool IsMoving();
-    int GetDevicePixelRatio();
     void SetFormRegion(int x, int y, int w, int h);
     QRect GetFormRegion();    
     void saveNormalRegion();
@@ -112,6 +111,8 @@ protected:
 #endif
 
     void changeEvent(QEvent *event) override; 
+
+    bool nativeEvent(const QByteArray &eventType, void *message, long *result) override;
  
 signals:
     void sig_ParentNativeEvent(int msg);
@@ -125,13 +126,11 @@ public slots:
     void showMaximized();
     void showMinimized(); 
     void OnParentNaitveWindowEvent(int msg);
-    void OnMoveWinShadow();
-
+  
 private:
     void hide_border();
     void show_border();
     void writeSettings();
-
     void ReadSettings();
     void AttachNativeWindow();
 
@@ -170,9 +169,8 @@ private:
     QWinTaskbarProgress *_taskPrg;
 #endif
 
-    bool    _is_native_title;
-    bool    _is_resize_ready; 
-
+    bool    _is_win32_parent_window;
+    bool    _is_resize_ready;
     WinNativeWidget *_parentNativeWidget; 
     FormInitInfo    _initWndInfo;
     FormRegion      _normalRegion; 

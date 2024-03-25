@@ -131,6 +131,7 @@ public:
     //IMainForm
     void switchLanguage(int language) override;
     bool able_to_close(); 
+ 
    
 private: 
 	void setup_ui();
@@ -239,8 +240,8 @@ private:
     QString         _lst_title_string;
     QString         _title_ext_string;
 
-    int _key_value;
-    bool _key_vaild;
+    int         _key_value;
+    bool        _key_vaild; 
 };
 
 } // namespace pv

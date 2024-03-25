@@ -25,12 +25,21 @@
 #include <vector>
 #include <QWidget>
 
+class QScreen;
+
+struct PopuDlgItem
+{
+    QScreen *screen;
+    QWidget *widget;
+};
+
 class PopupDlgList
 {
 public:
     static void AddDlgTolist(QWidget *w);
     static void RemoveDlgFromList(QWidget *w);
-    static void TryCloseAllByScreenChanged();
+    static void TryCloseAllByScreenChanged(QScreen *windowScreen);
+    static void SetCurrentScreen(QScreen *screen);
 };
 
 #endif

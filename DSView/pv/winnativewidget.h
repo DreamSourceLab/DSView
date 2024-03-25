@@ -31,22 +31,27 @@
 #include <QByteArray>
 
 #include "interface/icallbacks.h"
-#include "winshadow.h"
 
 #ifndef WM_DPICHANGED
 #define WM_DPICHANGED 0x02E0
 #endif
 
+#ifndef SM_CXPADDEDBORDER
+#define SM_CXPADDEDBORDER 105
+#endif
+
+
 namespace pv {
- 
+
+class WinShadow;
 
 class WinNativeWidget
 {
 public:
 
-    WinNativeWidget(const int x, const int y, const int width, const int heigh);
+    WinNativeWidget(const int x, const int y, const int width, const int heigh, bool isDark);
     ~WinNativeWidget();
-
+ 
     static LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam);
 
     void SetChildWidget(QWidget *w);
@@ -65,46 +70,49 @@ public:
     void ShowMin();
 
     void UpdateChildDpi();
-    void ResizeChild();
-    void ResizeSelf();
-
-    inline void SetMovingFlag(bool bMoving){
-        _is_moving = bMoving;
-        _cur_screen = NULL;
-    }
-
+    void ResizeChild(); 
+ 
     QScreen* GetPointScreen();
 
     inline void SetNativeEventCallback(IParentNativeEventCallback *callback){
         _event_callback = callback;
     }
-
-    void OnDisplayChanged();
+ 
     bool IsMaxsized();
     bool IsMinsized();
-    bool IsNormalsized();
-    
-    void MoveShadow();
-
-    inline WinShadow* Shadow(){
-        return _shadow;
-    }
-
+    bool IsNormalsized(); 
     bool isActiveWindow();
 
-    void BeginShowShadow();
+    void SetBorderColor(QColor color);
+    bool IsWin11OrGreater();
+
+    inline void SetTitleBarWidget(QWidget *w){
+        _titleBarWidget = w;
+    }
+
+    int GetDevicePixelRatio();
+    bool IsVisible();
+
+    void ReShowWindow();
 
 private:   
     QScreen* screenFromWindow(HWND hwnd);
-    
+    bool isWinXOrGreater(DWORD major_version, DWORD minor_version, DWORD build_number);
+    void showBorder();
+    void hideBorder();
+    bool getMonitorWorkArea(HMONITOR  hCurrentMonitor, int *outWidth, int *outHeight);
+
 private: 
     QWidget*    childWidget;
     HWND        _childWindow;
     HWND        _hWnd;
+    QWidget     *_titleBarWidget;
     IParentNativeEventCallback *_event_callback;
-    bool        _is_moving;
+   
+    bool        _is_native_border;
+    HMONITOR    _hCurrentMonitor;
     WinShadow   *_shadow;
-    QScreen     *_cur_screen;
+    QColor      _border_color;
 };
 
 }

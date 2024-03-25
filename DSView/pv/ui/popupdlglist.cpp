@@ -21,18 +21,25 @@
 
 #include "popupdlglist.h"
 #include <QGuiApplication>
+#include <QScreen>
+#include <QWindow>
+#include <QTimer>
+
+#include "../log.h"
 
 namespace{
-    std::vector<QWidget*> g_popup_dlg_list;
-    int     g_screen_count = 1;
+    std::vector<PopuDlgItem> g_popup_dlg_list;
+    QScreen     *currentScreen = NULL;
 }
 
 void PopupDlgList::AddDlgTolist(QWidget *w)
 {   
     if (w != nullptr){
-        g_popup_dlg_list.push_back(w);
+        PopuDlgItem item;
+        item.screen = currentScreen;
+        item.widget = w;
+        g_popup_dlg_list.push_back(item);
     }
-    g_screen_count = QGuiApplication::screens().size(); 
 }
 
 void PopupDlgList::RemoveDlgFromList(QWidget *w)
@@ -40,7 +47,7 @@ void PopupDlgList::RemoveDlgFromList(QWidget *w)
     if (w != nullptr){
         for (auto it = g_popup_dlg_list.begin(); it != g_popup_dlg_list.end(); ++it)
         {
-            if ((*it) == w){
+            if ((*it).widget == w){
                 g_popup_dlg_list.erase(it);
                 break;
             }
@@ -48,23 +55,27 @@ void PopupDlgList::RemoveDlgFromList(QWidget *w)
     }
 }
 
-void PopupDlgList::TryCloseAllByScreenChanged()
+void PopupDlgList::TryCloseAllByScreenChanged(QScreen *windowScreen)
 {
-    int screen_count = QGuiApplication::screens().size();
-
-    if (screen_count != g_screen_count)
+    int num = g_popup_dlg_list.size();
+  
+    for (int i=0; i<num; i++)
     {
-        int num = g_popup_dlg_list.size();
+        auto it = g_popup_dlg_list.begin() + i;
+        auto w = (*it).widget;
 
-        for (int i=0; i<num; i++)
-        {
-            auto it = g_popup_dlg_list.begin() + i;
-            if ((*it)->isVisible()){
-                (*it)->close(); //Close the dialog.
+        if (w->isVisible()){
+            if ((*it).screen != windowScreen){
+                w->close(); //Close the dialog.
                 g_popup_dlg_list.erase(it);
                 --num;
                 --i;                 
             }
         }
     }
+}
+
+void PopupDlgList::SetCurrentScreen(QScreen *screen)
+{
+    currentScreen = screen;
 }

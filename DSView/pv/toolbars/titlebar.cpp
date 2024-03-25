@@ -31,11 +31,6 @@
 #include <assert.h>
 #include <QTimer>
 
-
-#ifdef _WIN32
-#include <windows.h>
-#endif
-
 #include "../config/appconfig.h"
 #include "../appcontrol.h"
 #include "../dsvdef.h"
@@ -43,6 +38,10 @@
 
 namespace pv {
 namespace toolbars {
+
+namespace{
+    static bool _is_able_drag = true;
+}
 
 TitleBar::TitleBar(bool top, QWidget *parent, ITitleParent *titleParent, bool hasClose) :
     QWidget(parent)
@@ -58,9 +57,9 @@ TitleBar::TitleBar(bool top, QWidget *parent, ITitleParent *titleParent, bool ha
    _title = NULL;
    _is_native = false;
    _titleParent = titleParent;
-   _is_done_moved = false;
+   _is_done_moved = false; 
 
-   assert(parent);
+    assert(parent);
 
     setObjectName("TitleBar");
     setContentsMargins(0,0,0,0);
@@ -223,7 +222,7 @@ void TitleBar::mousePressEvent(QMouseEvent* event)
 { 
     bool ableMove = !ParentIsMaxsized();
 
-    if(event->button() == Qt::LeftButton && ableMove) 
+    if(event->button() == Qt::LeftButton && ableMove && _is_able_drag) 
     {
         int x = event->pos().x();
         int y = event->pos().y(); 
@@ -234,14 +233,8 @@ void TitleBar::mousePressEvent(QMouseEvent* event)
         if (!bTopWidow || bClick ){
             _is_draging = true;             
 
-#ifdef _WIN32 
-            POINT p;
-            GetCursorPos(&p);
-            _clickPos.setX(p.x);
-            _clickPos.setY(p.y);
-#else
             _clickPos = event->globalPos(); 
-#endif 
+
             if (_titleParent != NULL){
                 _oldPos = _titleParent->GetParentPos();
             }
@@ -265,17 +258,8 @@ void TitleBar::mouseMoveEvent(QMouseEvent *event)
         int datX = 0;
         int datY = 0;
 
-#ifdef _WIN32
-        POINT p;
-        GetCursorPos(&p);
-        int k =  window()->devicePixelRatio(); 
-        datX = (p.x - _clickPos.x()) / k;
-        datY = (p.y - _clickPos.y()) / k;
-       
-#else
         datX = (event->globalPos().x() - _clickPos.x());
         datY = (event->globalPos().y() - _clickPos.y());
-#endif
 
         int x = _oldPos.x() + datX;
         int y = _oldPos.y() + datY;
@@ -335,6 +319,11 @@ void TitleBar::update_font()
     QFont font = this->font();
     font.setPointSizeF(AppConfig::Instance().appOptions.fontSize+1);
     _title->setFont(font);
+}
+
+void TitleBar::EnableAbleDrag(bool bEnabled)
+{
+    _is_able_drag = bEnabled;
 }
  
 } // namespace toolbars

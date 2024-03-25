@@ -75,7 +75,7 @@ MainFrame::MainFrame()
     _freezing = false; 
     _titleBar = NULL;
     _mainWindow = NULL;
-    _is_native_title = false;
+    _is_win32_parent_window = false;
     _is_resize_ready = false;   
     _parentNativeWidget = NULL;
     _mainWindow = NULL; 
@@ -95,18 +95,19 @@ MainFrame::MainFrame()
    bool isWin32 = false;
 
 #ifdef _WIN32
-    setWindowFlags(Qt::Window | Qt::FramelessWindowHint | Qt::WindowSystemMenuHint | Qt::WindowMinMaxButtonsHint);
-    _is_native_title = true;
+    setWindowFlags(Qt::FramelessWindowHint);
+    _is_win32_parent_window = true;
     _taskBtn = NULL;
     isWin32 = true;
 #else
     setWindowFlags(Qt::Window | Qt::FramelessWindowHint | Qt::WindowSystemMenuHint);
     setAttribute(Qt::WA_TranslucentBackground);
-    _is_native_title = false;
+    _is_win32_parent_window = false;
 #endif
-
+ 
 #ifdef _WIN32
-    if (!_is_native_title){
+    if (!_is_win32_parent_window){
+        setWindowFlags(Qt::Window | Qt::FramelessWindowHint | Qt::WindowSystemMenuHint | Qt::WindowMinMaxButtonsHint);
         setAttribute(Qt::WA_TranslucentBackground);
     }
 #endif
@@ -134,7 +135,7 @@ MainFrame::MainFrame()
     _layout->setContentsMargins(0,0,0,0);
  
 
-    if (!isWin32 || !_is_native_title)
+    if (!isWin32 || !_is_win32_parent_window)
     {
         _top_left = new widgets::Border (TopLeft, this);
         _top_left->setFixedSize(Margin, Margin);
@@ -230,8 +231,7 @@ bool MainFrame::ParentIsMaxsized()
 void MainFrame::MoveBegin()
 {
 #ifdef _WIN32
-     if (_parentNativeWidget != NULL){
-        _parentNativeWidget->SetMovingFlag(true);
+     if (_parentNativeWidget != NULL){ 
         _move_start_screen = _parentNativeWidget->GetPointScreen();
      }
 #endif
@@ -247,19 +247,18 @@ void MainFrame::MoveEnd()
         SetFormRegion(rc.x(), rc.y(), rc.width(), rc.height());
     }
 
+#ifndef _WIN32
     saveNormalRegion();
+#endif
 
 #ifdef _WIN32
     if (_parentNativeWidget != NULL){
         auto scr = _parentNativeWidget->GetPointScreen();
         if (scr != _move_start_screen){ 
-            _parentNativeWidget->UpdateChildDpi();
-            _parentNativeWidget->ResizeSelf();
+            _parentNativeWidget->UpdateChildDpi(); 
         }
 
-        _parentNativeWidget->ResizeChild();
-        _parentNativeWidget->MoveShadow();
-        _parentNativeWidget->SetMovingFlag(false);
+        _parentNativeWidget->ResizeChild(); 
     }    
 #endif
 }
@@ -272,22 +271,23 @@ void MainFrame::OnParentNativeEvent(ParentNativeEvent msg)
 void MainFrame::OnParentNaitveWindowEvent(int msg)
 {
 #ifdef _WIN32
-    if (_parentNativeWidget != NULL){
-        if (msg == PARENT_EVENT_DISPLAY_CHANGED){
-            QTimer::singleShot(100, this, [this](){
-                PopupDlgList::TryCloseAllByScreenChanged();
-                _parentNativeWidget->OnDisplayChanged();
-            });
-        }
-    }
-#endif
-}
+    if (_parentNativeWidget != NULL 
+            && msg == PARENT_EVENT_DISPLAY_CHANGED){
 
-void MainFrame::OnMoveWinShadow()
-{
-#ifdef _WIN32
-    if (_parentNativeWidget != NULL){
-        _parentNativeWidget->MoveShadow();
+        QTimer::singleShot(100, this, [this](){                
+            auto scr = _parentNativeWidget->GetPointScreen();
+            if (scr == NULL){
+                dsv_info("ERROR: failed to get point screen, will to get the primary.");
+                scr = QGuiApplication::primaryScreen();
+            }
+
+            PopupDlgList::TryCloseAllByScreenChanged(scr);
+            PopupDlgList::SetCurrentScreen(scr);
+           
+            _parentNativeWidget->UpdateChildDpi();
+            _parentNativeWidget->ResizeChild();
+            _parentNativeWidget->ReShowWindow();
+        });       
     }
 #endif
 }
@@ -320,7 +320,8 @@ void MainFrame::closeEvent(QCloseEvent *event)
 #ifdef _WIN32
         if (_parentNativeWidget != NULL){
             _parentNativeWidget->SetChildWidget(NULL);
-            _parentNativeWidget->Show(false);
+            setVisible(false);
+            _parentNativeWidget->Show(false);                   
         }
 #endif
 
@@ -428,6 +429,12 @@ bool MainFrame::eventFilter(QObject *object, QEvent *event)
     int newLeft = 0;
     int newTop = 0;
 
+#ifdef _WIN32 
+    if (_parentNativeWidget != NULL){
+        return QFrame::eventFilter(object, event);
+    }
+#endif
+
     if (type != QEvent::MouseMove 
         && type != QEvent::MouseButtonPress 
         && type != QEvent::MouseButtonRelease
@@ -477,21 +484,8 @@ bool MainFrame::eventFilter(QObject *object, QEvent *event)
  
         QPoint pt;
         int k = 1;
-
-#ifdef _WIN32 
-        POINT p;
-        GetCursorPos(&p);
-        pt.setX(p.x);
-        pt.setY(p.y);
-
-        if (_parentNativeWidget != NULL){
-            auto scr = _parentNativeWidget->GetPointScreen();
-            assert(scr);
-            k = scr->devicePixelRatio();
-        }
-#else
         pt = mouse_event->globalPos(); 
-#endif 
+
         int datX = pt.x() - _clickPos.x();
         int datY = pt.y() - _clickPos.y();
         datX /= k;
@@ -580,7 +574,9 @@ bool MainFrame::eventFilter(QObject *object, QEvent *event)
 
             if (r != l){
                 SetFormRegion(l, t, r-l, b-t);
-                saveNormalRegion();
+                #ifndef _WIN32
+                    saveNormalRegion();
+                #endif
             }            
          
             return true;
@@ -592,15 +588,7 @@ bool MainFrame::eventFilter(QObject *object, QEvent *event)
             _bDraging = true;
         _timer.start(50); 
 
-#ifdef _WIN32 
-        POINT p;
-        GetCursorPos(&p);
-        _clickPos.setX(p.x);
-        _clickPos.setY(p.y);
-#else
         _clickPos = mouse_event->globalPos();
-#endif 
-
         _dragStartRegion = GetFormRegion();
     } 
     else if (type == QEvent::MouseButtonRelease) {
@@ -630,10 +618,8 @@ void MainFrame::saveNormalRegion()
 
 #ifdef _WIN32
     if (_parentNativeWidget != NULL){
-        RECT rc; 
-        auto scr = _parentNativeWidget->GetPointScreen();
-        assert(scr);
-        int k = scr->devicePixelRatio();
+        RECT rc;
+        int k = _parentNativeWidget->GetDevicePixelRatio();
         
         GetWindowRect(_parentNativeWidget->Handle(), &rc);
         app.frameOptions.left = rc.left / k;
@@ -660,6 +646,18 @@ void MainFrame::writeSettings()
 {  
     AppConfig &app = AppConfig::Instance();
     app.frameOptions.isMax = IsMaxsized();
+
+#ifdef _WIN32
+    if (_parentNativeWidget != NULL){
+        auto scr = _parentNativeWidget->GetPointScreen();
+        app.frameOptions.displayName = scr->name();
+    }
+    else{
+        app.frameOptions.displayName = windowHandle()->screen()->name();
+    }
+#else
+    app.frameOptions.displayName = windowHandle()->screen()->name();
+#endif
 
     if (IsNormalsized() && isVisible()){
         saveNormalRegion();
@@ -698,24 +696,31 @@ void MainFrame::ShowFormInit()
              x, y, w, h, _initWndInfo.k);
 
     bool isWin32 = false;
-
 #ifdef _WIN32
     isWin32 = true;
 #endif
 
     if (_initWndInfo.isMaxSize){
         move(x, y);
-        showMaximized();
+        if (isWin32 &&_is_win32_parent_window){
+            resize(w, h);
+        }
+        else{
+            showMaximized();
+        }      
     }
     else{
         move(x, y);
         resize(w, h);
     }
 
-    QFrame::show();
-  
- #ifdef _WIN32
-    if (_is_native_title){
+    if (!_is_win32_parent_window){
+        QFrame::show();
+        return;
+    }
+
+#ifdef _WIN32
+    if (_is_win32_parent_window){
         AttachNativeWindow();
     }
 #endif 
@@ -727,19 +732,19 @@ void MainFrame::AttachNativeWindow()
 
     assert(_parentNativeWidget == NULL);
 
-    int k = _initWndInfo.k;
-   
-    int x = _normalRegion.x;
-    int y = _normalRegion.y;
-    int w = _normalRegion.w;
-    int h = _normalRegion.h;
+    int k = _initWndInfo.k; 
+    int x = _normalRegion.x * k;
+    int y = _normalRegion.y * k;
+    int w = _normalRegion.w * k;
+    int h = _normalRegion.h * k;
 
-    x *= k;
-    y *= k;
-    w *= k;
-    h *= k;
+    bool isDrak = false;
+
+    if (AppConfig::Instance().frameOptions.style == THEME_STYLE_DARK){
+        isDrak = true;
+    }
  
-    WinNativeWidget *nativeWindow = new WinNativeWidget(x, y, w, h);
+    WinNativeWidget *nativeWindow = new WinNativeWidget(x, y, w, h, isDrak);
     nativeWindow->setGeometry(x, y, w, h);
 
     if (nativeWindow->Handle() == NULL){
@@ -751,6 +756,7 @@ void MainFrame::AttachNativeWindow()
     QScreen *scr = nativeWindow->GetPointScreen();
     if (scr != NULL){
         QRect full_rc = scr->availableGeometry();
+        PopupDlgList::SetCurrentScreen(scr);
 
         if (full_rc.width() - _normalRegion.w < 100 && !_initWndInfo.isMaxSize)
         {  
@@ -769,6 +775,12 @@ void MainFrame::AttachNativeWindow()
         dsv_info("ERROR: get point screen error.");
     }
 
+    nativeWindow->SetChildWidget(this);
+    nativeWindow->SetNativeEventCallback(this);
+    nativeWindow->UpdateChildDpi();
+    nativeWindow->SetTitleBarWidget(_titleBar);
+    _titleBar->EnableAbleDrag(false);
+  
     setWindowFlags(Qt::FramelessWindowHint);
     setProperty("_q_embedded_native_parent_handle", (WId)nativeWindow->Handle());
     SetWindowLong((HWND)winId(), GWL_STYLE, WS_CHILD | WS_CLIPCHILDREN | WS_CLIPSIBLINGS);
@@ -776,6 +788,8 @@ void MainFrame::AttachNativeWindow()
 
     QEvent e(QEvent::EmbeddingControl);
     QApplication::sendEvent(this, &e);
+    
+    setVisible(true);
 
     if (_initWndInfo.isMaxSize){
         nativeWindow->ShowMax();
@@ -783,25 +797,10 @@ void MainFrame::AttachNativeWindow()
     else{
         nativeWindow->Show(true);
     }
-  
-    nativeWindow->SetChildWidget(this);
-    nativeWindow->SetNativeEventCallback(this);
+
+    nativeWindow->SetBorderColor(QColor(0x80, 0x80, 0x80));
     _parentNativeWidget = nativeWindow;
 
-    auto shandow = _parentNativeWidget->Shadow();
-    if (shandow){
-        shandow->SetFrame(this);
-        connect(shandow, SIGNAL(showSignal()), this, SLOT(OnMoveWinShadow()));
-    }
- 
-    QTimer::singleShot(50, this, [this](){           
-            move(0,0);
-            setVisible(true);            
-            _parentNativeWidget->UpdateChildDpi();
-            _parentNativeWidget->ResizeChild(); 
-            _parentNativeWidget->BeginShowShadow();        
-        });
-     
 #endif
 }
 
@@ -810,9 +809,7 @@ void MainFrame::SetFormRegion(int x, int y, int w, int h)
    #ifdef _WIN32
 
    if (_parentNativeWidget != NULL){
-        auto scr = _parentNativeWidget->GetPointScreen();
-        assert(scr); 
-        int k = scr->devicePixelRatio(); 
+        int k = _parentNativeWidget->GetDevicePixelRatio(); 
         
         x *= k;
         y *= k;
@@ -835,9 +832,7 @@ QRect MainFrame::GetFormRegion()
 #ifdef _WIN32
 
     if (_parentNativeWidget != NULL){
-        auto scr = _parentNativeWidget->GetPointScreen();
-        assert(scr);
-        int k = scr->devicePixelRatio();
+        int k = _parentNativeWidget->GetDevicePixelRatio();
         RECT r; 
         GetWindowRect(_parentNativeWidget->Handle(), &r); 
         int x = r.left;
@@ -886,33 +881,22 @@ bool MainFrame::IsMoving()
     return _titleBar->IsMoving();
 }
 
-int MainFrame::GetDevicePixelRatio()
-{ 
-#ifdef _WIN32
-    if (_parentNativeWidget != NULL){
-        auto scr = _parentNativeWidget->GetPointScreen();
-        assert(scr);
-        return scr->devicePixelRatio();
-    }
-#endif
-
-    return windowHandle()->devicePixelRatio();
-}
-
 void MainFrame::ReadSettings()
 {
-    AppConfig &app = AppConfig::Instance(); 
+    AppConfig &app = AppConfig::Instance();
    
     if (app.frameOptions.language > 0){
         _mainWindow->switchLanguage(app.frameOptions.language);
     }
 
+    // The history scale region.
     int left = app.frameOptions.left;
     int top = app.frameOptions.top;
     int right = app.frameOptions.right;
     int bottom = app.frameOptions.bottom;
     int x = app.frameOptions.x;
-    int y = app.frameOptions.y; 
+    int y = app.frameOptions.y;
+    QString lstDisplayName = app.frameOptions.displayName;
 
     if (x == NO_POINT_VALUE){
         x = left;
@@ -922,30 +906,52 @@ void MainFrame::ReadSettings()
     dsv_info("Read region info, x:%d, y:%d, w:%d, h:%d, isMax:%d",
             x, y, right-left, bottom-top, app.frameOptions.isMax);
 
+    if (lstDisplayName != ""){
+        dsv_info("Last display:%s", lstDisplayName.toStdString().c_str());
+    }
+
     bool bReset = false;
     int scrIndex = -1;
-
-    QRect winRc = {x, y, right-left, bottom-top};
-
+    int k = 1;
+    int zoomk = 1;
+    QString scrName = "";
+    QRect full_rect = QRect(0,0,0,0);
+    QScreen *screen = NULL;
+    
     for (int i=0; i<QGuiApplication::screens().size(); i++){
-        QRect rc  = QGuiApplication::screens().at(i)->availableGeometry();
-        QRect inrc = rc.intersected(winRc);
+        QRect rc  = QGuiApplication::screens().at(i)->availableGeometry();      
         QString name = QGuiApplication::screens().at(i)->name();
 
-        dsv_info("Screen name:%s, region, left:%d, top:%d, right:%d, bottom:%d",
-            name.toStdString().c_str(), rc.left(), rc.top(), rc.right(), rc.bottom() );
-         
-        if (scrIndex == -1 && (inrc.width() > 10 || inrc.height() > 10)){
+        if (name == lstDisplayName){
             scrIndex = i;
         }
-    }
 
+        dsv_info("Screen name:%s, region, left:%d, top:%d, width:%d, height:%d",
+            name.toStdString().c_str(), rc.left(), rc.top(), rc.width(), rc.height() );
+    }
+ 
     if (scrIndex == -1){
         bReset = true;
+        screen = QGuiApplication::primaryScreen(); 
     }
-    else{        
-        QRect rc = QGuiApplication::screens().at(scrIndex)->availableGeometry();
-        QRect inrc = rc.intersected(winRc);
+    else{      
+        screen = QGuiApplication::screens().at(scrIndex);      
+    }
+
+    full_rect = screen->availableGeometry();
+    k = screen->devicePixelRatio();
+    scrName = screen->name();
+
+#ifdef _WIN32
+    if (_is_win32_parent_window){
+        zoomk = k;
+    }
+#endif
+    
+    QRect winRc = {x * zoomk, y * zoomk, right-left, bottom-top};
+
+    if (!bReset){
+        QRect inrc = full_rect.intersected(winRc);
         if (inrc.width() < 70 || inrc.height() < 70 || winRc.width() < 300){
             bReset = true;
         }
@@ -956,28 +962,13 @@ void MainFrame::ReadSettings()
     _initWndInfo.r.w = 0;
     _initWndInfo.r.h = 0;
     _initWndInfo.isMaxSize = false;
-    int k = 1;
-
+ 
     if (app.frameOptions.isMax)
     {
-        QRect rc;
-        QString scrName;
-
-        if (scrIndex == -1){
-            rc = QGuiApplication::primaryScreen()->availableGeometry();
-            scrName = QGuiApplication::primaryScreen()->name();
-            k = QGuiApplication::primaryScreen()->devicePixelRatio();
-        }
-        else{
-            rc = QGuiApplication::screens().at(scrIndex)->availableGeometry();
-            scrName = QGuiApplication::screens().at(scrIndex)->name();
-            k = QGuiApplication::screens().at(scrIndex)->devicePixelRatio();
-        }
-
-        _initWndInfo.r.x = rc.left();
-        _initWndInfo.r.y = rc.top();
-        _initWndInfo.r.w = rc.width();
-        _initWndInfo.r.h = rc.height();
+        _initWndInfo.r.x = full_rect.left();
+        _initWndInfo.r.y = full_rect.top();
+        _initWndInfo.r.w = full_rect.width();
+        _initWndInfo.r.h = full_rect.height();
         _initWndInfo.isMaxSize = true;
 
         _normalRegion.x = x;
@@ -985,44 +976,37 @@ void MainFrame::ReadSettings()
         _normalRegion.w = right-left;
         _normalRegion.h = bottom-top;
 
-        QRect inrc = rc.intersected(winRc);
-        if (inrc.width() < 70 || inrc.height() < 70 || winRc.width() < 300){
-            _normalRegion.x = rc.left() + (rc.width() - _normalRegion.w) / 2;
-            _normalRegion.y = rc.top() + (rc.height() - _normalRegion.h) / 2;
+        QRect inrc = full_rect.intersected(winRc);
+        if (inrc.width() < 70 || inrc.height() < 70 || winRc.width() < 100){
+            _normalRegion.x = full_rect.left() 
+                        + (full_rect.width() - _normalRegion.w) / 2 * zoomk;
+            _normalRegion.y = full_rect.top() 
+                        + (full_rect.height() - _normalRegion.h) / 2 * zoomk;
+
+            _normalRegion.x /= zoomk;
+            _normalRegion.y /= zoomk;
         }
 
         dsv_info("Show as max, screen:%s, x:%d, y:%d, w:%d, h:%d", 
-            scrName.toStdString().c_str(), rc.x(), rc.y(), rc.width(), rc.height());
+            scrName.toStdString().c_str(), full_rect.x(), full_rect.y(),
+            full_rect.width(), full_rect.height());
     }
     else if (bReset)
-    { 
-        QRect rc;
-        QString scrName;
-
-        if (scrIndex == -1){
-            rc = QGuiApplication::primaryScreen()->availableGeometry();
-            scrName = QGuiApplication::primaryScreen()->name();
-            k = QGuiApplication::primaryScreen()->devicePixelRatio();
-        }
-        else{
-            rc = QGuiApplication::screens().at(scrIndex)->availableGeometry();
-            scrName = QGuiApplication::screens().at(scrIndex)->name();
-            k = QGuiApplication::screens().at(scrIndex)->devicePixelRatio();
-        }
-
-        int w = rc.width() / 1.5;
-        int h = rc.height() / 1.5;
-        const int x0 = rc.left() + (rc.width() - w) / 2;
-        const int y0 = rc.top() + (rc.height() - h) / 2;
-
-        _initWndInfo.r.x = x0;
-        _initWndInfo.r.y = y0;
+    {
+        int w = full_rect.width() / 1.5;
+        int h = full_rect.height() / 1.5;
+        int x0 = full_rect.left() + (full_rect.width() - w) / 2 * zoomk;
+        int y0 = full_rect.top() + (full_rect.height() - h) / 2 * zoomk;
+ 
+        _initWndInfo.r.x = x0 / zoomk;
+        _initWndInfo.r.y = y0 / zoomk;
         _initWndInfo.r.w = w;
         _initWndInfo.r.h = h;
         _normalRegion = _initWndInfo.r;
 
         dsv_info("Reset, screen:%s, x:%d, y:%d, w:%d, h:%d", 
-            scrName.toStdString().c_str(), rc.left(), rc.top(), rc.width(), rc.height());
+            scrName.toStdString().c_str(), full_rect.left(), full_rect.top(),
+             full_rect.width(), full_rect.height());
     }
     else
     {
@@ -1041,13 +1025,11 @@ void MainFrame::ReadSettings()
 #endif 
         _initWndInfo.r.w = right - left;
         _initWndInfo.r.h = bottom - top;
-        _normalRegion = _initWndInfo.r;
-        QString scrName = QGuiApplication::screens().at(scrIndex)->name();
-        QRect rc =  QGuiApplication::screens().at(scrIndex)->availableGeometry();
-        k = QGuiApplication::screens().at(scrIndex)->devicePixelRatio();
+        _normalRegion = _initWndInfo.r; 
  
         dsv_info("Restore, screen:%s, x:%d, y:%d, w:%d, h:%d", 
-            scrName.toStdString().c_str() ,rc.left(), rc.top(), rc.width(), rc.height());
+            scrName.toStdString().c_str() ,full_rect.left(), full_rect.top(), 
+            full_rect.width(), full_rect.height());
     }
 
     dsv_info("Normal region, x:%d, y:%d, w:%d, h:%d",  
@@ -1135,6 +1117,35 @@ void MainFrame::show_doc()
             app.SaveHistory();
         }   
     }
+}
+
+bool MainFrame::nativeEvent(const QByteArray &eventType, void *message, long *result)
+{
+#ifdef _WIN32
+
+    if (_parentNativeWidget != NULL)
+    { 
+        MSG *msg = static_cast<MSG*>(message);
+        HWND hwnd = _parentNativeWidget->Handle(); 
+
+        switch (msg->message)
+        {
+            case WM_NCMOUSEMOVE:
+            case WM_NCLBUTTONDOWN:
+            case WM_NCLBUTTONUP:
+            case WM_NCLBUTTONDBLCLK:
+            case WM_NCHITTEST:
+            {
+                *result = long(SendMessageW(hwnd, 
+                        msg->message, msg->wParam, msg->lParam));
+                return true;
+            }
+        }
+    } 
+    
+#endif
+ 
+    return QWidget::nativeEvent(eventType, message, result);
 }
 
 } // namespace pv

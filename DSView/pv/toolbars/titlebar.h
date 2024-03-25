@@ -62,6 +62,8 @@ public:
         _is_native = true;
     }
 
+    void EnableAbleDrag(bool bEnabled);
+
 private:
     void changeEvent(QEvent *event);
     void reStyle();
@@ -99,7 +101,7 @@ protected:
     QWidget     *_parent;
     bool        _is_native;
     ITitleParent    *_titleParent;
-    bool        _is_done_moved;
+    bool        _is_done_moved; 
 };
 
 } // namespace toolbars
