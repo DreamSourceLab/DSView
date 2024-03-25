@@ -402,6 +402,17 @@ void DecoderStack::begin_decode_work()
      _decode_state = Stopped;
 }
 
+bool DecoderStack::check_required_probes()
+{
+    for(auto dec : _stack){
+		if (!dec->have_required_probes()) {
+			return false;
+		}
+    }
+
+    return true;
+}
+
 void DecoderStack::do_decode_work()
 {
     //set the flag to exit from task thread 
@@ -425,14 +436,12 @@ void DecoderStack::do_decode_work()
     _snapshot = NULL;
 
 	// Check that all decoders have the required channels
-    for(auto dec : _stack){
-		if (!dec->have_required_probes()) {
-			_error_message = L_S(STR_PAGE_MSG, S_ID(IDS_MSG_DECODERSTACK_DECODE_WORK_ERROR),
-                             "One or more required channels have not been specified");
-            dsv_err("ERROR:%s", _error_message.toStdString().c_str());
-			return;
-		}
-    }
+    if (!check_required_probes()) {
+        _error_message = L_S(STR_PAGE_MSG, S_ID(IDS_MSG_DECODERSTACK_DECODE_WORK_ERROR),
+                            "One or more required channels have not been specified");
+        dsv_err("ERROR:%s", _error_message.toStdString().c_str());
+        return;
+	}
 
 	// We get the logic data of the first channel in the list.
 	// This works because we are currently assuming all

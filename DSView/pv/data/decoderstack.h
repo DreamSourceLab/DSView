@@ -181,6 +181,8 @@ public:
         return _progress;
     }
 
+    bool check_required_probes();
+
 private:
     void decode_data(const uint64_t decode_start, const uint64_t decode_end, srd_session *const session);
 	void execute_decode_stack();

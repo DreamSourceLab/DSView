@@ -664,10 +664,12 @@ bool DecodeTrace::create_popup(bool isnew)
 { 
     (void)isnew;
     
-    int ret = false;  //setting have changed flag 
+    int ret = false;  //setting have changed flag
+    bool bOpenDlg = true;
 
-    while (true)
+    while (bOpenDlg)
     {
+        bOpenDlg = false;
         QWidget *top = AppControl::Instance()->GetTopWindow();
         dialogs::DecoderOptionsDlg dlg(top);
         dlg.set_cursor_range(_decode_cursor1, _decode_cursor2);
@@ -688,14 +690,22 @@ bool DecodeTrace::create_popup(bool isnew)
             }
 
             dlg.get_cursor_range(_decode_cursor1, _decode_cursor2);
+
+            // Reopen the dialog to select the required probes.
+            if (ret && _decoder_stack->check_required_probes() == false)
+            {
+                QString errMsg = L_S(STR_PAGE_MSG, S_ID(IDS_MSG_DECODERSTACK_DECODE_WORK_ERROR),
+                            "One or more required channels have not been specified");
+                MsgBox::Show(errMsg);
+    
+                ret = false;
+                bOpenDlg = true;
+            }
         }
 
         if (dlg.is_reload_form()){
             ret = false;
-        }
-
-        if (QDialog::Rejected == dlg_ret || dlg.is_reload_form() == false){
-            break;
+            bOpenDlg = true;
         }
     }
  
