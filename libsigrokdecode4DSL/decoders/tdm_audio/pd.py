@@ -2,6 +2,7 @@
 ## This file is part of the libsigrokdecode project.
 ##
 ## Copyright (C) 2019 Ben Dooks <ben.dooks@codethink.co.uk>
+## Copyright (C) 2024 DreamSourceLab <support@dreamsourcelab.com>
 ##
 ## This program is free software; you can redistribute it and/or modify
 ## it under the terms of the GNU General Public License as published by
@@ -16,6 +17,10 @@
 ## You should have received a copy of the GNU General Public License
 ## along with this program; if not, see <http://www.gnu.org/licenses/>.
 ##
+
+#
+# 2024/3/18 DreamSourceLab : fix channel display error
+#
 
 import sigrokdecode as srd
 
@@ -79,38 +84,37 @@ class Decoder(srd.Decoder):
             if self.ss_block is not None:
                 if self.bitcount >= self.bitdepth:
                     self.bitcount = 0
-                    self.channel += 1
 
-                    c1 = 'Channel %d' % self.channel
-                    c2 = 'C%d' % self.channel
-                    c3 = '%d' % self.channel
+                    c1 = 'Channel %d' % (self.channel % self.channels)
+                    c2 = 'C%d' % (self.channel % self.channels)
+                    c3 = '%d' % (self.channel % self.channels)
                     if self.bitdepth <= 8:
                         v = '%02x' % self.data
                     elif self.bitdepth <= 16:
                         v = '%04x' % self.data
                     else:
                         v = '%08x' % self.data
-
-                    if self.channel < self.channels:
-                        ch = self.channel
-                    else:
-                        ch = 0
+                    
+                    ch = self.channel % self.channels
 
                     self.put(self.ss_block, self.samplenum, self.out_ann,
                              [ch, ['%s: %s' % (c1, v), '%s: %s' % (c2, v),
                                    '%s: %s' % (c3, v)]])
+
                     self.data = 0
                     self.ss_block = self.samplenum
                     self.samplecount += 1
+                    self.channel += 1
 
             # Check for new frame.
             # Note, frame may be a single clock, or active for the first
             # sample in the frame.
+            
             if frame != self.lastframe and frame == 1:
                 self.channel = 0
                 self.bitcount = 0
                 self.data = 0
                 if self.ss_block is None:
                     self.ss_block = 0
-
+                    
             self.lastframe = frame
