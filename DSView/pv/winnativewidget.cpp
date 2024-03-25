@@ -432,15 +432,12 @@ void WinNativeWidget::ResizeChild()
         int h = rc.bottom - rc.top;
   
         if (IsMaxsized()){
-            w -= 4 * k;
-            h -= 4 * k;
-        }
-        else{
-            int border = 0 * k;
-            x += border;
-            y += border;
-            w -= border * 2;
-            h -= border * 2;
+            int borderSizeX = GetSystemMetrics(SM_CXSIZEFRAME) - 2;
+            int borderSizeY = GetSystemMetrics(SM_CYSIZEFRAME) - 2;
+            x += borderSizeX;
+            y += borderSizeY;
+            w -= borderSizeX * 2;
+            h -= borderSizeY * 2;
         }
 
         MoveWindow(_childWindow, x, y, w + 1 , h + 1 , 1);
