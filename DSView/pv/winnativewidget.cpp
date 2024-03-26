@@ -101,7 +101,6 @@ WinNativeWidget::WinNativeWidget(const int x, const int y, const int width,
         assert(false);
     }
     
-    SetWindowLongW(_hWnd, GWL_STYLE, GetWindowLongW(_hWnd, GWL_STYLE) & ~WS_CAPTION);
     SetWindowLongPtr(_hWnd, GWLP_USERDATA, reinterpret_cast<LONG_PTR>(this));
     SetWindowPos(_hWnd, NULL, 0, 0, 0, 0, SWP_FRAMECHANGED | SWP_NOMOVE | SWP_NOSIZE);
 
