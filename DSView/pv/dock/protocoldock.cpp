@@ -46,6 +46,7 @@
 #include <string> 
 #include <algorithm>
 #include <QTableWidgetItem>
+#include <QHeaderView>
 #include "../ui/msgbox.h"
 #include "../dsvdef.h"
 #include "../config/appconfig.h"
@@ -1052,6 +1053,14 @@ bool ProtocolDock::protocol_sort_callback(const DecoderInfoItem *o1, const Decod
     font.setPointSizeF(font.pointSizeF() + 1);
     this->parentWidget()->setFont(font);
     _table_view->horizontalHeader()->setFont(font);
+    _table_view->verticalHeader()->setFont(font);
+
+    
+    _table_view->setObjectName("DecodedDataView");
+    QString style = "#DecodedDataView QHeaderView{font-size: %1pt}";
+    style = style.arg(AppConfig::Instance().appOptions.fontSize);
+    _table_view->setStyleSheet(style);
+ 
  }
 
 } // namespace dock
