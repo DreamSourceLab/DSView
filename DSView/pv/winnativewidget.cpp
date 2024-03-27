@@ -216,7 +216,18 @@ LRESULT CALLBACK WinNativeWidget::WndProc(HWND hWnd, UINT message, WPARAM wParam
         case WM_MOVE:
         {
             if (IsIconic(hWnd) == FALSE) {
-                self->_hCurrentMonitor = MonitorFromWindow(hWnd, MONITOR_DEFAULTTONEAREST);
+                HMONITOR hMonitor = MonitorFromWindow(hWnd, MONITOR_DEFAULTTONEAREST);
+
+                if (hMonitor == NULL){
+                    dsv_info("ERROR: WM_MOVE: get an invalid monitor.");
+                }
+
+                if (hMonitor != self->_hCurrentMonitor && self->_hCurrentMonitor)
+                {
+                    dsv_info("WM_MOVE:display be changed.");
+                }
+                
+                self->_hCurrentMonitor = hMonitor;
                 self->ResizeChild();
             }
             break;
@@ -224,12 +235,15 @@ LRESULT CALLBACK WinNativeWidget::WndProc(HWND hWnd, UINT message, WPARAM wParam
         case WM_DPICHANGED:
         case WM_DISPLAYCHANGE:            
         {
-            if (self->_event_callback != NULL){ 
-                self->_event_callback->OnParentNativeEvent(PARENT_EVENT_DISPLAY_CHANGED);
+            if (message == WM_DPICHANGED){
+                dsv_info("dpi changed.");
             }
             else{
-                self->UpdateChildDpi();
-                self->ResizeChild();
+                dsv_info("display changed.");
+            }
+
+            if (self->_event_callback != NULL && self->_childWindow != NULL){ 
+                self->_event_callback->OnParentNativeEvent(PARENT_EVENT_DISPLAY_CHANGED);
             }
             break;
         }
@@ -514,17 +528,23 @@ QScreen* WinNativeWidget::screenFromWindow(HWND hwnd)
     if (hwnd == NULL)
         return NULL;
 
-    HMONITOR monitor = _hCurrentMonitor;
+    HMONITOR hMonitor = _hCurrentMonitor;
 
-    if (monitor == NULL){
-        monitor = MonitorFromWindow(hwnd, MONITOR_DEFAULTTONEAREST);
+    if (hMonitor == NULL){
+        hMonitor = MonitorFromWindow(hwnd, MONITOR_DEFAULTTONEAREST);
     }
 
     MONITORINFO monitor_info;
     memset(&monitor_info, 0, sizeof(MONITORINFO));
     monitor_info.cbSize = sizeof(MONITORINFO);
 
-    GetMonitorInfoW(monitor, &monitor_info);
+    GetMonitorInfoW(hMonitor, &monitor_info);
+
+    int workAreaWidth =  monitor_info.rcWork.right -  monitor_info.rcWork.left;
+    if (workAreaWidth == 0){
+        dsv_info("ERROR:WinNativeWidget::screenFromWindow, the monitor info is invalid.");
+        return NULL;
+    }
 
     QPoint top_left;
     top_left.setX(monitor_info.rcMonitor.left);
@@ -537,6 +557,8 @@ QScreen* WinNativeWidget::screenFromWindow(HWND hwnd)
             return screen;
         }
     }
+
+    dsv_info("ERROR:WinNativeWidget::screenFromWindow, can't match a monitor.");
   
     return NULL;
 }

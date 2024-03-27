@@ -230,11 +230,7 @@ bool MainFrame::ParentIsMaxsized()
 
 void MainFrame::MoveBegin()
 {
-#ifdef _WIN32
-     if (_parentNativeWidget != NULL){ 
-        _move_start_screen = _parentNativeWidget->GetPointScreen();
-     }
-#endif
+ 
 }
  
 void MainFrame::MoveEnd()
@@ -250,17 +246,6 @@ void MainFrame::MoveEnd()
 #ifndef _WIN32
     saveNormalRegion();
 #endif
-
-#ifdef _WIN32
-    if (_parentNativeWidget != NULL){
-        auto scr = _parentNativeWidget->GetPointScreen();
-        if (scr != _move_start_screen){ 
-            _parentNativeWidget->UpdateChildDpi(); 
-        }
-
-        _parentNativeWidget->ResizeChild(); 
-    }    
-#endif
 }
 
 void MainFrame::OnParentNativeEvent(ParentNativeEvent msg)
@@ -270,15 +255,18 @@ void MainFrame::OnParentNativeEvent(ParentNativeEvent msg)
 
 void MainFrame::OnParentNaitveWindowEvent(int msg)
 {
+ 
 #ifdef _WIN32
     if (_parentNativeWidget != NULL 
             && msg == PARENT_EVENT_DISPLAY_CHANGED){
+        
+        qApp->processEvents(); //wait the screen dpi ready.
 
         QTimer::singleShot(100, this, [this](){                
             auto scr = _parentNativeWidget->GetPointScreen();
             if (scr == NULL){
-                dsv_info("ERROR: failed to get point screen, will to get the primary.");
-                scr = QGuiApplication::primaryScreen();
+                dsv_info("ERROR: MainFrame::OnParentNaitveWindowEvent, failed to get pointing screen.");
+                return;
             }
 
             PopupDlgList::TryCloseAllByScreenChanged(scr);
@@ -646,18 +634,7 @@ void MainFrame::writeSettings()
 {  
     AppConfig &app = AppConfig::Instance();
     app.frameOptions.isMax = IsMaxsized();
-
-#ifdef _WIN32
-    if (_parentNativeWidget != NULL){
-        auto scr = _parentNativeWidget->GetPointScreen();
-        app.frameOptions.displayName = scr->name();
-    }
-    else{
-        app.frameOptions.displayName = windowHandle()->screen()->name();
-    }
-#else
     app.frameOptions.displayName = windowHandle()->screen()->name();
-#endif
 
     if (IsNormalsized() && isVisible()){
         saveNormalRegion();
