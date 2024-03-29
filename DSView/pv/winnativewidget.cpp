@@ -221,10 +221,23 @@ LRESULT CALLBACK WinNativeWidget::WndProc(HWND hWnd, UINT message, WPARAM wParam
                 if (hMonitor == NULL){
                     dsv_info("ERROR: WM_MOVE: get an invalid monitor.");
                 }
+                else if (self->_hCurrentMonitor == NULL){
+                    RECT rc = GetMonitorArea(hMonitor, true);
 
-                if (hMonitor != self->_hCurrentMonitor && self->_hCurrentMonitor)
+                    dsv_info("WM_MOVE: get a monitor, handle:%x, x:%d, y:%d, w:%d, h:%d", 
+                        hMonitor, rc.left, rc.top,
+                        rc.right - rc.left,
+                        rc.bottom - rc.top);
+                }
+
+                if (hMonitor != self->_hCurrentMonitor && self->_hCurrentMonitor && hMonitor)
                 {
-                    dsv_info("WM_MOVE:display be changed.");
+                    RECT rc = GetMonitorArea(hMonitor, true);
+
+                    dsv_info("WM_MOVE: display be changed, handle:%x, x:%d, y:%d, w:%d, h:%d", 
+                        hMonitor, rc.left, rc.top,
+                        rc.right - rc.left,
+                        rc.bottom - rc.top);
                 }
                 
                 self->_hCurrentMonitor = hMonitor;
@@ -285,19 +298,8 @@ LRESULT CALLBACK WinNativeWidget::WndProc(HWND hWnd, UINT message, WPARAM wParam
             {
                 int maxWidth = 0;
                 int maxHeight = 0;
-                bool bError = false;
-
-                if (!self->getMonitorWorkArea(self->_hCurrentMonitor, &maxWidth, &maxHeight))
-                {
-                    HMONITOR  hCurrentMonitor = MonitorFromWindow(self->_hWnd, MONITOR_DEFAULTTONEAREST);
-
-                    if (!self->getMonitorWorkArea(hCurrentMonitor, &maxWidth, &maxHeight)){
-                        dsv_info("ERROR: failed to get work area from window handle.");
-                        bError = true;
-                    }
-                }
                  
-                if (!bError)
+                if (self->getMonitorWorkArea(self->_hCurrentMonitor, &maxWidth, &maxHeight))
                 {
                     auto gw = self->childWidget;
                     int k = self->GetDevicePixelRatio();
@@ -399,20 +401,34 @@ LRESULT CALLBACK WinNativeWidget::WndProc(HWND hWnd, UINT message, WPARAM wParam
     return DefWindowProc(hWnd, message, wParam, lParam);
 }
 
-bool WinNativeWidget::getMonitorWorkArea(HMONITOR hCurrentMonitor, int *outWidth, int *outHeight)
+RECT WinNativeWidget::GetMonitorArea(HMONITOR hMonitor, bool isPhysics)
+{
+    assert(hMonitor);
+
+    MONITORINFO monitorInfo;
+    memset(&monitorInfo, 0, sizeof(MONITORINFO));
+    monitorInfo.cbSize = sizeof(MONITORINFO);
+    GetMonitorInfo(hMonitor, &monitorInfo); 
+
+    if (isPhysics){
+        return monitorInfo.rcMonitor;
+    }
+    else{
+        return monitorInfo.rcWork;
+    }
+}
+
+bool WinNativeWidget::getMonitorWorkArea(HMONITOR hMonitor, int *outWidth, int *outHeight)
 {  
     assert(outWidth);
     assert(outHeight);
     
-    MONITORINFO monitorInfo;
-    memset(&monitorInfo, 0, sizeof(MONITORINFO));
-    monitorInfo.cbSize = sizeof(MONITORINFO);
-    GetMonitorInfo(hCurrentMonitor, &monitorInfo); 
+    RECT rc = GetMonitorArea(hMonitor, false);
     
     int borderSizeX = GetSystemMetrics(SM_CXSIZEFRAME);
     int borderSizeY = GetSystemMetrics(SM_CYSIZEFRAME);
-    int workAreaWidth =  monitorInfo.rcWork.right -  monitorInfo.rcWork.left;
-    int workAreaHeight =  monitorInfo.rcWork.bottom -  monitorInfo.rcWork.top;
+    int workAreaWidth =  rc.right -  rc.left;
+    int workAreaHeight =  rc.bottom -  rc.top;
     int maxWidth = workAreaWidth + borderSizeX * 2;
     int maxHeight = workAreaHeight + borderSizeY * 2;
 
@@ -423,6 +439,23 @@ bool WinNativeWidget::getMonitorWorkArea(HMONITOR hCurrentMonitor, int *outWidth
     }
 
     return false;
+}
+
+void WinNativeWidget::resizeSelf()
+{
+    if (_hWnd)
+    {
+        RECT rc;
+        GetWindowRect(_hWnd, &rc);
+        int x = rc.left;
+        int y = rc.top;
+        int w = rc.right - rc.left;
+        int h = rc.bottom - rc.top;
+
+        MoveWindow(_hWnd, x, y, w - 1 , h - 1 , 1);
+        MoveWindow(_hWnd, x, y, w , h , 1);
+        ShowWindow(_hWnd, SW_SHOW);
+    }
 }
 
 void WinNativeWidget::ResizeChild()
@@ -511,44 +544,57 @@ void WinNativeWidget::ShowMin()
 
 void WinNativeWidget::UpdateChildDpi()
 {
-    QScreen *scr = screenFromWindow(_hWnd);
-    if (scr != NULL && childWidget != NULL){
-        childWidget->windowHandle()->setScreen(scr);
-        if (_shadow != NULL){
-            _shadow->windowHandle()->setScreen(scr);
-        }
+    QScreen *screen = GetPointScreen();
+
+    if (screen == NULL){
+        dsv_info("ERROR: failed to get pointing screen, will select the primary.");
+        screen = QGuiApplication::primaryScreen();
     }
-    else{ 
-        dsv_info("ERROR: failed to update child's screen.");
+
+    if (screen != NULL && childWidget != NULL){
+        childWidget->windowHandle()->setScreen(screen);
+        if (_shadow != NULL){
+            _shadow->windowHandle()->setScreen(screen);
+        }
     }
 }
 
-QScreen* WinNativeWidget::screenFromWindow(HWND hwnd)
-{
-    if (hwnd == NULL)
-        return NULL;
+QScreen* WinNativeWidget::screenFromCurrentMonitorHandle()
+{  
+    assert(_hWnd);
 
     HMONITOR hMonitor = _hCurrentMonitor;
+    RECT rc;
 
+    if (hMonitor != NULL)
+    {
+        rc = GetMonitorArea(hMonitor, true);
+
+        if (rc.right - rc.left == 0){
+          //  dsv_info("ERROR: Got an invalid monitor information from current monitor handle.");
+            hMonitor = NULL;
+        }
+    }
+ 
     if (hMonitor == NULL){
-        hMonitor = MonitorFromWindow(hwnd, MONITOR_DEFAULTTONEAREST);
-    }
+        hMonitor = MonitorFromWindow(_hWnd, MONITOR_DEFAULTTONEAREST);
 
-    MONITORINFO monitor_info;
-    memset(&monitor_info, 0, sizeof(MONITORINFO));
-    monitor_info.cbSize = sizeof(MONITORINFO);
+        if (hMonitor == NULL){
+            dsv_info("ERROR: MonitorFromWindow() can't returns a handle.");
+            return NULL;
+        }
 
-    GetMonitorInfoW(hMonitor, &monitor_info);
+        rc = GetMonitorArea(hMonitor, true);
 
-    int workAreaWidth =  monitor_info.rcWork.right -  monitor_info.rcWork.left;
-    if (workAreaWidth == 0){
-        dsv_info("ERROR:WinNativeWidget::screenFromWindow, the monitor info is invalid.");
-        return NULL;
-    }
+        if (rc.right - rc.left == 0){
+          //  dsv_info("ERROR: Got an invalid monitor information from window handle.");
+            return NULL;
+        }
+    } 
 
     QPoint top_left;
-    top_left.setX(monitor_info.rcMonitor.left);
-    top_left.setY(monitor_info.rcMonitor.top);
+    top_left.setX(rc.left);
+    top_left.setY(rc.top);
 
     for (QScreen *screen : QGuiApplication::screens())
     {
@@ -558,14 +604,14 @@ QScreen* WinNativeWidget::screenFromWindow(HWND hwnd)
         }
     }
 
-    dsv_info("ERROR:WinNativeWidget::screenFromWindow, can't match a monitor.");
+   // dsv_info("ERROR: can't match a monitor.");
   
     return NULL;
 }
 
 QScreen* WinNativeWidget::GetPointScreen()
 {
-    return screenFromWindow(_hWnd);
+    return screenFromCurrentMonitorHandle();
 }
 
 bool WinNativeWidget::IsMaxsized()
@@ -671,14 +717,13 @@ bool WinNativeWidget::IsWin11OrGreater()
 
 int WinNativeWidget::GetDevicePixelRatio()
 {
-    auto scr = GetPointScreen();
-    if (scr != NULL){
-        return scr->devicePixelRatio();
+    auto screen = GetPointScreen();
+    if (screen != NULL){
+        return screen->devicePixelRatio();
     }
-    else if (childWidget != NULL){
-        return childWidget->windowHandle()->devicePixelRatio();
-    }
-    return 1;
+    else{
+        return QGuiApplication::primaryScreen()->devicePixelRatio();
+    } 
 }
 
 bool WinNativeWidget::IsVisible()

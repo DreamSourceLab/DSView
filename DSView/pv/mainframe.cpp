@@ -263,14 +263,14 @@ void MainFrame::OnParentNaitveWindowEvent(int msg)
         qApp->processEvents(); //wait the screen dpi ready.
 
         QTimer::singleShot(100, this, [this](){                
-            auto scr = _parentNativeWidget->GetPointScreen();
-            if (scr == NULL){
+            auto screen = _parentNativeWidget->GetPointScreen();
+            if (screen == NULL){
                 dsv_info("ERROR: MainFrame::OnParentNaitveWindowEvent, failed to get pointing screen.");
-                return;
+                screen = QGuiApplication::primaryScreen();
             }
 
-            PopupDlgList::TryCloseAllByScreenChanged(scr);
-            PopupDlgList::SetCurrentScreen(scr);
+            PopupDlgList::TryCloseAllByScreenChanged(screen);
+            PopupDlgList::SetCurrentScreen(screen);
            
             _parentNativeWidget->UpdateChildDpi();
             _parentNativeWidget->ResizeChild();

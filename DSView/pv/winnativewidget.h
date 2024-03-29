@@ -96,11 +96,13 @@ public:
     void ReShowWindow();
 
 private:   
-    QScreen* screenFromWindow(HWND hwnd);
+    QScreen* screenFromCurrentMonitorHandle();
     bool isWinXOrGreater(DWORD major_version, DWORD minor_version, DWORD build_number);
     void showBorder();
     void hideBorder();
-    bool getMonitorWorkArea(HMONITOR  hCurrentMonitor, int *outWidth, int *outHeight);
+    static RECT GetMonitorArea(HMONITOR hMonitor, bool isPhysics);
+    static bool getMonitorWorkArea(HMONITOR  hMonitor, int *outWidth, int *outHeight);
+    
 
 private: 
     QWidget*    childWidget;
