@@ -282,6 +282,10 @@ void FftOptions::len_changed(int index)
         _interval_combobox->addItem(QString::number(i),
             QVariant::fromValue(i));
     }
+    
+    if (pre_index >= _interval_combobox->count()){
+        pre_index = 0;
+    }
     _interval_combobox->setCurrentIndex(pre_index);
 }
 
