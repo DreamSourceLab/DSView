@@ -37,6 +37,8 @@ namespace ui
 
     void set_form_font(QWidget *wid, QFont font);
 
+    void adjust_form_size(QWidget *wid);
+
 } // namespace ui
 
 #endif

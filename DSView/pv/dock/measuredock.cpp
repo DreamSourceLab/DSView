@@ -235,6 +235,7 @@ void MeasureDock::measure_updated()
     _period_label->setText(_view.get_measure("period"));
     _freq_label->setText(_view.get_measure("frequency"));
     _duty_label->setText(_view.get_measure("duty"));
+    adjusLabelSize();
 }
 
 void MeasureDock::build_dist_pannel()
@@ -702,6 +703,11 @@ void MeasureDock::update_probe_selector(QComboBox *selector)
     }
 }
 
+void MeasureDock::adjusLabelSize()
+{  
+   ui::adjust_form_size(this);
+}
+
 void MeasureDock::cursor_moving()
 {
     if (_view.cursors_shown()) {      
@@ -729,6 +735,8 @@ void MeasureDock::reCalc()
     cursor_update();
     update_dist();
     update_edge();
+
+    adjusLabelSize();
 }
 
 void MeasureDock::goto_cursor()
@@ -802,6 +810,8 @@ void MeasureDock::cursor_update()
         index++;
         cursor_dex++;
     }
+
+    adjusLabelSize();
 }
 
 void MeasureDock::del_cursor()
@@ -836,6 +846,8 @@ void MeasureDock::update_font()
     ui::set_form_font(this, font);
     font.setPointSizeF(font.pointSizeF() + 1);
     this->parentWidget()->setFont(font);
+
+    adjusLabelSize();
 }
 
 } // namespace dock
