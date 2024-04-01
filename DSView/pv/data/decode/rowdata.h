@@ -52,7 +52,7 @@ public:
         return _item_count;
     }
 
-    bool get_annotation(pv::data::decode::Annotation &ann, uint64_t index);
+    bool get_annotation(pv::data::decode::Annotation *ann, uint64_t index);
 
      /**
 	 * Extracts sorted annotations between two period into a vector.

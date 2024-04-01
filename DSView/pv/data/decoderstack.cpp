@@ -333,7 +333,7 @@ uint64_t DecoderStack::list_annotation_size(uint16_t row_index)
     return 0;
 }
 
-bool DecoderStack::list_annotation(pv::data::decode::Annotation &ann,
+bool DecoderStack::list_annotation(pv::data::decode::Annotation *ann,
                                   uint16_t row_index, uint64_t col_index)
 { 
     for (auto i = _rows.begin(); i != _rows.end(); i++) {

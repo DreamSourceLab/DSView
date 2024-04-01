@@ -546,9 +546,10 @@ void ProtocolDock::item_clicked(const QModelIndex &index)
     pv::data::DecoderModel *decoder_model = _session->get_decoder_model();
 
     auto decoder_stack = decoder_model->getDecoderStack();
+
     if (decoder_stack) {
         pv::data::decode::Annotation ann;
-        if (decoder_stack->list_annotation(ann, index.column(), index.row())) {
+        if (decoder_stack->list_annotation(&ann, index.column(), index.row())) {
             const auto &decode_sigs = _session->get_decode_signals();
 
             for(auto d : decode_sigs) {
@@ -559,6 +560,7 @@ void ProtocolDock::item_clicked(const QModelIndex &index)
             _session->show_region(ann.start_sample(), ann.end_sample(), false);
         }
     }
+
     _table_view->resizeRowToContents(index.row());
     if (index.column() != _model_proxy.filterKeyColumn()) {
         _model_proxy.setFilterKeyColumn(index.column());
@@ -638,20 +640,26 @@ void ProtocolDock::nav_table_view()
             }
         }
         QModelIndex index = _model_proxy.mapToSource(_model_proxy.index(row_index, _model_proxy.filterKeyColumn()));
-        if(index.isValid()){
-            _table_view->scrollTo(index);
-            _table_view->setCurrentIndex(index);
+
+        if(index.isValid()){         
 
             pv::data::decode::Annotation ann;
-            decoder_stack->list_annotation(ann, index.column(), index.row());
-            const auto &decode_sigs = _session->get_decode_signals();
 
-            for(auto d : decode_sigs) {
-                d->decoder()->set_mark_index(-1);
-            }
-            decoder_stack->set_mark_index((ann.start_sample()+ann.end_sample())/2);
-            _view.set_all_update(true);
-            _view.update();
+            if (decoder_stack->list_annotation(&ann, index.column(), index.row()))
+            {
+                _table_view->scrollTo(index);
+                _table_view->setCurrentIndex(index);
+
+                 const auto &decode_sigs = _session->get_decode_signals();
+
+                for(auto d : decode_sigs) {
+                    d->decoder()->set_mark_index(-1);
+                }
+
+                decoder_stack->set_mark_index((ann.start_sample()+ann.end_sample())/2);
+                _view.set_all_update(true);
+                _view.update();
+            }           
         }
     }
 }
@@ -686,22 +694,30 @@ void ProtocolDock::search_pre()
         uint64_t row = matchingIndex.row() + 1;
         uint64_t col = matchingIndex.column();
         pv::data::decode::Annotation ann;
-        bool ann_valid;
+        bool ann_valid = false;
+
         while(i < _str_list.size()) {
             QString nxt = _str_list.at(i);
 
             do {
-                ann_valid = decoder_stack->list_annotation(ann, col, row);
+                ann_valid = decoder_stack->list_annotation(&ann, col, row);
                 row++;
-            }while(ann_valid && !ann.is_numberic());
+            }
+            while(ann_valid && !ann.is_numberic());
 
-            QString source = ann.annotations().at(0);
-            if (ann_valid && source.contains(nxt))
-                i++;
-            else
+            if (ann_valid){
+                QString source = ann.annotations().at(0);
+                if (source.contains(nxt))
+                    i++;
+                else
+                    break;
+            }
+            else{
                 break;
+            }
         }
-    }while(i < _str_list.size() && --rowCount);
+    }
+    while(i < _str_list.size() && --rowCount);
 
     if(i >= _str_list.size() && matchingIndex.isValid()){
         _table_view->scrollTo(matchingIndex);
@@ -753,22 +769,27 @@ void ProtocolDock::search_nxt()
         uint64_t row = matchingIndex.row() + 1;
         uint64_t col = matchingIndex.column();
         pv::data::decode::Annotation ann;
-        bool ann_valid;
+        bool ann_valid = false;
 
         while(i < _str_list.size()) {
             QString nxt = _str_list.at(i);
 
             do {
-                ann_valid = decoder_stack->list_annotation(ann, col, row);
+                ann_valid = decoder_stack->list_annotation(&ann, col, row);
                 row++;
-            }while(ann_valid && !ann.is_numberic());
+            }
+            while(ann_valid && !ann.is_numberic());
 
-            auto strlist = ann.annotations();
-            QString source = ann.annotations().at(0);
-            if (ann_valid && source.contains(nxt))
-                i++;
-            else
+            if (ann_valid){
+                QString source = ann.annotations().at(0);
+                if (source.contains(nxt))
+                    i++;
+                else
+                    break;
+                }
+            else{
                 break;
+            }            
         }
     }while(i < _str_list.size() && --rowCount);
 

@@ -67,10 +67,11 @@ QVariant DecoderModel::data(const QModelIndex &index, int role) const
 
     if (role == Qt::TextAlignmentRole) {
         return int(Qt::AlignLeft | Qt::AlignVCenter);
-    } else if (role == Qt::DisplayRole) {
+    }
+    else if (role == Qt::DisplayRole) {
         if (_decoder_stack) {
             pv::data::decode::Annotation ann;
-            if (_decoder_stack->list_annotation(ann, index.column(), index.row())) {
+            if (_decoder_stack->list_annotation(&ann, index.column(), index.row())) {
                 return ann.annotations().at(0);
             }
         }

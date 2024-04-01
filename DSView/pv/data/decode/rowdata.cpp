@@ -138,12 +138,14 @@ bool RowData::push_annotation(Annotation *a)
 }
  
 
-bool RowData::get_annotation(Annotation &ann, uint64_t index)
+bool RowData::get_annotation(Annotation *ann, uint64_t index)
 {
+    assert(ann);
+
     std::lock_guard<std::mutex> lock(_global_visitor_mutex);
 
     if (index < _annotations.size()) {
-        ann = *_annotations[index];
+        *ann = *_annotations[index]; //clone
         return true;
     } else {
         return false;
