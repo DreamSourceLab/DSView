@@ -21,15 +21,28 @@
 
 #include "search.h"
 #include "../view/logicsignal.h"
-
 #include <assert.h>
 #include <QRegularExpressionValidator>
-
+#include <QTimer>
 #include "../ui/langresource.h"
  
 
 namespace pv {
 namespace dialogs {
+
+SearchEdgeFlagEdit::SearchEdgeFlagEdit(QWidget *parent)
+    :QLineEdit(parent)
+{
+}
+
+void SearchEdgeFlagEdit::focusInEvent(QFocusEvent *e)
+{ 
+    QLineEdit::focusInEvent(e);
+
+    QTimer::singleShot(50, this, [this](){  
+        selectAll();
+    });    
+}
 
 Search::Search(QWidget *parent, SigSession *session, std::map<uint16_t, QString> pattern) :
     DSDialog(parent),
@@ -55,7 +68,7 @@ Search::Search(QWidget *parent, SigSession *session, std::map<uint16_t, QString>
     for(auto s :  _session->get_signals()) {
         if (s->signal_type() == SR_CHANNEL_LOGIC) {
             view::LogicSignal *logicSig = (view::LogicSignal*)s;
-            QLineEdit *search_lineEdit = new QLineEdit(this);
+            QLineEdit *search_lineEdit = new SearchEdgeFlagEdit(this);
             if (pattern.find(logicSig->get_index()) != pattern.end())
                 search_lineEdit->setText(pattern[logicSig->get_index()]);
             else

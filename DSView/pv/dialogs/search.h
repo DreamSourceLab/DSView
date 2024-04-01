@@ -36,6 +36,15 @@
 namespace pv {
 namespace dialogs {
 
+class SearchEdgeFlagEdit: public QLineEdit
+{
+public:
+    SearchEdgeFlagEdit(QWidget *parent);
+
+protected:
+    void focusInEvent(QFocusEvent *e) override;
+};
+
 class Search : public DSDialog
 {
     Q_OBJECT
