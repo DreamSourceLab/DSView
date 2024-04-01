@@ -338,6 +338,59 @@ bool LogicSignal::measure(const QPointF &p, uint64_t &index0, uint64_t &index1, 
     return false;
 }
 
+bool LogicSignal::is_by_edge(const QPointF &p, uint64_t &index, int radius)
+{
+    uint64_t pre_index, nxt_index;
+    const float gap = abs(p.y() - get_y());
+
+    if (gap < get_totalHeight() * 0.5) {
+        if (_data->empty() || !_data->has_data(_probe->index))
+            return false;
+
+        const uint64_t end = _data->get_sample_count() - 1;
+        const double pos = _data->samplerate() * _view->scale() * (_view->offset() + p.x());
+        index = floor(pos + 0.5);
+        if (index > end)
+            return false;
+
+        bool sample = _data->get_sample(index, get_index());
+        if (index == 0)
+            pre_index = index;
+        else {
+            index--;
+            if (_data->get_pre_edge(index, sample, 1, get_index()))
+                pre_index = index;
+            else
+                pre_index = 0;
+        }
+
+        sample = _data->get_sample(index, get_index());
+        index++;
+        if (_data->get_nxt_edge(index, sample, end, 1, get_index()))
+            nxt_index = index;
+        else
+            nxt_index = 0;
+
+        if (pre_index == 0 && nxt_index == 0)
+            return false;
+
+        if (pre_index > 0 && nxt_index > 0)
+        {
+            if (pos - pre_index > nxt_index - pos)
+                index = nxt_index;
+            else
+                index = pre_index;
+        }
+        else{
+            index = pre_index > 0 ? pre_index : nxt_index;
+        }
+
+        if (radius > abs((index-pos) / _view->scale() / _data->samplerate()))
+            return true;
+    }
+    return false;
+}
+
 bool LogicSignal::edge(const QPointF &p, uint64_t &index, int radius)
 {
     uint64_t pre_index, nxt_index;

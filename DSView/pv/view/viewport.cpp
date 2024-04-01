@@ -971,7 +971,7 @@ void Viewport::mouseReleaseEvent(QMouseEvent *event)
                         for(auto s : sigs) { 
                             if (s->signal_type() == SR_CHANNEL_LOGIC) {
                                 view::LogicSignal *logicSig = (view::LogicSignal*)s;
-                                if (logicSig->edge(event->pos(), _edge_start, 10)) {
+                                if (logicSig->is_by_edge(event->pos(), _edge_start, 10)) {
                                     _action_type = LOGIC_JUMP;
                                     _cur_preX = _view.index2pixel(_edge_start);
                                     _cur_preY = logicSig->get_y();
@@ -1488,7 +1488,7 @@ void Viewport::measure()
 {
     if (_view.session().is_data_lock())
         return;        
-    if (_view.session().is_loop_mode()&& _view.session().is_working())
+    if (_view.session().is_loop_mode() && _view.session().is_working())
         return;
         
     _measure_type = NO_MEASURE;
