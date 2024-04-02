@@ -430,6 +430,24 @@ void AppConfig::GetFontSizeRange(float *minSize, float *maxSize)
 #endif
 }
 
+bool AppConfig::IsDarkStyle()
+{
+    if (frameOptions.style == THEME_STYLE_DARK){
+        return true;
+    }
+    return false;
+}
+
+QColor AppConfig::GetStyleColor()
+{
+    if (IsDarkStyle()){
+        return QColor(38, 38, 38);
+    }
+    else{
+        return QColor(248, 248, 248);
+    }
+}
+
 
 //-------------api
 QString GetIconPath()
@@ -513,7 +531,7 @@ QString GetDecodeScriptDir()
     // ./decoders
     if (dir1.exists(path))
     {
-         return path;     
+         return path;     QColor GetStyleColor();
     }
 
     QDir dir(QCoreApplication::applicationDirPath());

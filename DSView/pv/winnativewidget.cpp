@@ -48,7 +48,7 @@ namespace pv {
 
 //-----------------------------WinNativeWidget 
 WinNativeWidget::WinNativeWidget(const int x, const int y, const int width, 
-        const int height, bool isDark)
+        const int height, QColor backColor)
 {   
     _childWindow = nullptr;
     childWidget = nullptr;
@@ -60,6 +60,9 @@ WinNativeWidget::WinNativeWidget(const int x, const int y, const int width,
     _hCurrentMonitor = NULL;
     _shadow = NULL; 
     _border_color = QColor(0x80,0x80,0x80);
+    int r = backColor.red();
+    int g = backColor.green();
+    int b = backColor.blue();
 
     HINSTANCE hInstance = GetModuleHandle(nullptr);
     WNDCLASSEX wcx;
@@ -74,13 +77,7 @@ WinNativeWidget::WinNativeWidget(const int x, const int y, const int width,
     wcx.cbWndExtra = 0;
     wcx.lpszClassName = L"DSViewWindowClass";
     wcx.hCursor = LoadCursor(hInstance, IDC_ARROW);
-
-    if (isDark){
-        wcx.hbrBackground = CreateSolidBrush(RGB(38, 38, 38));
-    }
-    else{
-        wcx.hbrBackground = CreateSolidBrush(RGB(248, 248, 248));
-    }
+    wcx.hbrBackground = CreateSolidBrush(RGB(r, g, b));
  
     RegisterClassEx(&wcx);
     if (FAILED(RegisterClassEx(&wcx)))

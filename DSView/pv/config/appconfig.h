@@ -25,6 +25,7 @@
 #include <vector>
 #include <QString>
 #include <QByteArray>
+#include <QColor>
 
 #define LAN_CN  25
 #define LAN_EN  31
@@ -157,6 +158,10 @@ public:
   }
 
   static void GetFontSizeRange(float *minSize, float *maxSize);
+
+  bool IsDarkStyle();
+
+  QColor GetStyleColor();
 
 public:
   AppOptions    appOptions;

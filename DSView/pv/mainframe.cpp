@@ -715,13 +715,9 @@ void MainFrame::AttachNativeWindow()
     int w = _normalRegion.w * k;
     int h = _normalRegion.h * k;
 
-    bool isDrak = false;
-
-    if (AppConfig::Instance().frameOptions.style == THEME_STYLE_DARK){
-        isDrak = true;
-    }
- 
-    WinNativeWidget *nativeWindow = new WinNativeWidget(x, y, w, h, isDrak);
+  
+    QColor bkColor = AppConfig::Instance().GetStyleColor(); 
+    WinNativeWidget *nativeWindow = new WinNativeWidget(x, y, w, h, bkColor);
     nativeWindow->setGeometry(x, y, w, h);
 
     if (nativeWindow->Handle() == NULL){

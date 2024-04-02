@@ -113,6 +113,8 @@ private slots:
     void update_dist();
     void update_edge();
     void set_cursor_btn_color(QPushButton *btn);
+    void set_cursor_btn_color(QPushButton *btn, QColor cursorColor, QColor bkColor, bool isCursor);
+    
     void del_cursor();
     void add_dist_measure();
 

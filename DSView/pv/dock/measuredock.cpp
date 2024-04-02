@@ -215,6 +215,8 @@ void MeasureDock::reStyle()
     {
         (*it).del_bt->setIcon(QIcon(iconPath+"/del.svg"));
     }
+
+    update_dist();
 }
 
 void MeasureDock::refresh()
@@ -592,23 +594,25 @@ void MeasureDock::update_dist()
 {
     auto &cursor_list = _view.get_cursorList();
 
+    QColor bkColor = AppConfig::Instance().GetStyleColor(); 
+
     for (auto &inf : _dist_row_list) 
     {  
         if (inf.cursor1 != -1) {
             if (inf.cursor1 > (int)cursor_list.size()) {
                 inf.start_bt->setText("");
-                set_cursor_btn_color(inf.start_bt);
                 inf.cursor1 = -1;
             }
         }
+        set_cursor_btn_color(inf.start_bt);
 
         if (inf.cursor2 != -1) {
             if (inf.cursor2 > (int)cursor_list.size()) {
-                inf.end_bt->setText("");
-                set_cursor_btn_color(inf.end_bt);
+                inf.end_bt->setText("");                
                 inf.cursor2 = -1;
             }
         }
+        set_cursor_btn_color(inf.end_bt);
 
         if (inf.cursor1 != -1 && inf.cursor2 != -1) {
             int64_t delta = _view.get_cursor_samples(inf.cursor1-1) -
@@ -679,13 +683,23 @@ void MeasureDock::update_edge()
 
 void MeasureDock::set_cursor_btn_color(QPushButton *btn)
 {
-    bool ret;
-    const unsigned int start = btn->text().toInt(&ret) - 1;
-    QColor cursor_color = ret ? view::Ruler::CursorColorTable[start%CURSOR_COLOR_TABLE_SIZE] : QColor("#302F2F");
-    QString border_width = ret ? "0px" : "1px";
-    QString normal = "{background-color:" + cursor_color.name() +
+    //#302F2F
+   // QColor bkColor = AppConfig::Instance().IsDarkStyle() ? QColor("#383838") : QColor("#FFFFFF");
+
+    QColor bkColor = AppConfig::Instance().GetStyleColor();
+    bool isCursor = false;
+    const unsigned int start = btn->text().toInt(&isCursor) - 1; 
+    QColor cursor_color = isCursor ? view::Ruler::CursorColorTable[start%CURSOR_COLOR_TABLE_SIZE] : bkColor;
+    set_cursor_btn_color(btn, cursor_color, bkColor, isCursor);
+}
+
+void MeasureDock::set_cursor_btn_color(QPushButton *btn, QColor cursorColor, QColor bkColor, bool isCursor)
+{  
+    QString border_width = isCursor ? "0px" : "1px";
+    QString hoverColor = isCursor ? cursorColor.darker().name() : bkColor.name();
+    QString normal = "{background-color:" + cursorColor.name() +
             "; color:black" + "; border-width:" + border_width + ";}";
-    QString hover = "{background-color:" + cursor_color.darker().name() +
+    QString hover = "{background-color:" + hoverColor +
             "; color:black" + "; border-width:" + border_width + ";}";
     QString style = "QPushButton:hover" + hover +
                     "QPushButton" + normal;

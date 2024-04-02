@@ -29,6 +29,7 @@
 #include <Windowsx.h>
 #include <QWidget>
 #include <QByteArray>
+#include <QColor>
 
 #include "interface/icallbacks.h"
 
@@ -49,7 +50,7 @@ class WinNativeWidget
 {
 public:
 
-    WinNativeWidget(const int x, const int y, const int width, const int heigh, bool isDark);
+    WinNativeWidget(const int x, const int y, const int width, const int heigh, QColor backColor);
     ~WinNativeWidget();
  
     static LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam);
