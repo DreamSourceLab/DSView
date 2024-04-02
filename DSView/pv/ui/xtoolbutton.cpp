@@ -32,6 +32,8 @@ XToolButton::XToolButton(QWidget *parent)
 
 void XToolButton::mousePressEvent(QMouseEvent *event)
 {
+    
+#ifdef _WIN32 
     if (event->button() == Qt::LeftButton)
     {
         QMenu* menu = this->menu();
@@ -41,6 +43,7 @@ void XToolButton::mousePressEvent(QMouseEvent *event)
             return; 
         }
     }
+#endif
 
     QToolButton::mousePressEvent(event);
 }
