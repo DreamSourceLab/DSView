@@ -381,5 +381,9 @@
     {
         "id": "IDS_MSG_DATA_RANGE_ERROR",
         "text": "数据范围设置错误!"
+    },
+    {
+        "id": "IDS_MSG_DATA_RANGE_HAVE_NO_DATA",
+        "text": "数据范围内无数据!"
     }
 ]

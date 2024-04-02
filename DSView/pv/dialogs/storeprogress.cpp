@@ -192,7 +192,17 @@ void StoreProgress::accept()
                 MsgBox::Show(mStr);
                 return;
             }
-            else if (start_index > end_index){
+
+            int total_count = _view->session().get_ring_sample_count();
+
+            if (start_index > total_count && end_index > total_count)
+            {
+                QString mStr = L_S(STR_PAGE_MSG, S_ID(IDS_MSG_DATA_RANGE_HAVE_NO_DATA), "No data in the data range");
+                MsgBox::Show(mStr);
+                return;
+            }
+            
+            if (start_index > end_index){
                 uint64_t tmp = start_index;
                 start_index = end_index;
                 end_index = tmp;

@@ -382,5 +382,9 @@
     {
         "id": "IDS_MSG_DATA_RANGE_ERROR",
         "text": "Data range is error!"
+    },
+    {
+        "id": "IDS_MSG_DATA_RANGE_HAVE_NO_DATA",
+        "text": "No data in the data range!"
     }
 ]
