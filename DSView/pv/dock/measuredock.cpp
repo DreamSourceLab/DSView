@@ -705,7 +705,7 @@ void MeasureDock::update_probe_selector(QComboBox *selector)
 
 void MeasureDock::adjusLabelSize()
 {  
-   ui::adjust_form_size(this);
+   this->adjust_form_size(this);
 }
 
 void MeasureDock::cursor_moving()
@@ -848,6 +848,38 @@ void MeasureDock::update_font()
     this->parentWidget()->setFont(font);
 
     adjusLabelSize();
+}
+
+void MeasureDock::adjust_form_size(QWidget *wid)
+{
+    assert(wid);
+ 
+    QGroupBox *mainGroup = _dist_groupBox;
+
+    QString str = "+12345678999ms/12345678999";
+    QFont font = this->font();
+    font.setPointSizeF(AppConfig::Instance().appOptions.fontSize);
+    QFontMetrics fm(font); 
+    int max_label_width = fm.horizontalAdvance(str) + 100;
+
+    auto labels = wid->findChildren<QLabel*>();
+    for(auto o : labels)
+    { 
+        QRect rc = fm.boundingRect(o->text());
+        QSize size(rc.width() + 10, rc.height()); 
+        o->setFixedSize(size);
+    }
+   
+    auto groups = wid->findChildren<QGroupBox*>();
+    for(auto o : groups)
+    { 
+        o->setFixedWidth(max_label_width + 10);
+    }
+
+    QWidget *pannel = dynamic_cast<QWidget*>(mainGroup->parent());
+    if (pannel != NULL){ 
+        pannel->setFixedWidth(max_label_width + 20);
+    }
 }
 
 } // namespace dock

@@ -413,19 +413,19 @@
     },
     {
         "id": "IDS_DLG_W",
-        "text": "W: "
+        "text": "宽度: "
     },
     {
         "id": "IDS_DLG_P",
-        "text": "P: "
+        "text": "周期: "
     },
     {
         "id": "IDS_DLG_F",
-        "text": "F: "
+        "text": "频率: "
     },
     {
         "id": "IDS_DLG_D",
-        "text": "D: "
+        "text": "占空比: "
     },
     {
         "id": "IDS_DLG_SEARCH",

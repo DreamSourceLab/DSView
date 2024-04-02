@@ -156,7 +156,7 @@ namespace ui
         { 
             QSize size = o->sizeHint();
             size.setWidth(size.width() + 5);  
-           o->setFixedSize(size);
+           o->setFixedWidth(size.width());
         }
 
         int groupMaxWith = 0;

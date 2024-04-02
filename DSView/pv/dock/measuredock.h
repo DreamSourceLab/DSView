@@ -101,6 +101,7 @@ private:
     QComboBox* create_probe_selector(QWidget *parent);
     void update_probe_selector(QComboBox *selector);
     void adjusLabelSize();
+    void adjust_form_size(QWidget *wid);
 
 private slots:
     void goto_cursor();
