@@ -1256,10 +1256,12 @@ namespace pv
         }
 
         void SamplingBar::update_font()
-        { 
+        {  
             QFont font = this->font();
             font.setPointSizeF(AppConfig::Instance().appOptions.fontSize);
             ui::set_toolbar_font(this, font);
+
+            update_view_status();
         }
 
     } // namespace toolbars
