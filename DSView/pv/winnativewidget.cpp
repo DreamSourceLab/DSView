@@ -441,23 +441,6 @@ bool WinNativeWidget::getMonitorWorkArea(HMONITOR hMonitor, int *outWidth, int *
     return false;
 }
 
-void WinNativeWidget::resizeSelf()
-{
-    if (_hWnd)
-    {
-        RECT rc;
-        GetWindowRect(_hWnd, &rc);
-        int x = rc.left;
-        int y = rc.top;
-        int w = rc.right - rc.left;
-        int h = rc.bottom - rc.top;
-
-        MoveWindow(_hWnd, x, y, w - 1 , h - 1 , 1);
-        MoveWindow(_hWnd, x, y, w , h , 1);
-        ShowWindow(_hWnd, SW_SHOW);
-    }
-}
-
 void WinNativeWidget::ResizeChild()
 {
     if (_childWindow != NULL){ 
