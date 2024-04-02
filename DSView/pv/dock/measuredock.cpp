@@ -181,10 +181,17 @@ void MeasureDock::retranslateUi()
     _time_label->setText(L_S(STR_PAGE_DLG, S_ID(IDS_DLG_TIME_SAMPLES), "Time/Samples"));
     _add_dec_label->setText(_time_label->text());
 
+    /*
     _w_label->setText(L_S(STR_PAGE_DLG, S_ID(IDS_DLG_W), "W: "));
     _p_label->setText(L_S(STR_PAGE_DLG, S_ID(IDS_DLG_P), "P: "));
     _f_label->setText(L_S(STR_PAGE_DLG, S_ID(IDS_DLG_F), "F: "));
     _d_label->setText(L_S(STR_PAGE_DLG, S_ID(IDS_DLG_D), "D: "));
+    */
+
+    _w_label->setText("W:");
+    _p_label->setText("P:");
+    _f_label->setText("F:");
+    _d_label->setText("D:");
 }
 
 void MeasureDock::reStyle()
@@ -866,9 +873,15 @@ void MeasureDock::adjust_form_size(QWidget *wid)
     for(auto o : labels)
     { 
         QRect rc = fm.boundingRect(o->text());
-        QSize size(rc.width() + 10, rc.height()); 
+        QSize size(rc.width() + 15, rc.height()); 
         o->setFixedSize(size);
     }
+
+    int mouse_info_label_width = fm.horizontalAdvance("##########");
+    _width_label->setFixedWidth(mouse_info_label_width);
+    _period_label->setFixedWidth(mouse_info_label_width);
+    _freq_label->setFixedWidth(mouse_info_label_width);
+    _duty_label->setFixedWidth(mouse_info_label_width);
    
     auto groups = wid->findChildren<QGroupBox*>();
     for(auto o : groups)
