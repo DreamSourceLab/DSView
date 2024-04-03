@@ -1407,10 +1407,10 @@ namespace pv
             qApp->removeTranslator(&_myTrans);
             retranslateUi();
         }
-        else
-        {
-            dsv_err("%s%d", "Unknown language code:", language);
-        }
+
+      // QEvent langEvent(QEvent::LanguageChange);
+      // QApplication::sendEvent(QApplication::instance(), &langEvent);
+     //  QCoreApplication::sendPostedEvents();
     }
 
     void MainWindow::switchTheme(QString style)
@@ -2195,5 +2195,10 @@ namespace pv
         
         _view->update_all_trace_postion();
     }
+
+    QWidget* MainWindow::GetBodyView()
+    {
+        return _view;
+    }   
   
 } // namespace pv

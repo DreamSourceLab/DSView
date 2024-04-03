@@ -422,7 +422,7 @@ bool MainFrame::eventFilter(QObject *object, QEvent *event)
         return QFrame::eventFilter(object, event);
     }
 #endif
-
+  
     if (type != QEvent::MouseMove 
         && type != QEvent::MouseButtonPress 
         && type != QEvent::MouseButtonRelease
@@ -761,7 +761,9 @@ void MainFrame::AttachNativeWindow()
   
     setWindowFlags(Qt::FramelessWindowHint);
     setProperty("_q_embedded_native_parent_handle", (WId)nativeWindow->Handle());
+    //SetWindowLong((HWND)winId(), GWL_STYLE, WS_CHILD | WS_CLIPCHILDREN | WS_CLIPSIBLINGS);
     SetWindowLong((HWND)winId(), GWL_STYLE, WS_CLIPCHILDREN | WS_CLIPSIBLINGS);
+   
     SetParent((HWND)winId(), nativeWindow->Handle());
 
     QEvent e(QEvent::EmbeddingControl);
@@ -775,6 +777,7 @@ void MainFrame::AttachNativeWindow()
     else{
         nativeWindow->Show(true);
     }
+    nativeWindow->ResizeChild();
 
     nativeWindow->SetBorderColor(QColor(0x80, 0x80, 0x80));
     _parentNativeWidget = nativeWindow;
@@ -862,10 +865,6 @@ bool MainFrame::IsMoving()
 void MainFrame::ReadSettings()
 {
     AppConfig &app = AppConfig::Instance();
-   
-    if (app.frameOptions.language > 0){
-        _mainWindow->switchLanguage(app.frameOptions.language);
-    }
 
     // The history scale region.
     int left = app.frameOptions.left;
@@ -1097,6 +1096,16 @@ void MainFrame::show_doc()
     }
 }
 
+QWidget* MainFrame::GetMainWindow()
+{
+    return _mainWindow;
+}
+
+QWidget* MainFrame::GetBodyView()
+{
+    return _mainWindow->GetBodyView();
+}
+
 bool MainFrame::nativeEvent(const QByteArray &eventType, void *message, long *result)
 {
 #ifdef _WIN32
@@ -1117,7 +1126,7 @@ bool MainFrame::nativeEvent(const QByteArray &eventType, void *message, long *re
                 *result = long(SendMessageW(hwnd, 
                         msg->message, msg->wParam, msg->lParam));
                 return true;
-            }
+            }           
         }
     } 
     

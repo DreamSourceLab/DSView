@@ -45,6 +45,7 @@
 namespace pv {
 
 class WinShadow;
+class MainFrame;
 
 class WinNativeWidget
 {
@@ -55,7 +56,7 @@ public:
  
     static LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam);
 
-    void SetChildWidget(QWidget *w);
+    void SetChildWidget(MainFrame *w);
 
     void setGeometry(const int x, const int y, const int width, const int height);
 
@@ -106,7 +107,7 @@ private:
     
 
 private: 
-    QWidget*    childWidget;
+    MainFrame*   childWidget;
     HWND        _childWindow;
     HWND        _hWnd;
     QWidget     *_titleBarWidget;

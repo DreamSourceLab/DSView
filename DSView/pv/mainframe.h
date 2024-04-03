@@ -101,6 +101,8 @@ public:
     void SetFormRegion(int x, int y, int w, int h);
     QRect GetFormRegion();    
     void saveNormalRegion();
+    QWidget* GetMainWindow();
+    QWidget* GetBodyView();
 
 protected: 
     void resizeEvent(QResizeEvent *event);

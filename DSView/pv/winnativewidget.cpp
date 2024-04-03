@@ -39,6 +39,7 @@
 #include "log.h"
 #include "../config.h"
 #include "winshadow.h"
+#include "mainframe.h"
 
 #define FIXED_WIDTH(widget) (widget->minimumWidth() >= widget->maximumWidth())
 #define FIXED_HEIGHT(widget) (widget->minimumHeight() >= widget->maximumHeight())
@@ -115,7 +116,7 @@ WinNativeWidget::~WinNativeWidget()
     }  
 }
 
-void WinNativeWidget::SetChildWidget(QWidget *w)
+void WinNativeWidget::SetChildWidget(MainFrame *w)
 { 
     childWidget = w;
     _childWindow = NULL;
@@ -159,7 +160,20 @@ LRESULT CALLBACK WinNativeWidget::WndProc(HWND hWnd, UINT message, WPARAM wParam
                 TrackPopupMenu(GetSystemMenu(hWnd, false), TPM_TOPALIGN | TPM_LEFTALIGN, winrect.left + 5, winrect.top + 5, 0, hWnd, NULL);
             }
             break;;
-        }      
+        }
+        case WM_KEYDOWN:
+        { 
+            //enable the hot key.
+            QKeyEvent keyEvent(QEvent::KeyPress, (int)wParam, 0);
+            QApplication::sendEvent(self->childWidget->GetBodyView(), &keyEvent);
+            break;
+        }
+        case WM_KEYUP:
+        {   
+            QKeyEvent keyEvent(QEvent::KeyRelease, (int)wParam, 0);
+            QApplication::sendEvent(self->childWidget->GetBodyView(), &keyEvent);
+            break;
+        }
         case WM_NCCALCSIZE:
         { 
             if (!wParam || self->IsMaxsized()){

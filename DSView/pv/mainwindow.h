@@ -130,9 +130,9 @@ signals:
 public:
     //IMainForm
     void switchLanguage(int language) override;
-    bool able_to_close(); 
- 
-   
+    bool able_to_close();    
+    QWidget* GetBodyView();
+    
 private: 
 	void setup_ui();
     void retranslateUi(); 
