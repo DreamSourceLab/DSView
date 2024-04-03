@@ -199,11 +199,7 @@ MainFrame::MainFrame()
 void MainFrame::MoveWindow(int x, int y)
 {
 #ifdef _WIN32
-    if (_parentNativeWidget != NULL){
-        int k =  window()->devicePixelRatio(); 
-        _parentNativeWidget->Move(x * k, y * k);
-        return;
-    }
+    assert(_parentNativeWidget == NULL); // move the window by system.
 #endif
 
     move(x, y);
@@ -753,6 +749,9 @@ void MainFrame::AttachNativeWindow()
         dsv_info("ERROR: get point screen error.");
     }
 
+    //Show the qt window before bind parent, the icon can show at the task bar first time.
+    QFrame::show();
+
     nativeWindow->SetChildWidget(this);
     nativeWindow->SetNativeEventCallback(this);
     nativeWindow->UpdateChildDpi();
@@ -760,15 +759,10 @@ void MainFrame::AttachNativeWindow()
     _titleBar->EnableAbleDrag(false);
   
     setWindowFlags(Qt::FramelessWindowHint);
-    setProperty("_q_embedded_native_parent_handle", (WId)nativeWindow->Handle());
-    //SetWindowLong((HWND)winId(), GWL_STYLE, WS_CHILD | WS_CLIPCHILDREN | WS_CLIPSIBLINGS);
-    SetWindowLong((HWND)winId(), GWL_STYLE, WS_CLIPCHILDREN | WS_CLIPSIBLINGS);
-   
+    
+    SetWindowLong((HWND)winId(), GWL_STYLE, WS_CLIPCHILDREN | WS_CLIPSIBLINGS);   
     SetParent((HWND)winId(), nativeWindow->Handle());
 
-    QEvent e(QEvent::EmbeddingControl);
-    QApplication::sendEvent(this, &e);
-    
     setVisible(true);
 
     if (_initWndInfo.isMaxSize){
@@ -778,6 +772,8 @@ void MainFrame::AttachNativeWindow()
         nativeWindow->Show(true);
     }
     nativeWindow->ResizeChild();
+
+    setVisible(true);
 
     nativeWindow->SetBorderColor(QColor(0x80, 0x80, 0x80));
     _parentNativeWidget = nativeWindow;
