@@ -46,6 +46,7 @@
 #include "searchcombobox.h"
 #include "../interface/icallbacks.h"
 #include "../ui/xtoolbutton.h"
+#include "../ui/uimanager.h"
 
 struct DecoderInfoItem{
     void  *_data_handle; //srd_decoder* type
@@ -73,7 +74,7 @@ public IProtocolItemLayerCallback,
 public IKeywordActive,
 public ISearchItemClick,
 public IDecoderPannel,
-public IFontForm
+public IUiWindow
 {
     Q_OBJECT
 
@@ -91,7 +92,6 @@ public:
     void update_view_status();
 
 private:
-    void changeEvent(QEvent *event);
     void retranslateUi();
     void reStyle();
     int get_protocol_index_by_id(QString id);
@@ -116,8 +116,10 @@ private:
     //IDecoderPannel
     void update_deocder_item_name(void *trace_handel, const char *name) override;
 
-    //IFontForm
-    void update_font() override;
+    //IUiWindow
+    void UpdateLanguage() override;
+    void UpdateTheme() override;
+    void UpdateFont() override;
 
 signals:
     void protocol_updated();

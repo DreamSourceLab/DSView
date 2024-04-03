@@ -115,6 +115,13 @@ Viewport::Viewport(View &parent, View_type type) :
     connect(yAction, SIGNAL(triggered(bool)), this, SLOT(add_cursor_y()));
     connect(xAction, SIGNAL(triggered(bool)), this, SLOT(add_cursor_x()));
     connect(this, SIGNAL(customContextMenuRequested(const QPoint&)),this, SLOT(show_contextmenu(const QPoint&)));
+
+    ADD_UI(this);
+}
+
+Viewport::~Viewport()
+{
+    REMOVE_UI(this);
 }
 
 int Viewport::get_total_height()
@@ -2064,6 +2071,19 @@ void Viewport::update_lang()
 {
     _yAction->setText(L_S(STR_PAGE_DLG, S_ID(IDS_DLG_ADD_Y_CURSOR), "Add Y-cursor"));
     _xAction->setText(L_S(STR_PAGE_DLG, S_ID(IDS_DLG_ADD_X_CURSOR), "Add X-cursor"));
+}
+
+void Viewport::UpdateLanguage()
+{
+}
+
+void Viewport::UpdateTheme()
+{
+}
+
+void Viewport::UpdateFont()
+{ 
+    update_font();
 }
 
 } // namespace view

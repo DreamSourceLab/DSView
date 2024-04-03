@@ -26,9 +26,9 @@
 
 #include <list>
 #include <utility>
-
 #include <QWidget>
 #include <QLineEdit>
+#include "../ui/uimanager.h"
 
 namespace pv {
 namespace view {
@@ -38,18 +38,19 @@ class View;
 
 //the left panel of main graph
 //created by View
-class Header : public QWidget
+class Header : public QWidget, public IUiWindow
 {
 	Q_OBJECT
 
 public:
 	Header(View &parent);
 
+    ~Header();
+
 private:
     pv::view::Trace* get_mTrace(int &action, const QPoint &pt);
 
 private:
-    void changeEvent(QEvent *event);
     void retranslateUi();
 	void paintEvent(QPaintEvent *event);
 
@@ -64,6 +65,11 @@ private:
 
     void changeName(QMouseEvent *event);
     void changeColor(QMouseEvent *event);
+
+    //IUiWindow
+    void UpdateLanguage() override;
+    void UpdateTheme() override;
+    void UpdateFont() override;
 
 public:
     int get_nameEditWidth();

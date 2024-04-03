@@ -27,14 +27,14 @@
 #include <stdint.h>
 #include <list>
 #include <map>
-  
+#include <QDialog>
 #include <QToolBar> 
 #include <QAction>
 #include <QMenu>
 #include "../ui/dscombobox.h"
 #include "../interface/icallbacks.h"
-#include <QDialog>
 #include "../ui/xtoolbutton.h"
+#include "../ui/uimanager.h"
 
 struct st_dev_inst;
 class QAction;
@@ -59,7 +59,7 @@ namespace pv
     namespace toolbars
     {
 
-        class SamplingBar : public QToolBar, public IFontForm
+        class SamplingBar : public QToolBar, public IUiWindow
         {
             Q_OBJECT
 
@@ -76,7 +76,8 @@ namespace pv
  
 
         public:
-            SamplingBar(SigSession *session, QWidget *parent);         
+            SamplingBar(SigSession *session, QWidget *parent);
+            ~SamplingBar();    
 
             double hori_knob(int dir);           
             double get_hori_res();          
@@ -104,8 +105,7 @@ namespace pv
         signals:
             void sig_store_session_data();
 
-        private: 
-            void changeEvent(QEvent *event);
+        private:
             void retranslateUi();
             void reStyle();
             void set_sample_rate(uint64_t sample_rate);
@@ -123,8 +123,10 @@ namespace pv
             bool action_run_stop();
             bool action_instant_stop();
             
-            //IFontForm
-            void update_font() override;
+            //IUiWindow
+            void UpdateLanguage() override;
+            void UpdateTheme() override;
+            void UpdateFont() override;
 
         private slots:
             void on_collect_mode();

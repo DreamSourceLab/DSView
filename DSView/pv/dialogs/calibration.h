@@ -28,10 +28,10 @@
 #include <QLabel>
 #include <QFormLayout>
 #include <QSlider>
-
 #include <list> 
 #include "../toolbars/titlebar.h"
 #include "dsdialog.h"
+#include "../ui/uimanager.h"
 
 class DeviceAgent;
 
@@ -39,7 +39,7 @@ namespace pv {
 
 namespace dialogs {
 
-class Calibration : public DSDialog
+class Calibration : public DSDialog, public IUiWindow
 {
 	Q_OBJECT
 
@@ -59,8 +59,12 @@ protected:
     void reject();
 
 private:
-    void changeEvent(QEvent *event);
     void retranslateUi();
+
+    //IUiWindow
+    void UpdateLanguage() override;
+    void UpdateTheme() override;
+    void UpdateFont() override;
 
 private slots:
     void set_value(int value);

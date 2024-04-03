@@ -131,22 +131,12 @@ TriggerDock::TriggerDock(QWidget *parent, SigSession *session) :
     this->setWidget(_widget);
     _widget->setObjectName("triggerWidget");
 
-    retranslateUi();
-
-    update_font();
+    ADD_UI(this);
 }
 
 TriggerDock::~TriggerDock()
 {
-}
-
-void TriggerDock::changeEvent(QEvent *event)
-{
-    if (event->type() == QEvent::LanguageChange)
-        retranslateUi();
-    else if (event->type() == QEvent::StyleChange)
-        reStyle();
-    QScrollArea::changeEvent(event);
+    REMOVE_UI(this);
 }
 
 void TriggerDock::retranslateUi()
@@ -194,10 +184,6 @@ void TriggerDock::retranslateUi()
 
 void TriggerDock::reStyle()
 {     
-}
-
-void TriggerDock::paintEvent(QPaintEvent *)
-{
 }
 
 void TriggerDock::simple_trigger()
@@ -1071,7 +1057,17 @@ void TriggerDock::on_serial_hex_changed()
     _is_serial_val_setting = false;
 }
 
-void TriggerDock::update_font()
+void TriggerDock::UpdateLanguage()
+{
+    retranslateUi();
+}
+
+void TriggerDock::UpdateTheme()
+{
+    reStyle();
+}
+
+void TriggerDock::UpdateFont()
 {
     QFont font = this->font();
     font.setPointSizeF(AppConfig::Instance().appOptions.fontSize);

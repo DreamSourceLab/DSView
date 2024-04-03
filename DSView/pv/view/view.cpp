@@ -122,8 +122,6 @@ View::View(SigSession *session, pv::toolbars::SamplingBar *sampling_bar, QWidget
     _header = new Header(*this);
     _devmode = new DevMode(this, session);
     
-    AppControl::Instance()->add_font_form(_devmode);
-
     setViewportMargins(headerWidth(), RulerHeight, 0, 0);
 
     // windows splitter
@@ -202,11 +200,15 @@ View::View(SigSession *session, pv::toolbars::SamplingBar *sampling_bar, QWidget
       
     connect(_header, SIGNAL(traces_moved()),this, SLOT(on_traces_moved()));
     connect(_header, SIGNAL(header_updated()),this, SLOT(header_updated()));
+
+    ADD_UI(this);
 }
 
-View::~View(){
+View::~View()
+{
     DESTROY_OBJECT(_trig_cursor);
     DESTROY_OBJECT(_search_cursor);
+    REMOVE_UI(this);
 }
 
 void View::show_wait_trigger()
@@ -1420,6 +1422,21 @@ Cursor* View::get_cursor_by_index(int index)
         dex++;
     }
     return NULL;
+}
+
+void View::UpdateLanguage()
+{
+     
+}
+
+void View::UpdateTheme()
+{
+    
+}
+
+void View::UpdateFont()
+{  
+    update_font();
 }
 
 } // namespace view

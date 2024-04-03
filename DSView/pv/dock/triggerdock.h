@@ -42,6 +42,7 @@
 #include <vector>
 #include "../ui/dscombobox.h"
 #include "../interface/icallbacks.h"
+#include "../ui/uimanager.h"
 
 namespace pv {
 
@@ -49,7 +50,7 @@ class SigSession;
 
 namespace dock {
 
-class TriggerDock : public QScrollArea, public IFontForm
+class TriggerDock : public QScrollArea, public IUiWindow
 {
     Q_OBJECT
 
@@ -59,8 +60,6 @@ private:
 public:
     TriggerDock(QWidget *parent, SigSession *session);
     ~TriggerDock();
-
-    void paintEvent(QPaintEvent *);
 
     void update_view();
 
@@ -72,7 +71,6 @@ public:
     void try_commit_trigger();
 
 private:
-    void changeEvent(QEvent *event);
     void retranslateUi();
     void reStyle();
 
@@ -86,8 +84,10 @@ private:
      */
     bool commit_trigger();
 
-    //IFontForm
-    void update_font() override;
+    //IUiWindow
+    void UpdateLanguage() override;
+    void UpdateTheme() override;
+    void UpdateFont() override;
 
 private slots:
     void simple_trigger();

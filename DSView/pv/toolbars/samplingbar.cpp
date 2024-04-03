@@ -128,7 +128,6 @@ namespace pv
             _instant_action = addWidget(&_instant_button); 
 
             update_view_status();
-            update_font();
 
             connect(&_device_selector, SIGNAL(currentIndexChanged(int)), this, SLOT(on_device_selected()));
             connect(&_configure_button, SIGNAL(clicked()), this, SLOT(on_configure()));
@@ -139,15 +138,13 @@ namespace pv
             connect(_action_repeat, SIGNAL(triggered()), this, SLOT(on_collect_mode()));
             connect(_action_loop, SIGNAL(triggered()), this, SLOT(on_collect_mode()));
             connect(&_sample_rate, SIGNAL(currentIndexChanged(int)), this, SLOT(on_samplerate_sel(int)));
+
+            ADD_UI(this);
         }
 
-        void SamplingBar::changeEvent(QEvent *event)
+        SamplingBar::~SamplingBar()
         {
-            if (event->type() == QEvent::LanguageChange)
-                retranslateUi();
-            else if (event->type() == QEvent::StyleChange)
-                reStyle();
-            QToolBar::changeEvent(event);
+            REMOVE_UI(this);
         }
 
         void SamplingBar::retranslateUi()
@@ -1244,7 +1241,6 @@ namespace pv
                 _mode_button.setIcon(QIcon(iconPath + SINGLE_ACTION_ICON));
         }
 
-
         void SamplingBar::run_or_stop()
         {
             on_run_stop();
@@ -1255,7 +1251,17 @@ namespace pv
             on_instant_stop();
         }
 
-        void SamplingBar::update_font()
+        void SamplingBar::UpdateLanguage()
+        {
+            retranslateUi();
+        }
+
+        void SamplingBar::UpdateTheme()
+        {
+            reStyle();
+        }
+
+        void SamplingBar::UpdateFont()
         {  
             QFont font = this->font();
             font.setPointSizeF(AppConfig::Instance().appOptions.fontSize);

@@ -35,6 +35,8 @@
 #include "../sigsession.h"
 #include "../ui/langresource.h"
 #include "../ui/msgbox.h"
+#include "../ui/fn.h"
+#include "../config/appconfig.h"
 
 using namespace std;
 
@@ -96,22 +98,18 @@ Calibration::Calibration(QWidget *parent) :
     connect(_reset_btn, SIGNAL(clicked()), this, SLOT(on_reset()));
     connect(_exit_btn, SIGNAL(clicked()), this, SLOT(reject()));
 
-    retranslateUi();
+    ADD_UI(this);
 }
 
-Calibration::~Calibration(){ 
+Calibration::~Calibration()
+{ 
     DESTROY_QT_OBJECT(_save_btn);
     DESTROY_QT_OBJECT(_abort_btn);
     DESTROY_QT_OBJECT(_reset_btn);
     DESTROY_QT_OBJECT(_exit_btn);
     DESTROY_QT_OBJECT(_flayout);
-}
 
-void Calibration::changeEvent(QEvent *event)
-{
-    if (event->type() == QEvent::LanguageChange)
-        retranslateUi();
-    DSDialog::changeEvent(event);
+    REMOVE_UI(this);
 }
 
 void Calibration::retranslateUi()
@@ -347,6 +345,22 @@ void Calibration::on_reset()
         _device_agent->set_config_bool(SR_CONF_ZERO_DEFAULT, true);
         reload_value();
     }
+}
+
+void Calibration::UpdateLanguage()
+{
+    retranslateUi();
+}
+
+void Calibration::UpdateTheme()
+{ 
+}
+
+void Calibration::UpdateFont()
+{
+    QFont font = this->font();
+    font.setPointSizeF(AppConfig::Instance().appOptions.fontSize);
+    ui::set_form_font(this, font);
 }
 
 } // namespace dialogs

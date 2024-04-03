@@ -204,8 +204,6 @@ ProtocolDock::ProtocolDock(QWidget *parent, view::View &view, SigSession *sessio
     this->setWidget(split_widget);
     split_widget->setObjectName("protocolWidget");
 
-    retranslateUi();
-
     connect(_dn_nav_button, SIGNAL(clicked()),this, SLOT(nav_table_view()));
     connect(_bot_save_button, SIGNAL(clicked()),this, SLOT(export_table_view()));
     connect(_bot_set_button, SIGNAL(clicked()),this, SLOT(set_model()));
@@ -224,7 +222,7 @@ ProtocolDock::ProtocolDock(QWidget *parent, view::View &view, SigSession *sessio
 
     connect(_pro_search_button, SIGNAL(clicked()), this, SLOT(show_protocol_select()));
 
-    update_font();
+    ADD_UI(this);
 }
 
 ProtocolDock::~ProtocolDock()
@@ -237,6 +235,8 @@ ProtocolDock::~ProtocolDock()
 
    //clear protocol infos list
    RELEASE_ARRAY(_decoderInfoList);
+
+   REMOVE_UI(this);
 }
 
 void ProtocolDock::retranslateUi()
@@ -269,15 +269,6 @@ void ProtocolDock::reStyle()
     for (auto item : _protocol_lay_items){
         item->ResetStyle();
     }
-}
-
-void ProtocolDock::changeEvent(QEvent *event)
-{
-    if (event->type() == QEvent::LanguageChange)
-        retranslateUi();
-    else if (event->type() == QEvent::StyleChange)
-        reStyle();
-    QScrollArea::changeEvent(event);
 }
 
 int ProtocolDock::decoder_name_cmp(const void *a, const void *b)
@@ -1060,7 +1051,17 @@ bool ProtocolDock::protocol_sort_callback(const DecoderInfoItem *o1, const Decod
     }
  }
 
- void ProtocolDock::update_font()
+void ProtocolDock::UpdateLanguage()
+{
+    retranslateUi();
+}
+
+void ProtocolDock::UpdateTheme()
+{
+    reStyle();
+}
+
+void ProtocolDock::UpdateFont()
  {
     QFont font = this->font();
     font.setPointSizeF(AppConfig::Instance().appOptions.fontSize);

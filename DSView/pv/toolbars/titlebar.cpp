@@ -98,21 +98,16 @@ TitleBar::TitleBar(bool top, QWidget *parent, ITitleParent *titleParent, bool ha
     lay1->setSpacing(0);
 
     setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed); 
-
-    update_font();
+    
+    ADD_UI(this);
 }
 
 TitleBar::~TitleBar(){ 
     DESTROY_QT_OBJECT(_minimizeButton);
     DESTROY_QT_OBJECT(_maximizeButton);
     DESTROY_QT_OBJECT(_closeButton);
-}
 
-void TitleBar::changeEvent(QEvent *event)
-{
-    if (event->type() == QEvent::StyleChange)
-        reStyle();
-    QWidget::changeEvent(event);
+    REMOVE_UI(this);
 }
 
 void TitleBar::reStyle()
@@ -314,7 +309,17 @@ void TitleBar::mouseDoubleClickEvent(QMouseEvent *event)
     }
 }
 
-void TitleBar::update_font()
+void TitleBar::UpdateLanguage()
+{
+    
+}
+
+void TitleBar::UpdateTheme()
+{
+    reStyle();
+}
+
+void TitleBar::UpdateFont()
 {  
     QFont font = this->font();
     font.setPointSizeF(AppConfig::Instance().appOptions.fontSize+1);

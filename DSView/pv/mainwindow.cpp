@@ -102,6 +102,7 @@
 #include "mainframe.h"
 #include "dsvdef.h"
 #include <thread>
+#include "ui/uimanager.h"
 
 namespace pv
 {
@@ -120,7 +121,6 @@ namespace pv
         assert(_frame);
 
         _title_bar = title_bar;
-        AppControl::Instance()->add_font_form(title_bar);
 
         _session = AppControl::Instance()->GetSession();
         _session->set_callback(this);
@@ -193,11 +193,6 @@ namespace pv
         addToolBar(_file_bar);
         addToolBar(_logo_bar);
 
-        AppControl::Instance()->add_font_form(_sampling_bar);
-        AppControl::Instance()->add_font_form(_trig_bar);
-        AppControl::Instance()->add_font_form(_file_bar);
-        AppControl::Instance()->add_font_form(_logo_bar);
-
         // Setup the dockWidget
         _protocol_dock = new QDockWidget(L_S(STR_PAGE_DLG, S_ID(IDS_DLG_PROTOCOL_DOCK_TITLE), "Decode Protocol"), this);
         _protocol_dock->setObjectName("protocol_dock");
@@ -252,19 +247,7 @@ namespace pv
         switchLanguage(app.frameOptions.language);
         switchTheme(app.frameOptions.style);
 
-        retranslateUi();
-
         _sampling_bar->set_view(_view);
-
-
-        // Add the font form
-        AppControl::Instance()->add_font_form(_protocol_widget);
-        AppControl::Instance()->add_font_form(_dso_trigger_widget);
-        AppControl::Instance()->add_font_form(_measure_widget);
-        AppControl::Instance()->add_font_form(_search_widget);
-        AppControl::Instance()->add_font_form(_trigger_widget);
-        AppControl::Instance()->add_font_form(_view->get_time_view());
-        AppControl::Instance()->add_font_form(_view);
 
         // event
         connect(&_event, SIGNAL(session_error()), this, SLOT(on_session_error()));
@@ -1395,22 +1378,20 @@ namespace pv
 
         if (language == LAN_CN)
         {
-            _qtTrans.load(":/qt_" + QString::number(language));
-            qApp->installTranslator(&_qtTrans);
-            _myTrans.load(":/my_" + QString::number(language));
-            qApp->installTranslator(&_myTrans);
-            retranslateUi();
+           // _qtTrans.load(":/qt_" + QString::number(language));
+            //qApp->installTranslator(&_qtTrans);
+            //_myTrans.load(":/my_" + QString::number(language));
+          //  qApp->installTranslator(&_myTrans);
         }
         else if (language == LAN_EN)
         {
-            qApp->removeTranslator(&_qtTrans);
-            qApp->removeTranslator(&_myTrans);
-            retranslateUi();
+           // qApp->removeTranslator(&_qtTrans);
+          //  qApp->removeTranslator(&_myTrans);
         }
 
-      // QEvent langEvent(QEvent::LanguageChange);
-      // QApplication::sendEvent(QApplication::instance(), &langEvent);
-     //  QCoreApplication::sendPostedEvents();
+        retranslateUi();
+
+        UiManager::Instance()->Update(UI_UPDATE_ACTION_LANG);
     }
 
     void MainWindow::switchTheme(QString style)
@@ -1428,7 +1409,8 @@ namespace pv
         qss.open(QFile::ReadOnly | QFile::Text);
         qApp->setStyleSheet(qss.readAll());
         qss.close();
- 
+
+        UiManager::Instance()->Update(UI_UPDATE_ACTION_THEME);
 
         data_updated();
     }
@@ -2112,7 +2094,7 @@ namespace pv
             break;
 
         case DSV_MSG_FONT_OPTIONS_CHANGED:
-            AppControl::Instance()->update_font_forms(); 
+            UiManager::Instance()->Update(UI_UPDATE_ACTION_FONT);
             break;
         case DSV_MSG_DATA_POOL_CHANGED:
             _view->check_measure();

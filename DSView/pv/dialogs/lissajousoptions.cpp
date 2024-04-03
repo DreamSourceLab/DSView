@@ -20,10 +20,6 @@
  */
 
 #include "lissajousoptions.h"
-#include "../sigsession.h"
-#include "../view/view.h"
-#include "../view/lissajoustrace.h"
-
 #include <QCheckBox>
 #include <QVariant>
 #include <QLabel>
@@ -31,9 +27,13 @@
 #include <QBitmap>
 #include <math.h>
 
+#include "../sigsession.h"
+#include "../view/view.h"
+#include "../view/lissajoustrace.h"
 #include "../ui/langresource.h"
+#include "../ui/fn.h"
+#include "../config/appconfig.h"
 
-  
 using namespace boost;
 using namespace std;
 using namespace pv::view;
@@ -140,14 +140,12 @@ LissajousOptions::LissajousOptions(SigSession *session, QWidget *parent) :
     connect(&_button_box, SIGNAL(rejected()), this, SLOT(reject()));
     connect(&_button_box, SIGNAL(accepted()), this, SLOT(accept()));
 
-    retranslateUi();
+   ADD_UI(this);
 }
 
-void LissajousOptions::changeEvent(QEvent *event)
+LissajousOptions::~LissajousOptions()
 {
-    if (event->type() == QEvent::LanguageChange)
-        retranslateUi();
-    DSDialog::changeEvent(event);
+    REMOVE_UI(this);
 }
 
 void LissajousOptions::retranslateUi()
@@ -198,6 +196,23 @@ void LissajousOptions::reject()
 {
     using namespace Qt;
     QDialog::reject();
+}
+
+void LissajousOptions::UpdateLanguage()
+{
+    retranslateUi();
+}
+
+void LissajousOptions::UpdateTheme()
+{
+
+}
+
+void LissajousOptions::UpdateFont()
+{ 
+    QFont font = this->font();
+    font.setPointSizeF(AppConfig::Instance().appOptions.fontSize);
+    ui::set_form_font(this, font);
 }
 
 } // namespace dialogs

@@ -109,13 +109,8 @@ public:
     virtual void update_deocder_item_name(void *trace_handel, const char *name)=0;
 };
 
-class IFontForm
+enum ParentNativeEvent
 {
-public:
-    virtual void update_font()=0;
-};
-
-enum ParentNativeEvent{
     PARENT_EVENT_DISPLAY_CHANGED = 0,
 };
 

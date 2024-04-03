@@ -30,11 +30,11 @@
 #include <QCheckBox>
 #include <QRadioButton>
 #include <QSlider>
- 
-
 #include "../view/dsosignal.h"
 #include "../toolbars/titlebar.h"
 #include "dsdialog.h"
+#include "../ui/uimanager.h"
+
 
 namespace pv {
 
@@ -46,7 +46,7 @@ class View;
 
 namespace dialogs {
 
-class LissajousOptions : public DSDialog
+class LissajousOptions : public DSDialog, public IUiWindow
 {
 	Q_OBJECT
 
@@ -56,9 +56,15 @@ private:
 public:
     LissajousOptions(SigSession *session, QWidget *parent);
 
-private:
-    void changeEvent(QEvent *event);
+    ~LissajousOptions();
+
+private:    
     void retranslateUi();
+
+    //IUiWindow
+    void UpdateLanguage() override;
+    void UpdateTheme() override;
+    void UpdateFont() override;
 
 protected:
 	void accept();

@@ -29,11 +29,11 @@
 #include <QScrollArea>
 #include <QLabel>
 #include <QRadioButton>
-
 #include <vector>
 
 #include "../ui/dscombobox.h"
 #include "../interface/icallbacks.h"
+#include "../ui/uimanager.h"
 
 namespace pv {
 
@@ -41,7 +41,7 @@ class SigSession;
 
 namespace dock {
 
-class DsoTriggerDock : public QScrollArea, public IFontForm
+class DsoTriggerDock : public QScrollArea, public IUiWindow
 {
     Q_OBJECT
 
@@ -55,13 +55,14 @@ public:
 
 private:
     void paintEvent(QPaintEvent *e);
-    void changeEvent(QEvent *event);
     void retranslateUi();
     void reStyle();
     bool check_trig_channel();
 
-    //IFontForm
-    void update_font() override;
+    //IUiWindow
+    void UpdateLanguage() override;
+    void UpdateTheme() override;
+    void UpdateFont() override;
 
 signals:
     void set_trig_pos(int percent);

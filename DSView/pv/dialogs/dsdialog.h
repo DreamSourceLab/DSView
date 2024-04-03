@@ -40,7 +40,7 @@ namespace dialogs {
     class Shadow;
 
 //DSView any dialog base class
-class DSDialog : public QDialog, IFontForm
+class DSDialog : public QDialog
 {
 	Q_OBJECT
 
@@ -67,8 +67,7 @@ public:
 
     void SetTitleSpace(int h);
 
-    //IFontForm
-    void update_font() override;
+    void update_font();
 
     void show();
 

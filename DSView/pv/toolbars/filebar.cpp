@@ -85,8 +85,6 @@ FileBar::FileBar(SigSession *session, QWidget *parent) :
     _file_button.setMenu(_menu);
     addWidget(&_file_button);
 
-    retranslateUi();
-
     connect(_action_load, SIGNAL(triggered()), this, SLOT(on_actionLoad_triggered()));
     connect(_action_store, SIGNAL(triggered()), this, SLOT(on_actionStore_triggered()));
     connect(_action_default, SIGNAL(triggered()), this, SLOT(on_actionDefault_triggered()));
@@ -95,16 +93,12 @@ FileBar::FileBar(SigSession *session, QWidget *parent) :
     connect(_action_export, SIGNAL(triggered()), this, SIGNAL(sig_export()));
     connect(_action_capture, SIGNAL(triggered()), this, SLOT(on_actionCapture_triggered()));
 
-    update_font();
+    ADD_UI(this);
 }
 
-void FileBar::changeEvent(QEvent *event)
+FileBar::~FileBar()
 {
-    if (event->type() == QEvent::LanguageChange)
-        retranslateUi();
-    else if (event->type() == QEvent::StyleChange)
-        reStyle();
-    QToolBar::changeEvent(event);
+    REMOVE_UI(this);
 }
 
 void FileBar::retranslateUi()
@@ -255,7 +249,17 @@ void FileBar::update_view_status()
     _menu_session->setEnabled(bEnable && is_hardware); 
 }
 
-void FileBar::update_font()
+void FileBar::UpdateLanguage()
+{
+    retranslateUi();
+}
+
+void FileBar::UpdateTheme()
+{
+    reStyle();
+}
+
+void FileBar::UpdateFont()
 { 
     QFont font = this->font();
     font.setPointSizeF(AppConfig::Instance().appOptions.fontSize);

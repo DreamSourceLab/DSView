@@ -147,40 +147,4 @@ namespace ui
         }
     }
 
-    void adjust_form_size(QWidget *wid)
-    {
-        assert(wid);
-
-        auto labels = wid->findChildren<QLabel*>();
-        for(auto o : labels)
-        { 
-            QSize size = o->sizeHint();
-            size.setWidth(size.width() + 5);  
-           o->setFixedWidth(size.width());
-        }
-
-        int groupMaxWith = 0;
-  
-        auto groups = wid->findChildren<QGroupBox*>();
-        for(auto o : groups)
-        { 
-            QSize size = o->sizeHint();
-            int w = size.width() + 5;
-            if (w > groupMaxWith){
-                groupMaxWith = w;
-            }
-        }
-
-        auto groups2 = wid->findChildren<QGroupBox*>();
-        for(auto o : groups2)
-        {
-            o->setFixedWidth(groupMaxWith);
-
-            QWidget *parent = dynamic_cast<QWidget*>(o->parent());
-            if (parent != NULL){ 
-                parent->setFixedWidth(groupMaxWith + 10);
-            }
-        }
-    }
-
 } // namespace ui

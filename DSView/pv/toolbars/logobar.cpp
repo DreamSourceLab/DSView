@@ -114,8 +114,6 @@ LogoBar::LogoBar(SigSession *session, QWidget *parent) :
     margin->setMinimumWidth(20);
     addWidget(margin);
 
-    retranslateUi();
-
     connect(_action_en, SIGNAL(triggered()), this, SLOT(on_actionEn_triggered()));
     connect(_action_cn, SIGNAL(triggered()), this, SLOT(on_actionCn_triggered()));
     connect(_about, SIGNAL(triggered()), this, SLOT(on_actionAbout_triggered()));
@@ -124,16 +122,12 @@ LogoBar::LogoBar(SigSession *session, QWidget *parent) :
     connect(_update, SIGNAL(triggered()), this, SLOT(on_action_update()));
     connect(_log, SIGNAL(triggered()), this, SLOT(on_action_setting_log()));
 
-    update_font();
+    ADD_UI(this);
 }
 
-void LogoBar::changeEvent(QEvent *event)
+LogoBar::~LogoBar()
 {
-    if (event->type() == QEvent::LanguageChange)
-        retranslateUi();
-    else if (event->type() == QEvent::StyleChange)
-        reStyle();
-    QToolBar::changeEvent(event);
+    REMOVE_UI(this);
 }
 
 void LogoBar::retranslateUi()
@@ -348,7 +342,17 @@ void LogoBar::on_clear_log_file()
     }  
 }
 
-void LogoBar::update_font()
+void LogoBar::UpdateLanguage()
+{
+    retranslateUi();
+}
+
+void LogoBar::UpdateTheme()
+{
+    reStyle();
+}
+
+void LogoBar::UpdateFont()
 { 
     QFont font = this->font();
     font.setPointSizeF(AppConfig::Instance().appOptions.fontSize);

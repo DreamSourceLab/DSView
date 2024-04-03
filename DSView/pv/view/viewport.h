@@ -36,6 +36,7 @@
 #include "../view/view.h"
 #include "../dsvdef.h"
 #include "../interface/icallbacks.h"
+#include "../ui/uimanager.h"
 
 class QPainter;
 class QPaintEvent;
@@ -62,7 +63,7 @@ class View;
 //main graph view port, in the middle region
 //draw the left and right rule scale
 //created by View
-class Viewport : public QWidget, public IFontForm
+class Viewport : public QWidget, public IUiWindow
 {
 	Q_OBJECT
 
@@ -102,6 +103,7 @@ public:
 
 public:
     explicit Viewport(View &parent, View_type type);
+    ~Viewport();
 
     int get_total_height();
     QPoint get_mouse_point();
@@ -118,17 +120,18 @@ public:
     void show_wait_trigger();
 
     void update_lang();
-
-    //IFontForm
-    void update_font() override;
-
+    void update_font();
     void measure();
-
     void update(int event);
 
 protected:
     bool event(QEvent *event) override;
     void paintEvent(QPaintEvent *event) override;
+
+    //IUiWindow
+    void UpdateLanguage() override;
+    void UpdateTheme() override;
+    void UpdateFont() override;
 
 private:
     void doPaint();

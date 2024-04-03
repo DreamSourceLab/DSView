@@ -1,8 +1,8 @@
 /*
  * This file is part of the DSView project.
  * DSView is based on PulseView.
- * 
- * Copyright (C) 2021 DreamSourceLab <support@dreamsourcelab.com>
+ *
+ * Copyright (C) 2024 DreamSourceLab <support@dreamsourcelab.com>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -19,56 +19,43 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
  */
 
-#pragma once
+#ifndef UI_MANAGER_H
+#define UI_MANAGER_H
 
-#include <string>
 #include <vector>
 
-struct sr_context;
-class QWidget;
+class IUiWindow
+{
+public:
+    virtual void UpdateLanguage()=0;
+    virtual void UpdateTheme()=0;
+    virtual void UpdateFont()=0;
+};
 
-namespace pv{ 
-    class SigSession;
-}
+enum UiUpdateAction
+{
+    UI_UPDATE_ACTION_LANG = 0,
+    UI_UPDATE_ACTION_THEME = 1,
+    UI_UPDATE_ACTION_FONT = 2,
+};
 
-class AppControl
+class UiManager
 {
 private:
-    explicit AppControl();
-    ~AppControl();
-    AppControl(AppControl &o);
+    UiManager();
 
 public:
-    static AppControl* Instance();
+    static UiManager* Instance();
 
-    void Destroy();
+    void AddWindow(IUiWindow *w);
+    void RemoveWindow(IUiWindow *w);
+    void Update(UiUpdateAction action);
 
-    bool Init();
-
-    bool Start();
-
-    void Stop();
-
-    void UnInit(); 
-
-    inline pv::SigSession*  GetSession(){
-        return _session;
-    } 
-
-    inline void SetTopWindow(QWidget *w){
-        _topWindow = w;
-    }
-
-    inline QWidget* GetTopWindow(){
-        return _topWindow;
-    }
-
-    bool TopWindowIsMaximized();
-
-public:
-    std::string        _open_file_name; 
-
-private: 
-    pv::SigSession      *_session;
-    QWidget             *_topWindow; 
+private:
+    std::vector<IUiWindow*> m_widgets;
 };
+
+#define ADD_UI(o)   UiManager::Instance()->AddWindow(o);
+#define REMOVE_UI(o)    UiManager::Instance()->RemoveWindow(o);
+
+#endif

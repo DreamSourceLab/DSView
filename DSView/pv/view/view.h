@@ -43,6 +43,7 @@
 #include "viewstatus.h"
 #include "../dsvdef.h" 
 #include "../interface/icallbacks.h"
+#include "../ui/uimanager.h"
 
 class DeviceAgent;
 
@@ -69,7 +70,8 @@ class Viewport;
 class LissajousFigure;
 
 //created by MainWindow
-class View : public QScrollArea, public IFontForm{
+class View : public QScrollArea, public IUiWindow
+{
 	Q_OBJECT
 
 private:
@@ -324,10 +326,14 @@ public:
         return _time_viewport;
     }
 
-    //IFontForm
-    void update_font() override;
+    void update_font();
     void check_measure();
     bool header_is_draging();
+
+      //IUiWindow
+    void UpdateLanguage() override;
+    void UpdateTheme() override;
+    void UpdateFont() override;
 
 signals:
 	void hover_point_changed();

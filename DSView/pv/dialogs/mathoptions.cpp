@@ -20,19 +20,19 @@
  */
 
 #include "mathoptions.h"
-#include "../sigsession.h"
-#include "../view/view.h"
-#include "../view/mathtrace.h"
-#include "../data/mathstack.h"
-
 #include <QCheckBox>
 #include <QVariant>
 #include <QLabel>
 #include <QTabBar>
 #include <QBitmap>
 
+#include "../sigsession.h"
+#include "../view/view.h"
+#include "../view/mathtrace.h"
+#include "../data/mathstack.h"
 #include "../ui/langresource.h"
-  
+#include "../ui/fn.h"
+#include "../config/appconfig.h"
 
 using namespace boost;
 using namespace std;
@@ -155,14 +155,12 @@ MathOptions::MathOptions(SigSession *session, QWidget *parent) :
     connect(&_button_box, SIGNAL(rejected()), this, SLOT(reject()));
     connect(&_button_box, SIGNAL(accepted()), this, SLOT(accept()));
 
-    retranslateUi();
+    ADD_UI(this);
 }
 
-void MathOptions::changeEvent(QEvent *event)
+MathOptions::~MathOptions()
 {
-    if (event->type() == QEvent::LanguageChange)
-        retranslateUi();
-    DSDialog::changeEvent(event);
+    REMOVE_UI(this);
 }
 
 void MathOptions::retranslateUi()
@@ -226,6 +224,22 @@ void MathOptions::reject()
 {
     using namespace Qt;
     QDialog::reject();
+}
+
+void MathOptions::UpdateLanguage()
+{
+    retranslateUi();
+}
+
+void MathOptions::UpdateTheme()
+{
+}
+
+void MathOptions::UpdateFont()
+{ 
+    QFont font = this->font();
+    font.setPointSizeF(AppConfig::Instance().appOptions.fontSize);
+    ui::set_form_font(this, font);
 }
 
 } // namespace dialogs

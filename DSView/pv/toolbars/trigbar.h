@@ -28,6 +28,7 @@
 #include <QMenu>
 #include "../interface/icallbacks.h"
 #include "../ui/xtoolbutton.h"
+#include "../ui/uimanager.h"
 
 class DockOptions;
 
@@ -39,24 +40,26 @@ namespace toolbars {
 
 //boolbar, referenced by MainWindow
 //TODO:show the property panel about protocol\trigger
-class TrigBar : public QToolBar, public IFontForm
+class TrigBar : public QToolBar, public IUiWindow
 {
     Q_OBJECT
 
 public:
     explicit TrigBar(SigSession *session, QWidget *parent = 0);
+    ~TrigBar();
     void reload();
     void update_view_status();
 
 private:
-    void changeEvent(QEvent *event);
     void retranslateUi();
     void reStyle();
     DockOptions* getDockOptions();
     void update_checked_status();
 
-    //IFontForm
-    void update_font() override;
+     //IUiWindow
+    void UpdateLanguage() override;
+    void UpdateTheme() override;
+    void UpdateFont() override;
 
 signals:
     void sig_setTheme(QString style);

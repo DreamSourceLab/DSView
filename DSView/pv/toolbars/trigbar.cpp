@@ -108,8 +108,6 @@ TrigBar::TrigBar(SigSession *session, QWidget *parent) :
     _search_action = addWidget(&_search_button);
     _function_action = addWidget(&_function_button); 
     _display_action = addWidget(&_setting_button); //must be created
- 
-    retranslateUi();
 
     connect(&_trig_button, SIGNAL(clicked()),this, SLOT(trigger_clicked()));
     connect(&_protocol_button, SIGNAL(clicked()),this, SLOT(protocol_clicked()));
@@ -123,17 +121,12 @@ TrigBar::TrigBar(SigSession *session, QWidget *parent) :
     connect(_light_style, SIGNAL(triggered()), this, SLOT(on_actionLight_triggered()));
     connect(_action_dispalyOptions, SIGNAL(triggered()), this, SLOT(on_display_setting()));
 
-    update_font();
+    ADD_UI(this);
 }
 
-//语言变化
-void TrigBar::changeEvent(QEvent *event)
+TrigBar::~TrigBar()
 {
-    if (event->type() == QEvent::LanguageChange)
-        retranslateUi();
-    else if (event->type() == QEvent::StyleChange)
-        reStyle();
-    QToolBar::changeEvent(event);
+    REMOVE_UI(this);
 }
 
 void TrigBar::retranslateUi()
@@ -371,7 +364,17 @@ void TrigBar::update_checked_status()
     _search_button.setChecked(opt->searchDock);
 }
 
-void TrigBar::update_font()
+void TrigBar::UpdateLanguage()
+{
+    retranslateUi();
+}
+
+void TrigBar::UpdateTheme()
+{
+    reStyle();
+}
+
+void TrigBar::UpdateFont()
 { 
     QFont font = this->font();
     font.setPointSizeF(AppConfig::Instance().appOptions.fontSize);

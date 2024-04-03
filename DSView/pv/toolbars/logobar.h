@@ -32,18 +32,20 @@
 #include "../sigsession.h"
 #include "../interface/icallbacks.h"
 #include "../ui/xtoolbutton.h"
+#include "../ui/uimanager.h"
 
 namespace pv {
 namespace toolbars {
 
 //The tool button for help,is a ui class,referenced by MainWindow
 //TODO: switch language,submit bug descript,
-class LogoBar : public QToolBar, public IFontForm
+class LogoBar : public QToolBar, public IUiWindow
 {
     Q_OBJECT
 
 public:
     explicit LogoBar(SigSession *session, QWidget *parent = 0);
+    ~LogoBar();
 
     void enable_toggle(bool enable);
 
@@ -55,12 +57,13 @@ public:
     }
 
 private:
-    void changeEvent(QEvent *event);
     void retranslateUi();
     void reStyle();
 
-    //IFontForm
-    void update_font() override;
+    //IUiWindow
+    void UpdateLanguage() override;
+    void UpdateTheme() override;
+    void UpdateFont() override;
 
 signals: 
     //post event message to open user help document, MainWindow class receive it

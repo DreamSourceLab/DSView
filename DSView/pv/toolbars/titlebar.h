@@ -25,6 +25,7 @@
 #include <QWidget>
 #include "../interface/icallbacks.h"
 #include "../ui/xtoolbutton.h"
+#include "../ui/uimanager.h"
 
 
 class QHBoxLayout;
@@ -44,7 +45,7 @@ public:
 
 namespace toolbars {
 
-class TitleBar : public QWidget, public IFontForm
+class TitleBar : public QWidget, public IUiWindow
 {
     Q_OBJECT
 
@@ -55,17 +56,22 @@ public:
     void setTitle(QString title); 
     QString title();
 
-    //IFontForm
-    void update_font() override;
+    //IUiWindow
+    void UpdateLanguage() override;
+    void UpdateTheme() override;
+    void UpdateFont() override;
 
     inline void set_native(){
         _is_native = true;
     }
 
+    inline void update_font(){
+        UpdateFont();
+    }
+
     void EnableAbleDrag(bool bEnabled);
 
-private:
-    void changeEvent(QEvent *event);
+private: 
     void reStyle();
 
     bool ParentIsMaxsized();

@@ -30,30 +30,34 @@
 #include "../sigsession.h" 
 #include "../interface/icallbacks.h"
 #include "../ui/xtoolbutton.h"
+#include "../ui/uimanager.h"
 
 namespace pv {
 namespace toolbars {
 
 //toolbar button,referenced by MainWindow
 //TODO: load session file, sorte session, load log data file, sorte data, export data
-class FileBar : public QToolBar, public IFontForm
+class FileBar : public QToolBar, public IUiWindow
 {
     Q_OBJECT
 
 public:
     explicit FileBar(SigSession *session, QWidget *parent = 0);
 
+    ~FileBar();
+
     void update_view_status();
 
     QString genDefaultSessionFile();
 
 private:
-    void changeEvent(QEvent *event);
     void retranslateUi();
     void reStyle(); 
 
-    //IFontForm
-    void update_font() override;
+    //IUiWindow
+    void UpdateLanguage() override;
+    void UpdateTheme() override;
+    void UpdateFont() override;
 
 signals:
     void sig_load_file(QString); 

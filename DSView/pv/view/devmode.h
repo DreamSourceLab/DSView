@@ -35,6 +35,7 @@
 
 #include "../interface/icallbacks.h"
 #include "../ui/xtoolbutton.h"
+#include "../ui/uimanager.h"
 
 struct dev_mode_name{
     int _mode;
@@ -50,7 +51,7 @@ class SigSession;
 namespace view {
 
 //devece work mode select list
-class DevMode : public QWidget, public IFontForm
+class DevMode : public QWidget, public IUiWindow
 {
 	Q_OBJECT
 
@@ -60,6 +61,8 @@ private:
 public:
     DevMode(QWidget *parent, SigSession *session);
 
+    ~DevMode();
+
 private:
 	void paintEvent(QPaintEvent *event);
 
@@ -67,12 +70,13 @@ private:
 	void mousePressEvent(QMouseEvent * event);
 	void mouseReleaseEvent(QMouseEvent *event);
 	void mouseMoveEvent(QMouseEvent *event);
-	void leaveEvent(QEvent *event);
-    void changeEvent(QEvent *event);
+	void leaveEvent(QEvent *event); 
     const dev_mode_name* get_mode_name(int mode);
 
-    //IFontForm
-    void update_font() override;
+     //IUiWindow
+    void UpdateLanguage() override;
+    void UpdateTheme() override;
+    void UpdateFont() override;
 
 public slots:
     void set_device();

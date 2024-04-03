@@ -170,22 +170,12 @@ DsoTriggerDock::DsoTriggerDock(QWidget *parent, SigSession *session) :
     //_widget->setGeometry(0, 0, sizeHint().width(), sizeHint().height());
     _widget->setObjectName("dsoTriggerWidget");
 
-    retranslateUi();
-
-    update_font();
+    ADD_UI(this);
 }
 
 DsoTriggerDock::~DsoTriggerDock()
 {
-}
-
-void DsoTriggerDock::changeEvent(QEvent *event)
-{
-    if (event->type() == QEvent::LanguageChange)
-        retranslateUi();
-    else if (event->type() == QEvent::StyleChange)
-        reStyle();
-    QScrollArea::changeEvent(event);
+    REMOVE_UI(this);
 }
 
 void DsoTriggerDock::retranslateUi()
@@ -487,7 +477,17 @@ void DsoTriggerDock::update_view()
     connect(_margin_slider, SIGNAL(valueChanged(int)), this, SLOT(margin_changed(int)));
 }
 
-void DsoTriggerDock::update_font()
+void DsoTriggerDock::UpdateLanguage()
+{
+    retranslateUi();
+}
+
+void DsoTriggerDock::UpdateTheme()
+{
+    reStyle();
+}
+
+void DsoTriggerDock::UpdateFont()
 {
     QFont font = this->font();
     font.setPointSizeF(AppConfig::Instance().appOptions.fontSize);

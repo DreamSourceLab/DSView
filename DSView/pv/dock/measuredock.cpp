@@ -143,8 +143,6 @@ MeasureDock::MeasureDock(QWidget *parent, View &view, SigSession *session) :
     _widget->setGeometry(0, 0, sizeHint().width(), 2000);
     _widget->setObjectName("measureWidget");
 
-    retranslateUi();
-
     add_dist_measure();
 
     connect(_dist_add_btn, SIGNAL(clicked()), this, SLOT(add_dist_measure()));
@@ -152,20 +150,12 @@ MeasureDock::MeasureDock(QWidget *parent, View &view, SigSession *session) :
     connect(_fen_checkBox, SIGNAL(stateChanged(int)), &_view, SLOT(set_measure_en(int)));
     connect(&_view, SIGNAL(measure_updated()), this, SLOT(measure_updated()));
 
-    update_font();
+    ADD_UI(this);
 }
 
 MeasureDock::~MeasureDock()
 {
-}
-
-void MeasureDock::changeEvent(QEvent *event)
-{
-    if (event->type() == QEvent::LanguageChange)
-        retranslateUi();
-    else if (event->type() == QEvent::StyleChange)
-        reStyle();
-    QScrollArea::changeEvent(event);
+    REMOVE_UI(this);
 }
 
 void MeasureDock::retranslateUi()
@@ -860,7 +850,17 @@ void MeasureDock::del_cursor()
     _view.update();
 }
 
-void MeasureDock::update_font()
+void MeasureDock::UpdateLanguage()
+{
+    retranslateUi();
+}
+
+void MeasureDock::UpdateTheme()
+{
+    reStyle();
+}
+
+void MeasureDock::UpdateFont()
 {
     QFont font = this->font();
     font.setPointSizeF(AppConfig::Instance().appOptions.fontSize);

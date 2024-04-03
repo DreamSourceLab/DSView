@@ -30,11 +30,10 @@
 #include <QCheckBox>
 #include <QRadioButton>
 #include <QSlider>
- 
-
 #include "../view/dsosignal.h"
 #include "../toolbars/titlebar.h"
 #include "dsdialog.h"
+#include "../ui/uimanager.h"
 
 namespace pv {
 
@@ -46,7 +45,7 @@ class View;
 
 namespace dialogs {
 
-class MathOptions : public DSDialog
+class MathOptions : public DSDialog, public IUiWindow
 {
 	Q_OBJECT
 
@@ -55,10 +54,15 @@ private:
 
 public:
     MathOptions(SigSession *session, QWidget *parent);
+    ~MathOptions();
 
-private:
-    void changeEvent(QEvent *event);
+private:   
     void retranslateUi();
+
+    //IUiWindow
+    void UpdateLanguage() override;
+    void UpdateTheme() override;
+    void UpdateFont() override;
 
 protected:
 	void accept();

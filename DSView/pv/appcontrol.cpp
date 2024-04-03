@@ -153,29 +153,3 @@ bool AppControl::TopWindowIsMaximized()
     }
     return false;
 }
-
-void AppControl::add_font_form(IFontForm *form)
-{
-    assert(form);
-    _font_forms.push_back(form);
-}
-
-void AppControl::remove_font_form(IFontForm *form)
-{
-    assert(form);
-    
-    for (auto it = _font_forms.begin(); it != _font_forms.end(); it++)
-    {
-        if ( *(it) == form){
-            _font_forms.erase(it);
-            break;
-        }
-    }
-}
-
-void AppControl::update_font_forms()
-{
-    for (auto f : _font_forms){
-        f->update_font();
-    }
-}

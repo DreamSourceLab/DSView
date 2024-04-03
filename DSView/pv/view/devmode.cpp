@@ -90,19 +90,14 @@ DevMode::DevMode(QWidget *parent, SigSession *session) :
     layout->setStretch(1, 100); 
     setLayout(layout);
 
-    update_font();
-
     connect(_close_button, SIGNAL(clicked()), this, SLOT(on_close()));
+
+    ADD_UI(this);
 }
 
-
-void DevMode::changeEvent(QEvent *event)
+DevMode::~DevMode()
 {
-    if (event->type() == QEvent::LanguageChange)
-        set_device();
-    else if (event->type() == QEvent::StyleChange)
-        set_device();
-    QWidget::changeEvent(event);
+    REMOVE_UI(this);
 }
 
 void DevMode::set_device()
@@ -173,7 +168,7 @@ void DevMode::set_device()
         _bFile = true;
     }
 
-    update_font();
+    UpdateFont();
     update();    
 }
 
@@ -232,7 +227,7 @@ void DevMode::on_mode_change()
         }      
     }
 
-    update_font();
+    UpdateFont();
 }
 
 void DevMode::on_close()
@@ -280,7 +275,17 @@ const struct dev_mode_name* DevMode::get_mode_name(int mode)
     assert(false);
 }
 
-void DevMode::update_font()
+void DevMode::UpdateLanguage()
+{
+    set_device();
+}
+
+void DevMode::UpdateTheme()
+{
+    set_device();
+}
+
+void DevMode::UpdateFont()
 {
     QFont font = this->font();
     font.setPointSizeF(AppConfig::Instance().appOptions.fontSize);

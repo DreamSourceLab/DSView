@@ -82,25 +82,15 @@ SearchDock::SearchDock(QWidget *parent, View &view, SigSession *session) :
 
     setLayout(layout);
 
-    retranslateUi();
-
-    update_font();
-
     connect(&_pre_button, SIGNAL(clicked()), this, SLOT(on_previous()));
     connect(&_nxt_button, SIGNAL(clicked()),this, SLOT(on_next()));
+
+    ADD_UI(this);
 }
 
 SearchDock::~SearchDock()
 {
-}
-
-void SearchDock::changeEvent(QEvent *event)
-{
-    if (event->type() == QEvent::LanguageChange)
-        retranslateUi();
-    else if (event->type() == QEvent::StyleChange)
-        reStyle();
-    QWidget::changeEvent(event);
+    REMOVE_UI(this);
 }
 
 void SearchDock::retranslateUi()
@@ -253,7 +243,17 @@ void SearchDock::on_set()
     }
 }
 
-void SearchDock::update_font()
+void SearchDock::UpdateLanguage()
+{
+    retranslateUi();
+}
+
+void SearchDock::UpdateTheme()
+{
+    reStyle();
+}
+
+void SearchDock::UpdateFont()
 {
     QFont font = this->font();
     font.setPointSizeF(AppConfig::Instance().appOptions.fontSize);

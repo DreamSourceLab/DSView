@@ -42,6 +42,7 @@
 #include "../ui/dscombobox.h"
 #include "../interface/icallbacks.h"
 #include "../ui/xtoolbutton.h"
+#include "../ui/uimanager.h"
 
 namespace pv {
 
@@ -73,7 +74,7 @@ struct cursor_opt_info
     view::Cursor    *cursor;
 };
 
-class MeasureDock : public QScrollArea, public IFontForm
+class MeasureDock : public QScrollArea, public IUiWindow
 {
     Q_OBJECT
 
@@ -87,12 +88,13 @@ public:
     void reload();
 
 private:
-    void changeEvent(QEvent *event);
     void retranslateUi();
     void reStyle();
 
-    //IFontForm
-    void update_font() override;
+    //IUiWindow
+    void UpdateLanguage() override;
+    void UpdateTheme() override;
+    void UpdateFont() override;
 
     void build_dist_pannel();
     void build_edge_pannel();

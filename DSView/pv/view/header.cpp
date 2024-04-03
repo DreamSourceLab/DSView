@@ -73,14 +73,13 @@ Header::Header(View &parent) :
     connect(nameEdit, SIGNAL(editingFinished()),
             this, SLOT(on_action_set_name_triggered()));
 
-    retranslateUi();
+
+    ADD_UI(this);
 }
 
-void Header::changeEvent(QEvent *event)
+Header::~Header()
 {
-    if (event->type() == QEvent::LanguageChange)
-        retranslateUi();
-    QWidget::changeEvent(event);
+    REMOVE_UI(this);
 }
 
 void Header::retranslateUi()
@@ -510,6 +509,20 @@ void Header::header_resize()
         const int y = _context_trace->get_y();
         nameEdit->move(QPoint(_context_trace->get_leftWidth(), y - nameEdit->height() / 2));
     }
+}
+
+void Header::UpdateLanguage()
+{
+    retranslateUi();
+}
+
+void Header::UpdateTheme()
+{
+    retranslateUi();
+}
+
+void Header::UpdateFont()
+{
 }
 
 
