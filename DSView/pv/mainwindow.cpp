@@ -1949,7 +1949,9 @@ namespace pv
 
                 _sampling_bar->update_device_list();
 
-                if (_session->get_device()->is_demo() == false)
+                // If a saving task is running, not need to remind to switch device, 
+                // when the task end, the new device will be selected.
+                if (_session->get_device()->is_demo() == false && !_is_save_confirm_msg)
                 {
                     QString msgText = L_S(STR_PAGE_MSG, S_ID(IDS_MSG_TO_SWITCH_DEVICE), "To switch the new device?");
                     
