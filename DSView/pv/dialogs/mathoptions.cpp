@@ -174,9 +174,12 @@ void MathOptions::retranslateUi()
 
 void MathOptions::accept()
 {
-	using namespace Qt;
+    using namespace Qt;
     QDialog::accept();
+}
 
+void MathOptions::Apply()
+{
     int src1 = -1;
     int src2 = -1;
     data::MathStack::MathType type = data::MathStack::MATH_ADD;

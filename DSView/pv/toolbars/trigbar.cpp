@@ -285,7 +285,10 @@ void TrigBar::on_actionFft_triggered()
 void TrigBar::on_actionMath_triggered()
 {
     pv::dialogs::MathOptions math_dlg(_session, this);
-    math_dlg.exec();
+    if (math_dlg.exec() == QDialog::Accepted)
+    {
+        math_dlg.Apply();
+    }
 }
 
 void TrigBar::on_actionDark_triggered()

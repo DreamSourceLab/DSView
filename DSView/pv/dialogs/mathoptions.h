@@ -56,6 +56,8 @@ public:
     MathOptions(SigSession *session, QWidget *parent);
     ~MathOptions();
 
+    void Apply();
+
 private:   
     void retranslateUi();
 
