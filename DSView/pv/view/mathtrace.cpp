@@ -99,6 +99,7 @@ int MathTrace::get_name_width()
 void MathTrace::update_vDial()
 {
     _vDial->set_value(_math_stack->default_vDialValue());
+    _vDial->set_factor(_math_stack->default_factor());
 }
 
 void MathTrace::go_vDialPre()

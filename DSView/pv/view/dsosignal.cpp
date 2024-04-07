@@ -1178,12 +1178,15 @@ bool DsoSignal::mouse_press(int right, const QPoint pt)
         }
         else if (x1_rect.contains(pt)) {
            set_factor(1);
+           _view->dso_factor_updated();
         }
         else if (x10_rect.contains(pt)) {
            set_factor(10);
+           _view->dso_factor_updated();
         }
         else if (x100_rect.contains(pt)) {
            set_factor(100);
+           _view->dso_factor_updated();
         }
         else {
             return false;

@@ -164,13 +164,16 @@ uint64_t MathStack::default_vDialValue()
     uint64_t value = 0;
     view::dslDial *dial1 = _dsoSig1->get_vDial();
     view::dslDial *dial2 = _dsoSig2->get_vDial();
-    const uint64_t dial1_value = dial1->get_value() * dial1->get_factor();
-    const uint64_t dial2_value = dial2->get_value() * dial2->get_factor();
+    const uint64_t dial1_value = dial1->get_value();
+    const uint64_t dial2_value = dial2->get_value();
+
+    const uint64_t v1 = dial1_value * dial1->get_factor();
+    const uint64_t v2 = dial2_value * dial2->get_factor();
 
     switch(_type) {
     case MATH_ADD:
     case MATH_SUB:
-        value = max(dial1_value, dial2_value);
+        value = v1 > v2 ? dial1_value : dial2_value;
         break;
     case MATH_MUL:
         value = dial1_value * dial2_value / 1000.0;
@@ -180,11 +183,45 @@ uint64_t MathStack::default_vDialValue()
         break;
     }
 
+    bool bFind = false;
+
     for (int i = 0; i < vDialValueCount; i++) {
         if (vDialValue[i] >= value) {
             value = vDialValue[i];
+            bFind = true;
             break;
         }
+    }
+
+    if (!bFind){
+        value = vDialValue[vDialValueCount-1];
+    }
+
+    return value;
+}
+
+uint64_t MathStack::default_factor()
+{
+    uint64_t value = 0;
+    view::dslDial *dial1 = _dsoSig1->get_vDial();
+    view::dslDial *dial2 = _dsoSig2->get_vDial();
+    uint64_t factor1 = dial1->get_factor();
+    uint64_t factor2 = dial1->get_factor();
+
+    const uint64_t dial1_value = dial1->get_value() * factor1;
+    const uint64_t dial2_value = dial2->get_value() * factor2;
+
+    switch(_type) {
+    case MATH_ADD:
+    case MATH_SUB:
+        value = dial1_value > dial2_value ? factor1 : factor2;
+        break;
+    case MATH_MUL:
+        value = factor1 * factor2;
+        break;
+    case MATH_DIV:
+        value = factor1 / factor2;
+        break;
     }
 
     return value;

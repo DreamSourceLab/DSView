@@ -386,6 +386,9 @@ public slots:
     void timebase_changed();
     // --
     void vDial_updated();
+
+    void dso_factor_updated();
+    
     // --
     void update_hori_res();
 

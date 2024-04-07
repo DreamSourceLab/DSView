@@ -1183,6 +1183,14 @@ void View::vDial_updated()
     }
 }
 
+void View::dso_factor_updated()
+{
+    auto math_trace = _session->get_math_trace();
+    if (math_trace && math_trace->enabled()) {
+        math_trace->update_vDial();
+    }
+}
+
 // -- lissajous figure
 void View::show_lissajous(bool show)
 {

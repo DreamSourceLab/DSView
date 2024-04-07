@@ -116,6 +116,8 @@ public:
     void enable_envelope(bool enable);
 
     uint64_t default_vDialValue();
+    uint64_t default_factor();
+
     view::dslDial *get_vDial();
     QString get_unit(int level);
     double get_math_scale();

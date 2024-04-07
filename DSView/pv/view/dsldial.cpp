@@ -80,7 +80,7 @@ void dslDial::paint(QPainter &p, QRectF dialRect, QColor dialColor, const QPoint
     }
     p.restore();
     // draw value
-    uint64_t displayValue = _value[_sel]*_factor;
+    uint64_t displayValue = _value[_sel];
     uint64_t displayIndex = 0;
     while(displayValue / _step >= 1) {
         displayValue = displayValue / _step;
