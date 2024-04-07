@@ -20,10 +20,13 @@
  */
 
 #include "mathstack.h"
+#include <math.h>
+#include <assert.h>
+
 #include  "dsosnapshot.h"
 #include  "../sigsession.h"
 #include  "../view/dsosignal.h"
-#include <math.h>
+#include "../log.h"
 
 #define PI 3.1415
 
@@ -87,6 +90,11 @@ MathStack::MathStack(pv::SigSession *session,
     _envelope_done(false)
 {
     memset(_envelope_level, 0, sizeof(_envelope_level));
+
+    if (dsoSig1 == NULL || dsoSig2 == NULL){
+        dsv_info("ERROR: MathStack::MathStack, dsoSig1 or dsoSig2 is null.");
+        assert(false);
+    }
 }
 
 MathStack::~MathStack()
@@ -155,7 +163,7 @@ uint64_t MathStack::default_vDialValue()
 {
     uint64_t value = 0;
     view::dslDial *dial1 = _dsoSig1->get_vDial();
-    view::dslDial *dial2 = _dsoSig1->get_vDial();
+    view::dslDial *dial2 = _dsoSig2->get_vDial();
     const uint64_t dial1_value = dial1->get_value() * dial1->get_factor();
     const uint64_t dial2_value = dial2->get_value() * dial2->get_factor();
 
