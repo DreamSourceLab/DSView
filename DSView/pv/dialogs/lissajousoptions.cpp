@@ -75,6 +75,9 @@ LissajousOptions::LissajousOptions(SigSession *session, QWidget *parent) :
     QHBoxLayout *xlayout = new QHBoxLayout();
     QHBoxLayout *ylayout = new QHBoxLayout();
 
+    xlayout->setContentsMargins(5, 15, 5, 5);
+    ylayout->setContentsMargins(5, 15, 5, 5);
+
     for(auto s : _session->get_signals()) {
         if (s->signal_type() == SR_CHANNEL_DSO) {
             view::DsoSignal *dsoSig = (view::DsoSignal*)s;

@@ -79,6 +79,10 @@ MathOptions::MathOptions(SigSession *session, QWidget *parent) :
     QHBoxLayout *src1_layout = new QHBoxLayout();
     QHBoxLayout *src2_layout = new QHBoxLayout();
 
+    src1_layout->setContentsMargins(5, 15, 5, 5);
+    src2_layout->setContentsMargins(5, 15, 5, 5);
+    type_layout->setContentsMargins(5, 15, 5, 5);
+
     for(auto s : _session->get_signals()) {
         if (s->signal_type() == SR_CHANNEL_DSO) {
             view::DsoSignal *dsoSig = (view::DsoSignal*)s;
