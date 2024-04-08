@@ -1950,6 +1950,11 @@ namespace pv
 
                 _sampling_bar->update_device_list();
 
+                //If the current device is working, do not remind to switch new device.
+                if (_session->get_device()->is_hardware() && _session->is_working()){
+                    return;
+                }
+
                 // If a saving task is running, not need to remind to switch device, 
                 // when the task end, the new device will be selected.
                 if (_session->get_device()->is_demo() == false && !_is_save_confirm_msg)
