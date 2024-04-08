@@ -137,6 +137,7 @@ DeviceOptions::DeviceOptions(QWidget *parent) :
     QGroupBox *props_box = new QGroupBox(L_S(STR_PAGE_DLG, S_ID(IDS_DLG_MODE), "Mode"), this);
     props_box->setFont(font);
     QLayout *props_lay = get_property_form(props_box);
+    props_lay->setContentsMargins(5, 15, 5, 5);
     props_box->setLayout(props_lay);
     _container_lay->addWidget(props_box);
 
@@ -394,8 +395,8 @@ void DeviceOptions::logic_probes(QVBoxLayout &layout)
 
     QPushButton *enable_all_probes = new QPushButton(L_S(STR_PAGE_DLG, S_ID(IDS_DLG_ENABLE_ALL), "Enable All"));
     QPushButton *disable_all_probes = new QPushButton(L_S(STR_PAGE_DLG, S_ID(IDS_DLG_DISABLE_ALL), "Disable All"));
-    enable_all_probes->setMaximumHeight(30);
-    disable_all_probes->setMaximumHeight(30);
+    enable_all_probes->setMaximumHeight(33);
+    disable_all_probes->setMaximumHeight(33);
     enable_all_probes->setFont(font);
     disable_all_probes->setFont(font);
 
@@ -834,6 +835,8 @@ void DeviceOptions::build_dynamic_panel()
     if (title == ""){ 
         box->setVisible(false);
     }
+
+    _dynamic_panel->layout()->setContentsMargins(5, 15, 5, 5);
 
     _isBuilding = false;
 }

@@ -88,6 +88,7 @@ MeasureDock::MeasureDock(QWidget *parent, View &view, SigSession *session) :
     _mouse_layout->addWidget(new QLabel(_widget), 2, 6);
     _mouse_layout->setColumnStretch(5, 1);
     _mouse_groupBox->setLayout(_mouse_layout);
+    _mouse_layout->setContentsMargins(5, 15, 5, 5);
 
     /* cursor distance group */
     _dist_groupBox = new QGroupBox(_widget);
@@ -104,6 +105,7 @@ MeasureDock::MeasureDock(QWidget *parent, View &view, SigSession *session) :
     _dist_layout->setColumnStretch(1, 50);
     _dist_layout->setColumnStretch(6, 100);
     _dist_groupBox->setLayout(_dist_layout);
+    _dist_layout->setContentsMargins(5, 15, 5, 5);
 
     /* cursor edges group */
     _edge_groupBox = new QGroupBox(_widget);
@@ -120,6 +122,7 @@ MeasureDock::MeasureDock(QWidget *parent, View &view, SigSession *session) :
     _edge_layout->addWidget(_edge_label, 0, 6);
     _edge_layout->setColumnStretch(1, 50);
     _edge_groupBox->setLayout(_edge_layout);
+    _edge_layout->setContentsMargins(5, 15, 5, 5);
 
     /* cursors group */
     _time_label = new QLabel(_widget);
@@ -130,6 +133,7 @@ MeasureDock::MeasureDock(QWidget *parent, View &view, SigSession *session) :
     _cursor_layout->setColumnStretch(3, 1);
 
     _cursor_groupBox->setLayout(_cursor_layout);
+    _cursor_layout->setContentsMargins(5, 15, 5, 5);
 
     QVBoxLayout *layout = new QVBoxLayout(_widget);
     layout->addWidget(_mouse_groupBox);

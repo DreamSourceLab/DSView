@@ -30,7 +30,6 @@
 #include <QSlider>
 #include <QLineEdit>
 #include <QSpinBox>
-#include <QGroupBox>
 #include <QTableWidget>
 #include <QCheckBox>
 
