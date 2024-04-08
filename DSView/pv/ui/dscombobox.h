@@ -25,19 +25,13 @@
 #include <QComboBox>
 #include <QKeyEvent>
 
-class DsComboBox : public QComboBox
-{ 
-public:
-    explicit DsComboBox(QWidget *parent = nullptr);
-};
 
-/*
 class DsComboBox : public QComboBox
 {
-    Q_OBJECT
-
 public:
     explicit DsComboBox(QWidget *parent = nullptr);
+
+    ~DsComboBox();
 
     void addItem(const QString &atext, const QVariant &userData = QVariant());
 
@@ -54,7 +48,6 @@ private:
     int     _contentWidth;
     bool    _bPopup;
 };
-*/
 
 
 #endif // DSCOMBOBOX_H

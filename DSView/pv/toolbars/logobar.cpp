@@ -47,6 +47,7 @@
 #include "../ui/langresource.h"
 #include "../ui/msgbox.h"
 #include "../ui/fn.h"
+#include "../ui/dscombobox.h"
 
 namespace pv {
 namespace toolbars {
@@ -239,7 +240,7 @@ void LogoBar::on_action_setting_log()
     panel->setLayout(lay);
     lay->setVerticalSpacing(15);
  
-    QComboBox *cbBox = new QComboBox();
+    QComboBox *cbBox = new DsComboBox();
     cbBox->setMinimumWidth(40);
     lay->addRow(L_S(STR_PAGE_DLG, S_ID(IDS_DLG_LOG_LEVEL), "Log Level"), cbBox);
 
