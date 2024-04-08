@@ -131,6 +131,7 @@ MeasureDock::MeasureDock(QWidget *parent, View &view, SigSession *session) :
     _cursor_layout->addWidget(_time_label, 0, 2);
     _cursor_layout->addWidget(new QLabel(_widget), 0, 3);
     _cursor_layout->setColumnStretch(3, 1);
+    _cursor_layout->setAlignment(Qt::AlignLeft | Qt::AlignTop);
 
     _cursor_groupBox->setLayout(_cursor_layout);
     _cursor_layout->setContentsMargins(5, 15, 5, 5);
@@ -269,6 +270,7 @@ void MeasureDock::build_dist_pannel()
         QWidget *row_widget = new QWidget(_widget);
         row_widget->setContentsMargins(0,0,0,0);
         QHBoxLayout *row_layout = new QHBoxLayout(row_widget);
+        row_layout->setAlignment(Qt::AlignLeft);
         row_layout->setContentsMargins(0,0,0,0);
         row_layout->setSpacing(0);
         row_widget->setLayout(row_layout);
@@ -346,6 +348,8 @@ void MeasureDock::add_dist_measure()
         _dist_row_list.push_back(inf);
 
         build_dist_pannel();
+
+        adjusLabelSize();      
     }  
 }
 
@@ -392,6 +396,7 @@ void MeasureDock::build_edge_pannel()
         QWidget *row_widget = new QWidget(_widget);
         row_widget->setContentsMargins(0,0,0,0);
         QHBoxLayout *row_layout = new QHBoxLayout(row_widget);
+        row_layout->setAlignment(Qt::AlignLeft);
         row_layout->setContentsMargins(0,0,0,0);
         row_layout->setSpacing(0);
         row_widget->setLayout(row_layout);
@@ -412,6 +417,7 @@ void MeasureDock::build_edge_pannel()
         QLabel *a_label = new QLabel("@", row_widget);
         a_label->setContentsMargins(0,0,0,0);
         QComboBox *ch_cmb = create_probe_selector(row_widget);
+        ch_cmb->setFixedWidth(60);
 
         row_layout->addWidget(del_btn);
         row_layout->addSpacing(5);
@@ -477,6 +483,8 @@ void MeasureDock::add_edge_measure()
 
         _edge_row_list.push_back(inf);
         build_edge_pannel();
+
+        adjusLabelSize();
     } 
 }
 
@@ -582,6 +590,8 @@ void MeasureDock::set_sel_cursor()
         update_dist();
     else
         update_edge();
+
+    adjusLabelSize();
 }
 
 void MeasureDock::update_dist()
@@ -615,7 +625,7 @@ void MeasureDock::update_dist()
                                  "/" + QString::number(delta);
             if (delta < 0)
                 delta_text.replace('+', '-');
-            inf.r_label->setText(delta_text);
+            inf.r_label->setText(delta_text); 
         }
         else {
             inf.r_label->setText(" ");
