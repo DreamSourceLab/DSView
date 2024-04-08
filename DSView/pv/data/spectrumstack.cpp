@@ -20,11 +20,12 @@
  */
 
 #include "spectrumstack.h"
- 
+#include <math.h>
 #include "dsosnapshot.h"
 #include "../sigsession.h"
 #include "../view/dsosignal.h"
-#include <math.h>
+#include "../ui/langresource.h"
+
 
 #define PI 3.1415
 
@@ -34,22 +35,6 @@ using namespace std;
 namespace pv {
 namespace data {
 
-const QString SpectrumStack::windows_support[5] = {
-    QT_TR_NOOP("Rectangle"),
-    QT_TR_NOOP("Hann"),
-    QT_TR_NOOP("Hamming"),
-    QT_TR_NOOP("Blackman"),
-    QT_TR_NOOP("Flat_top")
-};
-
-const uint64_t SpectrumStack::length_support[5] = {
-    1024,
-    2048,
-    4096,
-    8192,
-    16384,
-};
-
 SpectrumStack::SpectrumStack(pv::SigSession *session, int index) :
     _session(session),
     _index(index),
@@ -58,6 +43,7 @@ SpectrumStack::SpectrumStack(pv::SigSession *session, int index) :
     _spectrum_state(Init),
     _fft_plan(NULL)
 {
+
 }
 
 SpectrumStack::~SpectrumStack()
@@ -125,26 +111,6 @@ int SpectrumStack::get_sample_interval()
 void SpectrumStack::set_sample_interval(int interval)
 {
     _sample_interval = interval;
-}
-
-const std::vector<QString> SpectrumStack::get_windows_support()
-{
-    std::vector<QString> windows;
-    for (size_t i = 0; i < sizeof(windows_support)/sizeof(windows_support[0]); i++)
-    {
-        windows.push_back(windows_support[i]);
-    }
-    return windows;
-}
-
-const std::vector<uint64_t> SpectrumStack::get_length_support()
-{
-    std::vector<uint64_t> length;
-    for (size_t i = 0; i < sizeof(length_support)/sizeof(length_support[0]); i++)
-    {
-        length.push_back(length_support[i]);
-    }
-    return length;
 }
 
 const std::vector<double> SpectrumStack::get_fft_spectrum()

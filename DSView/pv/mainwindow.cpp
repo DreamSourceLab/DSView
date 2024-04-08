@@ -1378,20 +1378,21 @@ namespace pv
 
         if (language == LAN_CN)
         {
-           // _qtTrans.load(":/qt_" + QString::number(language));
-            //qApp->installTranslator(&_qtTrans);
-            //_myTrans.load(":/my_" + QString::number(language));
-          //  qApp->installTranslator(&_myTrans);
+            _qtTrans.load(":/qt_" + QString::number(language));
+            qApp->installTranslator(&_qtTrans);
+            _myTrans.load(":/my_" + QString::number(language));
+            qApp->installTranslator(&_myTrans);
         }
         else if (language == LAN_EN)
         {
-           // qApp->removeTranslator(&_qtTrans);
-          //  qApp->removeTranslator(&_myTrans);
+            qApp->removeTranslator(&_qtTrans);
+            qApp->removeTranslator(&_myTrans);
         }
 
         retranslateUi();
 
         UiManager::Instance()->Update(UI_UPDATE_ACTION_LANG);
+        _session->update_lang_text();
     }
 
     void MainWindow::switchTheme(QString style)
@@ -2096,7 +2097,7 @@ namespace pv
             break;
 
         case DSV_MSG_FONT_OPTIONS_CHANGED:
-            UiManager::Instance()->Update(UI_UPDATE_ACTION_FONT);
+            UiManager::Instance()->Update(UI_UPDATE_ACTION_FONT);          
             break;
         case DSV_MSG_DATA_POOL_CHANGED:
             _view->check_measure();

@@ -34,6 +34,7 @@
 #include <QRadioButton>
 #include <QCheckBox>
 #include <QDebug>
+#include <QFontMetrics>
 
 #include "../config/appconfig.h"
 #include "../ui/xtoolbutton.h"
@@ -144,6 +145,29 @@ namespace ui
         for(auto o : groups)
         { 
             o->setFont(font);
+        }
+    }
+
+    QSize measure_string(QFont font, QString str)
+    {
+        QFontMetrics fm(font); 
+        QRect rc = fm.boundingRect(str);
+        return rc.size();
+    }
+
+    void adjust_label_size(QLabel *ctrl, AdjustSizeAction action)
+    {
+        QSize sz = measure_string(ctrl->font(), ctrl->text());
+
+        if (action == ADJUST_WIDTH){
+            ctrl->setFixedWidth(sz.width() + 5);
+        }
+        else if (action == ADJUST_HEIGHT){
+            ctrl->setFixedHeight(sz.height() + 5);
+        }
+        else{
+            ctrl->setFixedHeight(sz.height() + 5);
+            ctrl->setFixedWidth(sz.width() + 5);
         }
     }
 

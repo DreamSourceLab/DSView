@@ -2549,4 +2549,11 @@ namespace pv
         }
     }
 
+    void SigSession::update_lang_text()
+    {
+        for (auto trace : _spectrum_traces){
+            trace->update_lang_text();
+        }
+    }
+
 } // namespace pv

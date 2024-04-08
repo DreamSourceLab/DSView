@@ -43,9 +43,13 @@ using namespace std;
 namespace pv {
 namespace dialogs {
 
-const QString Calibration::VGAIN = QT_TR_NOOP(" VGAIN");
-const QString Calibration::VOFF = QT_TR_NOOP(" VOFF");
-const QString Calibration::VCOMB = QT_TR_NOOP(" VCOMB");
+namespace
+{
+    QString VGAIN = "VGAIN";
+    QString VOFF =  "VOFF";
+    QString VCOMB = "VCOMB";
+    QString CHANNEL_LABEL = "Channel";
+}
 
 Calibration::Calibration(QWidget *parent) :
     DSDialog(parent)
@@ -56,11 +60,12 @@ Calibration::Calibration(QWidget *parent) :
     _exit_btn = NULL;
     _flayout = NULL;
 
+
 #ifdef Q_OS_DARWIN
     Qt::WindowFlags flags = windowFlags();
     this->setWindowFlags(flags | Qt::Tool);
 #endif
-    this->setFixedSize(400, 250);
+    this->setFixedSize(450, 300);
     this->setWindowOpacity(0.7);
     this->setModal(false);
 
@@ -144,6 +149,8 @@ void Calibration::update_device_info()
     }
     _label_list.clear();
 
+    _flayout->setSpacing(15);
+
     for (const GSList *l = _device_agent->get_channels(); l; l = l->next) {
         sr_channel *const probe = (sr_channel*)l->data;
         assert(probe);
@@ -159,8 +166,11 @@ void Calibration::update_device_info()
         gain_slider->setRange(-vgain_range/2, vgain_range/2);
         gain_slider->setValue(vgain - vgain_default);
         gain_slider->setObjectName(VGAIN+probe->index);
-        QString gain_string = L_S(STR_PAGE_DLG, S_ID(IDS_DLG_CHANNEL), "Channel") + QString::number(probe->index) + VGAIN;
+        QString gain_string = CHANNEL_LABEL + QString::number(probe->index) + VGAIN;
         QLabel *gain_label = new QLabel(gain_string, this);
+        ui::adjust_label_size(gain_label, ui::ADJUST_HEIGHT);
+        gain_slider->setFixedHeight(gain_label->size().height());
+        gain_label->setAlignment(Qt::AlignVCenter);        
         _flayout->addRow(gain_label, gain_slider);
         _slider_list.push_back(gain_slider);
         _label_list.push_back(gain_label);
@@ -180,8 +190,11 @@ void Calibration::update_device_info()
         off_slider->setRange(0, voff_range);
         off_slider->setValue(voff);
         off_slider->setObjectName(VOFF+probe->index);
-        QString off_string = L_S(STR_PAGE_DLG, S_ID(IDS_DLG_CHANNEL), "Channel") + QString::number(probe->index) + VOFF;
+        QString off_string = CHANNEL_LABEL + QString::number(probe->index) + VOFF;
         QLabel *off_label = new QLabel(off_string, this);
+        ui::adjust_label_size(off_label, ui::ADJUST_HEIGHT);
+        off_slider->setFixedHeight(off_label->size().height());
+        off_label->setAlignment(Qt::AlignVCenter);    
         _flayout->addRow(off_label, off_slider);
         _slider_list.push_back(off_slider);
         _label_list.push_back(off_label);
@@ -197,8 +210,11 @@ void Calibration::update_device_info()
             comp_slider->setRange(-127, 127);
             comp_slider->setValue(comb_comp);
             comp_slider->setObjectName(VCOMB+probe->index);
-            QString comp_string = L_S(STR_PAGE_DLG, S_ID(IDS_DLG_CHANNEL), "Channel") + QString::number(probe->index) + VCOMB;
+            QString comp_string = CHANNEL_LABEL + QString::number(probe->index) + VCOMB;
             QLabel *comp_label = new QLabel(comp_string, this);
+            ui::adjust_label_size(comp_label, ui::ADJUST_HEIGHT);
+            comp_slider->setFixedHeight(comp_label->size().height());
+            comp_label->setAlignment(Qt::AlignVCenter); 
             _flayout->addRow(comp_label, comp_slider);
             _slider_list.push_back(comp_slider);
             _label_list.push_back(comp_label);
@@ -208,6 +224,10 @@ void Calibration::update_device_info()
         connect(gain_slider, SIGNAL(valueChanged(int)), this, SLOT(set_value(int)));
         connect(off_slider, SIGNAL(valueChanged(int)), this, SLOT(set_value(int)));
     }
+
+    QWidget *spaceLine = new QWidget();
+    spaceLine->setFixedHeight(10);
+    _flayout->addRow(spaceLine);
 
     update();
 }
@@ -297,10 +317,6 @@ void Calibration::on_abort()
                        Qt::WindowMinimizeButtonHint | Qt::WindowMaximizeButtonHint);
     dlg.setCancelButton(NULL);
 
-    QFutureWatcher<void> watcher;
-    connect(&watcher,SIGNAL(finished()),&dlg,SLOT(cancel()));
-    watcher.setFuture(future);
-
     dlg.exec();
     this->show();
 }
@@ -347,9 +363,23 @@ void Calibration::on_reset()
     }
 }
 
+void Calibration::updateLangText()
+{
+    QString sp = " ";
+    VGAIN = sp + L_S(STR_PAGE_DLG, S_ID(IDS_CALIB_VGAIN), "VGAIN");
+    VOFF = sp + L_S(STR_PAGE_DLG, S_ID(IDS_CALIB_VOFF), "VOFF");
+    VCOMB = sp + L_S(STR_PAGE_DLG, S_ID(IDS_CALIB_VCOMB), "VCOMB");
+    CHANNEL_LABEL = L_S(STR_PAGE_DLG, S_ID(IDS_DLG_CHANNEL), "Channel");
+}
+
 void Calibration::UpdateLanguage()
 {
+    updateLangText();
     retranslateUi();
+
+    if (this->isVisible()){
+        update_device_info();
+    }
 }
 
 void Calibration::UpdateTheme()

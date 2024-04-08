@@ -33,6 +33,7 @@
 #include "../view/viewport.h"
 #include "../data/spectrumstack.h"
 #include "../dsvdef.h"
+#include "../ui/langresource.h"
 
 using namespace boost;
 using namespace std;
@@ -40,16 +41,27 @@ using namespace std;
 namespace pv {
 namespace view {
 
+namespace
+{
+    QString FFT_ViewMode[2];
+    QString windows_support[5];
+
+    static const uint64_t length_support[5] = {
+        1024,
+        2048,
+        4096,
+        8192,
+        16384,
+    };
+}
+
 const int SpectrumTrace::UpMargin = 0;
 const int SpectrumTrace::DownMargin = 0;
 const int SpectrumTrace::RightMargin = 30;
-const QString SpectrumTrace::FFT_ViewMode[2] = {
-    "Linear RMS",
-    "DBV RMS"
-};
 
 const QString SpectrumTrace::FreqPrefixes[9] =
     {"", "", "", "", "K", "M", "G", "T", "P"};
+
 const int SpectrumTrace::FirstSIPrefixPower = -9;
 const int SpectrumTrace::LastSIPrefixPower = 15;
 const int SpectrumTrace::Pricision = 2;
@@ -70,8 +82,7 @@ const double SpectrumTrace::VerticalRate = 1.0 / 2000.0;
 SpectrumTrace::SpectrumTrace(pv::SigSession *session,
     pv::data::SpectrumStack *spectrum_stack, int index) :
     Trace("FFT("+QString::number(index)+")", index, SR_CHANNEL_FFT),
-    _session(session),
-    _spectrum_stack(spectrum_stack),
+    _session(session), 
     _enable(false),
     _view_mode(0),
     _hover_en(false),
@@ -85,6 +96,10 @@ SpectrumTrace::SpectrumTrace(pv::SigSession *session,
             _colour = s->get_colour();
         }
     }
+  
+    _spectrum_stack = spectrum_stack;
+
+    update_lang_text();
 }
 
 SpectrumTrace::~SpectrumTrace()
@@ -493,6 +508,38 @@ QRect SpectrumTrace::get_view_rect()
     return QRect(0, UpMargin,
                   _viewport->width() - RightMargin,
                   _viewport->height() - UpMargin - DownMargin);
+}
+
+const std::vector<QString> SpectrumTrace::get_windows_support()
+{
+    std::vector<QString> list;
+    for (size_t i = 0; i < sizeof(windows_support)/sizeof(windows_support[0]); i++)
+    {
+        list.push_back(windows_support[i]);
+    }
+    return list;
+}
+
+const std::vector<uint64_t> SpectrumTrace::get_length_support()
+{
+    std::vector<uint64_t> list;
+    for (size_t i = 0; i < sizeof(length_support)/sizeof(length_support[0]); i++)
+    {
+        list.push_back(length_support[i]);
+    }
+    return list;
+}
+
+void SpectrumTrace::update_lang_text()
+{
+    windows_support[0] = L_S(STR_PAGE_DLG, S_ID(IDS_FFT_WINDOW_RECTANGLE), "Rectangle");
+    windows_support[1] = L_S(STR_PAGE_DLG, S_ID(IDS_FFT_WINDOW_HANN), "Hann");
+    windows_support[2] = L_S(STR_PAGE_DLG, S_ID(IDS_FFT_WINDOW_HAMMING), "Hamming");
+    windows_support[3] = L_S(STR_PAGE_DLG, S_ID(IDS_FFT_WINDOW_BLACKMAN), "Blackman");
+    windows_support[4] = L_S(STR_PAGE_DLG, S_ID(IDS_FFT_WINDOW_FLATTOP), "Flat_top");
+
+    FFT_ViewMode[0] = L_S(STR_PAGE_DLG, S_ID(IDS_FFT_MODE_LINEARRSM), "Linear RMS");
+    FFT_ViewMode[1] = "DBV RMS";
 }
 
 } // namespace view

@@ -111,8 +111,6 @@ const QColor DecodeTrace::OutlineColours[16] = {
 	QColor(0x6B, 0x23, 0x37)
 };
 
-const QString DecodeTrace::RegionStart = QT_TR_NOOP("Start");
-const QString DecodeTrace::RegionEnd = QT_TR_NOOP("End  ");
 
 DecodeTrace::DecodeTrace(pv::SigSession *session,
 	pv::data::DecoderStack *decoder_stack, int index) :

@@ -730,5 +730,65 @@
     {
         "id": "IDS_DLG_END_CURSOR",
         "text": "结束"
+    },
+    {
+        "id": "IDS_DSO_CTR_EN",
+        "text": "启用"
+    },
+    {
+        "id": "IDS_DSO_CTR_DIS",
+        "text": "禁用"
+    },
+    {
+        "id": "IDS_DSO_CTR_GND",
+        "text": "接地"
+    },
+    {
+        "id": "IDS_DSO_CTR_DC",
+        "text": "直流"
+    },
+    {
+        "id": "IDS_DSO_CTR_AC",
+        "text": "交流"
+    },
+    {
+        "id": "IDS_DSO_CTR_AUTO",
+        "text": "自动"
+    },
+    {
+        "id": "IDS_CALIB_VGAIN",
+        "text": "增益"
+    },
+    {
+        "id": "IDS_CALIB_VOFF",
+        "text": "偏置"
+    },
+    {
+        "id": "IDS_CALIB_VCOMB",
+        "text": "交织"
+    },
+    {
+        "id": "IDS_FFT_WINDOW_RECTANGLE",
+        "text": "矩形"
+    },
+    {
+        "id": "IDS_FFT_WINDOW_HANN",
+        "text": "汉宁"
+    },
+    {
+        "id": "IDS_FFT_WINDOW_HAMMING",
+        "text": "汉明"
+    },
+    {
+        "id": "IDS_FFT_WINDOW_BLACKMAN",
+        "text": "布莱克曼"
+    },
+    {
+        "id": "IDS_FFT_WINDOW_FLATTOP",
+        "text": "平顶"
+    },
+    {
+        "id": "IDS_FFT_MODE_LINEARRSM",
+        "text": "线性 RMS"
     }
 ]

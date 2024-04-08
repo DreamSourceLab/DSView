@@ -43,11 +43,6 @@ class Calibration : public DSDialog, public IUiWindow
 {
 	Q_OBJECT
 
-private:
-    static const QString VGAIN;
-    static const QString VOFF;
-    static const QString VCOMB;
-
 public:
     Calibration(QWidget *parent);
     ~Calibration();
@@ -65,6 +60,8 @@ private:
     void UpdateLanguage() override;
     void UpdateTheme() override;
     void UpdateFont() override;
+
+    void updateLangText();
 
 private slots:
     void set_value(int value);

@@ -93,22 +93,25 @@ FftOptions::FftOptions(QWidget *parent, SigSession *session) :
     for(auto t : _session->get_spectrum_traces()) {
         view::SpectrumTrace *spectrumTraces = NULL;
         if ((spectrumTraces = dynamic_cast<view::SpectrumTrace*>(t))) {
-            windows = spectrumTraces->get_spectrum_stack()->get_windows_support();
-            length = spectrumTraces->get_spectrum_stack()->get_length_support();
+            windows = spectrumTraces->get_windows_support();
+            length = spectrumTraces->get_length_support();
             view_modes = spectrumTraces->get_view_modes_support();
             dbv_ranges = spectrumTraces->get_dbv_ranges();
             break;
         }
     }
+
     assert(windows.size() > 0);
     assert(length.size() > 0);
     assert(view_modes.size() > 0);
     assert(dbv_ranges.size() > 0);
+
     for (unsigned int i = 0; i < windows.size(); i++)
     {
         _window_combobox->addItem(windows[i],
             QVariant::fromValue(i));
     }
+
     for (unsigned int i = 0; i < length.size(); i++)
     {
         if (length[i] < _sample_limit)
@@ -117,6 +120,7 @@ FftOptions::FftOptions(QWidget *parent, SigSession *session) :
         else
             break;
     }
+
     assert(_len_combobox->count() > 0);
     _len_combobox->setCurrentIndex(_len_combobox->count()-1);
 

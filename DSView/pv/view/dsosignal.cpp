@@ -31,6 +31,7 @@
 #include "../sigsession.h" 
 #include "../log.h"
 #include "../appcontrol.h"
+#include "../ui/langresource.h"
  
 using namespace std;
 
@@ -1086,34 +1087,34 @@ void DsoSignal::paint_type_options(QPainter &p, int right, const QPoint pt, QCol
     QFontMetrics fm(p.font());
     const QRectF valueRect = QRectF(chEn_rect.left(), vDial_rect.top()-fm.height()-10, right, fm.height());
     p.drawText(valueRect, Qt::AlignCenter, pText);
+ 
+    QString strings[6];
+    strings[0] =  L_S(STR_PAGE_DLG, S_ID(IDS_DSO_CTR_EN), "EN");
+    strings[1] =  L_S(STR_PAGE_DLG, S_ID(IDS_DSO_CTR_DIS), "DIS");
+    strings[2] =  L_S(STR_PAGE_DLG, S_ID(IDS_DSO_CTR_GND), "GND");
+    strings[3] =  L_S(STR_PAGE_DLG, S_ID(IDS_DSO_CTR_DC), "DC");
+    strings[4] =  L_S(STR_PAGE_DLG, S_ID(IDS_DSO_CTR_AC), "AC");
+    strings[5] =  L_S(STR_PAGE_DLG, S_ID(IDS_DSO_CTR_AUTO), "AUTO");
 
-    const char *strings[6] = {
-        QT_TR_NOOP("EN"),
-        QT_TR_NOOP("DIS"),
-        QT_TR_NOOP("GND"),
-        QT_TR_NOOP("DC"),
-        QT_TR_NOOP("AC"),
-        QT_TR_NOOP("AUTO"),
-    };
     p.setPen(Qt::transparent);
     p.setBrush(chEn_rect.contains(pt) ? _colour.darker() : _colour);
     p.drawRect(chEn_rect);
     p.setPen(Qt::white);
-    p.drawText(chEn_rect, Qt::AlignCenter | Qt::AlignVCenter, enabled() ? tr(strings[0]) : tr(strings[1]));
+    p.drawText(chEn_rect, Qt::AlignCenter | Qt::AlignVCenter, enabled() ? strings[0] : strings[1]);
 
     p.setPen(Qt::transparent);
     p.setBrush(enabled() ? (acdc_rect.contains(pt) ? _colour.darker() : _colour) : foreBack);
     p.drawRect(acdc_rect);
     p.setPen(Qt::white);
-    p.drawText(acdc_rect, Qt::AlignCenter | Qt::AlignVCenter, (_acCoupling == SR_GND_COUPLING) ? tr(strings[2]):
-                                                              (_acCoupling == SR_DC_COUPLING) ? tr(strings[3]) : tr(strings[4]));
+    p.drawText(acdc_rect, Qt::AlignCenter | Qt::AlignVCenter, (_acCoupling == SR_GND_COUPLING) ? strings[2]:
+                                                              (_acCoupling == SR_DC_COUPLING) ? strings[3] : strings[4]);
 
     if (session->get_device()->is_hardware()) {
         p.setPen(Qt::transparent);
         p.setBrush(enabled() ? (auto_rect.contains(pt) ? _colour.darker() : _colour) : foreBack);
         p.drawRect(auto_rect);
         p.setPen(Qt::white);
-        p.drawText(auto_rect, Qt::AlignCenter | Qt::AlignVCenter, tr(strings[5]));
+        p.drawText(auto_rect, Qt::AlignCenter | Qt::AlignVCenter, strings[5]);
     }
 
     // paint the probe factor selector

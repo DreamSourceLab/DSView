@@ -49,8 +49,7 @@ class SpectrumTrace : public Trace
 private:
     static const int UpMargin;
     static const int DownMargin;
-    static const int RightMargin;
-    static const QString FFT_ViewMode[2];
+    static const int RightMargin; 
 
     static const QString FreqPrefixes[9];
     static const int FirstSIPrefixPower;
@@ -123,6 +122,10 @@ public:
     void paint_fore(QPainter &p, int left, int right, QColor fore, QColor back);
 
     QRect get_view_rect();
+
+    void update_lang_text();
+    const std::vector<QString> get_windows_support();
+    const std::vector<uint64_t> get_length_support();
 
 protected:
     void paint_type_options(QPainter &p, int right, const QPoint pt, QColor fore);

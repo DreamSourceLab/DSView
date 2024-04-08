@@ -23,6 +23,8 @@
 #define _UI_FN_H
 
 #include <QFont>
+#include <QSize>
+#include <QLabel>
 
 struct FontParam;
 
@@ -31,11 +33,23 @@ class QWidget;
 
 namespace ui
 {   
+
+    enum AdjustSizeAction
+    {
+        ADJUST_WIDTH = 0,
+        ADJUST_HEIGHT = 1,
+        ADJUST_ALL = 2,
+    };
+
     void set_font_param(QFont &font, struct FontParam &param);
 
     void set_toolbar_font(QToolBar *bar, QFont font);
 
     void set_form_font(QWidget *wid, QFont font);
+
+    QSize measure_string(QFont font, QString str);
+
+    void adjust_label_size(QLabel *ctrl, AdjustSizeAction action);
 
 } // namespace ui
 

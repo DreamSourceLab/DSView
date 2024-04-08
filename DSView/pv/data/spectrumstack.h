@@ -49,10 +49,6 @@ class SpectrumStack : public QObject, public SignalData
 {
     Q_OBJECT
 
-private:
-    static const QString windows_support[5];
-    static const uint64_t length_support[5];
-
 public:
     enum spectrum_state {
         Init,
@@ -72,10 +68,7 @@ public:
     void set_sample_num(uint64_t num);
 
     int get_windows_index();
-    void set_windows_index(int index);
-
-    const std::vector<QString> get_windows_support();
-    const std::vector<uint64_t> get_length_support();
+    void set_windows_index(int index); 
 
     bool dc_ignored();
     void set_dc_ignore(bool ignore);
@@ -88,9 +81,7 @@ public:
 
     void calc_fft();
 
-    double window(uint64_t i, int type);
-
-signals:
+    double window(uint64_t i, int type); 
 
 private:
     pv::SigSession *_session;

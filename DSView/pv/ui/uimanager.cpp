@@ -51,9 +51,9 @@ void UiManager::AddWindow(IUiWindow *w)
     m_widgets.push_back(w);
     
     //Init the ui.
+    w->UpdateFont();
     w->UpdateLanguage();
     w->UpdateTheme();
-    w->UpdateFont();
 }
 
 void UiManager::RemoveWindow(IUiWindow *w)

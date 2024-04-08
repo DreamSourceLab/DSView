@@ -730,5 +730,65 @@
     {
         "id": "IDS_DLG_END_CURSOR",
         "text": "End"
+    },
+    {
+        "id": "IDS_DSO_CTR_EN",
+        "text": "EN"
+    },
+    {
+        "id": "IDS_DSO_CTR_DIS",
+        "text": "DIS"
+    },
+    {
+        "id": "IDS_DSO_CTR_GND",
+        "text": "GND"
+    },
+    {
+        "id": "IDS_DSO_CTR_DC",
+        "text": "DC"
+    },
+    {
+        "id": "IDS_DSO_CTR_AC",
+        "text": "AC"
+    },
+    {
+        "id": "IDS_DSO_CTR_AUTO",
+        "text": "AUTO"
+    },
+    {
+        "id": "IDS_CALIB_VGAIN",
+        "text": "VGAIN"
+    },
+    {
+        "id": "IDS_CALIB_VOFF",
+        "text": "VOFF"
+    },
+    {
+        "id": "IDS_CALIB_VCOMB",
+        "text": "VCOMB"
+    },
+    {
+        "id": "IDS_FFT_WINDOW_RECTANGLE",
+        "text": "Rectangle"
+    },
+    {
+        "id": "IDS_FFT_WINDOW_HANN",
+        "text": "Hann"
+    },
+    {
+        "id": "IDS_FFT_WINDOW_HAMMING",
+        "text": "Hamming"
+    },
+    {
+        "id": "IDS_FFT_WINDOW_BLACKMAN",
+        "text": "Blackman"
+    },
+    {
+        "id": "IDS_FFT_WINDOW_FLATTOP",
+        "text": "Flat_top"
+    },
+    {
+        "id": "IDS_FFT_MODE_LINEARRSM",
+        "text": "Linear RMS"
     }
 ]
