@@ -29,7 +29,6 @@
 DsComboBox::DsComboBox(QWidget *parent) 
     :QComboBox(parent)
 {
-    _contentWidth = 0;
     _bPopup = false;
     QComboBox::setSizeAdjustPolicy(QComboBox::AdjustToContents);   
 }
@@ -38,29 +37,38 @@ DsComboBox::~DsComboBox()
 {
 
 }
-  
-void DsComboBox::addItem(const QString &atext, const QVariant &auserData)
-{
-    QComboBox::addItem(atext, auserData);
 
-#ifdef Q_OS_DARWIN
-    if (!atext.isEmpty()){
-        QFontMetrics fm = this->fontMetrics();
-        int w = fm.boundingRect(atext).width();
-        if (w > _contentWidth){
-            _contentWidth = w;                                
-            this->setStyleSheet("QAbstractItemView{min-width:" + QString::number(w + 30) + "px;}");
+void DsComboBox::measureSize()
+{
+    int num = this->count();
+    int maxWidth = 0;
+    int height = 30;
+    QFontMetrics fm = this->fontMetrics();
+
+    for (int i=0; i<num; i++){
+        QString text = this->itemText(i);
+        QRect rc = fm.boundingRect(text);
+ 
+        if (rc.width() > maxWidth){
+            maxWidth = rc.width();
         }
+        height = rc.height();
     }
-#endif
+
+    QString style = QString("QAbstractItemView{min-width:%1px; min-height:%2px;}")
+                .arg(maxWidth + 30)
+                .arg(height + 5);
+    this->setStyleSheet(style);
 }
 
 void DsComboBox::showPopup()
 {
-    QComboBox::showPopup();
     _bPopup = true;
 
 #ifdef Q_OS_DARWIN
+
+    measureSize();
+    QComboBox::showPopup();
 
     QWidget *popup = this->findChild<QFrame*>();
     auto rc = popup->geometry();
@@ -75,12 +83,10 @@ void DsComboBox::showPopup()
         popup->setMaximumHeight(750); 
     }
 
-    if (AppConfig::Instance().IsDarkStyle()){       
-        popup->setStyleSheet("background-color:#262626;");
-    }
-    else{
-        popup->setStyleSheet("background-color:#white;");
-    }
+    popup->setStyleSheet("background-color:" + AppConfig::Instance().GetStyleColor().name());
+
+#else
+    QComboBox::showPopup();
 #endif
 
 }

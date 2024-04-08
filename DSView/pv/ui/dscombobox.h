@@ -31,9 +31,7 @@ class DsComboBox : public QComboBox
 public:
     explicit DsComboBox(QWidget *parent = nullptr);
 
-    ~DsComboBox();
-
-    void addItem(const QString &atext, const QVariant &userData = QVariant());
+    ~DsComboBox(); 
 
 public:
     void showPopup() override;
@@ -45,7 +43,9 @@ public:
     } 
 
 private:
-    int     _contentWidth;
+    void measureSize();
+
+private: 
     bool    _bPopup;
 };
 
