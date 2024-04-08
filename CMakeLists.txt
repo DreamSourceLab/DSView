@@ -349,6 +349,8 @@ set(DSView_SOURCES
     DSView/pv/ui/langresource.cpp
     DSView/pv/ui/fn.cpp
     DSView/pv/ui/xtoolbutton.cpp
+    DSView/pv/ui/uimanager.cpp
+    DSView/pv/ui/popupdlglist.cpp
 )
 
 set(DSView_HEADERS
