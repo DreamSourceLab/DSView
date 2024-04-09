@@ -335,8 +335,14 @@ LRESULT CALLBACK WinNativeWidget::WndProc(HWND hWnd, UINT message, WPARAM wParam
             
             int k = self->GetDevicePixelRatio();
             const LONG borderWidth = 8 * k;
-            RECT winrect;
-            GetWindowRect(hWnd, &winrect);
+            RECT rc;
+            GetWindowRect(hWnd, &rc);
+
+            int left = rc.left;
+            int right = rc.right;
+            int top = rc.top;
+            int bottom = rc.bottom;
+
             long x = GET_X_LPARAM(lParam);
             long y = GET_Y_LPARAM(lParam);
 
@@ -344,52 +350,52 @@ LRESULT CALLBACK WinNativeWidget::WndProc(HWND hWnd, UINT message, WPARAM wParam
             if (!self->IsMaxsized())
             {
                 //bottom left corner
-                if (x >= winrect.left && x < winrect.left + borderWidth &&
-                    y < winrect.bottom && y >= winrect.bottom - borderWidth)
+                if (x >= left && x < left + borderWidth &&
+                    y < bottom && y >= bottom - borderWidth)
                 {
                     return HTBOTTOMLEFT;
                 }
                 //bottom right corner
-                if (x < winrect.right && x >= winrect.right - borderWidth &&
-                    y < winrect.bottom && y >= winrect.bottom - borderWidth)
+                if (x < right && x >= right - borderWidth &&
+                    y < bottom && y >= bottom - borderWidth)
                 {
                     return HTBOTTOMRIGHT;
                 }
                 //top left corner
-                if (x >= winrect.left && x < winrect.left + borderWidth &&
-                    y >= winrect.top && y < winrect.top + borderWidth)
+                if (x >= left && x < left + borderWidth &&
+                    y >= top && y < top + borderWidth)
                 {
                     return HTTOPLEFT;
                 }
                 //top right corner
-                if (x < winrect.right && x >= winrect.right - borderWidth &&
-                    y >= winrect.top && y < winrect.top + borderWidth)
+                if (x < right && x >= right - borderWidth &&
+                    y >= top && y < top + borderWidth)
                 {
                     return HTTOPRIGHT;
                 }
                 //left border
-                if (x >= winrect.left && x < winrect.left + borderWidth)
+                if (x >= left && x < left + borderWidth)
                 {
                     return HTLEFT;
                 }
                 //right border
-                if (x < winrect.right && x >= winrect.right - borderWidth)
+                if (x < right && x >= right - borderWidth)
                 {
                     return HTRIGHT;
                 }
                 //bottom border
-                if (y < winrect.bottom && y >= winrect.bottom - borderWidth)
+                if (y < bottom && y >= bottom - borderWidth)
                 {
                     return HTBOTTOM;
                 }
                 //top border
-                if (y >= winrect.top && y < winrect.top + borderWidth)
+                if (y >= top && y < top + borderWidth)
                 {
                     return HTTOP;
                 }
             } 
 
-            // Check unble move.
+            // title bar
             if (self->_titleBarWidget)
             {
                 QRect titleRect = self->_titleBarWidget->geometry(); 
@@ -397,15 +403,15 @@ LRESULT CALLBACK WinNativeWidget::WndProc(HWND hWnd, UINT message, WPARAM wParam
                 int titleWidth = titleRect.width() * k - 55 * k;
                 int titleHeight = titleRect.height() * k;
             
-                if (x > winrect.left + 2 * k && x < winrect.left + titleWidth)
+                if (x > left + 2 * k && x < left + titleWidth)
                 {
-                    if (y > winrect.top + 2 * k && y < winrect.top + titleHeight){                        
+                    if (y > top + 2 * k && y < top + titleHeight){                        
                         return HTCAPTION;
                     }
                 }
             }
 
-            break;
+            return HTCLIENT;            
         }
     }
 
