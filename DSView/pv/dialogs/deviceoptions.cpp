@@ -137,7 +137,7 @@ DeviceOptions::DeviceOptions(QWidget *parent) :
     QGroupBox *props_box = new QGroupBox(L_S(STR_PAGE_DLG, S_ID(IDS_DLG_MODE), "Mode"), this);
     props_box->setFont(font);
     QLayout *props_lay = get_property_form(props_box);
-    props_lay->setContentsMargins(5, 15, 5, 5);
+    props_lay->setContentsMargins(5, 20, 5, 5);
     props_box->setLayout(props_lay);
     _container_lay->addWidget(props_box);
 
@@ -776,7 +776,7 @@ QString DeviceOptions::dynamic_widget(QLayout *lay)
 
             if (have_zero) {
                 auto config_button = new QPushButton(L_S(STR_PAGE_DLG, S_ID(IDS_DLG_AUTO_CALIBRATION), "Auto Calibration"), this);
-                config_button->setFont(font);
+                config_button->setFont(font); 
                 grid->addWidget(config_button, 0, 0, 1, 1);
                 connect(config_button, SIGNAL(clicked()), this, SLOT(zero_adj()));
 
@@ -785,7 +785,10 @@ QString DeviceOptions::dynamic_widget(QLayout *lay)
                 grid->addWidget(cali_button, 1, 0, 1, 1);
                 connect(cali_button, SIGNAL(clicked()), this, SLOT(on_calibration()));
 
-                _groupHeight2 = 100;
+                config_button->setFixedHeight(35);
+                cali_button->setFixedHeight(35);
+
+                _groupHeight2 = 135;
                 _dynamic_panel->setFixedHeight(_groupHeight2); 
 
                 //tr
@@ -836,7 +839,7 @@ void DeviceOptions::build_dynamic_panel()
         box->setVisible(false);
     }
 
-    _dynamic_panel->layout()->setContentsMargins(5, 15, 5, 5);
+    _dynamic_panel->layout()->setContentsMargins(5, 20, 5, 5);
 
     _isBuilding = false;
 }
