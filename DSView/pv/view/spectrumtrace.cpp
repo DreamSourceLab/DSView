@@ -230,8 +230,8 @@ QString SpectrumTrace::format_freq(double freq, unsigned precision)
         return s;
         */
 
-        char buffer[20] = {0};
-        char format[10] = {0}; 
+        char buffer[50] = {0};
+        char format[15] = {0}; 
         QString units = FreqPrefixes[prefix] + "Hz";
         sprintf(format, "%%.%df", (int)precision);    
         sprintf(buffer, format, freq / divider);

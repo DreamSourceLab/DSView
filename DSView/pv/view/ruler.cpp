@@ -105,7 +105,7 @@ Ruler::Ruler(View &parent) :
 		this, SLOT(hover_point_changed()));
 }
 
-QString Ruler::format_freq(double period, unsigned precision)
+QString Ruler::format_freq(double period, unsigned int precision)
 {   
     if (period <= 0) {
         return View::Unknown_Str;
@@ -124,8 +124,8 @@ QString Ruler::format_freq(double period, unsigned precision)
         return s;
         */
        
-        char buffer[20] = {0};
-        char format[10] = {0};
+        char buffer[50] = {0};
+        char format[15] = {0};
         QString units = FreqPrefixes[prefix] + "Hz";
         sprintf(format, "%%.%df", (int)precision);       
         sprintf(buffer, format, 1 / (period * multiplier));
@@ -148,8 +148,8 @@ QString Ruler::format_time(double t, int prefix,
 	return s;
     */
 
-    char buffer[20] = {0};
-    char format[10] = {0}; 
+    char buffer[50];
+    char format[15];
     QString units = SIPrefixes[prefix] + "s";
     double v = (t * multiplier) / 1000000.0;
     buffer[0] = v >= 0 ? '+' : '-';
