@@ -2,7 +2,7 @@
 ## This file is part of the libsigrokdecode project.
 ##
 ## Copyright (C) 2018 Stefan Petersen <spe@ciellt.se>
-## Copyright (C) 2024 DreamSourceLab <support@dreamsourcelab.com>
+## Copyright (C) 2022 DreamSourceLab <support@dreamsourcelab.com>
 ##
 ## This program is free software; you can redistribute it and/or modify
 ## it under the terms of the GNU General Public License as published by
@@ -18,9 +18,9 @@
 ## along with this program; if not, see <http://www.gnu.org/licenses/>.
 ##
 
-#
-# DreamSourceLab :Choose hex, dec, oct, bin, or ascii to display the decoding result
-#
+##
+## 2022/07/05 DreamSourceLab : Support for different data output formats
+##
 
 import re
 import sigrokdecode as srd

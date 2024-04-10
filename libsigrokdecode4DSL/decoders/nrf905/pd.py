@@ -2,7 +2,7 @@
 ## This file is part of the libsigrokdecode project.
 ##
 ## Copyright (C) 2020 Jorge Solla Rubiales <jorgesolla@gmail.com>
-## Copyright (C) 2024 DreamSourceLab <support@dreamsourcelab.com>
+## Copyright (C) 2022 DreamSourceLab <support@dreamsourcelab.com>
 ##
 ## Permission is hereby granted, free of charge, to any person obtaining a copy
 ## of this software and associated documentation files (the "Software"), to deal
@@ -22,9 +22,9 @@
 ## OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 ## SOFTWARE.
 
-#
-# DreamSourceLab :Choose hex, dec, oct, bin, or ascii to display the decoding result
-#
+##
+## 2022/07/05 DreamSourceLab : Support for different data output formats
+##
 
 import sigrokdecode as srd
 from common.srdhelper import SrdIntEnum

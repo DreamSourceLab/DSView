@@ -123,7 +123,6 @@ class Decoder(srd.Decoder):
                         bstart += 4
 
                 blen = len(bits)
-                #s1 = '%d bits {$}' % blen
                 s1 = '%d bits %s' % (blen, accum_bits)
                 s2 = '%d bits' % blen
                 #s3 = '@%02X' % (bits2int(bits))
