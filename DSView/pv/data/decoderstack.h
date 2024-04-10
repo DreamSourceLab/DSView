@@ -183,6 +183,10 @@ public:
 
     bool check_required_probes();
 
+    inline uint64_t get_result_count(){
+        return _result_count;
+    }
+
 private:
     void decode_data(const uint64_t decode_start, const uint64_t decode_end, srd_session *const session);
 	void execute_decode_stack();
@@ -218,6 +222,7 @@ private:
     bool            _is_capture_end;
     int             _progress;
     bool            _is_decoding;
+    uint64_t        _result_count;
 
 	friend class DecoderStackTest::TwoDecoderStack;
 };

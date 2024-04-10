@@ -386,5 +386,9 @@
     {
         "id": "IDS_MSG_DATA_RANGE_HAVE_NO_DATA",
         "text": "No data in the data range!"
+    },
+    {
+        "id": "IDS_MSG_NO_DECODED_RESULT",
+        "text": "No data to export!"
     }
 ]

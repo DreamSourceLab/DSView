@@ -69,6 +69,7 @@ DecoderStack::DecoderStack(pv::SigSession *session,
     _snapshot = NULL;
     _progress = 0;
     _is_decoding = false;
+    _result_count = 0;
     
     _stack.push_back(new decode::Decoder(dec));
  
@@ -375,6 +376,7 @@ void DecoderStack::init()
     _error_message = QString();
     _no_memory = false;
     _snapshot = NULL;
+    _result_count = 0;
 
     for (auto i = _rows.begin();i != _rows.end(); i++) { 
         (*i).second->clear();
@@ -802,6 +804,7 @@ void DecoderStack::annotation_callback(srd_proto_data *pdata, void *self)
         d->_no_memory = true;
         return;     
     }
+    d->_result_count++;
 
 	// Find the row
 	assert(pdata->pdo);

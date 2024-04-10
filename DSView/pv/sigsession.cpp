@@ -2556,4 +2556,15 @@ namespace pv
         }
     }
 
+    bool SigSession::have_decoded_result()
+    {
+        for (auto trace : _decode_traces){
+            if (trace->decoder()->get_result_count() > 0){
+                return true;
+            }
+        }
+
+        return false;
+    }
+
 } // namespace pv

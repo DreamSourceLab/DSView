@@ -43,6 +43,7 @@
 #include "../utility/path.h"
 #include "../log.h"
 #include "../ui/langresource.h"
+#include "../ui/msgbox.h"
 
 #define EXPORT_DEC_ROW_COUNT_MAX 20
 
@@ -108,7 +109,14 @@ ProtocolExp::ProtocolExp(QWidget *parent, SigSession *session) :
 }
 
 void ProtocolExp::accept()
-{ 
+{   
+    if (_session->have_decoded_result() == false)
+    {
+        QString errMsg = L_S(STR_PAGE_MSG, S_ID(IDS_MSG_NO_DECODED_RESULT), "No data to export");
+        MsgBox::Show(errMsg);
+        return;
+    }
+
     QDialog::accept();
 
     if (_row_sel_list.empty()){
