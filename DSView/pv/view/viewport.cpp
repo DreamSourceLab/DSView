@@ -90,7 +90,7 @@ Viewport::Viewport(View &parent, View_type type) :
     _edge_hit = false;
     _transfer_started = false;
     _timer_cnt = 0;
-    _clickX = 0;
+  
     _sample_received = 0;
     _is_checked_trig = false;
 
@@ -646,7 +646,6 @@ void Viewport::mousePressEvent(QMouseEvent *event)
 {
 	assert(event);
     
-    _clickX = event->globalPos().x();
 	_mouse_down_point = event->pos();
 	_mouse_down_offset = _view.offset();
     _drag_strength = 0;
@@ -657,7 +656,7 @@ void Viewport::mousePressEvent(QMouseEvent *event)
         && _view.session().is_stopped_status())
     {
         if (_view.session().get_device()->get_work_mode() == LOGIC) {
-            _action_type = LOGIC_ZOOM;
+            set_action(LOGIC_ZOOM);
         }
         else if (_view.session().get_device()->get_work_mode() == DSO) {
             if (_hover_hit) {
@@ -679,7 +678,7 @@ void Viewport::mousePressEvent(QMouseEvent *event)
                 DsoSignal *dsoSig = (DsoSignal*)s;
                 if (dsoSig->get_trig_rect(0, _view.get_view_width()).contains(_mouse_point)) {
                    _drag_sig = s;
-                   _action_type = DSO_TRIG_MOVE;
+                   set_action(DSO_TRIG_MOVE);
                    dsoSig->select(true);
                    break;
                 }
@@ -697,7 +696,7 @@ void Viewport::mousePressEvent(QMouseEvent *event)
             }
             else if (qAbs(searchX - event->pos().x()) <= HitCursorMargin) {
                 _view.get_ruler()->set_grabbed_cursor(_view.get_search_cursor());
-                _action_type = CURS_MOVE;
+                set_action(CURS_MOVE);
             }    
         }
  
@@ -712,7 +711,7 @@ void Viewport::mousePressEvent(QMouseEvent *event)
                 }
                 else if (qAbs(cursorX - event->pos().x()) <= HitCursorMargin) {
                     _view.get_ruler()->set_grabbed_cursor(*i);
-                    _action_type = CURS_MOVE;
+                    set_action(CURS_MOVE);
                     break;
                 }
                 i++;
@@ -772,17 +771,17 @@ void Viewport::mousePressEvent(QMouseEvent *event)
                            _view.hover_point().y() > min(cursorY0, cursorY1) &&
                            _view.hover_point().y() < max(cursorY0, cursorY1)) {
                     (*i)->set_grabbed(XCursor::XCur_Y, true);
-                    _action_type = CURS_MOVE;
+                    set_action(CURS_MOVE);
                     break;
                 }
                 else if (qAbs(cursorY0 - _view.hover_point().y()) <= HitCursorMargin) {
                     (*i)->set_grabbed(XCursor::XCur_X0, true);
-                    _action_type = CURS_MOVE;
+                    set_action(CURS_MOVE);
                     break;
                 }
                 else if (qAbs(cursorY1 - _view.hover_point().y()) <= HitCursorMargin) {
                     (*i)->set_grabbed(XCursor::XCur_X1, true);
-                    _action_type = CURS_MOVE;
+                    set_action(CURS_MOVE);
                     break;
                 }
                 i++;
@@ -922,26 +921,31 @@ void Viewport:: mouseMoveEvent(QMouseEvent *event)
     update(UpdateEventType::UPDATE_EV_MS_MOVE);
 }
 
-void Viewport::mouseReleaseEvent(QMouseEvent *event)
+void Viewport::set_action(ActionType action)
 {
-        assert(event);
+    if (_action_type == LOGIC_JUMP && action != LOGIC_JUMP)
+    {
+       // int bbb = 0;
+      // assert(0);
+    }
+    _action_type = action;
+}
 
-        bool quickScroll = AppConfig::Instance().appOptions.quickScroll;
-        bool isMaxWindow = AppControl::Instance()->TopWindowIsMaximized();
-    
-        if (_type != TIME_VIEW){
-            update(UpdateEventType::UPDATE_EV_MS_UP);
-            return;
-        }
-  
-        if ((_action_type == NO_ACTION) && (event->button() == Qt::LeftButton)) 
+void Viewport::onLogicMouseRelease(QMouseEvent *event)
+{
+    bool quickScroll = AppConfig::Instance().appOptions.quickScroll;
+    bool isMaxWindow = AppControl::Instance()->TopWindowIsMaximized();
+
+    switch (_action_type)
+    {
+        case NO_ACTION:
         {
-            if (_view.session().get_device()->get_work_mode() == LOGIC
-                && _view.session().is_stopped_status()) {
+            if (event->button() == Qt::LeftButton && _view.session().is_stopped_status()){
                 //priority 1
                 //try to quick scroll view...
-                int curX = event->globalPos().x();
-                int moveLong = ABS_VAL(curX - _clickX);                
+                int curX = event->pos().x();
+                int clickX = _mouse_down_point.x();
+                int moveLong = ABS_VAL(curX - clickX);                
                 int maxWidth = this->geometry().width();
                 float mvk = (float) moveLong / (float)maxWidth;
 
@@ -961,12 +965,13 @@ void Viewport::mouseReleaseEvent(QMouseEvent *event)
                         abs(_drag_strength) < MinorDragOffsetUp &&
                         abs(strength) > MinorDragRateUp) {
                         _drag_timer.start(DragTimerInterval);
-                        _action_type = LOGIC_MOVE;
-                    } else if (_elapsed_time.elapsed() < 200 &&
+                        set_action(LOGIC_MOVE);
+                    }
+                    else if (_elapsed_time.elapsed() < 200 &&
                                abs(strength) > DragTimerInterval) {
                         _drag_strength = strength * 5;
                         _drag_timer.start(DragTimerInterval);
-                        _action_type = LOGIC_MOVE;
+                        set_action(LOGIC_MOVE);
                     }
                 }
 
@@ -979,13 +984,17 @@ void Viewport::mouseReleaseEvent(QMouseEvent *event)
                             if (s->signal_type() == SR_CHANNEL_LOGIC) {
                                 view::LogicSignal *logicSig = (view::LogicSignal*)s;
                                 if (logicSig->is_by_edge(event->pos(), _edge_start, 10)) {
-                                    _action_type = LOGIC_JUMP;
+                                    set_action(LOGIC_JUMP);                                    
                                     _cur_preX = _view.index2pixel(_edge_start);
                                     _cur_preY = logicSig->get_y();
                                     _cur_preY_top = logicSig->get_y() - logicSig->get_totalHeight()/2 - 12;
                                     _cur_preY_bottom = logicSig->get_y() + logicSig->get_totalHeight()/2 + 2;
                                     _cur_aftX = _cur_preX;
                                     _cur_aftY = _cur_preY;
+
+                                    static int times = 0;
+                                    times++;
+                                    dsv_info("click by edge %d", times);
                                     break;
                                 }
                             }
@@ -1000,123 +1009,37 @@ void Viewport::mouseReleaseEvent(QMouseEvent *event)
 
                         for(auto s : sigs) {
                             if (abs(event->pos().y() - s->get_y()) < _view.get_signalHeight()) {
-                                _action_type = LOGIC_EDGE;
+                                set_action(LOGIC_EDGE);
                                 _edge_start = _view.pixel2index(event->pos().x());
                                 break;
                             }
                         }
                     }
                 }
-            }
-            else if (_view.session().get_device()->get_work_mode() == DSO) {
-                // priority 0
-                if (_action_type == NO_ACTION && _hover_hit) {
-                    _action_type = DSO_YM;
-                    _dso_ym_valid = true;
-                    _dso_ym_sig_index = _hover_sig_index;
-                    _dso_ym_sig_value = _hover_sig_value;
-                    _dso_ym_index = _hover_index;
-                    _dso_ym_start = event->pos().y();
-                }
-            }
+            } 
+            break;
         }
-        else if (_action_type == DSO_YM) {
-            if (event->button() == Qt::LeftButton) {
-                _dso_ym_end = event->pos().y();
-                _action_type = NO_ACTION;
-            } else if (event->button() == Qt::RightButton) {
-                _action_type = NO_ACTION;
-                _dso_ym_valid = false;
-            }
-        }
-        else if (_action_type == DSO_TRIG_MOVE) {
-            if (_dso_trig_moved && event->button() == Qt::LeftButton) {
-                _drag_sig = NULL;
-                _action_type = NO_ACTION;
-                _dso_trig_moved = false;
-
-                std::vector<Trace*> traces;
-                _view.get_traces(ALL_VIEW, traces);
-
-                for(auto t : traces){
-                     t->select(false);
-                }                   
-            }
-        } 
-        else if (_action_type == DSO_XM_STEP0) {
-            if (event->button() == Qt::LeftButton) {
-                _action_type = DSO_XM_STEP1;
-                _dso_xm_valid = true;
-            }
-        }
-        else if (_action_type == DSO_XM_STEP1) {
-            if (event->button() == Qt::LeftButton) {
-                _dso_xm_index[1] = _view.pixel2index(event->pos().x());
-                const uint64_t max_index = max(_dso_xm_index[0], _dso_xm_index[1]);
-                _dso_xm_index[0] = min(_dso_xm_index[0], _dso_xm_index[1]);
-                _dso_xm_index[1] = max_index;
-
-                _action_type = DSO_XM_STEP2;
-            }
-            else if (event->button() == Qt::RightButton) {
-                clear_dso_xm();
-                measure_updated();
-            }
-        }
-        else if (_action_type == DSO_XM_STEP2) {
-            if (event->button() == Qt::LeftButton) {
-                _dso_xm_index[2] = _view.pixel2index(event->pos().x());
-                uint64_t max_index = max(_dso_xm_index[1], _dso_xm_index[2]);
-                _dso_xm_index[1] = min(_dso_xm_index[1], _dso_xm_index[2]);
-                _dso_xm_index[2] = max_index;
-
-                max_index = max(_dso_xm_index[0], _dso_xm_index[1]);
-                _dso_xm_index[0] = min(_dso_xm_index[0], _dso_xm_index[1]);
-                _dso_xm_index[1] = max_index;
-
-                _action_type = NO_ACTION;
-            }
-            else if (event->button() == Qt::RightButton) {
-                clear_dso_xm();
-                measure_updated();
-            }
-        }
-        else if (_action_type == CURS_MOVE) {
-            if (_curs_moved && event->button() == Qt::LeftButton) {
-                _action_type = NO_ACTION;
-                _view.get_ruler()->rel_grabbed_cursor();
-                _view.cursor_moved();
-                _curs_moved = false;
-            }
-            if (_xcurs_moved && event->button() == Qt::LeftButton) {
-                _action_type = NO_ACTION;
-                auto &xcursor_list = _view.get_xcursorList();
-                auto i = xcursor_list.begin();
-                
-                while (i != xcursor_list.end()) {
-                    (*i)->rel_grabbed();
-                    i++;
-                }
-
-                _xcurs_moved = false;
-            }
-        }
-        else if (_action_type == LOGIC_EDGE) {
-            _action_type = NO_ACTION;
+        case LOGIC_EDGE:
+        {
+            set_action(NO_ACTION);
             _edge_rising = 0;
             _edge_falling = 0;
+            break;
         }
-        else if (_action_type == LOGIC_JUMP) {
-            _action_type = NO_ACTION;
+        case LOGIC_JUMP:
+        {
+            set_action(NO_ACTION);
             _edge_rising = 0;
             _edge_falling = 0;
             _edge_hit = false;
+            break;
         }
-        else if (_action_type == LOGIC_MOVE) {
+        case LOGIC_MOVE:
+        {
             if (_mouse_down_point == event->pos()) {
                 _drag_strength = 0;
                 _drag_timer.stop();
-                _action_type = NO_ACTION;
+                set_action(NO_ACTION);
             }
             else {
                 const double strength = _drag_strength*DragTimerInterval*1.0/_elapsed_time.elapsed();
@@ -1133,11 +1056,13 @@ void Viewport::mouseReleaseEvent(QMouseEvent *event)
                 else {
                     _drag_strength = 0;
                     _drag_timer.stop();
-                    _action_type = NO_ACTION;
+                    set_action(NO_ACTION);
                 }
             }
+            break;
         }
-        else if (_action_type == LOGIC_ZOOM) {
+        case LOGIC_ZOOM:
+        {
             if (event->pos().x() != _mouse_down_point.x()) {
                 int64_t newOffset = _view.offset() + (min(event->pos().x(), _mouse_down_point.x()));
                 const double newScale = max(min(_view.scale() * abs(event->pos().x() - _mouse_down_point.x()) / _view.get_view_width(),
@@ -1146,18 +1071,161 @@ void Viewport::mouseReleaseEvent(QMouseEvent *event)
                 if (newScale != _view.scale())
                     _view.set_scale_offset(newScale, newOffset);
             }
-            _action_type = NO_ACTION;
+            set_action(NO_ACTION);
+            break;
         }
-    
-    if (_view.session().get_device()->get_work_mode() == LOGIC
-        && event->button() == Qt::LeftButton){
-            const int64_t index = _view.pixel2index(_clickX);
-            if (index > _view.session().get_ring_sample_count()){
-                _measure_type = MeasureType::NO_MEASURE;
-                _action_type = NO_ACTION;
-            }  
+    } 
+}
+
+void Viewport::onDsoMouseRelease(QMouseEvent *event)
+{
+    switch (_action_type)
+    {
+        case NO_ACTION:
+        {
+            if (event->button() == Qt::LeftButton && _hover_hit)
+            {
+                set_action(DSO_YM);
+                _dso_ym_valid = true;
+                _dso_ym_sig_index = _hover_sig_index;
+                _dso_ym_sig_value = _hover_sig_value;
+                _dso_ym_index = _hover_index;
+                _dso_ym_start = event->pos().y();
+            }
+            break;
+        }
+        case DSO_YM:
+        {
+            if (event->button() == Qt::LeftButton) {
+                _dso_ym_end = event->pos().y();
+                set_action(NO_ACTION);
+            }
+            else if (event->button() == Qt::RightButton) {
+                set_action(NO_ACTION);
+                _dso_ym_valid = false;
+            }
+            break;
+        }
+        case DSO_TRIG_MOVE:
+        {
+            if (_dso_trig_moved && event->button() == Qt::LeftButton) {
+                _drag_sig = NULL;
+                set_action(NO_ACTION);
+                _dso_trig_moved = false;
+
+                std::vector<Trace*> traces;
+                _view.get_traces(ALL_VIEW, traces);
+
+                for(auto t : traces){
+                     t->select(false);
+                }                   
+            }
+            break;
+        }
+        case DSO_XM_STEP0:
+        {
+            if (event->button() == Qt::LeftButton) {
+                set_action(DSO_XM_STEP1);
+                _dso_xm_valid = true;
+            }
+            break;
+        }
+        case DSO_XM_STEP1:
+        {
+            if (event->button() == Qt::LeftButton) {
+                _dso_xm_index[1] = _view.pixel2index(event->pos().x());
+                const uint64_t max_index = max(_dso_xm_index[0], _dso_xm_index[1]);
+                _dso_xm_index[0] = min(_dso_xm_index[0], _dso_xm_index[1]);
+                _dso_xm_index[1] = max_index;
+
+                set_action(DSO_XM_STEP2);
+            }
+            else if (event->button() == Qt::RightButton) {
+                clear_dso_xm();
+                measure_updated();
+            }
+            break;
+        }
+        case DSO_XM_STEP2:
+        {
+            if (event->button() == Qt::LeftButton) {
+                _dso_xm_index[2] = _view.pixel2index(event->pos().x());
+                uint64_t max_index = max(_dso_xm_index[1], _dso_xm_index[2]);
+                _dso_xm_index[1] = min(_dso_xm_index[1], _dso_xm_index[2]);
+                _dso_xm_index[2] = max_index;
+
+                max_index = max(_dso_xm_index[0], _dso_xm_index[1]);
+                _dso_xm_index[0] = min(_dso_xm_index[0], _dso_xm_index[1]);
+                _dso_xm_index[1] = max_index;
+
+                set_action(NO_ACTION);
+            }
+            else if (event->button() == Qt::RightButton) {
+                clear_dso_xm();
+                measure_updated();
+            }
+            break;
+        }
     }
- 
+}
+
+void Viewport::onAnalogMouseRelease(QMouseEvent *event)
+{
+
+}
+
+void Viewport::mouseReleaseEvent(QMouseEvent *event)
+{
+    assert(event);
+
+    if (_type != TIME_VIEW){
+        update(UpdateEventType::UPDATE_EV_MS_UP);
+        return;
+    }
+
+    int mode = _view.session().get_device()->get_work_mode();
+
+    if (mode == LOGIC){
+        onLogicMouseRelease(event);
+    }
+    else if (mode == DSO){
+        onDsoMouseRelease(event);
+    }
+    else if (mode == ANALOG){
+        onAnalogMouseRelease(event);
+    }
+
+    if (_action_type == CURS_MOVE) {
+        if (_curs_moved && event->button() == Qt::LeftButton) {
+            set_action(NO_ACTION);
+            _view.get_ruler()->rel_grabbed_cursor();
+            _view.cursor_moved();
+            _curs_moved = false;
+        }
+        if (_xcurs_moved && event->button() == Qt::LeftButton) {
+            set_action(NO_ACTION);
+            auto &xcursor_list = _view.get_xcursorList();
+            auto i = xcursor_list.begin();
+            
+            while (i != xcursor_list.end()) {
+                (*i)->rel_grabbed();
+                i++;
+            }
+
+            _xcurs_moved = false;
+        }
+    }
+   
+    if (mode == LOGIC && event->button() == Qt::LeftButton){
+        int clickX = _mouse_down_point.x();
+        const int64_t index = _view.pixel2index(clickX);
+        const int64_t total = _view.session().get_ring_sample_count();
+        if (index > total){
+            _measure_type = MeasureType::NO_MEASURE;
+            set_action(NO_ACTION);
+        }
+    }
+
     update(UpdateEventType::UPDATE_EV_MS_UP);
 }
 
@@ -1227,7 +1295,7 @@ void Viewport::mouseDoubleClickEvent(QMouseEvent *event)
                 if (s->get_view_rect().contains(event->pos())) {
                     _dso_xm_index[0] = _view.pixel2index(event->pos().x());
                     _dso_xm_y = event->pos().y();
-                    _action_type = DSO_XM_STEP0;
+                    set_action(DSO_XM_STEP0);
                 }
                 break;
             }
@@ -1382,20 +1450,24 @@ void Viewport::leaveEvent(QEvent *)
     if (_action_type == LOGIC_EDGE) {
         _edge_rising = 0;
         _edge_falling = 0;
-        _action_type = NO_ACTION;
-    } else if (_action_type == LOGIC_JUMP) {
+        set_action(NO_ACTION);
+    }
+    else if (_action_type == LOGIC_JUMP) {
         _edge_rising = 0;
         _edge_falling = 0;
-        _action_type = NO_ACTION;
-    } else if (_action_type == LOGIC_MOVE) {
+        set_action(NO_ACTION);
+    }
+    else if (_action_type == LOGIC_MOVE) {
         _drag_strength = 0;
         _drag_timer.stop();
-        _action_type = NO_ACTION;
-    } else if (_action_type == DSO_XM_STEP1 || _action_type == DSO_XM_STEP2) {
+        set_action(NO_ACTION);
+    }
+    else if (_action_type == DSO_XM_STEP1 || _action_type == DSO_XM_STEP2) {
         clear_dso_xm();
-    } else if (_action_type == DSO_YM) {
+    }
+    else if (_action_type == DSO_YM) {
         _dso_ym_valid = false;
-        _action_type = NO_ACTION;
+        set_action(NO_ACTION);
     }
 
     clear_measure();
@@ -1488,7 +1560,8 @@ void Viewport::clear_dso_xm()
     _mm_period = View::Unknown_Str;
     _mm_freq = View::Unknown_Str;
     _mm_duty = View::Unknown_Str;
-    _action_type = NO_ACTION;
+
+    set_action(NO_ACTION);
 }
 
 void Viewport::measure()
@@ -1999,7 +2072,7 @@ void Viewport::on_drag_timer()
              offset == _view.get_min_offset()) {
         _drag_strength = 0;
         _drag_timer.stop();
-        _action_type = NO_ACTION;
+        set_action(NO_ACTION);
     }
     else if (_action_type == NO_ACTION){
         _drag_strength = 0;

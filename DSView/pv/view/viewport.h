@@ -150,8 +150,12 @@ private:
     void paintCursors(QPainter &p);
 
     void start_trigger_timer(int msec);
-
     void get_captured_progress(double &progress, int &progress100);
+    void set_action(ActionType action);
+
+    void onLogicMouseRelease(QMouseEvent *event);
+    void onDsoMouseRelease(QMouseEvent *event);
+    void onAnalogMouseRelease(QMouseEvent *event);
 
 private slots:
     void on_trigger_timer();
@@ -235,7 +239,6 @@ private:
     bool            _dso_trig_moved;
     bool            _curs_moved;
     bool            _xcurs_moved;
-    int             _clickX;
 
     high_resolution_clock::time_point _lst_wait_tigger_time;
     int             _tigger_wait_times;

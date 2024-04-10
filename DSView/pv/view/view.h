@@ -131,8 +131,6 @@ public:
         return _maxscale;
     }
 
-    void set_scale(double scale);
-
     void auto_set_max_scale();
 
 	/**
@@ -346,14 +344,12 @@ signals:
     void resize();
     void auto_trig(int index);   
 
-private: 
-    void get_scroll_layout(int64_t &length, int64_t &offset);
-	
-	void update_scroll();
-
-    void update_margins();
-
+private:
     static bool compare_trace_v_offsets( const Trace *a, const Trace *b);
+    void get_scroll_layout(int64_t &length, int64_t &offset);	
+	void update_scroll();
+    void update_margins();   
+    void set_scale(double scale);
 
     void clear();
     void reconstruct();  

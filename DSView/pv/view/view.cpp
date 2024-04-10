@@ -229,10 +229,15 @@ void View::capture_init()
         show_trig_cursor(true);
     else if (!_session->is_repeating())
         show_trig_cursor(false);
+
+    int width = get_view_width();
+    assert(width > 0);
  
-    _maxscale = _session->cur_sampletime() / (get_view_width() * MaxViewRate);
-    if (mode == ANALOG)
+    _maxscale = _session->cur_sampletime() / (width * MaxViewRate);
+
+    if (mode == ANALOG){
         set_scale_offset(_maxscale, 0);
+    }
     
     status_clear();
 
@@ -241,7 +246,10 @@ void View::capture_init()
 
 void View::zoom(double steps)
 {
-    zoom(steps, get_view_width() / 2);
+    int width = get_view_width();
+    assert(width > 0);
+
+    zoom(steps, width / 2);
 }
 
 void View::set_update(Viewport *viewport, bool need_update)
@@ -273,6 +281,9 @@ bool View::zoom(double steps, int offset)
     _preScale = _scale;
     _preOffset = _offset;
 
+    int width = get_view_width();
+    assert(width > 0);
+
     if (_device_agent->get_work_mode() != DSO) {
         _scale *= std::pow(3.0/2.0, -steps);
         _scale = max(min(_scale, _maxscale), _minscale);
@@ -289,9 +300,10 @@ bool View::zoom(double steps, int offset)
             hori_res = _sampling_bar->hori_knob(1);
 
         if (hori_res > 0) {
-            const double scale = _session->cur_view_time() / get_view_width();
+            const double scale = _session->cur_view_time() / width;
             _scale = max(min(scale, _maxscale), _minscale);
-        } else {
+        } 
+        else {
             ret = false;
         }
     }
@@ -314,10 +326,16 @@ void View::timebase_changed()
     if (_device_agent->get_work_mode() != DSO)
         return;
 
+    int width = get_view_width();
+    assert(width > 0);
+
     double scale = this->scale();
     double hori_res = _sampling_bar->get_hori_res();
-    if (hori_res > 0)
-        scale = _session->cur_view_time() / get_view_width();
+
+    if (hori_res > 0){
+        scale = _session->cur_view_time() / width;
+    }
+
     set_scale_offset(scale, this->offset());
 }
 
@@ -501,6 +519,9 @@ void View::set_trig_cursor_posistion(uint64_t trig_pos)
     const double time = trig_pos * 1.0 / _session->cur_snap_samplerate();
     _trig_cursor->set_index(trig_pos);
 
+    int width = get_view_width();
+    assert(width > 0);
+
     if (ds_trigger_get_en() ||
         _device_agent->is_virtual() ||
         _device_agent->get_work_mode() == DSO) {
@@ -508,7 +529,7 @@ void View::set_trig_cursor_posistion(uint64_t trig_pos)
 
         AppConfig &app = AppConfig::Instance();
         if (app.appOptions.trigPosDisplayInMid){
-            set_scale_offset(_scale,  (time / _scale) - (get_view_width() / 2));
+            set_scale_offset(_scale,  (time / _scale) - (width / 2));
         }
     }
 
@@ -537,8 +558,11 @@ void View::set_search_pos(uint64_t search_pos, bool hit)
     _search_cursor->set_index(search_pos);
     _search_cursor->set_colour(hit ? View::Blue : fore);
 
+    int width = get_view_width();
+    assert(width);
+
     if (hit) {
-        set_scale_offset(_scale,  (time / _scale) - (get_view_width() / 2));
+        set_scale_offset(_scale,  (time / _scale) - (width / 2));
         _ruler->update();
         viewport_update();
     }
@@ -574,7 +598,10 @@ void View::update_scroll()
 {
     assert(_viewcenter);
 
-    const QSize areaSize = QSize(get_view_width(), get_view_height());
+    int width = get_view_width();
+    assert(width > 0);
+
+    const QSize areaSize = QSize(width, get_view_height());
 
 	// Set the horizontal scroll bar
     int64_t length = 0;
@@ -603,12 +630,16 @@ void View::update_scroll()
 }
 
 void View::update_scale_offset()
-{
+{   
+    int width = get_view_width();
+    assert(width > 0);
+
     if (_device_agent->get_work_mode() != DSO) {
-        _maxscale = _session->cur_sampletime() / (get_view_width() * MaxViewRate);
+        _maxscale = _session->cur_sampletime() / (width * MaxViewRate);     
         _minscale = (1.0 / _session->cur_snap_samplerate()) / MaxPixelsPerSample;
-    } else {
-        _scale = _session->cur_view_time() / get_view_width();
+    }
+    else {
+        _scale = _session->cur_view_time() / width;     
         _maxscale = 1e9;
         _minscale = 1e-15;
     }
@@ -872,11 +903,15 @@ void View::resizeEvent(QResizeEvent*)
     update_scroll();
     signals_changed(NULL);
 
-    if (_device_agent->get_work_mode() == DSO)
-        _scale = _session->cur_view_time() / get_view_width();
+    int width = get_view_width();
+    assert(width > 0);
+
+    if (_device_agent->get_work_mode() == DSO){
+        _scale = _session->cur_view_time() / width;
+    }
 
     if (_device_agent->get_work_mode() != DSO)
-        _maxscale = _session->cur_sampletime() / (get_view_width() * MaxViewRate);
+        _maxscale = _session->cur_sampletime() / (width * MaxViewRate);
     else
         _maxscale = 1e9;
 
@@ -942,10 +977,11 @@ void View::data_updated()
 
 void View::update_margins()
 {
-    _ruler->setGeometry(_viewcenter->x(), 0,  get_view_width(), _viewcenter->y());
+    int width = get_view_width();
+    assert(width > 0);
 
+    _ruler->setGeometry(_viewcenter->x(), 0,  width, _viewcenter->y());
     _header->setGeometry(0, _viewcenter->y(), _viewcenter->x(), _viewcenter->height());
-
     _devmode->setGeometry(0, 0, _viewcenter->x(), _viewcenter->y());
 }
 
@@ -1014,13 +1050,16 @@ void View::set_cursor_middle(int index)
     int size = lst.size();
     assert(index < size);
 
+    int width = get_view_width();
+    assert(width > 0);
+
     auto i = lst.begin();
 
     while (index-- != 0){
         i++;
     }
 
-    set_scale_offset(_scale, (*i)->index() / (_session->cur_snap_samplerate() * _scale) - (get_view_width() / 2));
+    set_scale_offset(_scale, (*i)->index() / (_session->cur_snap_samplerate() * _scale) - (width / 2));
 }
 
 void View::on_measure_updated()
@@ -1138,21 +1177,30 @@ int View::get_view_height()
 
 int64_t View::get_min_offset()
 {
+    int width = get_view_width();
+    assert(width > 0);
+
     if (MaxViewRate > 1)
-        return floor(get_view_width() * (1 - MaxViewRate));
+        return floor(width * (1 - MaxViewRate));
     else
         return 0;
 }
 
 int64_t View::get_max_offset()
 {
+    int width = get_view_width();
+    assert(width > 0);
+
     return ceil((_session->cur_snap_sampletime() / _scale) -
-                (get_view_width() * MaxViewRate));
+                (width * MaxViewRate));
 }
 
 int64_t View::get_logic_lst_data_offset(){
+    int width = get_view_width();
+    assert(width > 0);
+
     return ceil((_session->get_logic_data_view_time() / _scale) -
-                (get_view_width() * MaxViewRate));
+                (width * MaxViewRate));
 }
 
 void View::scroll_to_logic_last_data_time()
@@ -1201,17 +1249,23 @@ void View::show_lissajous(bool show)
 void View::show_region(uint64_t start, uint64_t end, bool keep)
 {
     assert(start <= end);
+
+    int width = get_view_width();
+    assert(width > 0);
+
     if (keep) {
         set_all_update(true);
         update();
-    } else if (_session->get_map_zoom() == 0) {
-        const double ideal_scale = (end-start) * 2.0 / _session->cur_snap_samplerate() / get_view_width();
+    }
+    else if (_session->get_map_zoom() == 0) {
+        const double ideal_scale = (end-start) * 2.0 / _session->cur_snap_samplerate() / width;
         const double new_scale = max (min(ideal_scale, _maxscale), _minscale);
-        const double new_off = (start + end)  * 0.5 / (_session->cur_snap_samplerate() * new_scale) - (get_view_width() / 2);
+        const double new_off = (start + end)  * 0.5 / (_session->cur_snap_samplerate() * new_scale) - (width / 2);
         set_scale_offset(new_scale, new_off);
-    } else {
+    }
+    else {
         const double new_scale = scale();
-        const double new_off = (start + end)  * 0.5 / (_session->cur_snap_samplerate() * new_scale) - (get_view_width() / 2);
+        const double new_off = (start + end)  * 0.5 / (_session->cur_snap_samplerate() * new_scale) - (width/ 2);
         set_scale_offset(new_scale, new_off);
     }
 }
@@ -1307,11 +1361,20 @@ double View::index2pixel(uint64_t index, bool has_hoff)
 }
 
 uint64_t View::pixel2index(double pixel)
-{
-    const double samples_per_pixel = session().cur_snap_samplerate() * scale();
-    double index = (pixel + offset()) * samples_per_pixel - trig_hoff();
+{   
+    const uint64_t rateValue = session().cur_snap_samplerate();
+    const double scaleValue = scale();
+    const int64_t offsetValue = offset();    
+    const double hoffValue = trig_hoff();
+   
+    const double samples_per_pixel = rateValue * scaleValue;
+    const double index = (pixel + offsetValue) * samples_per_pixel - hoffValue;
 
-    return (uint64_t)std::round(index);
+    const uint64_t sampleIndex = (uint64_t)std::round(index);
+    return sampleIndex;
+
+    //const double samples_per_pixel = session().cur_snap_samplerate() * scale();
+    //uint64_t index = (pixel + offset()) * samples_per_pixel - trig_hoff();
 }
 
 void View::set_receive_len(uint64_t len)
@@ -1368,8 +1431,14 @@ void View::set_scale(double scale)
 
 void View::auto_set_max_scale()
 {
-    _maxscale = _session->cur_sampletime() / (get_view_width() * MaxViewRate);
-    set_scale(_maxscale);
+    const double limitTime = _session->cur_sampletime();
+    const int width = get_view_width();
+
+    if (width > 0)
+    {
+        _maxscale =  limitTime / (width * MaxViewRate);
+        set_scale(_maxscale);
+    }  
 }
 
 int  View::get_body_width()

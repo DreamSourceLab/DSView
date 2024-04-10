@@ -313,7 +313,7 @@ namespace pv
                 tmp_file = ldFileName;
                 bLoadFile = true;
     
-                QTimer::singleShot(300, this, [this](){
+                QTimer::singleShot(100, this, [this](){
                     on_load_file(tmp_file);
                     tmp_file = "";
                 });
@@ -326,7 +326,9 @@ namespace pv
         }
 
         if (!bLoadFile){
-            _session->set_default_device();
+            QTimer::singleShot(100, this, [this](){
+                   _session->set_default_device();
+                });
         }
     }
 
