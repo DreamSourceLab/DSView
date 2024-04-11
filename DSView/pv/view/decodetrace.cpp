@@ -373,18 +373,25 @@ void DecodeTrace::draw_annotation(const pv::data::decode::Annotation &a,
 		draw_range(a, p, fill, outline, text_color, h,
             start, end, y, fore, back);
     
-        if ((a.type()/100 == 2) && (end - start > 20)) {
-            for(auto dec : _decoder_stack->stack()) {
-                for (auto& iter : dec->channels()) {
-                    int type = dec->get_channel_type(iter.first);
+        if ((a.type()/100 == 2) && (end - start > 20)) 
+        {
+            for(auto dec : _decoder_stack->stack())
+            {
+                auto probes = dec->binded_probe_list();
+
+                for (auto probe : probes) {
+                    int type = dec->get_channel_type(probe);
+
                     if ((type == SRD_CHANNEL_COMMON) ||
-                        ((type%100 != a.type()%100) && (type%100 != 0)))
-                        continue; 
+                            ((type%100 != a.type()%100) && (type%100 != 0))){
+                        continue;
+                    }
 
                     const double mark_end = a.end_sample() / samples_per_pixel - pixels_offset;
 
                     for(auto s : _session->get_signals()) {
-                        if((s->get_index() == iter.second) && s->signal_type() == SR_CHANNEL_LOGIC) {
+                        int binded_index = dec->binded_probe_index(probe);
+                        if((s->get_index() == binded_index) && s->signal_type() == SR_CHANNEL_LOGIC) {
                             view::LogicSignal *logicSig = (view::LogicSignal*)s;
                             logicSig->paint_mark(p, start, mark_end, type/100);
                             break;
@@ -677,6 +684,8 @@ bool DecodeTrace::create_popup(bool isnew)
 
         if (QDialog::Accepted == dlg_ret)
         {
+            dlg.apply_setting();
+            
             for(auto dec : _decoder_stack->stack())
             {
                 if (dec->commit() || _decoder_stack->options_changed()) {

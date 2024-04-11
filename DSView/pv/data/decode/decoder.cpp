@@ -23,6 +23,7 @@
 #include <libsigrokdecode.h>
 #include "decoder.h"
 #include <assert.h>
+#include "../../log.h"
 
   
 namespace pv {
@@ -85,13 +86,67 @@ bool Decoder::commit()
         _decode_end = _decode_end_back;
         _setted = false;
         return true;
-    } else {
+    }
+	else {
         return false;
     }
 }
 
+int Decoder::first_probe_index()
+{
+	auto it = _probes.begin();
+	if (it != _probes.end()){
+		return (*it).second;
+	}
+
+	return -1;
+}
+
+bool Decoder::is_binded_probe(const srd_channel *const pdch)
+{
+	assert(pdch);
+
+	auto it = _probes.find(pdch);
+	return it != _probes.end();
+}
+
+int Decoder::binded_probe_index(const srd_channel *const pdch)
+{
+	assert(pdch);
+
+	auto it = _probes.find(pdch);
+	if (it != _probes.end()){
+		return (*it).second;
+	}
+
+	return -1;
+}
+
+std::vector<const srd_channel*> Decoder::binded_probe_list()
+{
+	std::vector<const srd_channel*> lst;
+
+	for (auto it = _probes.begin(); it != _probes.end(); ++it){ 
+		lst.push_back((*it).first);
+	}
+
+	return lst;
+}
+
 bool Decoder::have_required_probes()
 {
+	dsv_info("decoder:%p", this);
+
+	for (GSList *l = _decoder->channels; l; l = l->next) {
+		const srd_channel *const pdch = (const srd_channel*)l->data;
+		dsv_info("base decoder:%p", (void*)pdch);
+	}
+
+	for (auto it = _probes.begin(); it != _probes.end(); ++it){
+		const srd_channel *const pdch = (const srd_channel*)(*it).first;
+		dsv_info("got decoder:%p", (void*)pdch);
+	}
+
 	for (GSList *l = _decoder->channels; l; l = l->next) {
 		const srd_channel *const pdch = (const srd_channel*)l->data;
 		assert(pdch);

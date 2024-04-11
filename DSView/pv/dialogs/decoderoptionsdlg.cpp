@@ -292,28 +292,30 @@ DsComboBox* DecoderOptionsDlg::create_probe_selector(
     
     const auto &sigs = AppControl::Instance()->GetSession()->get_signals();
 
-    data::decode::Decoder *_dec = const_cast<data::decode::Decoder*>(dec);
-    auto probe_iter = _dec->channels().find(pdch);
+    data::decode::Decoder *decoder = const_cast<data::decode::Decoder*>(dec);
+ 
 	DsComboBox *selector = new DsComboBox(parent);
     selector->addItem("-", QVariant::fromValue(-1));
-
-	if (probe_iter == _dec->channels().end())
-		selector->setCurrentIndex(0);
-    
+  
     int dex = 0;
+    const int binded_index = decoder->binded_probe_index(pdch);
 
 	for(auto s : sigs) 
     {
+        dex++;
+
         if (s->signal_type() == SR_CHANNEL_LOGIC && s->enabled()){
 			selector->addItem(s->get_name(),QVariant::fromValue(s->get_index()));
             
-            if (probe_iter != _dec->channels().end()) {
-                if ((*probe_iter).second == s->get_index())
-                    selector->setCurrentIndex(dex + 1);
+            if (binded_index == s->get_index()){
+                selector->setCurrentIndex(dex);
             }
-		}
-        ++dex;
+		} 
 	}
+
+    if (binded_index == -1){
+        selector->setCurrentIndex(0);
+    }
 
 	return selector;
 }
@@ -433,8 +435,6 @@ void DecoderOptionsDlg::create_decoder_form(
 
         const ProbeSelector s = {combo, dec, pdch};
     	_probe_selectors.push_back(s);
-
-        connect(combo, SIGNAL(currentIndexChanged(int)), this, SLOT(on_probe_selected(int)));
 	} 
 
 	// Add the optional channels
@@ -463,8 +463,6 @@ void DecoderOptionsDlg::create_decoder_form(
 
         const ProbeSelector s = {combo, dec, pdch};
         _probe_selectors.push_back(s);
-
-        connect(combo, SIGNAL(currentIndexChanged(int)), this, SLOT(on_probe_selected(int)));
 	}
 
 	// Add the options
@@ -489,11 +487,6 @@ void DecoderOptionsDlg::commit_probes()
     for(auto dec : _trace->decoder()->stack()){
 		commit_decoder_probes(dec);
     }
-}
-
-void DecoderOptionsDlg::on_probe_selected(int)
-{
-	commit_probes();
 }
 
 void DecoderOptionsDlg::commit_decoder_probes(data::decode::Decoder *dec)
@@ -547,6 +540,11 @@ void DecoderOptionsDlg::on_trans_pramas()
     AppConfig::Instance().SaveApp();
     _is_reload_form = true;
     this->reject();
+}
+
+void DecoderOptionsDlg::apply_setting()
+{
+    commit_probes();
 }
 
 }//dialogs

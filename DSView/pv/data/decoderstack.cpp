@@ -449,9 +449,9 @@ void DecoderStack::do_decode_work()
 	// This works because we are currently assuming all
 	// LogicSignals have the same data/snapshot
     for (auto dec : _stack) {
-        if (!dec->channels().empty()) {
+        if (dec->have_probes()) {
             for(auto s :  _session->get_signals()) {
-                if(s->get_index() == (*dec->channels().begin()).second && s->signal_type() == SR_CHANNEL_LOGIC)
+                if(s->get_index() == dec->first_probe_index() && s->signal_type() == SR_CHANNEL_LOGIC)
                 { 
                     _snapshot = ((pv::view::LogicSignal*)s)->data();
                     if (_snapshot != NULL)

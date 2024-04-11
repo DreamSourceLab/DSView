@@ -91,6 +91,8 @@ public:
         return _is_reload_form;
     }
 
+    void apply_setting();
+
 private:
     void load_options_view();
 
@@ -107,7 +109,6 @@ private:
     void update_decode_range(); 
  
 private slots:
-    void on_probe_selected(int);
     void on_region_set(int index);
     void on_accept();
     void on_trans_pramas();

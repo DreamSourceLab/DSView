@@ -28,7 +28,7 @@
 #include <string>
 #include <sstream>
 #include <iostream>
-  
+#include <vector>  
 #include <glib.h>
 
 struct srd_decoder;
@@ -58,12 +58,20 @@ public:
     }
 
 	inline void show(bool show = true){
-         _shown = show;
+        _shown = show;
     }
 
-    inline std::map<const srd_channel*, int>& channels(){
-        return _probes;
+    inline bool have_probes(){
+        return _probes.size() > 0;
     }
+
+    int first_probe_index();
+
+    bool is_binded_probe(const srd_channel *const pdch);
+
+    int binded_probe_index(const srd_channel *const pdch);
+
+    std::vector<const srd_channel*> binded_probe_list();
 
     void set_probes(std::map<const srd_channel*, int> probes);
 

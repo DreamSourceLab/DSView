@@ -1224,9 +1224,11 @@ bool StoreSession::gen_decoders_json(QJsonArray &array)
             const bool have_probes = (d->channels || d->opt_channels) != 0;
 
             if (have_probes) {
-                for(auto it = dec->channels().begin();it != dec->channels().end(); it++) {
+                auto binded_probes = dec->binded_probe_list();
+                for(auto probe : binded_probes) {
                     QJsonObject ch_obj;
-                    ch_obj[(*it).first->id] = QJsonValue::fromVariant((*it).second);
+                    int binded_index = dec->binded_probe_index(probe);
+                    ch_obj[probe->id] = QJsonValue::fromVariant(binded_index);
                     ch_array.push_back(ch_obj);
                 }
             }
