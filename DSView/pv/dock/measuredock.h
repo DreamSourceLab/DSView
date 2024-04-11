@@ -64,6 +64,7 @@ struct cursor_row_info
     QComboBox       *box;
     int             cursor1;
     int             cursor2;
+    id_t            channelIndex;
 };
 
 struct cursor_opt_info
@@ -119,6 +120,7 @@ private slots:
     
     void del_cursor();
     void add_dist_measure();
+    void on_edge_channel_selected();
 
 public slots:   
     void cursor_update();
@@ -163,6 +165,7 @@ private:
     QLabel *_p_label;
     QLabel *_f_label;
     QLabel *_d_label;
+    bool    _bSetting;
 };
 
 } // namespace dock

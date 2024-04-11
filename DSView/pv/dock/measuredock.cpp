@@ -59,6 +59,7 @@ MeasureDock::MeasureDock(QWidget *parent, View &view, SigSession *session) :
 
     _dist_pannel = NULL;
     _edge_pannel = NULL;
+    _bSetting = false;
 
     _mouse_groupBox = new QGroupBox(_widget);
     _fen_checkBox = new QCheckBox(_widget);
@@ -226,9 +227,17 @@ void MeasureDock::reload()
     else
         _edge_groupBox->setVisible(false);
 
+    _bSetting = true;
+
     for (auto &o : _edge_row_list){
         update_probe_selector(o.box);
+
+        if (o.channelIndex < o.box->count()){
+            o.box->setCurrentIndex(o.channelIndex);
+        }
     }
+
+    _bSetting = false;
 
     reCalc();
 }
@@ -344,6 +353,7 @@ void MeasureDock::add_dist_measure()
         inf.start_bt = NULL;
         inf.end_bt = NULL;
         inf.r_label = NULL;
+        inf.channelIndex = 0;
 
         _dist_row_list.push_back(inf);
 
@@ -418,6 +428,9 @@ void MeasureDock::build_edge_pannel()
         a_label->setContentsMargins(0,0,0,0);
         QComboBox *ch_cmb = create_probe_selector(row_widget);
         ch_cmb->setFixedWidth(60);
+        if (o.channelIndex < ch_cmb->count()){
+            ch_cmb->setCurrentIndex(o.channelIndex);
+        }
 
         row_layout->addWidget(del_btn);
         row_layout->addSpacing(5);
@@ -462,10 +475,26 @@ void MeasureDock::build_edge_pannel()
         connect(del_btn, SIGNAL(clicked()), this, SLOT(del_edge_measure()));
         connect(s_btn, SIGNAL(clicked()), this, SLOT(show_all_coursor()));
         connect(e_btn, SIGNAL(clicked()), this, SLOT(show_all_coursor()));
-        connect(ch_cmb, SIGNAL(currentIndexChanged(int)), this, SLOT(update_edge()));
+        connect(ch_cmb, SIGNAL(currentIndexChanged(int)), this, SLOT(on_edge_channel_selected()));
     }
 
     _edge_layout->addWidget(_edge_pannel, 1, 0, 1, 7);
+}
+
+void MeasureDock::on_edge_channel_selected()
+{
+    QComboBox *box = dynamic_cast<QComboBox*>(sender());
+    if (box != NULL && !_bSetting){
+        for (auto &o : _edge_row_list)
+        {
+            if (o.box == box){
+                o.channelIndex = box->currentIndex();
+                break;
+            }
+        }
+    }
+
+    update_edge();
 }
 
 void MeasureDock::add_edge_measure()
@@ -480,6 +509,7 @@ void MeasureDock::add_edge_measure()
         inf.start_bt = NULL;
         inf.end_bt = NULL;
         inf.r_label = NULL;
+        inf.channelIndex = 0;
 
         _edge_row_list.push_back(inf);
         build_edge_pannel();
