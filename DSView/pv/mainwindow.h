@@ -32,6 +32,7 @@
 #include "eventobject.h" 
 #include <QJsonDocument>
 #include <chrono>
+#include <QTimer>
 #include "dstimer.h"
 
 class QAction;
@@ -123,6 +124,7 @@ private slots:
     void on_cur_snap_samplerate_changed();
     void on_trigger_message(int msg);
     void on_delay_prop_msg();
+    void on_load_device_first();
   
 signals:
     void prgRate(int progress);
@@ -241,7 +243,8 @@ private:
     QString         _title_ext_string;
 
     int         _key_value;
-    bool        _key_vaild; 
+    bool        _key_vaild;
+    QTimer      _load_device_timer;
 };
 
 } // namespace pv

@@ -333,6 +333,8 @@ public:
     void UpdateTheme() override;
     void UpdateFont() override;
 
+    bool view_is_ready();
+
 signals:
 	void hover_point_changed();
     void cursor_update();

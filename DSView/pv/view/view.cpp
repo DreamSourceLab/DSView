@@ -1516,5 +1516,11 @@ void View::UpdateFont()
     update_font();
 }
 
+bool View::view_is_ready()
+{
+    int w = get_view_width();
+    return w > 0;
+}
+
 } // namespace view
 } // namespace pv

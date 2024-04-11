@@ -296,10 +296,8 @@ namespace pv
         connect(_dso_trigger_widget, SIGNAL(set_trig_pos(int)), _view, SLOT(set_trig_pos(int)));
 
         _delay_prop_msg_timer.SetCallback(std::bind(&MainWindow::on_delay_prop_msg, this));
-
+ 
         _logo_bar->set_mainform_callback(this);
-
-        bool bLoadFile = false;
 
         // Try load from file.
         QString ldFileName(AppControl::Instance()->_open_file_name.c_str());
@@ -311,12 +309,6 @@ namespace pv
             {              
                 dsv_info("Auto load file:%s", file_name.c_str());
                 tmp_file = ldFileName;
-                bLoadFile = true;
-    
-                QTimer::singleShot(100, this, [this](){
-                    on_load_file(tmp_file);
-                    tmp_file = "";
-                });
             }
             else
             {
@@ -325,14 +317,27 @@ namespace pv
             }
         }
 
-        if (!bLoadFile){
-            QTimer::singleShot(100, this, [this](){
-                   _session->set_default_device();
-                });
+        // Load the device after the view is ready.
+        connect(&_load_device_timer, SIGNAL(timeout()), this, SLOT(on_load_device_first()));
+        _load_device_timer.start(100);
+    }
+
+    void MainWindow::on_load_device_first()
+    {
+        if (_view->view_is_ready())
+        {
+            if (tmp_file != ""){
+                on_load_file(tmp_file);
+                tmp_file = "";
+            }
+            else{
+                _session->set_default_device();
+            }
+
+            _load_device_timer.stop();
         }
     }
 
-    //*
     void MainWindow::retranslateUi()
     {
         _trigger_dock->setWindowTitle(L_S(STR_PAGE_DLG, S_ID(IDS_DLG_TRIGGER_DOCK_TITLE), "Trigger Setting..."));
