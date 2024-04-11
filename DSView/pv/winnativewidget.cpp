@@ -334,7 +334,7 @@ LRESULT CALLBACK WinNativeWidget::WndProc(HWND hWnd, UINT message, WPARAM wParam
 
             
             int k = self->GetDevicePixelRatio();
-            const LONG borderWidth = 8 * k;
+            const LONG borderWidth = 4 * k;
             RECT rc;
             GetWindowRect(hWnd, &rc);
 
