@@ -73,23 +73,22 @@ MeasureDock::MeasureDock(QWidget *parent, View &view, SigSession *session) :
     _p_label = new QLabel(_widget);
     _f_label = new QLabel(_widget);
     _d_label = new QLabel(_widget);
-    _mouse_layout = new QGridLayout();
-    _mouse_layout->setVerticalSpacing(5);
-    _mouse_layout->addWidget(_fen_checkBox, 0, 0, 1, 6);
-    _mouse_layout->addWidget(_w_label, 1, 0);
-    _mouse_layout->addWidget(_width_label, 1, 1);
-    _mouse_layout->addWidget(_p_label, 1, 4);
-    _mouse_layout->addWidget(_period_label, 1, 5);
-    _mouse_layout->addWidget(_f_label, 2, 4);
-    _mouse_layout->addWidget(_freq_label, 2, 5);
-    _mouse_layout->addWidget(_d_label, 2, 0);
-    _mouse_layout->addWidget(_duty_label, 2, 1);
-    _mouse_layout->addWidget(new QLabel(_widget), 0, 6);
-    _mouse_layout->addWidget(new QLabel(_widget), 1, 6);
-    _mouse_layout->addWidget(new QLabel(_widget), 2, 6);
-    _mouse_layout->setColumnStretch(5, 1);
-    _mouse_groupBox->setLayout(_mouse_layout);
-    _mouse_layout->setContentsMargins(5, 15, 5, 5);
+    QGridLayout *mouse_layout = new QGridLayout();
+    mouse_layout->setVerticalSpacing(5);
+    mouse_layout->setHorizontalSpacing(5);
+    mouse_layout->addWidget(_fen_checkBox, 0, 0, 1, 5);
+    mouse_layout->addWidget(_w_label, 1, 0);
+    mouse_layout->addWidget(_width_label, 1, 1);
+    mouse_layout->addWidget(_p_label, 1, 3);
+    mouse_layout->addWidget(_period_label, 1, 4);
+
+    mouse_layout->addWidget(_d_label, 2, 0);
+    mouse_layout->addWidget(_duty_label, 2, 1);
+    mouse_layout->addWidget(_f_label, 2, 3);
+    mouse_layout->addWidget(_freq_label, 2, 4);    
+ 
+    _mouse_groupBox->setLayout(mouse_layout);
+    mouse_layout->setContentsMargins(5, 15, 5, 5);
 
     /* cursor distance group */
     _dist_groupBox = new QGroupBox(_widget);
@@ -334,8 +333,8 @@ void MeasureDock::build_dist_pannel()
         }
 
         connect(del_btn, SIGNAL(clicked()), this, SLOT(del_dist_measure()));
-        connect(s_btn, SIGNAL(clicked()), this, SLOT(show_all_coursor()));
-        connect(e_btn, SIGNAL(clicked()), this, SLOT(show_all_coursor()));
+        connect(s_btn, SIGNAL(clicked()), this, SLOT(popup_all_coursors()));
+        connect(e_btn, SIGNAL(clicked()), this, SLOT(popup_all_coursors()));
     }
 
     _dist_layout->addWidget(_dist_pannel, 1, 0, 1, 7);
@@ -427,7 +426,8 @@ void MeasureDock::build_edge_pannel()
         QLabel *a_label = new QLabel("@", row_widget);
         a_label->setContentsMargins(0,0,0,0);
         QComboBox *ch_cmb = create_probe_selector(row_widget);
-        ch_cmb->setFixedWidth(60);
+        ch_cmb->setFixedWidth(50);
+
         if (o.channelIndex < ch_cmb->count()){
             ch_cmb->setCurrentIndex(o.channelIndex);
         }
@@ -446,7 +446,8 @@ void MeasureDock::build_edge_pannel()
         a_label->setFont(font);
         s_btn->setFont(font);
         e_btn->setFont(font);
-        a_label->setFont(font);
+        r_label->setFont(font);
+        ch_cmb->setFont(font);
 
         s_btn->setFixedWidth(bt_w);
         e_btn->setFixedWidth(bt_w);
@@ -473,8 +474,8 @@ void MeasureDock::build_edge_pannel()
         }
 
         connect(del_btn, SIGNAL(clicked()), this, SLOT(del_edge_measure()));
-        connect(s_btn, SIGNAL(clicked()), this, SLOT(show_all_coursor()));
-        connect(e_btn, SIGNAL(clicked()), this, SLOT(show_all_coursor()));
+        connect(s_btn, SIGNAL(clicked()), this, SLOT(popup_all_coursors()));
+        connect(e_btn, SIGNAL(clicked()), this, SLOT(popup_all_coursors()));
         connect(ch_cmb, SIGNAL(currentIndexChanged(int)), this, SLOT(on_edge_channel_selected()));
     }
 
@@ -533,7 +534,7 @@ void MeasureDock::del_edge_measure()
     }
 }
 
-void MeasureDock::show_all_coursor()
+void MeasureDock::popup_all_coursors()
 {
     auto &cursor_list = _view.get_cursorList();
 
@@ -935,7 +936,7 @@ void MeasureDock::adjust_form_size(QWidget *wid)
         o->setFixedSize(size);
     }
 
-    int mouse_info_label_width = fm.horizontalAdvance("##########");
+    int mouse_info_label_width = fm.horizontalAdvance("############");
     _width_label->setFixedWidth(mouse_info_label_width);
     _period_label->setFixedWidth(mouse_info_label_width);
     _freq_label->setFixedWidth(mouse_info_label_width);

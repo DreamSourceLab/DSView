@@ -108,18 +108,18 @@ private:
 
 private slots:
     void goto_cursor();
+    void add_dist_measure();
     void del_dist_measure();
     void add_edge_measure();
-    void del_edge_measure();
-    void show_all_coursor();
-    void set_sel_cursor();
+    void del_edge_measure();   
     void update_dist();
     void update_edge();
     void set_cursor_btn_color(QPushButton *btn);
     void set_cursor_btn_color(QPushButton *btn, QColor cursorColor, QColor bkColor, bool isCursor);
     
-    void del_cursor();
-    void add_dist_measure();
+    void popup_all_coursors();
+    void set_sel_cursor();
+    void del_cursor();   
     void on_edge_channel_selected();
 
 public slots:   
@@ -134,7 +134,6 @@ private:
     view::View &_view;
 
     QWidget *_widget;
-    QGridLayout *_mouse_layout;
     QGroupBox *_mouse_groupBox;
     QCheckBox *_fen_checkBox;
     QLabel *_width_label;
