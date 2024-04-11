@@ -64,7 +64,7 @@ struct cursor_row_info
     QComboBox       *box;
     int             cursor1;
     int             cursor2;
-    id_t            channelIndex;
+    int             channelIndex;
 };
 
 struct cursor_opt_info

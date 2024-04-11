@@ -65,28 +65,28 @@ const int Ruler::CursorSelWidth = 20;
 
 const QColor Ruler::CursorColorTable[CURSOR_COLOR_TABLE_SIZE] =
     {
-        QColor(154,205,50, 200), //YellowGreen
-        QColor(255,255,0, 200), //Yellow
-        QColor(245,222,179, 200), //Wheat
-        QColor(208,32,144, 200), //VioletRed
-        QColor(255,99,71, 200), //Tomato
-        QColor(0,128,128, 200), //Teal
-        QColor(70,130,180, 200), //SteelBlue
-        QColor(106,90,205, 200),//SlateBlue
-        QColor(160,82,45, 200), //Sienna
-        QColor(46,139,87, 200), //SeaGreen
-        QColor(128,0,128, 200), //Purple
-        QColor(127,255,0, 200), //Chartreuse
-        QColor(0,0,255, 200), //Blue
-        QColor(220,20,60, 200), //Crimson
-        QColor(184,134,11, 200), //DarkGoldenRod
-        QColor(139,0,139, 200), //DarkMagenta
-        QColor(255,20,147, 200), //DeepPink
-        QColor(34,139,34, 200), //ForestGreen
-        QColor(0,0,128, 200), //Navy
-        QColor(255,0,255, 200), //Fuchsia
-        QColor(255,127,80, 200), //Coral
-        QColor(255,69,0, 200), //OrangeRed
+        QColor(154,205,50, 250), //YellowGreen
+        QColor(0xf1,0x5b,0x6c, 250), //
+       // QColor(245,222,179, 250), //Wheat
+        QColor(208,32,144, 250), //VioletRed
+        QColor(255,99,71, 250), //Tomato
+        QColor(0,128,128, 250), //Teal
+        QColor(70,130,180, 250), //SteelBlue
+        QColor(106,90,205, 250),//SlateBlue
+        QColor(160,82,45, 250), //Sienna
+        QColor(46,139,87, 250), //SeaGreen
+        QColor(128,0,128, 250), //Purple
+       // QColor(127,255,0, 250), //Chartreuse
+        QColor(0,0,255, 250), //Blue
+        QColor(220,20,60, 250), //Crimson
+        QColor(184,134,11, 250), //DarkGoldenRod
+        QColor(139,0,139, 250), //DarkMagenta
+        QColor(255,20,147, 250), //DeepPink
+        QColor(34,139,34, 250), //ForestGreen
+        //QColor(0,0,128, 250), //Navy
+        QColor(255,0,255, 250), //Fuchsia
+        QColor(255,127,80, 250), //Coral
+        QColor(255,69,0, 250), //OrangeRed
      };
 
 Ruler::Ruler(View &parent) :

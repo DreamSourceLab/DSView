@@ -27,7 +27,7 @@
 #include <QWidget>
 #include <stdint.h>
 
-#define CURSOR_COLOR_TABLE_SIZE 22
+#define CURSOR_COLOR_TABLE_SIZE 19
 
 namespace pv {
 namespace view {
