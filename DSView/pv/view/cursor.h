@@ -44,9 +44,7 @@ public:
 	static const QColor FillColour;
 	static const QColor HighlightColour;
 	static const QColor TextColour;
-
 	static const int Offset;
-
 	static const int ArrowSize;
     static const int CloseSize;
 
@@ -57,7 +55,7 @@ public:
 	 * @param time The time to set the flag to.
 	 * @param other A reference to the other cursor.
 	 */
-    Cursor(View &view, QColor color, uint64_t index);
+    Cursor(View &view, int order, uint64_t sampleIndex);
 
 
 public:
@@ -77,7 +75,7 @@ public:
 	 * @param prefix The index of the SI prefix to use.
 	 */
     void paint_label(QPainter &p, const QRect &rect,
-        unsigned int prefix, int index, bool has_hoff);
+        unsigned int prefix, bool has_hoff);
 
     void paint_fix_label(QPainter &p, const QRect &rect,
         unsigned int prefix, QChar label, QColor color, bool has_hoff);
@@ -87,8 +85,7 @@ public:
 		return (uint64_t)this;
 	}
  
-	inline uint64_t get_index()
-	{
+	inline uint64_t get_index(){
 		return _index;
 	}
 
@@ -96,7 +93,6 @@ private:
 	void compute_text_size(QPainter &p, unsigned int prefix);
 
 private:
-	const Cursor &_other;
 	QSizeF 		_text_size;
 };
 

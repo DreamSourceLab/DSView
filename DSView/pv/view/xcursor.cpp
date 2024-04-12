@@ -21,30 +21,29 @@
  */
 
 #include "xcursor.h"
-
+#include <QPainter>
 #include "view.h"
 #include "ruler.h"
 #include "dsosignal.h"
 #include "../log.h"
-
-#include <QPainter>
+#include "ruler.h"
   
 using namespace std;
 
 namespace pv {
 namespace view {
 
-XCursor::XCursor(View &view, QColor &colour,
-    double value0, double value1) :
+XCursor::XCursor(View &view, int order, double value0, double value1) :
 	_view(view),
     _yvalue(0.5),
     _value0(value0),
     _value1(value1),
     _grabbed(XCur_None),
-	_colour(colour)
+    _order(order)
 {
     _dsoSig = NULL;
     _sig_index = -1;
+    _colour = Qt::blue;
     
     for(auto s : _view.session().get_signals()) {        
         if (s->signal_type() == SR_CHANNEL_DSO){
@@ -82,7 +81,7 @@ XCursor::XCursor(const XCursor &x) :
 
 QColor XCursor::colour()
 {
-    return _colour;
+    return get_color();
 }
 
 void XCursor::set_colour(QColor color)
@@ -156,7 +155,7 @@ void XCursor::set_value(XCur_type type, double value)
     value_changed();
 }
 
-void XCursor::paint(QPainter &p, const QRect &rect, XCur_type highlight,  int order)
+void XCursor::paint(QPainter &p, const QRect &rect, XCur_type highlight)
 {   
     // Attach the channel
     if (_dsoSig == NULL && _sig_index != -1){
@@ -174,7 +173,7 @@ void XCursor::paint(QPainter &p, const QRect &rect, XCur_type highlight,  int or
     const int x = rect.left() + _yvalue * rect.width();
     const int y0 = rect.top() + _value0 * rect.height();
     const int y1 = rect.top() + _value1 * rect.height();
-    QColor color = (order == -1) ? _colour : Ruler::CursorColorTable[order%CURSOR_COLOR_TABLE_SIZE];
+    QColor color = get_color();
     const bool hit0 = (_grabbed == XCur_X0) | (_grabbed == XCur_None && (highlight == XCur_X0 || highlight == XCur_All));
     p.setPen(hit0 ? QPen(color.lighter(), 2, Qt::DashLine) : QPen(color, 1, Qt::DashLine));
     p.drawLine(QPoint(0, y0), QPoint(rect.right()-_v0_size.width(), y0));
@@ -268,6 +267,14 @@ void XCursor::paint_label(QPainter &p, const QRect &rect)
     p.setPen(Qt::black);
     p.drawLine(close.left() + 2, close.top() + 2, close.right() - 2, close.bottom() - 2);
     p.drawLine(close.left() + 2, close.bottom() - 2, close.right() - 2, close.top() + 2);
+}
+
+QColor XCursor::get_color()
+{   
+    if (_order > 0){
+        return Ruler::GetColorByCursorOrder(_order);
+    }
+    return _colour;    
 }
 
 } // namespace view

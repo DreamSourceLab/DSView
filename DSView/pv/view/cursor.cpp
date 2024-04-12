@@ -33,6 +33,7 @@
 #include <assert.h>
 #include <stdio.h>
 #include "../dsvdef.h"
+#include "ruler.h"
 
 namespace pv {
 namespace view {
@@ -41,17 +42,14 @@ const QColor Cursor::LineColour(32, 74, 135);
 const QColor Cursor::FillColour(52, 101, 164);
 const QColor Cursor::HighlightColour(83, 130, 186);
 const QColor Cursor::TextColour(Qt::white);
-
 const int Cursor::Offset = 1;
-
 const int Cursor::ArrowSize = 10;
-
 const int Cursor::CloseSize = 10;
 
-Cursor::Cursor(View &view, QColor color, uint64_t index) :
-    TimeMarker(view, color, index),
-    _other(*this)
+Cursor::Cursor(View &view, int order, uint64_t sampleIndex) :
+    TimeMarker(view, sampleIndex)
 {
+   _order = _order;
 }
 
 QRect Cursor::get_label_rect(const QRect &rect, bool &visible, bool has_hoff)
@@ -82,10 +80,8 @@ QRect Cursor::get_close_rect(const QRect &rect)
 }
 
 void Cursor::paint_label(QPainter &p, const QRect &rect,
-    unsigned int prefix, int index, bool has_hoff)
+            unsigned int prefix, bool has_hoff)
 {
-    assert(index > 0);
-
     using pv::view::Ruler;
     bool visible;
 
@@ -98,11 +94,11 @@ void Cursor::paint_label(QPainter &p, const QRect &rect,
     p.setPen(Qt::transparent);
 
     if (close.contains(QPoint(_view.hover_point().x(), _view.hover_point().y())))
-        p.setBrush(Ruler::CursorColorTable[(index - 1) % CURSOR_COLOR_TABLE_SIZE]);
+        p.setBrush(Ruler::GetColorByCursorOrder(_order));
     else if (r.contains(QPoint(_view.hover_point().x(), _view.hover_point().y())))
         p.setBrush(View::Orange);
     else
-        p.setBrush(Ruler::CursorColorTable[(index - 1) % CURSOR_COLOR_TABLE_SIZE]);
+        p.setBrush(Ruler::GetColorByCursorOrder(_order));
 
     p.drawRect(r);
 
@@ -126,7 +122,7 @@ void Cursor::paint_label(QPainter &p, const QRect &rect,
         Ruler::format_real_time(_index, _view.session().cur_snap_samplerate()));
 
     const QRect arrowRect = QRect(r.bottomLeft().x(), r.bottomLeft().y(), r.width(), ArrowSize);
-    p.drawText(arrowRect, Qt::AlignCenter | Qt::AlignVCenter, QString::number(index));
+    p.drawText(arrowRect, Qt::AlignCenter | Qt::AlignVCenter, QString::number(_order));
 }
 
 void Cursor::paint_fix_label(QPainter &p, const QRect &rect,

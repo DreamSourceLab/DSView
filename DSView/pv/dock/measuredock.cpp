@@ -723,8 +723,8 @@ void MeasureDock::set_cursor_btn_color(QPushButton *btn)
 
     QColor bkColor = AppConfig::Instance().GetStyleColor();
     bool isCursor = false;
-    const unsigned int start = btn->text().toInt(&isCursor) - 1; 
-    QColor cursor_color = isCursor ? view::Ruler::CursorColorTable[start%CURSOR_COLOR_TABLE_SIZE] : bkColor;
+    const unsigned int start = btn->text().toInt(&isCursor);
+    QColor cursor_color = isCursor ? view::Ruler::GetColorByCursorOrder(start) : bkColor;
     set_cursor_btn_color(btn, cursor_color, bkColor, isCursor);
 }
 

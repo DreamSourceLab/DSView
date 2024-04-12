@@ -219,9 +219,12 @@ public:
      */
     std::list<Cursor*>& get_cursorList();
 
-    void add_cursor(QColor color, uint64_t index);
-    void add_cursor(uint64_t index);
+    void add_cursor(QColor color, uint64_t sampleIndex);
+    void add_cursor(uint64_t sampleIndex);
     void del_cursor(Cursor* cursor);
+    void add_xcursor(double value0, double value1);
+    void del_xcursor(XCursor* xcursor);
+
     void clear_cursors();
     void set_cursor_middle(int index);
 
@@ -261,9 +264,6 @@ public:
     inline std::list<XCursor*>& get_xcursorList(){
         return _xcursorList;
     }
-
-    void add_xcursor(QColor color, double value0, double value1);
-    void del_xcursor(XCursor* xcursor);
  
     void set_update(Viewport *viewport, bool need_update);
     void set_all_update(bool need_update);
@@ -420,6 +420,7 @@ private slots:
 
 private:
     void set_trig_cursor_posistion(uint64_t percent);
+    void make_cursors_order();
 
 public:
     void show_wait_trigger();
@@ -429,7 +430,6 @@ public:
     int  get_body_height();
 
 private:
-
 	SigSession                  *_session;
     pv::toolbars::SamplingBar   *_sampling_bar;
 

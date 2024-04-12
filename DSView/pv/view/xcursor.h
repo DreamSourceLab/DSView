@@ -60,7 +60,7 @@ public:
      * @param value0
      * @param value1
 	 */
-    XCursor(View &view, QColor &colour, double value0, double value1);
+    XCursor(View &view, int order, double value0, double value1);
 
 	/**
 	 * Copy constructor
@@ -78,7 +78,19 @@ public:
      * Gets/Sets colour of the marker
      */
     QColor colour();
+
+    QColor get_color();
+
     void set_colour(QColor color);
+
+    inline void set_order(int order){
+        assert( order > 0);
+        _order = order;
+    }
+
+	inline int order(){
+		return _order;
+	}
 
     /**
      * Gets/Sets the mapping channel of the marker
@@ -98,7 +110,7 @@ public:
 	 * @param p The painter to draw with.
 	 * @param rect The rectangle of the viewport client area.
 	 */
-    void paint(QPainter &p, const QRect &rect, enum XCur_type highlight, int order);
+    void paint(QPainter &p, const QRect &rect, enum XCur_type highlight);
 
 	/**
      * Gets the map label rectangle.
@@ -141,7 +153,8 @@ protected:
 
 private:
     enum XCur_type _grabbed;
-    QColor _colour;
+    QColor  _colour;
+    int     _order;
 };
 
 } // namespace view

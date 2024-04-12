@@ -250,18 +250,14 @@ void Viewport::paintCursors(QPainter &p)
     auto &cursor_list = _view.get_cursorList();
 
     if (_view.cursors_shown() && _type == TIME_VIEW) {
-        auto i = cursor_list.begin();
-        int index = 0;
 
-        while (i != cursor_list.end()) {            
-            const int64_t cursorX = _view.index2pixel((*i)->index());
+        for (auto cursor : cursor_list) {            
+            const int64_t cursorX = _view.index2pixel(cursor->index());
             if (xrect.contains(_view.hover_point().x(), _view.hover_point().y()) &&
                     qAbs(cursorX - _view.hover_point().x()) <= HitCursorMargin)
-                (*i)->paint(p, xrect, 1, index, _view.session().is_stopped_status());
+                cursor->paint(p, xrect, 1, _view.session().is_stopped_status());
             else
-                (*i)->paint(p, xrect, 0, index, _view.session().is_stopped_status());
-            i++;
-            index++;
+                cursor->paint(p, xrect, 0, _view.session().is_stopped_status());
         }
     }
 }
@@ -354,30 +350,30 @@ void Viewport::paintSignals(QPainter &p, QColor fore, QColor back)
 
             if (!hovered && ((*i)->get_close_rect(xrect).contains(_view.hover_point()) ||
                              (*i)->get_map_rect(xrect).contains(_view.hover_point()))) {
-                (*i)->paint(p, xrect, XCursor::XCur_All, index);
+                (*i)->paint(p, xrect, XCursor::XCur_All);
                 hovered = true;
             }
             else if(!hovered && xrect.contains(_view.hover_point())) {
                 if (qAbs(cursorX - _view.hover_point().x()) <= HitCursorMargin &&
                     _view.hover_point().y() > min(cursorY0, cursorY1) &&
                     _view.hover_point().y() < max(cursorY0, cursorY1)) {
-                    (*i)->paint(p, xrect, XCursor::XCur_Y, index);
+                    (*i)->paint(p, xrect, XCursor::XCur_Y);
                     hovered = true;
                 }
                 else if (qAbs(cursorY0 - _view.hover_point().y()) <= HitCursorMargin) {
-                    (*i)->paint(p, xrect, XCursor::XCur_X0, index);
+                    (*i)->paint(p, xrect, XCursor::XCur_X0);
                     hovered = true;
                 }
                 else if (qAbs(cursorY1 - _view.hover_point().y()) <= HitCursorMargin) {
-                    (*i)->paint(p, xrect, XCursor::XCur_X1, index);
+                    (*i)->paint(p, xrect, XCursor::XCur_X1);
                     hovered = true;
                 }
                 else {
-                    (*i)->paint(p, xrect, XCursor::XCur_None, index);
+                    (*i)->paint(p, xrect, XCursor::XCur_None);
                 }
             }
             else {
-                (*i)->paint(p, xrect, XCursor::XCur_None, index);
+                (*i)->paint(p, xrect, XCursor::XCur_None);
             }
 
             i++;
@@ -387,7 +383,7 @@ void Viewport::paintSignals(QPainter &p, QColor fore, QColor back)
 
     if (_type == TIME_VIEW) {
         if (_view.trig_cursor_shown()) {
-            _view.get_trig_cursor()->paint(p, xrect, 0, -1, false);
+            _view.get_trig_cursor()->paint(p, xrect, 0, false);
         }
         if (_view.search_cursor_shown()) {
             const int64_t searchX = _view.index2pixel(_view.get_search_cursor()->index());
@@ -1277,7 +1273,7 @@ void Viewport::mouseDoubleClickEvent(QMouseEvent *event)
             }
 
             auto &cursor_list = _view.get_cursorList();
-            _view.add_cursor(view::Ruler::CursorColorTable[cursor_list.size() % CURSOR_COLOR_TABLE_SIZE], index);
+            _view.add_cursor(index);
             _view.show_cursors(true);
         }
 
@@ -1300,13 +1296,14 @@ void Viewport::mouseDoubleClickEvent(QMouseEvent *event)
                 break;
             }
         }
-    } else if (_view.session().get_device()->get_work_mode() == ANALOG) {
+    }
+    else if (_view.session().get_device()->get_work_mode() == ANALOG) {
         if (event->button() == Qt::LeftButton) {
             uint64_t index;
             const double curX = event->pos().x();
             index = _view.pixel2index(curX);
             auto &cursor_list = _view.get_cursorList();
-            _view.add_cursor(view::Ruler::CursorColorTable[cursor_list.size() % CURSOR_COLOR_TABLE_SIZE], index);
+            _view.add_cursor(index);
             _view.show_cursors(true);
         }
     }
@@ -2117,18 +2114,15 @@ void Viewport::show_contextmenu(const QPoint& pos)
 void Viewport::add_cursor_y()
 {
     uint64_t index;
-    //const double curX = _menu_pos.x();
-    index = _view.pixel2index(_cur_preX);
-    auto &cursor_list = _view.get_cursorList();
-    _view.add_cursor(view::Ruler::CursorColorTable[cursor_list.size() % CURSOR_COLOR_TABLE_SIZE], index);
+    index = _view.pixel2index(_cur_preX); 
+    _view.add_cursor(index);
     _view.show_cursors(true);
 }
 
 void Viewport::add_cursor_x()
 {
-    double ypos = (_cur_preY - _view.get_view_rect().top()) * 1.0 / _view.get_view_height();
-    auto &cursor_list = _view.get_cursorList();
-    _view.add_xcursor(view::Ruler::CursorColorTable[cursor_list.size() % CURSOR_COLOR_TABLE_SIZE], ypos, ypos);
+    double ypos = (_cur_preY - _view.get_view_rect().top()) * 1.0 / _view.get_view_height();    
+    _view.add_xcursor(ypos, ypos);
     _view.show_xcursors(true);
 }
 

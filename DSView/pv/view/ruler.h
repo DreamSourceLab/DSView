@@ -27,7 +27,7 @@
 #include <QWidget>
 #include <stdint.h>
 
-#define CURSOR_COLOR_TABLE_SIZE 19
+#define CURSOR_HSB_COLOR_TABLE_LENGTH   22
 
 namespace pv {
 namespace view {
@@ -45,17 +45,17 @@ private:
 	static const int MinorTickSubdivision;
 	static const int ScaleUnits[3];
     static const int MinPeriodScale;
-
 	static const QString SIPrefixes[9];
     static const QString FreqPrefixes[9];
 	static const int FirstSIPrefixPower;
     static const int pricision;
-
 	static const int HoverArrowSize;
     static const int CursorSelWidth;
 
+    static const int CursorHsbColorTable[CURSOR_HSB_COLOR_TABLE_LENGTH];
+
 public:
-    static const QColor CursorColorTable[CURSOR_COLOR_TABLE_SIZE];
+    static QColor GetColorByCursorOrder(int order);
 
 public:
 	Ruler(View &parent);

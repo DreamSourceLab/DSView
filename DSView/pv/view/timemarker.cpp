@@ -21,22 +21,22 @@
  */
 
 #include "timemarker.h"
-
+#include <QPainter>
 #include "view.h"
 #include "ruler.h"
 
-#include <QPainter>
 
 namespace pv {
 namespace view {
 
-TimeMarker::TimeMarker(View &view, QColor &colour,
+TimeMarker::TimeMarker(View &view,
     uint64_t index) :
 	_view(view),
     _index(index),
-    _grabbed(false),
-	_colour(colour)
+    _grabbed(false)
 {
+    _colour = Qt::blue;
+    _order = -1;
 }
 
 TimeMarker::TimeMarker(const TimeMarker &s) :
@@ -45,16 +45,20 @@ TimeMarker::TimeMarker(const TimeMarker &s) :
     _index(s._index),
 	_colour(s._colour)
 {
-}
 
-QColor TimeMarker::colour()
-{
-    return _colour;
 }
 
 void TimeMarker::set_colour(QColor color)
 {
     _colour = color;
+}
+
+QColor TimeMarker::get_color()
+{   
+    if (_order > 0){
+        return Ruler::GetColorByCursorOrder(_order);
+    }
+    return _colour;    
 }
 
 bool TimeMarker::grabbed()
@@ -81,11 +85,11 @@ void TimeMarker::set_index(int64_t index)
     time_changed();
 }
 
-void TimeMarker::paint(QPainter &p, const QRect &rect, const bool highlight, int order, bool trig_hoff)
+void TimeMarker::paint(QPainter &p, const QRect &rect, const bool highlight, bool trig_hoff)
 {
     const int64_t x = _view.index2pixel(_index, trig_hoff);
     if (x <= rect.right()) {
-        QColor color = (order == -1) ? _colour : Ruler::CursorColorTable[order%CURSOR_COLOR_TABLE_SIZE];
+        QColor color = (_order < 1) ? _colour : Ruler::GetColorByCursorOrder(_order);
         p.setPen((_grabbed | highlight) ? QPen(color.lighter(), 2, Qt::DashLine) : QPen(color, 1, Qt::DashLine));
         p.drawLine(QPoint(x, 0), QPoint(x, rect.bottom()));
     }

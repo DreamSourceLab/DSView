@@ -49,7 +49,7 @@ protected:
 	 * @param colour A reference to the colour of this cursor.
 	 * @param time The time to set the flag to.
 	 */
-    TimeMarker(View &view, QColor &colour, uint64_t index);
+    TimeMarker(View &view, uint64_t index);
 
 	/**
 	 * Copy constructor
@@ -71,7 +71,8 @@ public:
     /**
      * Gets/Sets colour of the marker
      */
-    QColor colour();
+    QColor get_color();
+
     void set_colour(QColor color);
 
     /*
@@ -85,7 +86,7 @@ public:
 	 * @param p The painter to draw with.
 	 * @param rect The rectangle of the viewport client area.
 	 */
-    virtual void paint(QPainter &p, const QRect &rect, const bool highlight, int order, bool trig_hoff = true);
+    virtual void paint(QPainter &p, const QRect &rect, const bool highlight, bool trig_hoff = true);
 
 	/**
 	 * Gets the marker label rectangle.
@@ -102,7 +103,16 @@ public:
 	 * @param prefix The SI prefix to paint time value with.
 	 */
 	virtual void paint_label(QPainter &p, const QRect &rect,
-        unsigned int prefix, int index, bool has_hoff) = 0;
+        unsigned int prefix, bool has_hoff) = 0;
+
+	inline void set_order(int order){
+		assert( order > 0);
+        _order = order;
+    }
+
+	inline int order(){
+		return _order;
+	}
 
 signals:
 	void time_changed();
@@ -116,7 +126,10 @@ protected:
 
 private:
     bool _grabbed;
-    QColor _colour;
+
+protected:
+    QColor 	_colour;
+	int		_order;
 };
 
 } // namespace view

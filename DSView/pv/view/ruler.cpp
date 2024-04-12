@@ -21,22 +21,19 @@
  */
 
 #include "ruler.h"
-
+#include <assert.h>
+#include <math.h>
+#include <limits.h>
+#include <cmath>
+#include <QMouseEvent>
+#include <QPainter>
+#include <QStyleOption>
 #include "cursor.h"
 #include "view.h"
 #include "viewport.h"
 #include "../sigsession.h"
 #include "dsosignal.h"
 #include "../dsvdef.h"
-
-#include <assert.h>
-#include <math.h>
-#include <limits.h>
-#include <cmath>
-
-#include <QMouseEvent>
-#include <QPainter>
-#include <QStyleOption>
 #include "../appcontrol.h"
 #include "../config/appconfig.h"
 #include "../ui/fn.h"
@@ -63,31 +60,30 @@ const int Ruler::HoverArrowSize = 4;
 
 const int Ruler::CursorSelWidth = 20;
 
-const QColor Ruler::CursorColorTable[CURSOR_COLOR_TABLE_SIZE] =
-    {
-        QColor(154,205,50, 250), //YellowGreen
-        QColor(0xf1,0x5b,0x6c, 250), //
-       // QColor(245,222,179, 250), //Wheat
-        QColor(208,32,144, 250), //VioletRed
-        QColor(255,99,71, 250), //Tomato
-        QColor(0,128,128, 250), //Teal
-        QColor(70,130,180, 250), //SteelBlue
-        QColor(106,90,205, 250),//SlateBlue
-        QColor(160,82,45, 250), //Sienna
-        QColor(46,139,87, 250), //SeaGreen
-        QColor(128,0,128, 250), //Purple
-       // QColor(127,255,0, 250), //Chartreuse
-        QColor(0,0,255, 250), //Blue
-        QColor(220,20,60, 250), //Crimson
-        QColor(184,134,11, 250), //DarkGoldenRod
-        QColor(139,0,139, 250), //DarkMagenta
-        QColor(255,20,147, 250), //DeepPink
-        QColor(34,139,34, 250), //ForestGreen
-        //QColor(0,0,128, 250), //Navy
-        QColor(255,0,255, 250), //Fuchsia
-        QColor(255,127,80, 250), //Coral
-        QColor(255,69,0, 250), //OrangeRed
-     };
+const int Ruler::CursorHsbColorTable[CURSOR_HSB_COLOR_TABLE_LENGTH] = {
+    120,
+    195,
+    270,
+    345,
+    60, //5
+    135,
+    210,
+    285,
+    15,
+    75, //10
+    150,
+    225,
+    300,
+    30,
+    90, //15
+    165,
+    240,
+    315,
+    45,
+    105, //20
+    180,
+    255,
+};
 
 Ruler::Ruler(View &parent) :
 	QWidget(&parent),
@@ -103,6 +99,18 @@ Ruler::Ruler(View &parent) :
 
 	connect(&_view, SIGNAL(hover_point_changed()),
 		this, SLOT(hover_point_changed()));
+}
+
+QColor Ruler::GetColorByCursorOrder(int order)
+{
+    assert(order > 0);
+
+    int hsv = CursorHsbColorTable[(order - 1) % CURSOR_HSB_COLOR_TABLE_LENGTH];
+    QColor color;
+
+    int b = AppConfig::Instance().IsDarkStyle() ? 200 : 200;
+    color.setHsv(hsv, 200, b, 180);
+    return color;
 }
 
 QString Ruler::format_freq(double period, unsigned int precision)
@@ -331,7 +339,7 @@ void Ruler::mouseReleaseEvent(QMouseEvent *event)
                     overCursor = in_cursor_sel_rect(event->pos());
 
                     if (overCursor == 0) {
-                        _view.add_cursor(CursorColorTable[cursor_list.size() % CURSOR_COLOR_TABLE_SIZE], index);
+                        _view.add_cursor(index);
                         _view.show_cursors(true);
                         updatedCursor = true;
                     }
@@ -387,7 +395,7 @@ void Ruler::mouseReleaseEvent(QMouseEvent *event)
                 auto i = cursor_list.begin();
 
                 while (--overCursor != 0){
-                        i++;
+                    i++;
                 }
 
                 _view.del_cursor(*i);
@@ -401,9 +409,8 @@ void Ruler::mouseReleaseEvent(QMouseEvent *event)
     }
 
     update();
+
     if (updatedCursor) {
-        //const QRect reDrawRect = QRect(_cursor_sel_x - 1, 0, 3, _view.viewport()->height());
-        //_view.viewport()->update(reDrawRect);
         _view.viewport()->update();
     }
 }
@@ -518,23 +525,29 @@ void Ruler::draw_logic_tick_mark(QPainter &p)
 
     // Draw the cursors
     auto &cursor_list = _view.get_cursorList();
+    bool bWorkStoped = _view.session().is_stopped_status();
+
+    for (auto cursor : cursor_list)
+    {
+        cursor->paint_label(p, rect(), prefix, bWorkStoped);
+    }
 
     if (cursor_list.size()) {
         auto i = cursor_list.begin();
         int index = 1;
 
         while (i != cursor_list.end()) {
-            (*i)->paint_label(p, rect(), prefix, index, _view.session().is_stopped_status());
+            (*i)->paint_label(p, rect(), prefix, bWorkStoped);
             index++;
             i++;
         }
     }
 
     if (_view.trig_cursor_shown()) {
-        _view.get_trig_cursor()->paint_fix_label(p, rect(), prefix, 'T', _view.get_trig_cursor()->colour(), false);
+        _view.get_trig_cursor()->paint_fix_label(p, rect(), prefix, 'T', _view.get_trig_cursor()->get_color(), false);
     }
     if (_view.search_cursor_shown()) {
-        _view.get_search_cursor()->paint_fix_label(p, rect(), prefix, 'S', _view.get_search_cursor()->colour(), true);
+        _view.get_search_cursor()->paint_fix_label(p, rect(), prefix, 'S', _view.get_search_cursor()->get_color(), true);
     }
 }
 
@@ -639,21 +652,18 @@ void Ruler::draw_osc_tick_mark(QPainter &p)
     auto &cursor_list = _view.get_cursorList();
 
     if (!cursor_list.empty()) {
-        auto i = cursor_list.begin();
-        int index = 1;
+        bool bWorkStoped = _view.session().is_stopped_status();
 
-        while (i != cursor_list.end()) {
-            (*i)->paint_label(p, rect(), prefix, index, _view.session().is_stopped_status());
-            index++;
-            i++;
+        for (auto cursor : cursor_list) {
+            cursor->paint_label(p, rect(), prefix, bWorkStoped);
         }
     }
     
     if (_view.trig_cursor_shown()) {
-        _view.get_trig_cursor()->paint_fix_label(p, rect(), prefix, 'T', _view.get_trig_cursor()->colour(), false);
+        _view.get_trig_cursor()->paint_fix_label(p, rect(), prefix, 'T', _view.get_trig_cursor()->get_color(), false);
     }
     if (_view.search_cursor_shown()) {
-        _view.get_search_cursor()->paint_fix_label(p, rect(), prefix, 'S', _view.get_search_cursor()->colour(), true);
+        _view.get_search_cursor()->paint_fix_label(p, rect(), prefix, 'S', _view.get_search_cursor()->get_color(), true);
     }
 }
 
@@ -710,7 +720,7 @@ void Ruler::draw_cursor_sel(QPainter &p)
         int index = 1;
         auto i = cursor_list.begin();
 
-        while (i != cursor_list.end()) {
+        for (auto curosr : cursor_list) {
             const QRectF cursorRect = get_cursor_sel_rect(index);
             p.setPen(QPen(Qt::black, 1, Qt::DotLine));
             p.drawLine(cursorRect.left(), cursorRect.top() + 3,
@@ -720,13 +730,12 @@ void Ruler::draw_cursor_sel(QPainter &p)
             if (in_cursor_sel_rect(pos) == index)
                 p.setBrush(View::Orange);
             else
-                p.setBrush(CursorColorTable[(index - 1)%CURSOR_COLOR_TABLE_SIZE]);
+                p.setBrush(curosr->get_color());
 
             p.drawRect(cursorRect);
             p.setPen(Qt::black);
             p.drawText(cursorRect, Qt::AlignCenter | Qt::AlignVCenter, QString::number(index));
             index++;
-            i++;
         }
     }
 }

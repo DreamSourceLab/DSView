@@ -181,10 +181,12 @@ View::View(SigSession *session, pv::toolbars::SamplingBar *sampling_bar, QWidget
     fore.setAlpha(View::BackAlpha);
 
     _show_trig_cursor = false;
-    _trig_cursor = new Cursor(*this, View::LightRed, 0);
+    _trig_cursor = new Cursor(*this, -1, 0);
+    _trig_cursor->set_colour(View::LightRed);
     _show_search_cursor = false;
     _search_pos = 0;
-    _search_cursor = new Cursor(*this, fore, _search_pos);
+    _search_cursor = new Cursor(*this, -1, _search_pos);
+    _search_cursor->set_colour(fore);
 
     _cali = new pv::dialogs::Calibration(this);
     _cali->hide();
@@ -1010,19 +1012,37 @@ void View::on_traces_moved()
     viewport_update();
 }
 
-void View::add_cursor(QColor color, uint64_t index)
+void View::make_cursors_order()
 {
-    Cursor *newCursor = new Cursor(*this, color, index);
+    int dex = 1;
+ 
+    for (auto cursor :  get_cursorList())
+    {
+        cursor->set_order(dex++);
+    }
+
+    dex = 1;
+    for (auto cursor :  get_xcursorList())
+    {
+        cursor->set_order(dex++);
+    }
+}
+
+void View::add_cursor(QColor color, uint64_t sampleIndex)
+{
+    Cursor *newCursor = new Cursor(*this, -1, sampleIndex);
     get_cursorList().push_back(newCursor);
+    make_cursors_order();
     cursor_update();
 }
 
-void View::add_cursor(uint64_t index)
+void View::add_cursor(uint64_t sampleIndex)
 {
-    static int addIndex = 0;
-    QColor color = view::Ruler::CursorColorTable[addIndex%CURSOR_COLOR_TABLE_SIZE];
-    add_cursor(color, index);
-    addIndex++;
+    static int lastOrder = 1;
+    Cursor *newCursor = new Cursor(*this, lastOrder++, sampleIndex);
+    get_cursorList().push_back(newCursor);
+    make_cursors_order();
+    cursor_update();
 }
 
 void View::del_cursor(Cursor* cursor)
@@ -1031,6 +1051,8 @@ void View::del_cursor(Cursor* cursor)
 
     get_cursorList().remove(cursor);
     delete cursor;
+    make_cursors_order();
+
     cursor_update();
 }
 
@@ -1042,6 +1064,25 @@ void View::clear_cursors()
     }
 
     lst.clear();
+}
+
+void View::add_xcursor(double value0, double value1)
+{
+    static int lastXCursorOrder = 1;
+    XCursor *newXCursor = new XCursor(*this, lastXCursorOrder++, value0, value1);
+    _xcursorList.push_back(newXCursor);
+    make_cursors_order();
+    xcursor_update();
+}
+
+void View::del_xcursor(XCursor* xcursor)
+{
+    assert(xcursor);
+
+    _xcursorList.remove(xcursor);
+    delete xcursor;
+    make_cursors_order();
+    xcursor_update();
 }
 
 void View::set_cursor_middle(int index)
@@ -1330,22 +1371,6 @@ void View::show_captured_progress(bool triggered, int progress)
 bool View::get_dso_trig_moved()
 {
     return _time_viewport->get_dso_trig_moved();
-}
-
-void View::add_xcursor(QColor color, double value0, double value1)
-{
-    XCursor *newXCursor = new XCursor(*this, color, value0, value1);
-    _xcursorList.push_back(newXCursor);
-    xcursor_update();
-}
-
-void View::del_xcursor(XCursor* xcursor)
-{
-    assert(xcursor);
-
-    _xcursorList.remove(xcursor);
-    delete xcursor;
-    xcursor_update();
 }
 
 double View::index2pixel(uint64_t index, bool has_hoff)
