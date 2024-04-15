@@ -75,6 +75,16 @@ struct cursor_opt_info
     view::Cursor    *cursor;
 };
 
+struct row_list_item
+{
+    std::vector<cursor_row_info>   _dist_row_list;
+    std::vector<cursor_row_info>   _edge_row_list;
+    std::vector<cursor_opt_info>   _opt_row_list;
+    int _mode_type;
+};
+
+#define MODE_ROWS_LENGTH    3
+
 class MeasureDock : public QScrollArea, public IUiWindow
 {
     Q_OBJECT
@@ -99,12 +109,14 @@ private:
 
     void build_dist_pannel();
     void build_edge_pannel();
+    void build_cursor_pannel();
 
 private:
     QComboBox* create_probe_selector(QWidget *parent);
     void update_probe_selector(QComboBox *selector);
     void adjusLabelSize();
     void adjust_form_size(QWidget *wid);
+    row_list_item* get_mode_rows();
 
 private slots:
     void goto_cursor();
@@ -114,6 +126,7 @@ private slots:
     void del_edge_measure();   
     void update_dist();
     void update_edge();
+    void update_cursor_info();
     void set_cursor_btn_color(QPushButton *btn);
     void set_cursor_btn_color(QPushButton *btn, QColor cursorColor, QColor bkColor, bool isCursor);
     
@@ -127,7 +140,6 @@ public slots:
     void cursor_moving();
     void reCalc();
     void measure_updated();
-    void refresh();
 
 private:
     SigSession *_session;
@@ -151,11 +163,10 @@ private:
     QWidget     *_dist_pannel;
     QWidget     *_edge_pannel;
 
-    QGridLayout *_cursor_layout;
-    QGroupBox *_cursor_groupBox;
-    std::vector<cursor_row_info>   _dist_row_list;
-    std::vector<cursor_row_info>   _edge_row_list;
-    std::vector<cursor_opt_info>   _opt_row_list;
+    QGridLayout     *_cursor_layout;
+    QGroupBox       *_cursor_groupBox;
+
+    row_list_item   _mode_rows[MODE_ROWS_LENGTH];
 
     QLabel *_channel_label;
     QLabel *_edge_label;

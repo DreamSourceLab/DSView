@@ -1460,7 +1460,7 @@ namespace pv
 
     void MainWindow::on_cur_snap_samplerate_changed()
     {
-        _measure_widget->cursor_update();
+        _measure_widget->reCalc();
     }
 
     /*------------------on event end-------*/
@@ -1794,161 +1794,170 @@ namespace pv
     {
         switch (msg)
         {
-        case DSV_MSG_DEVICE_LIST_UPDATED:
-            _sampling_bar->update_device_list();
-            break;
-
-        case DSV_MSG_START_COLLECT_WORK_PREV:
-            if (_device_agent->get_work_mode() == LOGIC)
-                _trigger_widget->try_commit_trigger();
-            else if (_device_agent->get_work_mode() == DSO)
-                _dso_trigger_widget->check_setting();
-
-            _view->capture_init();
-            _view->on_state_changed(false);
-            break;
-
-        case DSV_MSG_START_COLLECT_WORK:
-            update_toolbar_view_status();
-            _view->on_state_changed(false);
-            _protocol_widget->update_view_status();
-            break;
-        
-        case DSV_MSG_COLLECT_END: 
-            prgRate(0);
-            _view->repeat_unshow();
-            _view->on_state_changed(true);
-            _protocol_widget->update_view_status(); 
-            break;
-
-        case DSV_MSG_END_COLLECT_WORK:
-            update_toolbar_view_status();           
-            break;
-
-        case DSV_MSG_CURRENT_DEVICE_CHANGE_PREV:
-            if (_msg != NULL){
-                _msg->close();
-                _msg = NULL;
+            case DSV_MSG_DEVICE_LIST_UPDATED:
+            {
+                _sampling_bar->update_device_list();
+                break;
             }
-            _view->hide_calibration();
-
-            _protocol_widget->del_all_protocol();
-            _view->reload();
-            break;
-
-        case DSV_MSG_CURRENT_DEVICE_CHANGED:
-        {
-            reset_all_view();
-            load_device_config();
-            update_title_bar_text();
-            _sampling_bar->update_device_list();
-            
-            _logo_bar->dsl_connected(_session->get_device()->is_hardware());
-            update_toolbar_view_status();
-            _session->device_event_object()->device_updated();
-
-            if (_device_agent->is_hardware())
+            case DSV_MSG_START_COLLECT_WORK_PREV:
             {
-                _session->on_load_config_end();
-            }                
-            
-            if (_device_agent->get_work_mode() == LOGIC && _device_agent->is_file() == false)
-                _view->auto_set_max_scale();
+                if (_device_agent->get_work_mode() == LOGIC)
+                    _trigger_widget->try_commit_trigger();
+                else if (_device_agent->get_work_mode() == DSO)
+                    _dso_trigger_widget->check_setting();
 
-            if (_device_agent->is_file())
+                _view->capture_init();
+                _view->on_state_changed(false);
+                break;
+            }
+            case DSV_MSG_START_COLLECT_WORK:
             {
-                check_config_file_version();
-
-                bool bDoneDecoder = false;
-                bool bLoadSuccess = false;
-                QJsonDocument doc = get_config_json_from_data_file(_device_agent->path(), bLoadSuccess);
-
-                if (bLoadSuccess){
-                    load_config_from_json(doc, bDoneDecoder);
+                update_toolbar_view_status();
+                _view->on_state_changed(false);
+                _protocol_widget->update_view_status();
+                break;
+            }        
+            case DSV_MSG_COLLECT_END:
+            {
+                prgRate(0);
+                _view->repeat_unshow();
+                _view->on_state_changed(true);
+                _protocol_widget->update_view_status(); 
+                break;
+            }
+            case DSV_MSG_END_COLLECT_WORK:
+            {
+                update_toolbar_view_status();           
+                break;
+            }
+            case DSV_MSG_CURRENT_DEVICE_CHANGE_PREV:
+            {
+                if (_msg != NULL){
+                    _msg->close();
+                    _msg = NULL;
                 }
+                _view->hide_calibration();
 
-                if (!bDoneDecoder && _device_agent->get_work_mode() == LOGIC)
-                {                    
-                    QJsonArray deArray = get_decoder_json_from_data_file(_device_agent->path(), bLoadSuccess);
+                _protocol_widget->del_all_protocol();
+                _view->reload();
+                break;
+            }
+            case DSV_MSG_CURRENT_DEVICE_CHANGED:
+            {
+                reset_all_view();
+                load_device_config();
+                update_title_bar_text();
+                _sampling_bar->update_device_list();
+                
+                _logo_bar->dsl_connected(_session->get_device()->is_hardware());
+                update_toolbar_view_status();
+                _session->device_event_object()->device_updated();
+
+                if (_device_agent->is_hardware())
+                {
+                    _session->on_load_config_end();
+                }                
+                
+                if (_device_agent->get_work_mode() == LOGIC && _device_agent->is_file() == false)
+                    _view->auto_set_max_scale();
+
+                if (_device_agent->is_file())
+                {
+                    check_config_file_version();
+
+                    bool bDoneDecoder = false;
+                    bool bLoadSuccess = false;
+                    QJsonDocument doc = get_config_json_from_data_file(_device_agent->path(), bLoadSuccess);
 
                     if (bLoadSuccess){
-                        StoreSession ss(_session);
-                        ss.load_decoders(_protocol_widget, deArray);
-                    }                    
+                        load_config_from_json(doc, bDoneDecoder);
+                    }
+
+                    if (!bDoneDecoder && _device_agent->get_work_mode() == LOGIC)
+                    {                    
+                        QJsonArray deArray = get_decoder_json_from_data_file(_device_agent->path(), bLoadSuccess);
+
+                        if (bLoadSuccess){
+                            StoreSession ss(_session);
+                            ss.load_decoders(_protocol_widget, deArray);
+                        }                    
+                    }
+
+                    _view->update_all_trace_postion();                
+                    QTimer::singleShot(100, this, [this](){
+                        _session->start_capture(true);
+                    });
+                }
+                else if (_device_agent->is_demo())
+                {
+                    if(_device_agent->get_work_mode() == LOGIC)
+                    {
+                        _pattern_mode = _device_agent->get_demo_operation_mode();
+                        _protocol_widget->del_all_protocol();
+                        _view->auto_set_max_scale();
+
+                        if(_pattern_mode != "random"){
+                        load_demo_decoder_config(_pattern_mode);
+                        }
+                    }
+                }
+        
+                calc_min_height();
+
+                if (_device_agent->is_hardware() && _device_agent->is_new_device()){
+                    check_usb_device_speed();
                 }
 
-                _view->update_all_trace_postion();                
-                QTimer::singleShot(100, this, [this](){
-                    _session->start_capture(true);
-                });
+                break;
             }
-            else if (_device_agent->is_demo())
+            case DSV_MSG_DEVICE_OPTIONS_UPDATED:
             {
-                if(_device_agent->get_work_mode() == LOGIC)
+                _trigger_widget->device_updated();
+                _measure_widget->reload();
+                _view->check_calibration();                      
+                break;
+            }
+            case DSV_MSG_DEVICE_DURATION_UPDATED:
+            {
+                _trigger_widget->device_updated();
+                _view->timebase_changed();
+                break;
+            }
+            case DSV_MSG_DEVICE_MODE_CHANGED:
+            {
+                _view->mode_changed(); 
+                reset_all_view();
+                load_device_config();
+                update_title_bar_text();
+                _view->hide_calibration();
+
+                update_toolbar_view_status();
+                _sampling_bar->update_sample_rate_list();
+
+                if (_device_agent->is_hardware())
+                    _session->on_load_config_end();
+                
+                if (_device_agent->get_work_mode() == LOGIC)
+                    _view->auto_set_max_scale();
+
+                if(_device_agent->is_demo())
                 {
                     _pattern_mode = _device_agent->get_demo_operation_mode();
                     _protocol_widget->del_all_protocol();
-                    _view->auto_set_max_scale();
 
-                    if(_pattern_mode != "random"){
-                       load_demo_decoder_config(_pattern_mode);
+                    if(_device_agent->get_work_mode() == LOGIC)
+                    {
+                        if(_pattern_mode != "random"){
+                            _device_agent->update();
+                            load_demo_decoder_config(_pattern_mode);
+                        }
                     }
                 }
+
+                calc_min_height();           
+                break;
             }
-      
-            calc_min_height();
-
-            if (_device_agent->is_hardware() && _device_agent->is_new_device()){
-                check_usb_device_speed();
-            }
-        }
-        break;
-
-        case DSV_MSG_DEVICE_OPTIONS_UPDATED:
-            _trigger_widget->device_updated();
-            _measure_widget->reload();
-            _view->check_calibration();                      
-            break;
-
-        case DSV_MSG_DEVICE_DURATION_UPDATED:
-            _trigger_widget->device_updated();
-            _view->timebase_changed();
-            break;
-
-        case DSV_MSG_DEVICE_MODE_CHANGED:
-            _view->mode_changed(); 
-            reset_all_view();
-            load_device_config();
-            update_title_bar_text();
-            _view->hide_calibration();
-
-            update_toolbar_view_status();
-            _sampling_bar->update_sample_rate_list();
-
-            if (_device_agent->is_hardware())
-                _session->on_load_config_end();
-            
-            if (_device_agent->get_work_mode() == LOGIC)
-                _view->auto_set_max_scale();
-
-            if(_device_agent->is_demo())
-            {
-                _pattern_mode = _device_agent->get_demo_operation_mode();
-                _protocol_widget->del_all_protocol();
-
-                if(_device_agent->get_work_mode() == LOGIC)
-                {
-                    if(_pattern_mode != "random"){
-                        _device_agent->update();
-                        load_demo_decoder_config(_pattern_mode);
-                    }
-                }
-            }
-
-            calc_min_height();           
-            break;
-
-        case DSV_MSG_NEW_USB_DEVICE:
+            case DSV_MSG_NEW_USB_DEVICE:
             {
                 if (_msg != NULL){
                     _msg->close();
@@ -2006,114 +2015,125 @@ namespace pv
                     
                     _session->set_default_device();
                 }
-            }           
-            break;
 
-        case DSV_MSG_CURRENT_DEVICE_DETACHED:
-            if (_msg != NULL){
-                _msg->close();
-                _msg = NULL;
+                break;
             }
-
-            // Save current config, and switch to the last device.
-            _session->device_event_object()->device_updated();
-            save_config();
-            _view->hide_calibration();
-
-            if (_session->is_saving()){
-                dsv_info("Device detached:Waitting for store the data. and will switch to new device.");
-                _is_auto_switch_device = true;
-                return;
-            }
-
-            if (confirm_to_store_data()){
-                _is_auto_switch_device = true;
-                on_save();
-            }
-            else{
-                _session->set_default_device();
-            }
-            break;
-
-        case DSV_MSG_SAVE_COMPLETE:
-            _session->clear_store_confirm_flag();
-
-            if (_is_auto_switch_device)
+            case DSV_MSG_CURRENT_DEVICE_DETACHED:
             {
-                _is_auto_switch_device = false;
-                _session->set_default_device();
-            }
-            else
-            {
-                ds_device_handle devh = _sampling_bar->get_next_device_handle();
-                if (devh != NULL_HANDLE)
-                {
-                    dsv_info("Auto switch to the selected device.");
-                    _session->set_device(devh);
+                if (_msg != NULL){
+                    _msg->close();
+                    _msg = NULL;
                 }
-            }
-            break;
 
-        case DSV_MSG_CLEAR_DECODE_DATA:
-            if (_device_agent->get_work_mode() == LOGIC)
-                _protocol_widget->reset_view();
-            break;
-        
-        case DSV_MSG_STORE_CONF_PREV:
-            if (_device_agent->is_hardware() && _session->have_hardware_data() == false){
-                _sampling_bar->commit_settings();
-            }
-            break;
+                // Save current config, and switch to the last device.
+                _session->device_event_object()->device_updated();
+                save_config();
+                _view->hide_calibration();
 
-        case DSV_MSG_BEGIN_DEVICE_OPTIONS:
-        case DSV_MSG_COLLECT_MODE_CHANGED:
-            if(_device_agent->is_demo()){
-                _pattern_mode = _device_agent->get_demo_operation_mode();
-            }
-            if (msg == DSV_MSG_COLLECT_MODE_CHANGED){
-                _trigger_widget->device_updated();
-                _view->update();
-            }           
-            break;  
+                if (_session->is_saving()){
+                    dsv_info("Device detached:Waitting for store the data. and will switch to new device.");
+                    _is_auto_switch_device = true;
+                    return;
+                }
 
-        case DSV_MSG_END_DEVICE_OPTIONS:
-        case DSV_MSG_DEMO_OPERATION_MODE_CHNAGED:
-            if(_device_agent->is_demo() &&_device_agent->get_work_mode() == LOGIC){                
-                QString pattern_mode = _device_agent->get_demo_operation_mode();       
-                
-                if(pattern_mode != _pattern_mode)
+                if (confirm_to_store_data()){
+                    _is_auto_switch_device = true;
+                    on_save();
+                }
+                else{
+                    _session->set_default_device();
+                }
+                break;
+            }
+            case DSV_MSG_SAVE_COMPLETE:
+            {
+                _session->clear_store_confirm_flag();
+
+                if (_is_auto_switch_device)
                 {
-                    _pattern_mode = pattern_mode; 
-
-                    _device_agent->update();
-                    _session->clear_view_data();
-                    _session->init_signals();
-                    update_toolbar_view_status();
-                    _sampling_bar->update_sample_rate_list();
-                    _protocol_widget->del_all_protocol();
-                        
-                    if(_pattern_mode != "random"){
-                        _session->set_collect_mode(COLLECT_SINGLE);
-                        load_demo_decoder_config(_pattern_mode);
-
-                        if (msg == DSV_MSG_END_DEVICE_OPTIONS)
-                            _session->start_capture(false); // Auto load data.
+                    _is_auto_switch_device = false;
+                    _session->set_default_device();
+                }
+                else
+                {
+                    ds_device_handle devh = _sampling_bar->get_next_device_handle();
+                    if (devh != NULL_HANDLE)
+                    {
+                        dsv_info("Auto switch to the selected device.");
+                        _session->set_device(devh);
                     }
-                }                
+                }
+                break;
             }
-            calc_min_height();            
-            break;
+            case DSV_MSG_CLEAR_DECODE_DATA:
+            {
+                if (_device_agent->get_work_mode() == LOGIC)
+                    _protocol_widget->reset_view();
+                break;
+            }            
+            case DSV_MSG_STORE_CONF_PREV:
+            {
+                if (_device_agent->is_hardware() && _session->have_hardware_data() == false){
+                    _sampling_bar->commit_settings();
+                }
+                break;
+            }
+            case DSV_MSG_BEGIN_DEVICE_OPTIONS:
+            case DSV_MSG_COLLECT_MODE_CHANGED:
+            {
+                if(_device_agent->is_demo()){
+                    _pattern_mode = _device_agent->get_demo_operation_mode();
+                }
+                if (msg == DSV_MSG_COLLECT_MODE_CHANGED){
+                    _trigger_widget->device_updated();
+                    _view->update();
+                }           
+                break;
+            }
+            case DSV_MSG_END_DEVICE_OPTIONS:
+            case DSV_MSG_DEMO_OPERATION_MODE_CHNAGED:
+            {
+                if(_device_agent->is_demo() &&_device_agent->get_work_mode() == LOGIC){                
+                    QString pattern_mode = _device_agent->get_demo_operation_mode();       
+                    
+                    if(pattern_mode != _pattern_mode)
+                    {
+                        _pattern_mode = pattern_mode; 
 
-        case DSV_MSG_APP_OPTIONS_CHANGED:
-            update_title_bar_text();
-            break;
+                        _device_agent->update();
+                        _session->clear_view_data();
+                        _session->init_signals();
+                        update_toolbar_view_status();
+                        _sampling_bar->update_sample_rate_list();
+                        _protocol_widget->del_all_protocol();
+                            
+                        if(_pattern_mode != "random"){
+                            _session->set_collect_mode(COLLECT_SINGLE);
+                            load_demo_decoder_config(_pattern_mode);
 
-        case DSV_MSG_FONT_OPTIONS_CHANGED:
-            UiManager::Instance()->Update(UI_UPDATE_ACTION_FONT);          
-            break;
-        case DSV_MSG_DATA_POOL_CHANGED:
-            _view->check_measure();
-            break;                      
+                            if (msg == DSV_MSG_END_DEVICE_OPTIONS)
+                                _session->start_capture(false); // Auto load data.
+                        }
+                    }                
+                }
+                calc_min_height();            
+                break;
+            }
+            case DSV_MSG_APP_OPTIONS_CHANGED:
+            {
+                update_title_bar_text();
+                break;
+            }
+            case DSV_MSG_FONT_OPTIONS_CHANGED:
+            {
+                UiManager::Instance()->Update(UI_UPDATE_ACTION_FONT);          
+                break;
+            }
+            case DSV_MSG_DATA_POOL_CHANGED:
+            {
+                _view->check_measure();
+                break;
+            }            
         }
     }
 

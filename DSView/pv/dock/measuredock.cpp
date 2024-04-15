@@ -73,6 +73,7 @@ MeasureDock::MeasureDock(QWidget *parent, View &view, SigSession *session) :
     _p_label = new QLabel(_widget);
     _f_label = new QLabel(_widget);
     _d_label = new QLabel(_widget);
+
     QGridLayout *mouse_layout = new QGridLayout();
     mouse_layout->setVerticalSpacing(5);
     mouse_layout->setHorizontalSpacing(5);
@@ -196,27 +197,24 @@ void MeasureDock::reStyle()
     _dist_add_btn->setIcon(QIcon(iconPath+"/add.svg"));
     _edge_add_btn->setIcon(QIcon(iconPath+"/add.svg"));
 
-    for (auto it = _dist_row_list.begin(); it != _dist_row_list.end(); it++)
+    auto mode_rows = get_mode_rows();
+
+    for (auto it = mode_rows->_dist_row_list.begin(); it != mode_rows->_dist_row_list.end(); it++)
     {
         (*it).del_bt->setIcon(QIcon(iconPath+"/del.svg"));
     }
 
-    for (auto it = _edge_row_list.begin(); it != _edge_row_list.end(); it++)
+    for (auto it = mode_rows->_edge_row_list.begin(); it != mode_rows->_edge_row_list.end(); it++)
     {
         (*it).del_bt->setIcon(QIcon(iconPath+"/del.svg"));
     }
 
-    for (auto it = _opt_row_list.begin(); it != _opt_row_list.end(); it++)
+    for (auto it = mode_rows->_opt_row_list.begin(); it != mode_rows->_opt_row_list.end(); it++)
     {
         (*it).del_bt->setIcon(QIcon(iconPath+"/del.svg"));
     }
 
     update_dist();
-}
-
-void MeasureDock::refresh()
-{
-
 }
 
 void MeasureDock::reload()
@@ -228,13 +226,9 @@ void MeasureDock::reload()
 
     _bSetting = true;
 
-    for (auto &o : _edge_row_list){
-        update_probe_selector(o.box);
-
-        if (o.channelIndex < o.box->count()){
-            o.box->setCurrentIndex(o.channelIndex);
-        }
-    }
+    build_dist_pannel();
+    build_edge_pannel();
+    build_cursor_pannel();
 
     _bSetting = false;
 
@@ -273,7 +267,9 @@ void MeasureDock::build_dist_pannel()
     cal_lb.setFont(font);
     int bt_w = cal_lb.fontMetrics().horizontalAdvance("22") + 8;
 
-    for (auto &o : _dist_row_list)
+    auto mode_rows = get_mode_rows();
+
+    for (auto &o : mode_rows->_dist_row_list)
     {
         QWidget *row_widget = new QWidget(_widget);
         row_widget->setContentsMargins(0,0,0,0);
@@ -342,7 +338,9 @@ void MeasureDock::build_dist_pannel()
 
 void MeasureDock::add_dist_measure()
 {
-    if (_dist_row_list.size() < Max_Measure_Limits)
+    auto mode_rows = get_mode_rows();
+
+    if (mode_rows->_dist_row_list.size() < Max_Measure_Limits)
     {
         cursor_row_info inf;
         inf.cursor1 = -1;
@@ -354,7 +352,7 @@ void MeasureDock::add_dist_measure()
         inf.r_label = NULL;
         inf.channelIndex = 0;
 
-        _dist_row_list.push_back(inf);
+        mode_rows->_dist_row_list.push_back(inf);
 
         build_dist_pannel();
 
@@ -365,12 +363,14 @@ void MeasureDock::add_dist_measure()
 void MeasureDock::del_dist_measure()
 {
     auto src = dynamic_cast<QToolButton *>(sender());
-    assert(src); 
+    assert(src);
 
-    for (auto it =_dist_row_list.begin(); it != _dist_row_list.end(); it++)
+    auto mode_rows = get_mode_rows();
+
+    for (auto it = mode_rows->_dist_row_list.begin(); it != mode_rows->_dist_row_list.end(); it++)
     {
         if ((*it).del_bt == src){
-            _dist_row_list.erase(it);
+            mode_rows->_dist_row_list.erase(it);
             build_dist_pannel();
             break;
         }
@@ -400,7 +400,9 @@ void MeasureDock::build_edge_pannel()
     cal_lb.setFont(font);
     int bt_w = cal_lb.fontMetrics().horizontalAdvance("22") + 8;
 
-    for (auto &o : _edge_row_list)
+    auto mode_rows = get_mode_rows();
+
+    for (auto &o : mode_rows->_edge_row_list)
     {
         QWidget *row_widget = new QWidget(_widget);
         row_widget->setContentsMargins(0,0,0,0);
@@ -485,8 +487,10 @@ void MeasureDock::build_edge_pannel()
 void MeasureDock::on_edge_channel_selected()
 {
     QComboBox *box = dynamic_cast<QComboBox*>(sender());
-    if (box != NULL && !_bSetting){
-        for (auto &o : _edge_row_list)
+    auto mode_rows = get_mode_rows();
+
+    if (box != NULL && !_bSetting){        
+        for (auto &o : mode_rows->_edge_row_list)
         {
             if (o.box == box){
                 o.channelIndex = box->currentIndex();
@@ -500,7 +504,9 @@ void MeasureDock::on_edge_channel_selected()
 
 void MeasureDock::add_edge_measure()
 {
-    if (_edge_row_list.size() < Max_Measure_Limits)
+    auto mode_rows = get_mode_rows();
+
+    if (mode_rows->_edge_row_list.size() < Max_Measure_Limits)
     {
         cursor_row_info inf;
         inf.cursor1 = -1;
@@ -512,7 +518,7 @@ void MeasureDock::add_edge_measure()
         inf.r_label = NULL;
         inf.channelIndex = 0;
 
-        _edge_row_list.push_back(inf);
+        mode_rows->_edge_row_list.push_back(inf);
         build_edge_pannel();
 
         adjusLabelSize();
@@ -523,11 +529,12 @@ void MeasureDock::del_edge_measure()
 {
     QToolButton* src = dynamic_cast<QToolButton *>(sender());
     assert(src); 
+    auto mode_rows = get_mode_rows();
 
-    for (auto it =_edge_row_list.begin(); it != _edge_row_list.end(); it++)
+    for (auto it =mode_rows->_edge_row_list.begin(); it != mode_rows->_edge_row_list.end(); it++)
     {
         if ((*it).del_bt == src){
-            _edge_row_list.erase(it);
+            mode_rows->_edge_row_list.erase(it);
             build_edge_pannel();
             break;
         }
@@ -582,10 +589,11 @@ void MeasureDock::set_sel_cursor()
     QPushButton *sel_cursor_bt = qobject_cast<QPushButton *>(sender());
     int type = 0;
     cursor_row_info *inf = NULL;
+    auto mode_rows = get_mode_rows();
 
     if (type == 0)
     {
-        for (auto &o : _dist_row_list){
+        for (auto &o : mode_rows->_dist_row_list){
             if (o.start_bt == _sel_btn || o.end_bt == _sel_btn){
                 inf = &o;
                 type = 1;
@@ -596,7 +604,7 @@ void MeasureDock::set_sel_cursor()
 
     if (type == 0)
     {
-        for (auto &o : _edge_row_list){
+        for (auto &o : mode_rows->_edge_row_list){
             if (o.start_bt == _sel_btn || o.end_bt == _sel_btn){
                 inf = &o;
                 type = 2;
@@ -631,8 +639,13 @@ void MeasureDock::update_dist()
 
     QColor bkColor = AppConfig::Instance().GetStyleColor(); 
 
-    for (auto &inf : _dist_row_list) 
-    {  
+    auto mode_rows = get_mode_rows();
+
+    for (auto &inf : mode_rows->_dist_row_list)
+    {
+        if (inf.start_bt == NULL)
+            break;
+
         if (inf.cursor1 != -1) {
             if (inf.cursor1 > (int)cursor_list.size()) {
                 inf.start_bt->setText("");
@@ -667,9 +680,13 @@ void MeasureDock::update_dist()
 void MeasureDock::update_edge()
 { 
     auto &cursor_list = _view.get_cursorList();
+    auto mode_rows = get_mode_rows();
 
-    for (auto &inf : _edge_row_list)
+    for (auto &inf : mode_rows->_edge_row_list)
     {
+        if (inf.start_bt == NULL)
+            break;
+
         if (inf.cursor1 != -1) {
             if (inf.cursor1 > (int)cursor_list.size()) {
                 inf.start_bt->setText("");
@@ -716,11 +733,32 @@ void MeasureDock::update_edge()
     }
 }
 
+void MeasureDock::update_cursor_info()
+{ 
+    auto &cursor_list = _view.get_cursorList();
+    auto mode_rows = get_mode_rows();
+
+    int num_cursors = cursor_list.size();
+    int num_rows = mode_rows->_opt_row_list.size();
+
+    if (num_rows == 0){
+        return;
+    }
+
+    assert(num_cursors == num_rows);
+
+    for(int i = 0; i < num_cursors; i++)
+    {   
+        if (mode_rows->_opt_row_list[i].info_label != NULL){
+            QString cur_pos = _view.get_cm_time(i) + "/" 
+                    + QString::number(_view.get_cursor_samples(i));
+            mode_rows->_opt_row_list[i].info_label->setText(cur_pos);
+        }
+    }
+}
+
 void MeasureDock::set_cursor_btn_color(QPushButton *btn)
 {
-    //#302F2F
-   // QColor bkColor = AppConfig::Instance().IsDarkStyle() ? QColor("#383838") : QColor("#FFFFFF");
-
     QColor bkColor = AppConfig::Instance().GetStyleColor();
     bool isCursor = false;
     const unsigned int start = btn->text().toInt(&isCursor);
@@ -767,30 +805,17 @@ void MeasureDock::adjusLabelSize()
 void MeasureDock::cursor_moving()
 {
     if (_view.cursors_shown()) {      
-        auto &cursor_list = _view.get_cursorList();
-
-        if (cursor_list.size() != _opt_row_list.size()){
-            assert(false);
-        }
-
-        int index = 0;
-
-        for(auto i = cursor_list.begin(); i != cursor_list.end(); i++) {
-            QString _cur_text = _view.get_cm_time(index) + "/" 
-                    + QString::number(_view.get_cursor_samples(index));
-            _opt_row_list[index].info_label->setText(_cur_text);
-            index++;
-        }
+        update_cursor_info();
     }
 
     update_dist();
 }
 
 void MeasureDock::reCalc()
-{
-    cursor_update();
+{ 
     update_dist();
     update_edge();
+    update_cursor_info();
 
     adjusLabelSize();
 }
@@ -801,8 +826,9 @@ void MeasureDock::goto_cursor()
     assert(src);
 
     int index = 0;
+    auto mode_rows = get_mode_rows();
 
-    for (auto it = _opt_row_list.begin(); it != _opt_row_list.end(); it++)
+    for (auto it = mode_rows->_opt_row_list.begin(); it != mode_rows->_opt_row_list.end(); it++)
     {
         if ( (*it).goto_bt == src){
             _view.set_cursor_middle(index);
@@ -814,18 +840,24 @@ void MeasureDock::goto_cursor()
 
 void MeasureDock::cursor_update()
 {
-    using namespace pv::data;
-
-   for(auto it = _opt_row_list.begin(); it != _opt_row_list.end(); it++)
-   {
-        (*it).del_bt->deleteLater();
-        (*it).goto_bt->deleteLater();
-        (*it).info_label->deleteLater();
-   }
-   _opt_row_list.clear();
-
     update_dist();
     update_edge();
+    build_cursor_pannel();
+}
+
+void MeasureDock::build_cursor_pannel()
+{  
+    auto mode_rows = get_mode_rows();
+
+    for (auto &row : mode_rows->_opt_row_list)
+    {
+        if (row.del_bt != NULL){
+            row.del_bt->deleteLater();
+            row.goto_bt->deleteLater();
+            row.info_label->deleteLater();
+        }
+    }
+    mode_rows->_opt_row_list.clear();
 
     QFont font = this->font();
     font.setPointSizeF(AppConfig::Instance().appOptions.fontSize);
@@ -838,6 +870,10 @@ void MeasureDock::cursor_update()
     int cursor_dex = 0;
     QString iconPath = GetIconPath();
     auto &cursor_list = _view.get_cursorList();
+
+    if (cursor_list.size() == 0){
+        return;
+    }
 
     for(auto it = cursor_list.begin(); it != cursor_list.end(); it++) {
         XToolButton *del_btn = new XToolButton(_widget);
@@ -861,7 +897,7 @@ void MeasureDock::cursor_update()
         connect(cursor_pushButton, SIGNAL(clicked()), this, SLOT(goto_cursor()));
 
         cursor_opt_info inf = {del_btn, cursor_pushButton, curpos_label, (*it)};
-        _opt_row_list.push_back(inf);
+        mode_rows->_opt_row_list.push_back(inf);
 
         index++;
         cursor_dex++;
@@ -877,8 +913,9 @@ void MeasureDock::del_cursor()
     
     Cursor* cursor = NULL;
     auto &cursor_list = _view.get_cursorList();
+    auto mode_rows = get_mode_rows();
     
-    for (auto it = _opt_row_list.begin(); it != _opt_row_list.end(); it++)
+    for (auto it = mode_rows->_opt_row_list.begin(); it != mode_rows->_opt_row_list.end(); it++)
     {
         if ((*it).del_bt == src){   
             cursor = (*it).cursor;
@@ -952,6 +989,64 @@ void MeasureDock::adjust_form_size(QWidget *wid)
     if (pannel != NULL){ 
         pannel->setFixedWidth(max_label_width + 20);
     }
+}
+
+row_list_item* MeasureDock::get_mode_rows()
+{
+    int mode = _session->get_device()->get_work_mode();
+    int dex = 0;
+
+    if (mode == LOGIC){
+        dex = 0;
+    }
+    else if (mode == DSO){
+        dex = 1;
+    }
+    else if (mode == ANALOG){
+        dex = 2;
+    }
+
+    for (int i=0; i<MODE_ROWS_LENGTH; i++)
+    {  
+        if (i == dex){
+            continue;
+        }
+    
+        auto rows = &_mode_rows[i];
+
+        for(auto &o : rows->_dist_row_list){               
+            o.del_bt = NULL;
+            o.start_bt = NULL;
+            o.end_bt = NULL;
+            o.r_label = NULL;
+            o.box = NULL;
+        }
+
+        for(auto &o : rows->_edge_row_list){               
+            o.del_bt = NULL;
+            o.start_bt = NULL;
+            o.end_bt = NULL;
+            o.r_label = NULL;
+            o.box = NULL;
+        }
+
+        for (auto &row : rows->_opt_row_list)
+        {
+            if (row.del_bt != NULL){
+                row.del_bt->deleteLater();
+                row.goto_bt->deleteLater();
+                row.info_label->deleteLater();
+                row.del_bt = NULL;
+                row.goto_bt = NULL;
+                row.info_label = NULL;
+            }
+        }
+        rows->_opt_row_list.clear();       
+    }
+
+    _mode_rows[dex]._mode_type = mode;
+
+    return &_mode_rows[dex];
 }
 
 } // namespace dock
