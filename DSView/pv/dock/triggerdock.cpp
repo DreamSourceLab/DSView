@@ -674,11 +674,12 @@ void TriggerDock::setup_adv_tab()
             stage_glayout->addWidget(value1_exp_label, row, 0);
             stage_glayout->addWidget(inv1_exp_label, row++, 1);
             stage_glayout->addWidget(_value1_lineEdit, row, 0);
-            stage_glayout->addWidget(_inv1_comboBox, row++, 1);
+            stage_glayout->addWidget(_inv1_comboBox, row++, 1);          
 
             connect(_value0_ext32_lineEdit, SIGNAL(editingFinished()), this, SLOT(value_changed()));
             connect(_value1_ext32_lineEdit, SIGNAL(editingFinished()), this, SLOT(value_changed()));
-        } else {
+        }
+        else {
             stage_glayout->addWidget(value0_exp_label, row, 0);
             stage_glayout->addWidget(inv0_exp_label, row++, 1);
             stage_glayout->addWidget(_value0_lineEdit, row, 0);
@@ -710,6 +711,7 @@ void TriggerDock::setup_adv_tab()
         stage_layout->addStretch(1);
 
         QGroupBox *stage_groupBox = new QGroupBox(_stage_tabWidget);
+        stage_groupBox->setContentsMargins(5, 15, 5, 5);
         stage_groupBox->setFlat(true);
         stage_groupBox->setLayout(stage_layout);
         _stage_groupBox_list.push_back(stage_groupBox);
@@ -718,6 +720,7 @@ void TriggerDock::setup_adv_tab()
     }
 
     _serial_groupBox = new QGroupBox(_widget);
+    _serial_groupBox->setContentsMargins(5, 15, 5, 5);
     _serial_groupBox->setFlat(true);
 
     _serial_start_label = new QLabel(_serial_groupBox);
@@ -902,7 +905,7 @@ void TriggerDock::setup_adv_tab()
     serial_layout->addWidget(_serial_note_label);
     serial_layout->addStretch(1);
 
-    _serial_groupBox->setLayout(serial_layout);
+    _serial_groupBox->setLayout(serial_layout); 
 
     connect(_serial_start_lineEdit, SIGNAL(editingFinished()), this, SLOT(value_changed()));
     connect(_serial_stop_lineEdit, SIGNAL(editingFinished()), this, SLOT(value_changed()));
@@ -917,6 +920,8 @@ void TriggerDock::setup_adv_tab()
 
     _adv_tabWidget->addTab((QWidget *)_stage_tabWidget, L_S(STR_PAGE_DLG, S_ID(IDS_DLG_STAGE_TRIGGER), "Stage Trigger"));
     _adv_tabWidget->addTab((QWidget *)_serial_groupBox, L_S(STR_PAGE_DLG, S_ID(IDS_DLG_SERIAL_TRIGGER), "Serial Trigger"));
+
+    UpdateFont();
 }
 
 void TriggerDock::lineEdit_highlight(QLineEdit *dst) {
@@ -1074,6 +1079,41 @@ void TriggerDock::UpdateFont()
     ui::set_form_font(this, font);
     font.setPointSizeF(font.pointSizeF() + 1);
     this->parentWidget()->setFont(font);
+    
+    _adv_tabWidget->setFont(font);
+    _adv_tabWidget->widget(0)->setFont(font);
+    _adv_tabWidget->widget(1)->setFont(font);
+
+    QFont font2 = this->font();
+    font2.setPointSizeF(AppConfig::Instance().appOptions.fontSize);
+    QFontMetrics fm(font2);  
+
+    auto edits = this->findChildren<QLineEdit*>();
+    int lineH = 30;
+
+    for(auto o : edits)
+    { 
+        if (o != _serial_hex_lineEdit)
+        {
+            QRect rc = fm.boundingRect(o->text());
+            QSize size(rc.width() + 20, rc.height() + 6); 
+            o->setFixedSize(size);
+            lineH = size.height();
+        }       
+    }
+
+    _serial_hex_lineEdit->setFixedHeight(lineH);
+
+    int lines = 3 * 2;
+    if (_cur_ch_num == 32){
+        lines = 6 * 2;
+    }
+ 
+    int pageHeight = (lineH + 15) * lines;
+    pageHeight += lineH * 10;
+    pageHeight += 350;
+  
+    _serial_groupBox->setFixedHeight(pageHeight);
 }
 
 } // namespace dock
