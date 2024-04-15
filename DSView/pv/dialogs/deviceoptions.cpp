@@ -862,6 +862,31 @@ void DeviceOptions::try_resize_scroll()
     int srcHeight = 600;
     int w = _width;
 
+
+#ifdef _WIN32
+    QFont font = this->font();
+    font.setPointSizeF(AppConfig::Instance().appOptions.fontSize);
+    QFontMetrics fm(font); 
+
+    auto labels = this->findChildren<QLabel*>();
+    int max_label_width = 0;
+    for(auto o : labels)
+    { 
+        QRect rc = fm.boundingRect(o->text());
+        QSize size(rc.width() + 15, rc.height());         
+        o->setFixedSize(size);
+
+        if (size.width() > max_label_width){
+            max_label_width = size.width();
+        }
+    }
+
+    if (_device_agent->get_work_mode() == LOGIC
+            && _device_agent->is_demo()){
+        _dynamic_panel->setFixedWidth(max_label_width + 150);
+    }
+#endif
+
     if (w == 0)
     {
         w = this->sizeHint().width();
