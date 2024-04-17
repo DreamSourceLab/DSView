@@ -451,6 +451,8 @@ public:
 
     bool have_decoded_result();
 
+    void apply_samplerate();
+
 private:
     void set_cur_samplelimits(uint64_t samplelimits);
     void set_cur_snap_samplerate(uint64_t samplerate);

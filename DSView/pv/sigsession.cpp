@@ -2567,4 +2567,10 @@ namespace pv
         return false;
     }
 
+    void SigSession::apply_samplerate()
+    {
+        set_cur_snap_samplerate(_device_agent.get_sample_rate());
+        set_cur_samplelimits(_device_agent.get_sample_limit());
+    }
+
 } // namespace pv
