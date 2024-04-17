@@ -685,8 +685,7 @@ namespace pv
             if (_device_agent->get_work_mode() == DSO){
                 commit_hori_res();
 
-                if (_device_agent->is_demo() && _session->have_view_data() == false)
-                {
+                if (_session->have_view_data() == false){
                     _session->apply_samplerate();
                 }
             }                
