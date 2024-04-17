@@ -37,9 +37,8 @@
 #include <string.h>
 
 #include "log.h"
-#include "../config.h"
-#include "winshadow.h"
 #include "mainframe.h"
+#include "dsvdef.h"
 
 #define FIXED_WIDTH(widget) (widget->minimumWidth() >= widget->maximumWidth())
 #define FIXED_HEIGHT(widget) (widget->minimumHeight() >= widget->maximumHeight())
@@ -52,9 +51,11 @@ WinNativeWidget::WinNativeWidget(const int x, const int y, const int width,
         const int height, QColor backColor)
 {   
     _childWindow = nullptr;
-    childWidget = nullptr;
+    _childWidget = nullptr;
     _hWnd = NULL;
     _event_callback = NULL;
+    _is_lose_foreground = false;
+    _is_ncdown = false;
    
     _titleBarWidget = NULL;
     _is_native_border = IsWin11OrGreater();
@@ -105,6 +106,7 @@ WinNativeWidget::WinNativeWidget(const int x, const int y, const int width,
     if (!_is_native_border){
         _shadow = new WinShadow(_hWnd, NULL);
         _shadow->createWinId();
+        _shadow->SetCallback(this);
     }
 }
 
@@ -118,7 +120,7 @@ WinNativeWidget::~WinNativeWidget()
 
 void WinNativeWidget::SetChildWidget(MainFrame *w)
 { 
-    childWidget = w;
+    _childWidget = w;
     _childWindow = NULL;
 
     if (w != NULL){
@@ -150,28 +152,40 @@ LRESULT CALLBACK WinNativeWidget::WndProc(HWND hWnd, UINT message, WPARAM wParam
     }
 
     switch (message)
-    { 
+    {
         case WM_SYSCOMMAND:
         {
             if (wParam == SC_KEYMENU)
             {
-                RECT winrect;
-                GetWindowRect(hWnd, &winrect);
-                TrackPopupMenu(GetSystemMenu(hWnd, false), TPM_TOPALIGN | TPM_LEFTALIGN, winrect.left + 5, winrect.top + 5, 0, hWnd, NULL);
+                RECT rc;
+                GetWindowRect(hWnd, &rc);
+                TrackPopupMenu(GetSystemMenu(hWnd, false), TPM_TOPALIGN | TPM_LEFTALIGN, 
+                            rc.left + 5, rc.top + 5, 0, hWnd, NULL);
             }
-            break;;
+            break;
         }
         case WM_KEYDOWN:
         { 
             //enable the hot key.
             QKeyEvent keyEvent(QEvent::KeyPress, (int)wParam, 0);
-            QApplication::sendEvent(self->childWidget->GetBodyView(), &keyEvent);
+            QApplication::sendEvent(self->_childWidget->GetBodyView(), &keyEvent);
             break;
         }
         case WM_KEYUP:
         {   
             QKeyEvent keyEvent(QEvent::KeyRelease, (int)wParam, 0);
-            QApplication::sendEvent(self->childWidget->GetBodyView(), &keyEvent);
+            QApplication::sendEvent(self->_childWidget->GetBodyView(), &keyEvent);
+            break;
+        }
+        case WM_NCLBUTTONDOWN:
+        {   
+            self->_is_ncdown = true;
+            break;
+        }
+        case WM_NCLBUTTONUP:
+        case WM_EXITSIZEMOVE:
+        {   
+            self->_is_ncdown = false;
             break;
         }
         case WM_NCCALCSIZE:
@@ -218,8 +232,8 @@ LRESULT CALLBACK WinNativeWidget::WndProc(HWND hWnd, UINT message, WPARAM wParam
         }
         case WM_CLOSE:
         {
-            if (self->childWidget != NULL) {
-                self->childWidget->close();
+            if (self->_childWidget != NULL) {
+                self->_childWidget->close();
                 return 0;
             }
             break;
@@ -278,41 +292,41 @@ LRESULT CALLBACK WinNativeWidget::WndProc(HWND hWnd, UINT message, WPARAM wParam
             }
             break;
         }
-        case WM_WINDOWPOSCHANGING:
+        case WM_WINDOWPOSCHANGED:
         {
             static int lst_state = -1;
-            int st = 3;
-            if (self->IsMaxsized())
-                st = 1;
-            else if (self->IsNormalsized())
-                st = 2;
-        
-            if (self->childWidget != NULL && self->_shadow && lst_state != st){
-                if (st == 2){            
-                    if (self->childWidget->isVisible()){                        
-                        self->_shadow->showLater();
-                        self->showBorder();
-                    }
-                }
-                else {
-                    self->_shadow->hide();
-                    self->hideBorder();
+            
+            if (self->_childWidget != NULL && self->_is_ncdown == false){
+
+                int st = 3;
+                if (self->IsMaxsized())
+                    st = 1;
+                else if (self->IsNormalsized())
+                    st = 2;
+
+                if (lst_state != st || self->_is_lose_foreground)
+                {
+                    QTimer::singleShot(0, self->_childWidget, [=](){
+                        self->setShadowStatus(st); 
+                    });
                 }
 
-                lst_state = st;
+                self->_is_lose_foreground = false;
+                lst_state = st;    
             }
+
             break;
         }
         case WM_GETMINMAXINFO:
         {
-            if (self->childWidget && self->_hCurrentMonitor)
+            if (self->_childWidget && self->_hCurrentMonitor)
             {
                 int maxWidth = 0;
                 int maxHeight = 0;
                  
                 if (self->getMonitorWorkArea(self->_hCurrentMonitor, &maxWidth, &maxHeight))
                 {
-                    auto gw = self->childWidget;
+                    auto gw = self->_childWidget;
                     int k = self->GetDevicePixelRatio();
                     QSize minimum = gw->minimumSize();
                     QSize sizeHint = gw->minimumSizeHint();
@@ -327,95 +341,98 @@ LRESULT CALLBACK WinNativeWidget::WndProc(HWND hWnd, UINT message, WPARAM wParam
             break;
         }
         case WM_NCHITTEST:
-        {
-            auto childWidget = self->childWidget;
-            if (childWidget == NULL)
-                break;
-
-            
-            int k = self->GetDevicePixelRatio();
-            const LONG borderWidth = 4 * k;
-            RECT rc;
-            GetWindowRect(hWnd, &rc);
-
-            int left = rc.left;
-            int right = rc.right;
-            int top = rc.top;
-            int bottom = rc.bottom;
-
-            long x = GET_X_LPARAM(lParam);
-            long y = GET_Y_LPARAM(lParam);
-
-            // Check if the size can to resize.
-            if (!self->IsMaxsized())
-            {
-                //bottom left corner
-                if (x >= left && x < left + borderWidth &&
-                    y < bottom && y >= bottom - borderWidth)
-                {
-                    return HTBOTTOMLEFT;
-                }
-                //bottom right corner
-                if (x < right && x >= right - borderWidth &&
-                    y < bottom && y >= bottom - borderWidth)
-                {
-                    return HTBOTTOMRIGHT;
-                }
-                //top left corner
-                if (x >= left && x < left + borderWidth &&
-                    y >= top && y < top + borderWidth)
-                {
-                    return HTTOPLEFT;
-                }
-                //top right corner
-                if (x < right && x >= right - borderWidth &&
-                    y >= top && y < top + borderWidth)
-                {
-                    return HTTOPRIGHT;
-                }
-                //left border
-                if (x >= left && x < left + borderWidth)
-                {
-                    return HTLEFT;
-                }
-                //right border
-                if (x < right && x >= right - borderWidth)
-                {
-                    return HTRIGHT;
-                }
-                //bottom border
-                if (y < bottom && y >= bottom - borderWidth)
-                {
-                    return HTBOTTOM;
-                }
-                //top border
-                if (y >= top && y < top + borderWidth)
-                {
-                    return HTTOP;
-                }
-            } 
-
-            // title bar
-            if (self->_titleBarWidget)
-            {
-                QRect titleRect = self->_titleBarWidget->geometry(); 
-
-                int titleWidth = titleRect.width() * k - 55 * k;
-                int titleHeight = titleRect.height() * k;
-            
-                if (x > left + 2 * k && x < left + titleWidth)
-                {
-                    if (y > top + 2 * k && y < top + titleHeight){                        
-                        return HTCAPTION;
-                    }
-                }
+        {   
+            if (self->_childWidget != NULL){
+                return self->hitTest(hWnd, wParam, lParam);
             }
-
-            return HTCLIENT;            
+            break;           
         }
     }
 
     return DefWindowProc(hWnd, message, wParam, lParam);
+}
+
+LRESULT WinNativeWidget::hitTest(HWND hWnd, WPARAM wParam, LPARAM lParam)
+{
+    int k = GetDevicePixelRatio();
+    const LONG borderWidth = 4 * k;
+    RECT rc;
+    GetWindowRect(hWnd, &rc);
+
+    int left = rc.left;
+    int right = rc.right;
+    int top = rc.top;
+    int bottom = rc.bottom;
+
+    long x = GET_X_LPARAM(lParam);
+    long y = GET_Y_LPARAM(lParam);
+
+    // Check if the size can to resize.
+    if (!IsMaxsized())
+    {
+        //bottom left corner
+        if (x >= left && x < left + borderWidth &&
+            y < bottom && y >= bottom - borderWidth)
+        {
+            return HTBOTTOMLEFT;
+        }
+        //bottom right corner
+        if (x < right && x >= right - borderWidth &&
+            y < bottom && y >= bottom - borderWidth)
+        {
+            return HTBOTTOMRIGHT;
+        }
+        //top left corner
+        if (x >= left && x < left + borderWidth &&
+            y >= top && y < top + borderWidth)
+        {
+            return HTTOPLEFT;
+        }
+        //top right corner
+        if (x < right && x >= right - borderWidth &&
+            y >= top && y < top + borderWidth)
+        {
+            return HTTOPRIGHT;
+        }
+        //left border
+        if (x >= left && x < left + borderWidth)
+        {
+            return HTLEFT;
+        }
+        //right border
+        if (x < right && x >= right - borderWidth)
+        {
+            return HTRIGHT;
+        }
+        //bottom border
+        if (y < bottom && y >= bottom - borderWidth)
+        {
+            return HTBOTTOM;
+        }
+        //top border
+        if (y >= top && y < top + borderWidth)
+        {
+            return HTTOP;
+        }
+    } 
+
+    // title bar
+    if (_titleBarWidget)
+    {
+        QRect titleRect = _titleBarWidget->geometry(); 
+
+        int titleWidth = titleRect.width() * k - 55 * k;
+        int titleHeight = titleRect.height() * k;
+    
+        if (x > left + 2 * k && x < left + titleWidth)
+        {
+            if (y > top + 2 * k && y < top + titleHeight){                        
+                return HTCAPTION;
+            }
+        }
+    }
+
+    return HTCLIENT;
 }
 
 RECT WinNativeWidget::GetMonitorArea(HMONITOR hMonitor, bool isPhysics)
@@ -488,7 +505,7 @@ void WinNativeWidget::ResizeChild()
 
         MoveWindow(_childWindow, x, y, w + 1 , h + 1 , 1);
         MoveWindow(_childWindow, x, y, w , h , 1);
-        childWidget->updateGeometry();
+        _childWidget->updateGeometry();
     }
 }
 
@@ -551,8 +568,8 @@ void WinNativeWidget::UpdateChildDpi()
         screen = QGuiApplication::primaryScreen();
     }
 
-    if (screen != NULL && childWidget != NULL){
-        childWidget->windowHandle()->setScreen(screen);
+    if (screen != NULL && _childWidget != NULL){
+        _childWidget->windowHandle()->setScreen(screen);
         if (_shadow != NULL){
             _shadow->windowHandle()->setScreen(screen);
         }
@@ -655,7 +672,7 @@ void WinNativeWidget::SetBorderColor(QColor color)
                 pDwmSetWindowAttribute(_hWnd, DWMWINDOWATTRIBUTE_DWMWA_BORDER_COLOR, &COLOR, sizeof(COLOR));
             }
         }
-        else if (childWidget != NULL){
+        else if (_childWidget != NULL){
             if (IsMaxsized()){
                 hideBorder();
             }
@@ -668,21 +685,21 @@ void WinNativeWidget::SetBorderColor(QColor color)
 
 void WinNativeWidget::showBorder()
 {
-    if (childWidget != NULL && !_is_native_border){
-        childWidget->setObjectName("DSViewFrame");
+    if (_childWidget != NULL && !_is_native_border){
+        _childWidget->setObjectName("DSViewFrame");
         QString borderCss = "#DSViewFrame {border-radius:0px; border:1px solid %1;}";
         QString borderStyle = borderCss.arg(_border_color.name());
-        childWidget->setStyleSheet(borderStyle);
+        _childWidget->setStyleSheet(borderStyle);
     }
 }
 
 void WinNativeWidget::hideBorder()
 {
-     if (childWidget != NULL && !_is_native_border){
-        childWidget->setObjectName("DSViewFrame");
+     if (_childWidget != NULL && !_is_native_border){
+        _childWidget->setObjectName("DSViewFrame");
         QString borderCss = "#DSViewFrame {border-radius:0px; border:0px solid %1;}";
         QString borderStyle = borderCss.arg(_border_color.name());
-        childWidget->setStyleSheet(borderStyle);
+        _childWidget->setStyleSheet(borderStyle);
     }
 }
 
@@ -732,6 +749,38 @@ bool WinNativeWidget::IsVisible()
         return IsWindowVisible(_hWnd);
     }
     return false;
+}
+
+void WinNativeWidget::OnForeWindowLosed()
+{
+    _is_lose_foreground = true;
+}
+
+void WinNativeWidget::setShadowStatus(int windowStatus)
+{ 
+    if (_shadow == NULL)
+        return;
+
+    switch (windowStatus)
+    {
+        case 1: //maximized
+        {
+            _shadow->hideShadow();
+            hideBorder();
+            break;
+        }
+        case 2: //normal
+        {   
+            _shadow->showLater();
+            showBorder();
+            break;
+        }
+        case 3: //minimized
+        {   
+            _shadow->hideShadow();
+            break;
+        }     
+    }
 }
 
 }

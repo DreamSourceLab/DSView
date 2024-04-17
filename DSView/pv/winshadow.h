@@ -31,6 +31,12 @@
 
 namespace pv {
 
+class IShadowCallback
+{
+public:
+    virtual void OnForeWindowLosed()=0;
+};
+
 class WinShadow : public QWidget
 {
     Q_OBJECT
@@ -46,23 +52,33 @@ public:
     void showLater();
     void hideShadow();
 
-Q_SIGNALS:
+    inline bool IsActived(){
+        return m_bActived;
+    }
+
+    inline void SetCallback(IShadowCallback *callback){
+        m_callback = callback;
+    }
+
+signals:
     void showSignal();
      
-public Q_SLOTS:   
+private slots:
     void showShadow();     
     void onMoveSelf();
+    void onCheckForeWindow();
 
 private:
     bool nativeEvent(const QByteArray &eventType, void *message, long *result) override; 
     void paintEvent(QPaintEvent *event) override;
-    void setActive(bool active);
  
     QWidget     *m_parent;
-    QTimer      *m_timer; 
+    QTimer      *m_timer;
+    QTimer      *m_checkTimer;
     HWND        m_hwnd;
-    bool        m_active;
-    int         m_scale; 
+    int         m_scale;
+    bool        m_bActived;
+    IShadowCallback *m_callback;
 };
 
 } // namespace pv

@@ -32,6 +32,7 @@
 #include <QColor>
 
 #include "interface/icallbacks.h"
+#include "winshadow.h"
 
 #ifndef WM_DPICHANGED
 #define WM_DPICHANGED 0x02E0
@@ -44,13 +45,11 @@
 
 namespace pv {
 
-class WinShadow;
 class MainFrame;
 
-class WinNativeWidget
+class WinNativeWidget: public IShadowCallback
 {
 public:
-
     WinNativeWidget(const int x, const int y, const int width, const int heigh, QColor backColor);
     ~WinNativeWidget();
  
@@ -105,9 +104,15 @@ private:
     static RECT GetMonitorArea(HMONITOR hMonitor, bool isPhysics);
     static bool getMonitorWorkArea(HMONITOR  hMonitor, int *outWidth, int *outHeight);
     
+    void setShadowStatus(int windowStatus);
+
+    //IShadowCallback
+    void OnForeWindowLosed() override;
+
+    LRESULT hitTest(HWND hWnd, WPARAM wParam, LPARAM lParam);
 
 private: 
-    MainFrame*   childWidget;
+    MainFrame*  _childWidget;
     HWND        _childWindow;
     HWND        _hWnd;
     QWidget     *_titleBarWidget;
@@ -117,6 +122,8 @@ private:
     HMONITOR    _hCurrentMonitor;
     WinShadow   *_shadow;
     QColor      _border_color;
+    bool        _is_lose_foreground;
+    bool        _is_ncdown;
 };
 
 }

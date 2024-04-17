@@ -32,9 +32,10 @@ WinShadow::WinShadow(HWND hwnd, QWidget *parent)
 {
  
     m_hwnd = HWND(hwnd);
-    m_active = true;
     m_parent = parent;
     m_scale = 1;
+    m_bActived = false;
+    m_callback = NULL;
 
     setWindowFlags(Qt::Window | Qt::FramelessWindowHint |
                    (!m_parent ? Qt::Tool : Qt::WindowFlags(0)));
@@ -43,11 +44,16 @@ WinShadow::WinShadow(HWND hwnd, QWidget *parent)
     setAttribute(Qt::WA_TranslucentBackground);
  
     m_timer = new QTimer(this);
+    m_timer->setInterval(100);
+    m_timer->setSingleShot(true);
+
+    m_checkTimer = new QTimer(this);
+    m_checkTimer->setInterval(300);
+    m_checkTimer->start();
+
     connect(m_timer, &QTimer::timeout, this, &WinShadow::showShadow);
     connect(this, &WinShadow::showSignal, this, &WinShadow::onMoveSelf);
-    
-    m_timer->setInterval(500);
-    m_timer->setSingleShot(true);
+    connect(m_checkTimer, &QTimer::timeout, this, &WinShadow::onCheckForeWindow);
 }
 
 void WinShadow::onMoveSelf()
@@ -55,10 +61,21 @@ void WinShadow::onMoveSelf()
     moveShadow();
 }
 
+void WinShadow::onCheckForeWindow()
+{
+    if (m_callback != NULL){
+        HWND hw = GetForegroundWindow();
+        if (hw != m_hwnd){
+            m_callback->OnForeWindowLosed();
+        }
+    }
+}
+
 void WinShadow::showLater()
-{ 
+{
     m_timer->stop();
     m_timer->start();
+    m_bActived = true;
 }
 
 void WinShadow::showShadow()
@@ -67,9 +84,6 @@ void WinShadow::showShadow()
         return;
 
     if (!IsWindowEnabled(m_hwnd))
-        return;
-
-    if (GetForegroundWindow() != m_hwnd)
         return;
 
     Q_EMIT showSignal();
@@ -88,12 +102,7 @@ void WinShadow::hideShadow()
         return;
 
     QWidget::hide(); 
-}
-
-void WinShadow::setActive(bool active)
-{ 
-    m_active = active;
-    repaint();
+    m_bActived = false;
 }
 
 bool WinShadow::nativeEvent(const QByteArray &eventType, void *message, long *result)
@@ -110,7 +119,6 @@ bool WinShadow::nativeEvent(const QByteArray &eventType, void *message, long *re
                 case WA_CLICKACTIVE:
                 { 
                     SetForegroundWindow(m_hwnd);
-
                     break;
                 }
             }
@@ -120,7 +128,6 @@ bool WinShadow::nativeEvent(const QByteArray &eventType, void *message, long *re
         { 
             SetForegroundWindow(m_hwnd); 
             *result = MA_NOACTIVATE;
-
             return true;
         }
         case WM_NCMOUSEMOVE:
@@ -165,7 +172,6 @@ void WinShadow::moveShadow()
                         || IsChild(m_hwnd, active_window)); 
 
         MoveWindow((HWND)winId(), x, y, w , h , 1); 
-        setActive(isActiveWindow); 
     } 
 }
 
@@ -175,19 +181,7 @@ void WinShadow::paintEvent(QPaintEvent *event)
     QPainter painter(this);
     painter.setCompositionMode(QPainter::CompositionMode_Source);
 
-    if (!m_active)
-    {
-        painter.fillRect(rect(), QColor(0, 0, 0, 1));
-
-        QRect rect1 = rect().adjusted(shadow_width, shadow_width, -shadow_width, -shadow_width);
-
-        painter.fillRect(rect1, Qt::transparent);
-
-        return;
-    }
-
     QPixmap radial_gradient = QPixmap(shadow_width * 2, shadow_width * 2);
-
     {  
         radial_gradient.fill(QColor(0, 0, 0, 1));
 
