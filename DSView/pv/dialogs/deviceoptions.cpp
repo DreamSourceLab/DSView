@@ -136,6 +136,8 @@ DeviceOptions::DeviceOptions(QWidget *parent) :
     // mode group box
     QGroupBox *props_box = new QGroupBox(L_S(STR_PAGE_DLG, S_ID(IDS_DLG_MODE), "Mode"), this);
     props_box->setFont(font);
+    props_box->setMinimumHeight(70);
+    props_box->setAlignment(Qt::AlignTop);
     QLayout *props_lay = get_property_form(props_box);
     props_lay->setContentsMargins(5, 20, 5, 5);
     props_box->setLayout(props_lay);
