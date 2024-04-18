@@ -101,8 +101,11 @@ void WinShadow::hideShadow()
     if (!isVisible())
         return;
 
-    QWidget::hide(); 
     m_bActived = false;
+
+    repaint();
+
+    QWidget::hide();
 }
 
 bool WinShadow::nativeEvent(const QByteArray &eventType, void *message, long *result)
@@ -177,6 +180,11 @@ void WinShadow::moveShadow()
 
 void WinShadow::paintEvent(QPaintEvent *event)
 {  
+    // The shandow is hiden.
+    if (!m_bActived){
+        return;
+    }
+
     const int shadow_width = SHADOW_BORDER_WIDTH;
     QPainter painter(this);
     painter.setCompositionMode(QPainter::CompositionMode_Source);

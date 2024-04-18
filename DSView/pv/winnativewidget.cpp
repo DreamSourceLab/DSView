@@ -44,6 +44,10 @@
 #define FIXED_HEIGHT(widget) (widget->minimumHeight() >= widget->maximumHeight())
 #define FIXED_SIZE(widget) (FIXED_WIDTH(widget) && FIXED_HEIGHT(widget))
 
+#define WINDOW_STATUS_MAX       1
+#define WINDOW_STATUS_NORMAL    2
+#define WINDOW_STATUS_MIN       3
+
 namespace pv {
 
 //-----------------------------WinNativeWidget 
@@ -55,7 +59,6 @@ WinNativeWidget::WinNativeWidget(const int x, const int y, const int width,
     _hWnd = NULL;
     _event_callback = NULL;
     _is_lose_foreground = false;
-    _is_ncdown = false;
    
     _titleBarWidget = NULL;
     _is_native_border = IsWin11OrGreater();
@@ -145,6 +148,8 @@ void WinNativeWidget::ReShowWindow()
 
 LRESULT CALLBACK WinNativeWidget::WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
+    static bool bMoving = false;
+
     WinNativeWidget *self = reinterpret_cast<WinNativeWidget*>(GetWindowLongPtr(hWnd, GWLP_USERDATA));
 
     if (self == NULL){
@@ -177,15 +182,14 @@ LRESULT CALLBACK WinNativeWidget::WndProc(HWND hWnd, UINT message, WPARAM wParam
             QApplication::sendEvent(self->_childWidget->GetBodyView(), &keyEvent);
             break;
         }
-        case WM_NCLBUTTONDOWN:
+        case WM_ENTERSIZEMOVE:
         {   
-            self->_is_ncdown = true;
+            bMoving = true;
             break;
         }
-        case WM_NCLBUTTONUP:
         case WM_EXITSIZEMOVE:
         {   
-            self->_is_ncdown = false;
+            bMoving = false;
             break;
         }
         case WM_NCCALCSIZE:
@@ -292,17 +296,17 @@ LRESULT CALLBACK WinNativeWidget::WndProc(HWND hWnd, UINT message, WPARAM wParam
             }
             break;
         }
-        case WM_WINDOWPOSCHANGED:
+        case WM_WINDOWPOSCHANGING:
         {
             static int lst_state = -1;
             
-            if (self->_childWidget != NULL && self->_is_ncdown == false){
+            if (self->_childWidget != NULL && !bMoving){
 
-                int st = 3;
+                int st = WINDOW_STATUS_MIN;
                 if (self->IsMaxsized())
-                    st = 1;
+                    st = WINDOW_STATUS_MAX;
                 else if (self->IsNormalsized())
-                    st = 2;
+                    st = WINDOW_STATUS_NORMAL;
 
                 if (lst_state != st || self->_is_lose_foreground)
                 {
@@ -315,6 +319,14 @@ LRESULT CALLBACK WinNativeWidget::WndProc(HWND hWnd, UINT message, WPARAM wParam
                 lst_state = st;    
             }
 
+            break;
+        }
+        case WM_WINDOWPOSCHANGED:
+        {
+            if (IsIconic(hWnd)){
+                //the window switch to minimized.
+                self->_is_lose_foreground = true;
+            }
             break;
         }
         case WM_GETMINMAXINFO:
@@ -763,19 +775,19 @@ void WinNativeWidget::setShadowStatus(int windowStatus)
 
     switch (windowStatus)
     {
-        case 1: //maximized
+        case WINDOW_STATUS_MAX: 
         {
             _shadow->hideShadow();
             hideBorder();
             break;
         }
-        case 2: //normal
+        case WINDOW_STATUS_NORMAL:
         {   
             _shadow->showLater();
             showBorder();
             break;
         }
-        case 3: //minimized
+        case WINDOW_STATUS_MIN:
         {   
             _shadow->hideShadow();
             break;
