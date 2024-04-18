@@ -899,14 +899,17 @@ int View::headerWidth()
 
 void View::resizeEvent(QResizeEvent*)
 {
+    int width = get_view_width();
+    
+    if (width < 1){
+        return;
+    }
+
     reconstruct();
     setViewportMargins(headerWidth(), RulerHeight, 0, 0);
     update_margins();
     update_scroll();
     signals_changed(NULL);
-
-    int width = get_view_width();
-    assert(width > 0);
 
     if (_device_agent->get_work_mode() == DSO){
         _scale = _session->cur_view_time() / width;
@@ -981,7 +984,7 @@ void View::update_margins()
 {
     int width = get_view_width();
     assert(width > 0);
-
+    
     _ruler->setGeometry(_viewcenter->x(), 0,  width, _viewcenter->y());
     _header->setGeometry(0, _viewcenter->y(), _viewcenter->x(), _viewcenter->height());
     _devmode->setGeometry(0, 0, _viewcenter->x(), _viewcenter->y());
@@ -1092,7 +1095,7 @@ void View::set_cursor_middle(int index)
     assert(index < size);
 
     int width = get_view_width();
-    assert(width > 0);
+   // if (width > 0);
 
     auto i = lst.begin();
 
