@@ -225,15 +225,17 @@ void View::set_device()
 
 void View::capture_init()
 {
+    int width = get_view_width();
+    if (width == 0){
+        return;
+    }
+
     int mode = _device_agent->get_work_mode();
 
     if (mode == DSO)
         show_trig_cursor(true);
     else if (!_session->is_repeating())
         show_trig_cursor(false);
-
-    int width = get_view_width();
-    assert(width > 0);
  
     _maxscale = _session->cur_sampletime() / (width * MaxViewRate);
 
@@ -249,9 +251,10 @@ void View::capture_init()
 void View::zoom(double steps)
 {
     int width = get_view_width();
-    assert(width > 0);
-
-    zoom(steps, width / 2);
+    if (width > 0)
+    {
+        zoom(steps, width / 2);
+    }
 }
 
 void View::set_update(Viewport *viewport, bool need_update)
@@ -279,12 +282,14 @@ void View::update_hori_res()
 
 bool View::zoom(double steps, int offset)
 {
+    int width = get_view_width();
+    if (width == 0){
+        return false;
+    }
+
     bool ret = true;
     _preScale = _scale;
     _preOffset = _offset;
-
-    int width = get_view_width();
-    assert(width > 0);
 
     if (_device_agent->get_work_mode() != DSO) {
         _scale *= std::pow(3.0/2.0, -steps);
@@ -325,11 +330,14 @@ bool View::zoom(double steps, int offset)
 
 void View::timebase_changed()
 {
-    if (_device_agent->get_work_mode() != DSO)
-        return;
-
     int width = get_view_width();
-    assert(width > 0);
+    if (width == 0){
+        return;
+    }
+
+    if (_device_agent->get_work_mode() != DSO){
+        return;
+    }
 
     double scale = this->scale();
     double hori_res = _sampling_bar->get_hori_res();
@@ -601,7 +609,9 @@ void View::update_scroll()
     assert(_viewcenter);
 
     int width = get_view_width();
-    assert(width > 0);
+    if (width == 0){
+        return;
+    }
 
     const QSize areaSize = QSize(width, get_view_height());
 
@@ -634,7 +644,9 @@ void View::update_scroll()
 void View::update_scale_offset()
 {   
     int width = get_view_width();
-    assert(width > 0);
+    if (width == 0){
+        return;
+    }
 
     if (_device_agent->get_work_mode() != DSO) {
         _maxscale = _session->cur_sampletime() / (width * MaxViewRate);     
@@ -900,8 +912,8 @@ int View::headerWidth()
 void View::resizeEvent(QResizeEvent*)
 {
     int width = get_view_width();
-    
-    if (width < 1){
+
+    if (width == 0){
         return;
     }
 
@@ -939,7 +951,8 @@ void View::h_scroll_value_changed(int value)
 	const int range = horizontalScrollBar()->maximum();
 	if (range < MaxScrollValue)
         _offset = value;
-	else {
+	else 
+    {
         int64_t length = 0;
         int64_t offset = 0;
 		get_scroll_layout(length, offset);
@@ -983,11 +996,13 @@ void View::data_updated()
 void View::update_margins()
 {
     int width = get_view_width();
-    assert(width > 0);
-    
-    _ruler->setGeometry(_viewcenter->x(), 0,  width, _viewcenter->y());
-    _header->setGeometry(0, _viewcenter->y(), _viewcenter->x(), _viewcenter->height());
-    _devmode->setGeometry(0, 0, _viewcenter->x(), _viewcenter->y());
+
+    if (width > 0)
+    {
+        _ruler->setGeometry(_viewcenter->x(), 0,  width, _viewcenter->y());
+        _header->setGeometry(0, _viewcenter->y(), _viewcenter->x(), _viewcenter->height());
+        _devmode->setGeometry(0, 0, _viewcenter->x(), _viewcenter->y());
+    } 
 }
 
 void View::header_updated()
@@ -1201,6 +1216,10 @@ int View::get_view_width()
         view_width = _viewcenter->width();
     }
 
+    if (view_width == 0){
+        view_width = 1;
+    }
+
     return view_width;
 }
 
@@ -1295,7 +1314,9 @@ void View::show_region(uint64_t start, uint64_t end, bool keep)
     assert(start <= end);
 
     int width = get_view_width();
-    assert(width > 0);
+    if (width == 0){
+        return;
+    }
 
     if (keep) {
         set_all_update(true);
