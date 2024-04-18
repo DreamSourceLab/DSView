@@ -885,7 +885,7 @@ void DeviceOptions::try_resize_scroll()
 
     if (_device_agent->get_work_mode() == LOGIC
             && _device_agent->is_demo()){
-        _dynamic_panel->setFixedWidth(max_label_width + 150);
+        _dynamic_panel->setFixedWidth(max_label_width + 250);
     }
 #endif
 
