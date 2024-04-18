@@ -77,6 +77,7 @@ StoreSession::StoreSession(SigSession *session) :
     _sessionDataGetter = NULL;
     _start_index = 0;
     _end_index = 0;
+    _is_busy = false;
 }
 
 StoreSession::~StoreSession()
@@ -518,6 +519,10 @@ void StoreSession::save_proc(data::Snapshot *snapshot)
     data::AnalogSnapshot *analog_snapshot = NULL;
     data::DsoSnapshot *dso_snapshot = NULL;
 
+    _is_busy = true;
+
+    dsv_info("save task start.");
+
     if ((logic_snapshot = dynamic_cast<data::LogicSnapshot*>(snapshot))) {
         save_logic(logic_snapshot);
     }
@@ -527,6 +532,11 @@ void StoreSession::save_proc(data::Snapshot *snapshot)
     else if ((dso_snapshot = dynamic_cast<data::DsoSnapshot*>(snapshot))) {
         save_dso(dso_snapshot);
     }
+ 
+    dsv_info("save task end.");
+
+    std::this_thread::sleep_for(std::chrono::milliseconds(300));
+    _is_busy = false;   
 }
 
 bool StoreSession::meta_gen(data::Snapshot *snapshot, std::string &str)
@@ -843,6 +853,20 @@ bool StoreSession::export_start()
 
 void StoreSession::export_proc(data::Snapshot *snapshot)
 {
+    _is_busy = true;
+
+    dsv_info("export task start.");
+
+    export_exec(snapshot);
+
+    dsv_info("export task end.");
+    std::this_thread::sleep_for(std::chrono::milliseconds(300));
+    
+    _is_busy = false;
+}
+
+void StoreSession::export_exec(data::Snapshot *snapshot)
+{
     assert(snapshot);
 
         //set export all data flag
@@ -1061,8 +1085,8 @@ void StoreSession::export_proc(data::Snapshot *snapshot)
                 progress_updated();
             }
         }
-
-    } else if (channel_type == SR_CHANNEL_DSO) {
+    }
+    else if (channel_type == SR_CHANNEL_DSO) {
         _unit_count = snapshot->get_sample_count(); 
         unsigned int usize = 8192;
         unsigned int size = usize;

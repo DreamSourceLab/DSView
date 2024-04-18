@@ -24,7 +24,6 @@
 #include "../sigsession.h"
 #include <QGridLayout>
 #include <QDialogButtonBox>
-#include <QTimer>
 #include <QTextEdit>
 #include <QPushButton>
 #include <QRadioButton>
@@ -43,11 +42,12 @@ namespace pv {
 namespace dialogs {
 
 StoreProgress::StoreProgress(SigSession *session, QWidget *parent) :
-    DSDialog(parent),
-    _store_session(session)
+    DSDialog(parent)
 {
     _fileLab = NULL;
     _ckOrigin = NULL;
+
+    _store_session = new StoreSession(session);
 
     this->setMinimumSize(550, 220);
     this->setModal(true);
@@ -56,12 +56,10 @@ StoreProgress::StoreProgress(SigSession *session, QWidget *parent) :
     _progress.setMaximum(100);
 
     _isExport = false;
-    _done = false;
-    _isBusy = false;
+    _is_done = false;
     _start_cursor = NULL;
     _end_cursor = NULL;
-    _view = NULL;
-    _is_normal_end = false;
+    _view = NULL;  
 
     QGridLayout *grid = new QGridLayout(); 
     _grid = grid;
@@ -99,60 +97,72 @@ StoreProgress::StoreProgress(SigSession *session, QWidget *parent) :
     connect(_button_box, SIGNAL(rejected()), this, SLOT(reject()));
     connect(_button_box, SIGNAL(accepted()), this, SLOT(accept()));
 
-    connect(&_store_session, SIGNAL(progress_updated()),
+    connect(_store_session, SIGNAL(progress_updated()),
         this, SLOT(on_progress_updated()), Qt::QueuedConnection);
 
     connect(_openButton, SIGNAL(clicked()),this, SLOT(on_change_file()));
 
     _progress.setVisible(false);
+
+    connect(&m_timer, &QTimer::timeout, this, &StoreProgress::on_timeout);
+    m_timer.setInterval(100);
 }
 
 StoreProgress::~StoreProgress()
 {
-    _store_session.wait();
+    _store_session->wait();
 }
 
-void StoreProgress::on_change_file()
+void StoreProgress::closeEvent(QCloseEvent* event)
+{ 
+    //Wait the thread ends.
+    if (_store_session->is_busy()){
+        _store_session->cancel();
+        event->ignore();
+        return;
+    }
+   
+    _store_session->session()->set_saving(false);
+    _store_session->session()->broadcast_msg(DSV_MSG_SAVE_COMPLETE);
+
+    delete this;
+}
+
+void StoreProgress::keyPressEvent(QKeyEvent *event)
 {
-    QString file  = "";
-    if (_isExport)
-        file = _store_session.MakeExportFile(true);
-    else
-        file = _store_session.MakeSaveFile(true);
-
-    if (file != ""){
-        _fileLab->setText(file); 
-
-        if (_ckOrigin != NULL){
-            bool bFlag = file.endsWith(".csv");
-            _ckOrigin->setVisible(bFlag);
-            _ckCompress->setVisible(bFlag);
-        }
-    }          
+    if (event->key() == Qt::Key_Escape) {
+        close();
+    }
+    else { 
+        QWidget::keyPressEvent(event);
+    }
 }
 
 void StoreProgress::reject()
-{
-    using namespace Qt;
-    _store_session.cancel();
-    _store_session.session()->set_saving(false);
-    save_done(); 
-    DSDialog::reject();
-    _store_session.session()->broadcast_msg(DSV_MSG_SAVE_COMPLETE);
+{  
+    close();
+}
+
+void StoreProgress::on_timeout()
+{   
+    //The task is end, to close the window.
+    if (_store_session->is_busy() == false) {
+        close();      
+    }
 }
 
 void StoreProgress::accept()
 {
-    if (_store_session.GetFileName() == ""){
+    if (_store_session->GetFileName() == ""){
         MsgBox::Show(NULL, L_S(STR_PAGE_MSG, S_ID(IDS_MSG_SEL_FILENAME), "You need to select a file name."));
         return;
     }
 
-    if (_isBusy)
+    if (_is_done){
         return;
+    }
 
-
-    if (_isExport && _store_session.IsLogicDataType()){
+    if (_isExport && _store_session->IsLogicDataType()){
         bool ck  = _ckOrigin->isChecked();
         AppConfig &app = AppConfig::Instance();
         if (app.appOptions.originalData != ck){
@@ -162,7 +172,7 @@ void StoreProgress::accept()
     }
 
     // Get data range
-    if (_store_session.IsLogicDataType() && _view != NULL)
+    if (_store_session->IsLogicDataType() && _view != NULL)
     {
         uint64_t start_index = 0;
         uint64_t end_index = 0;
@@ -209,7 +219,7 @@ void StoreProgress::accept()
             }
         }
 
-        _store_session.SetDataRange(start_index, end_index);
+        _store_session->SetDataRange(start_index, end_index);
     }
 
     _progress.setVisible(true);
@@ -225,56 +235,37 @@ void StoreProgress::accept()
 
     //start done 
     if (_isExport){
-        if (_store_session.export_start()){
-            _isBusy = true;
-            _store_session.session()->set_saving(true);
-            QTimer::singleShot(100, this, SLOT(timeout()));
-            setTitle(L_S(STR_PAGE_DLG, S_ID(IDS_DLG_EXPORTING), "Exporting..."));    
-        }
-        else{
-            save_done();
-            close(); 
-            show_error();
+        if (_store_session->export_start()){
+            _is_done = true;
+            _store_session->session()->set_saving(true);             
+            setTitle(L_S(STR_PAGE_DLG, S_ID(IDS_DLG_EXPORTING), "Exporting...")); 
+            m_timer.start();
         }
     }
     else{        
-        if (_store_session.save_start()){
-            _isBusy = true;
-            _store_session.session()->set_saving(true);
-            QTimer::singleShot(100, this, SLOT(timeout()));
+        if (_store_session->save_start()){
+            _is_done = true;
+            _store_session->session()->set_saving(true); 
             setTitle(L_S(STR_PAGE_DLG, S_ID(IDS_DLG_SAVING), "Saving..."));
-        }
-        else{
-            save_done();
-            close(); 
-            show_error();
+            m_timer.start();
         }
     }
-    //do not to call base class method, otherwise the window will be closed;
-}
-
-void StoreProgress::timeout()
-{
-    if (_done) {
-        _store_session.session()->set_saving(false);
-        save_done();
-        close(); 
-        delete this;
-        
-    } else {
-        QTimer::singleShot(100, this, SLOT(timeout()));
-    }
+   
+   if (!_is_done){
+        show_error();
+        close();
+   }
 }
 
 void StoreProgress::save_run(ISessionDataGetter *getter)
 {
     _isExport = false;
     setTitle(L_S(STR_PAGE_DLG, S_ID(IDS_DLG_SAVE), "Save"));
-    QString file = _store_session.MakeSaveFile(false);
+    QString file = _store_session->MakeSaveFile(false);
     _fileLab->setText(file); 
-    _store_session._sessionDataGetter = getter;
+    _store_session->_sessionDataGetter = getter;
 
-    if (_store_session.IsLogicDataType() && _view != NULL)
+    if (_store_session->IsLogicDataType() && _view != NULL)
     {
         QFormLayout *lay = new QFormLayout();
         lay->setContentsMargins(5, 0, 0, 0); 
@@ -304,7 +295,7 @@ void StoreProgress::save_run(ISessionDataGetter *getter)
 
 void StoreProgress::export_run()
 {
-    if (_store_session.IsLogicDataType())
+    if (_store_session->IsLogicDataType())
     { 
         QFormLayout *lay = new QFormLayout();
         lay->setContentsMargins(5, 0, 0, 0); 
@@ -351,7 +342,7 @@ void StoreProgress::export_run()
 
     _isExport = true;
     setTitle(L_S(STR_PAGE_DLG, S_ID(IDS_DLG_EXPORT), "Export"));
-    QString file = _store_session.MakeExportFile(false);
+    QString file = _store_session->MakeExportFile(false);
     _fileLab->setText(file); 
 
     if (_ckOrigin != NULL){
@@ -365,21 +356,9 @@ void StoreProgress::export_run()
 
 void StoreProgress::show_error()
 {
-    _done = true;
-    if (!_store_session.error().isEmpty()) { 
-        MsgBox::Show(NULL, _store_session.error().toStdString().c_str(), NULL);
+    if (!_store_session->error().isEmpty()) { 
+        MsgBox::Show(NULL, _store_session->error().toStdString().c_str(), NULL);
     }
-}
-
-void StoreProgress::closeEvent(QCloseEvent* e)
-{ 
-    if (!_is_normal_end){
-        _store_session.cancel();
-    }
-   
-    _store_session.session()->set_saving(false);
-    save_done();
-    _store_session.session()->broadcast_msg(DSV_MSG_SAVE_COMPLETE);
 }
 
 void StoreProgress::on_progress_updated()
@@ -387,7 +366,7 @@ void StoreProgress::on_progress_updated()
     uint64_t writed = 0;
     uint64_t total = 0;
 
-    _store_session.get_progress(&writed, &total);
+    _store_session->get_progress(&writed, &total);
 
     if (writed < total){
         int percent = writed * 1.0 / total * 100.0;
@@ -397,15 +376,29 @@ void StoreProgress::on_progress_updated()
         _progress.setValue(100);
     }
 
-    const QString err = _store_session.error();
+    const QString err = _store_session->error();
 	if (!err.isEmpty()) {
 		show_error();
 	}
+}
 
-    if (writed >= total){
-        _is_normal_end = true;
-        _done = true; // Set end flag.
-    }
+void StoreProgress::on_change_file()
+{
+    QString file  = "";
+    if (_isExport)
+        file = _store_session->MakeExportFile(true);
+    else
+        file = _store_session->MakeSaveFile(true);
+
+    if (file != ""){
+        _fileLab->setText(file); 
+
+        if (_ckOrigin != NULL){
+            bool bFlag = file.endsWith(".csv");
+            _ckOrigin->setVisible(bFlag);
+            _ckCompress->setVisible(bFlag);
+        }
+    }          
 }
 
 void StoreProgress::on_ck_origin(bool ck)

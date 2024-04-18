@@ -56,19 +56,12 @@ public:
     StoreSession(SigSession *session);
 
 	~StoreSession();
-
     SigSession* session();
-
     void get_progress(uint64_t *writed, uint64_t *total);
-
 	const QString& error();
-
     bool save_start();
-
     bool export_start();
-
 	void wait();
-
 	void cancel();
 
 private:
@@ -77,7 +70,8 @@ private:
     void save_analog(pv::data::AnalogSnapshot *analog_snapshot);
     void save_dso(pv::data::DsoSnapshot *dso_snapshot);
     bool meta_gen(data::Snapshot *snapshot, std::string &str);
-    void export_proc(pv::data::Snapshot *snapshot);   
+    void export_proc(pv::data::Snapshot *snapshot);
+    void export_exec(pv::data::Snapshot *snapshot);
     bool decoders_gen(std::string &str);
  
 
@@ -87,14 +81,19 @@ public:
     QString MakeSaveFile(bool bDlg);
     QString MakeExportFile(bool bDlg);
 
-    inline QString GetFileName()
-        { return _file_name;}
+    inline QString GetFileName(){
+        return _file_name;
+    }
 
     bool IsLogicDataType();
 
     inline void SetDataRange(uint64_t start_index, uint64_t end_index){
         _start_index = start_index;
         _end_index = end_index;
+    }
+
+    inline bool is_busy(){
+        return _is_busy;
     }
 
 private:
@@ -112,9 +111,7 @@ private:
     QString         _file_name;
     QString         _suffix;
     SigSession      *_session;
-
-	std::thread   _thread;
-
+	std::thread     _thread;
     const struct sr_output_module* _outModule;
  
 	uint64_t        _units_stored;
@@ -125,6 +122,7 @@ private:
     ZipMaker        m_zipDoc;  
     uint64_t        _start_index;
     uint64_t        _end_index;
+    volatile bool   _is_busy;
 };
 
 } // pv

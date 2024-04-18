@@ -24,6 +24,7 @@
 #define DSVIEW_PV_DIALOGS_SAVEPROGRESS_H
  
 #include <QProgressBar>
+#include <QTimer>
 #include "../storesession.h"
 #include "../dialogs/dsdialog.h" 
 #include "../interface/icallbacks.h"
@@ -60,33 +61,27 @@ public:
     inline void SetView(view::View *view){
         _view = view;
     }
- 
-protected:
-    void reject();
-    void accept();
 
-private:
-	void show_error();
-    void closeEvent(QCloseEvent* e);
-
-signals:
-    void save_done();
-
-public slots:
     void save_run(ISessionDataGetter *getter);
     void export_run();
-
+ 
+private:
+    void reject();
+    void accept();
+	void show_error();
+    void closeEvent(QCloseEvent* event) override;
+    void keyPressEvent(QKeyEvent *event) override;
+    
 private slots:
 	void on_progress_updated();
-    void timeout();
+    void on_timeout();
     void on_change_file();
     void on_ck_origin(bool ck);
     void on_ck_compress(bool ck);
 
 private:
-    pv::StoreSession    _store_session;
+    pv::StoreSession    *_store_session;
     QProgressBar        _progress;
-    bool                _done;
     bool                _isExport;
     QTextEdit           *_fileLab;
     QRadioButton        *_ckOrigin;
@@ -94,12 +89,11 @@ private:
     QPushButton         *_openButton;
     QGridLayout         *_grid;
     QWidget             *_space;
-    bool                 _isBusy;
     QComboBox           *_start_cursor;
     QComboBox           *_end_cursor;
-    view::View          *_view;
-    bool                _is_normal_end;
-
+    view::View          *_view; 
+    bool                _is_done;
+    QTimer              m_timer; 
 };
 
 } // dialogs
