@@ -1212,6 +1212,8 @@ void Viewport::mouseReleaseEvent(QMouseEvent *event)
         }
     }
    
+    /*
+    // This code block prevents the cursor from moving.
     if (mode == LOGIC && event->button() == Qt::LeftButton){
         int clickX = _mouse_down_point.x();
         const int64_t index = _view.pixel2index(clickX);
@@ -1221,6 +1223,7 @@ void Viewport::mouseReleaseEvent(QMouseEvent *event)
             set_action(NO_ACTION);
         }
     }
+    */
 
     update(UpdateEventType::UPDATE_EV_MS_UP);
 }
