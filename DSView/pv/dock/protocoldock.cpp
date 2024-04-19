@@ -133,6 +133,7 @@ ProtocolDock::ProtocolDock(QWidget *parent, view::View &view, SigSession *sessio
     _top_layout = new QVBoxLayout();
     _top_layout->addLayout(pro_search_lay);
     _top_layout->addStretch(1);
+    _top_layout->setSpacing(5);
     top_panel->setLayout(_top_layout); 
  
     //-----------------------------bottom panel
@@ -410,6 +411,8 @@ bool ProtocolDock::add_protocol_by_id(QString id, bool silent, std::list<pv::dat
     protocol_updated();
     connect(decode_sigs.back(), SIGNAL(decoded_progress(int)), this, SLOT(decoded_progress(int)));
 
+    adjustPannelSize();
+
     return true;
 }
  
@@ -439,6 +442,8 @@ void ProtocolDock::del_all_protocol()
         _protocol_lay_items.clear();
         this->update();
         protocol_updated();
+
+        adjustPannelSize();
     }
 }
 
@@ -875,13 +880,15 @@ void ProtocolDock::OnProtocolDelete(void *handle){
         {
             auto lay = (*it); 
             void *key_handel = lay->get_protocol_key_handel();
-        _protocol_lay_items.erase(it);
+            _protocol_lay_items.erase(it);
             DESTROY_QT_LATER(lay);
             _session->remove_decoder_by_key_handel(key_handel);     
             protocol_updated();
             break;
         } 
-    }  
+    }
+
+    adjustPannelSize();
 }
 
 void ProtocolDock::OnProtocolFormatChanged(QString format, void *handle){
@@ -1082,7 +1089,27 @@ void ProtocolDock::UpdateFont()
     QString style = "#DecodedDataView QHeaderView{font-size: %1pt}";
     style = style.arg(AppConfig::Instance().appOptions.fontSize);
     _table_view->setStyleSheet(style);
- 
+
+    adjustPannelSize(); 
+ }
+
+ void ProtocolDock::adjustPannelSize()
+ {
+    QString str = "DECODER";
+    QFont font = this->font();
+    font.setPointSizeF(AppConfig::Instance().appOptions.fontSize);
+    QFontMetrics fm(font);
+    QRect rc = fm.boundingRect(str); 
+
+    int lineHeight = rc.height() + 15;
+    _pro_keyword_edit->setFixedHeight(rc.height() + 5);
+    int pannelHeight = lineHeight * _protocol_lay_items.size() + _pro_keyword_edit->height();
+
+    if (pannelHeight < 100){
+        pannelHeight = 100;
+    }
+
+    _top_panel->setFixedHeight(pannelHeight); 
  }
 
 } // namespace dock

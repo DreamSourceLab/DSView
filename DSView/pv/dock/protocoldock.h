@@ -121,6 +121,8 @@ private:
     void UpdateTheme() override;
     void UpdateFont() override;
 
+    void adjustPannelSize();
+
 signals:
     void protocol_updated();
 
