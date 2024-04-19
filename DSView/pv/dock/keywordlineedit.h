@@ -26,6 +26,7 @@
 #include <QLineEdit> 
 #include <QMouseEvent>
 #include <QWidget>
+#include <QDialog>
 
 class IKeywordActive{
 public:
@@ -51,5 +52,51 @@ private:
     bool            _bText;
 };
 
+//--------------SimpleKeywordLineEdit
+class SimpleKeywordLineEdit : public QLineEdit
+{
+    Q_OBJECT
+
+public:
+    SimpleKeywordLineEdit(QWidget *parent);
+
+    inline void EnableCatchKeyPress(bool enabled){
+        _is_catch_keypress = enabled;
+    }
+
+signals:
+    void sig_click();
+
+protected:
+    void mousePressEvent(QMouseEvent *e); 
+    void keyPressEvent(QKeyEvent *e) override;
+
+private:
+    bool      _is_catch_keypress;
+};
+
+//--DecoderSearchInput
+class DecoderSearchInput : public QDialog
+{
+ Q_OBJECT
+
+public:
+    explicit DecoderSearchInput(QWidget *parent = nullptr);
+
+    QString GetText();
+    void SetText(QString text);
+
+    void Popup(QWidget *editline);
+
+signals:
+    void sig_inputEnd(QString text);
+
+protected: 
+    void changeEvent(QEvent *event) override;
+
+    void InputRelease();
+
+private:
+    QLineEdit   *_textInput;};
 
 #endif

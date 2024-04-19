@@ -760,7 +760,7 @@ void MainFrame::AttachNativeWindow()
   
     setWindowFlags(Qt::FramelessWindowHint);
     
-    SetWindowLong((HWND)winId(), GWL_STYLE, WS_CLIPCHILDREN | WS_CLIPSIBLINGS);   
+    SetWindowLong((HWND)winId(), GWL_STYLE, WS_CHILD | WS_CLIPCHILDREN | WS_CLIPSIBLINGS);   
     SetParent((HWND)winId(), nativeWindow->Handle());
 
     setVisible(true);

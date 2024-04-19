@@ -61,6 +61,8 @@ using namespace std;
 
 namespace pv {
 namespace dock {
+
+//-----------ProtocolDock
    
 ProtocolDock::ProtocolDock(QWidget *parent, view::View &view, SigSession *session) :
     QScrollArea(parent),
@@ -155,20 +157,17 @@ ProtocolDock::ProtocolDock(QWidget *parent, view::View &view, SigSession *sessio
     _pre_button = new QPushButton(bot_panel);
     _ann_search_button = new QPushButton(bot_panel); //search icon
     _nxt_button = new QPushButton(bot_panel);
-    _ann_search_edit = new QLineEdit(bot_panel);
+    _ann_search_edit = new SimpleKeywordLineEdit(bot_panel);
+    _ann_search_edit->EnableCatchKeyPress(true);
+   // _ann_search_edit->setReadOnly(true);
     
     _ann_search_button->setFixedWidth(_ann_search_button->height());
     _ann_search_button->setDisabled(true);
-    QHBoxLayout *ann_edit_layout = new QHBoxLayout();
-    ann_edit_layout->addWidget(_ann_search_button);
-    ann_edit_layout->addStretch(1);
-    ann_edit_layout->setContentsMargins(0, 0, 0, 0);
-    _ann_search_edit->setLayout(ann_edit_layout);
-    _ann_search_edit->setTextMargins(_ann_search_button->width() + 1, 0, 0, 0);
-
+   
     QHBoxLayout *ann_search_layout = new QHBoxLayout();
     ann_search_layout->setSpacing(2);
     ann_search_layout->addWidget(_pre_button);
+    ann_search_layout->addWidget(_ann_search_button);
     ann_search_layout->addWidget(_ann_search_edit, 1);
     ann_search_layout->addWidget(_nxt_button);
 
@@ -219,9 +218,9 @@ ProtocolDock::ProtocolDock(QWidget *parent, view::View &view, SigSession *sessio
     connect(_table_view->horizontalHeader(), SIGNAL(sectionResized(int,int,int)), 
                     this, SLOT(column_resize(int, int, int)));
 
-    connect(_ann_search_edit, SIGNAL(editingFinished()), this, SLOT(search_changed()));
-
     connect(_pro_search_button, SIGNAL(clicked()), this, SLOT(show_protocol_select()));
+
+    connect(_ann_search_edit, SIGNAL(sig_click()), this, SLOT(on_show_ann_keyinput()));
 
     ADD_UI(this);
 }
@@ -1110,6 +1109,22 @@ void ProtocolDock::UpdateFont()
     }
 
     _top_panel->setFixedHeight(pannelHeight); 
+ }
+
+ void ProtocolDock::on_show_ann_keyinput()
+ {
+    DecoderSearchInput *input = new DecoderSearchInput(this);
+    input->SetText(_ann_search_edit->text());
+    connect(input, SIGNAL(sig_inputEnd(QString)), this, SLOT(on_ann_search_changed(QString)));
+    input->Popup(_ann_search_edit);
+ }
+
+ void ProtocolDock::on_ann_search_changed(QString text)
+ {
+    _ann_search_edit->setText(text);
+    _ann_search_edit->setFocus();
+    _ann_search_edit->setCursorPosition(_ann_search_edit->text().length());
+    search_changed();
  }
 
 } // namespace dock
