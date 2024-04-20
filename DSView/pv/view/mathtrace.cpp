@@ -97,9 +97,11 @@ int MathTrace::get_name_width()
 }
 
 void MathTrace::update_vDial()
-{
-    _vDial->set_value(_math_stack->default_vDialValue());
-    _vDial->set_factor(_math_stack->default_factor());
+{   
+    auto v = _math_stack->default_vDialValue();
+    auto k = _math_stack->default_factor();
+    _vDial->set_value(v);
+    _vDial->set_factor(k);
 }
 
 void MathTrace::go_vDialPre()
@@ -137,6 +139,11 @@ void MathTrace::go_vDialNext()
 uint64_t MathTrace::get_vDialValue()
 {
     return _vDial->get_value();
+}
+
+uint64_t MathTrace::get_vDialfactor()
+{
+    return _vDial->get_factor();
 }
 
 uint16_t MathTrace::get_vDialSel()
@@ -324,6 +331,7 @@ void MathTrace::paint_envelope(QPainter &p,
 	QRectF *rect = rects;
     double top = get_view_rect().top();
     double bottom = get_view_rect().bottom();
+
     for(uint64_t sample = 0; sample < e.length-1; sample++) {
 		const float x = ((e.scale * sample + e.start) /
             samples_per_pixel - pixels_offset) + left + _view->trig_hoff()/samples_per_pixel;
@@ -478,16 +486,26 @@ QPointF MathTrace::get_point(uint64_t index, float &value)
     const float zeroP = _zero_vrate * get_view_rect().height() + top;
     const float x = _view->index2pixel(index);
 
-    value = *_math_stack->get_math(index);
-    float y = min(max(top, zeroP - (value * _scale)), bottom);
+    float v = *_math_stack->get_math(index);
+    value = v * get_vDialfactor();
+    float y = min(max(top, zeroP - (v * _scale)), bottom);
     pt = QPointF(x, y);
     return pt;
 }
 
 QString MathTrace::get_voltage(double v, int p)
 {
-    return abs(v) >= 1 ? QString::number(v, 'f', p) + _math_stack->get_unit(1) :
-                         QString::number(v * 1000, 'f', p) + _math_stack->get_unit(0);
+    if (abs(v) >= 1000){
+        return QString::number(v / 1000, 'f', p) + _math_stack->get_unit(2);
+    }
+    else if (abs(v) >= 1){
+        return QString::number(v, 'f', p) + _math_stack->get_unit(1);
+    }
+    else{
+        return QString::number(v * 1000, 'f', p) + _math_stack->get_unit(0);
+    }
+   // return abs(v) >= 1 ? QString::number(v, 'f', p) + _math_stack->get_unit(1) :
+    //                    QString::number(v * 1000, 'f', p) + _math_stack->get_unit(0);
 }
 
 QString MathTrace::get_time(double t)

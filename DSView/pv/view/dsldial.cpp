@@ -23,17 +23,19 @@
 
 #include <cassert>
 #include <cmath>
+#include "../log.h"
 
 namespace pv {
 namespace view {
 
 dslDial::dslDial(const uint64_t div, const uint64_t step,
-                 const QVector<uint64_t> value, const QVector<QString> unit)
+                 const QVector<uint64_t> value, const QVector<QString> unit, bool isMath)
 {
     assert(div > 0);
     assert(step > 0);
     assert((uint64_t)value.count() == div);
     assert(unit.count() > 0);
+    _is_math = isMath;
 
     _div = div;
     _step = step;
@@ -80,13 +82,25 @@ void dslDial::paint(QPainter &p, QRectF dialRect, QColor dialColor, const QPoint
     }
     p.restore();
     // draw value
-    uint64_t displayValue = _value[_sel];
-    uint64_t displayIndex = 0;
+
+    if (_is_math)
+    {
+        int bbb = 0;
+        bbb++;
+    }
+
+    auto factor = get_factor();
+    auto value = _value[_sel];
+    uint64_t displayValue = value  * factor;
+    uint64_t displayIndex = 0; 
+
     while(displayValue / _step >= 1) {
-        displayValue = displayValue / _step;
+        displayValue = displayValue / _step; 
         displayIndex++;
     }
-    //tr
+
+    assert(displayIndex < _unit.count());
+   
     pText = QString::number(displayValue) + _unit[displayIndex] + "/div";
 
     // draw +/-

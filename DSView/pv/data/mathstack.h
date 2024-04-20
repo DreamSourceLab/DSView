@@ -95,7 +95,7 @@ private:
     static const uint64_t vDialValueStep = 1000;
     static const int vDialValueCount = 19;
     static const uint64_t vDialValue[vDialValueCount];
-    static const int vDialUnitCount = 2;
+    static const int vDialUnitCount = 3;
     static const QString vDialAddUnit[vDialUnitCount];
     static const QString vDialMulUnit[vDialUnitCount];
     static const QString vDialDivUnit[vDialUnitCount];
@@ -126,7 +126,7 @@ public:
     void get_math_envelope_section(EnvelopeSection &s,
         uint64_t start, uint64_t end, float min_length);
 
-    void calc_math();
+    void calc_math(uint64_t mathFactor);
     void reallocate_envelope(Envelope &e);
     void append_to_envelope_level(bool header);
 

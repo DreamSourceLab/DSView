@@ -65,6 +65,7 @@ public:
     void go_vDialNext();
     uint64_t get_vDialValue();
     uint16_t get_vDialSel();
+    uint64_t get_vDialfactor();
 
     bool enabled();
     void set_enable(bool enable);

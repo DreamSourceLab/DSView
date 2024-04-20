@@ -37,7 +37,7 @@ class dslDial : public QObject
 
 public:
     dslDial(const uint64_t div, const uint64_t step,
-            const QVector<uint64_t> value, const QVector<QString> unit);
+            const QVector<uint64_t> value, const QVector<QString> unit, bool isMath);
     virtual ~dslDial();
 
 public:
@@ -69,6 +69,10 @@ public:
     void set_factor(uint64_t factor);
     uint64_t get_factor();
 
+    inline bool is_math(){
+        return _is_math;
+    }
+
 private:
     uint64_t _div;
     uint64_t _step;
@@ -76,6 +80,7 @@ private:
     QVector<QString> _unit;
     uint64_t _sel;
     uint64_t _factor;
+    bool     _is_math; 
 };
 
 } // namespace view

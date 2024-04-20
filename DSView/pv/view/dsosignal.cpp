@@ -105,7 +105,7 @@ DsoSignal::DsoSignal(data::DsoSnapshot *data,
             g_variant_unref(gvar_list);
         }
     }
-    _vDial = new dslDial(vValue.count(), vDialValueStep, vValue, vUnit);
+    _vDial = new dslDial(vValue.count(), vDialValueStep, vValue, vUnit, false);
     _colour = SignalColours[probe->index % countof(SignalColours)];
 
     load_settings();

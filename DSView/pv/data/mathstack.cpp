@@ -65,14 +65,17 @@ const uint64_t MathStack::vDialValue[MathStack::vDialValueCount] = {
 const QString MathStack::vDialAddUnit[MathStack::vDialUnitCount] = {
     "mV",
     "V",
+    "kV",
 };
 const QString MathStack::vDialMulUnit[MathStack::vDialUnitCount] = {
     "mV*V",
     "V*V",
+    "kV*V",
 };
 const QString MathStack::vDialDivUnit[MathStack::vDialUnitCount] = {
     "mV/V",
     "V/V",
+    "kV/V",
 };
 
 MathStack::MathStack(pv::SigSession *session,
@@ -161,14 +164,11 @@ void MathStack::enable_envelope(bool enable)
 
 uint64_t MathStack::default_vDialValue()
 {
-    uint64_t value = 0;
-    view::dslDial *dial1 = _dsoSig1->get_vDial();
-    view::dslDial *dial2 = _dsoSig2->get_vDial();
-    const uint64_t dial1_value = dial1->get_value();
-    const uint64_t dial2_value = dial2->get_value();
-
-    const uint64_t v1 = dial1_value * dial1->get_factor();
-    const uint64_t v2 = dial2_value * dial2->get_factor();
+    uint64_t value = 0; 
+    const uint64_t dial1_value = _dsoSig1->get_vDial()->get_value();
+    const uint64_t dial2_value = _dsoSig2->get_vDial()->get_value();
+    const uint64_t v1 = _dsoSig1->get_vDial()->get_factor() * dial1_value;
+    const uint64_t v2 = _dsoSig2->get_vDial()->get_factor() * dial2_value;
 
     switch(_type) {
     case MATH_ADD:
@@ -203,18 +203,15 @@ uint64_t MathStack::default_vDialValue()
 uint64_t MathStack::default_factor()
 {
     uint64_t value = 0;
-    view::dslDial *dial1 = _dsoSig1->get_vDial();
-    view::dslDial *dial2 = _dsoSig2->get_vDial();
-    uint64_t factor1 = dial1->get_factor();
-    uint64_t factor2 = dial1->get_factor();
-
-    const uint64_t dial1_value = dial1->get_value() * factor1;
-    const uint64_t dial2_value = dial2->get_value() * factor2;
+    const uint64_t factor1 = _dsoSig1->get_vDial()->get_factor();
+    const uint64_t factor2 = _dsoSig2->get_vDial()->get_factor();
+    const uint64_t v1 = _dsoSig1->get_vDial()->get_value() * factor1;
+    const uint64_t v2 = _dsoSig2->get_vDial()->get_value() * factor2;
 
     switch(_type) {
     case MATH_ADD:
     case MATH_SUB:
-        value = dial1_value > dial2_value ? factor1 : factor2;
+        value = v1 > v2 ? factor1 : factor2;
         break;
     case MATH_MUL:
         value = factor1 * factor2;
@@ -233,10 +230,10 @@ view::dslDial * MathStack::get_vDial()
     QVector<QString> vUnit;
     view::dslDial *dial1 = _dsoSig1->get_vDial();
     view::dslDial *dial2 = _dsoSig2->get_vDial();
-    const uint64_t dial1_min = dial1->get_value(0) * dial1->get_factor();
-    const uint64_t dial1_max = dial1->get_value(dial1->get_count() - 1) * dial1->get_factor();
-    const uint64_t dial2_min = dial2->get_value(0) * dial2->get_factor();
-    const uint64_t dial2_max = dial2->get_value(dial2->get_count() - 1) * dial2->get_factor();
+    const uint64_t dial1_min = dial1->get_value(0);
+    const uint64_t dial1_max = dial1->get_value(dial1->get_count() - 1);
+    const uint64_t dial2_min = dial2->get_value(0);
+    const uint64_t dial2_max = dial2->get_value(dial2->get_count() - 1);
 
     switch(_type) {
     case MATH_ADD:
@@ -275,14 +272,13 @@ view::dslDial * MathStack::get_vDial()
         break;
     }
 
-    view::dslDial *vDial = new view::dslDial(vValue.count(), vDialValueStep, vValue, vUnit);
+    view::dslDial *vDial = new view::dslDial(vValue.count(), vDialValueStep, vValue, vUnit, true);
     return vDial;
 }
 
 QString MathStack::get_unit(int level)
 {
     if (level >= vDialUnitCount)
-    //tr
         return " ";
 
     QString unit;
@@ -356,8 +352,10 @@ void MathStack::get_math_envelope_section(EnvelopeSection &s,
     s.samples = _envelope_level[min_level].samples + start;
 }
 
-void MathStack::calc_math()
+void MathStack::calc_math(uint64_t mathFactor)
 {
+    assert(mathFactor > 0);
+
     std::lock_guard<std::mutex> lock(_mutex);
 
     _math_state = Running;
@@ -373,12 +371,17 @@ void MathStack::calc_math()
     if (data->get_channel_num() < 2)
         return;
 
-    const double scale1 = _dsoSig1->get_vDialValue() / 1000.0 * _dsoSig1->get_factor() * DS_CONF_DSO_VDIVS *
+    auto k1 = _dsoSig1->get_factor();
+    auto k2 = _dsoSig2->get_factor();
+
+    const double scale1 = _dsoSig1->get_vDialValue() / 1000.0 * k1 * DS_CONF_DSO_VDIVS *
                           _dsoSig1->get_scale() / _dsoSig1->get_view_rect().height();
+
     const double delta1 = _dsoSig1->get_hw_offset() * scale1;
 
-    const double scale2 = _dsoSig2->get_vDialValue() / 1000.0 * _dsoSig2->get_factor() * DS_CONF_DSO_VDIVS *
+    const double scale2 = _dsoSig2->get_vDialValue() / 1000.0 * k2 * DS_CONF_DSO_VDIVS *
                           _dsoSig2->get_scale() / _dsoSig2->get_view_rect().height();
+
     const double delta2 = _dsoSig2->get_hw_offset() * scale2;
 
     _sample_num = data->get_sample_count();
@@ -394,19 +397,20 @@ void MathStack::calc_math()
         value1 = *(value_buffer1 + sample);
         value2 = *(value_buffer2 + sample);
 
-        switch(_type) {
-        case MATH_ADD:
-            _math[sample] = (delta1 - scale1 * value1) + (delta2 - scale2 * value2);
-            break;
-        case MATH_SUB:
-            _math[sample] = (delta1 - scale1 * value1) - (delta2 - scale2 * value2);
-            break;
-        case MATH_MUL:
-            _math[sample] = (delta1 - scale1 * value1) * (delta2 - scale2 * value2);
-            break;
-        case MATH_DIV:
-            _math[sample] = (delta1 - scale1 * value1) / (delta2 - scale2 * value2);
-            break;
+        switch(_type) 
+        {
+            case MATH_ADD:
+                _math[sample] = ((delta1 - scale1 * value1) + (delta2 - scale2 * value2)) / mathFactor;
+                break;
+            case MATH_SUB:
+                _math[sample] = ((delta1 - scale1 * value1) - (delta2 - scale2 * value2)) / mathFactor;
+                break;
+            case MATH_MUL:
+                _math[sample] = (delta1 - scale1 * value1) * (delta2 - scale2 * value2) / mathFactor;
+                break;
+            case MATH_DIV:
+                _math[sample] = (delta1 - scale1 * value1) / (delta2 - scale2 * value2) / mathFactor;
+                break;
         }
     }
 
