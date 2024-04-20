@@ -23,6 +23,11 @@
 #define DSVIEW_PV_TOOLBARS_TITLEBAR_H
 
 #include <QWidget>
+
+#ifdef _WIN32
+#include <windows.h>
+#endif
+
 #include "../interface/icallbacks.h"
 #include "../ui/xtoolbutton.h"
 #include "../ui/uimanager.h"
@@ -107,7 +112,12 @@ protected:
     QWidget     *_parent;
     bool        _is_native;
     ITitleParent    *_titleParent;
-    bool        _is_done_moved; 
+    bool        _is_done_moved;
+    bool        _is_able_drag;
+
+#ifdef _WIN32
+HMONITOR _hMonitor;
+#endif
 };
 
 } // namespace toolbars

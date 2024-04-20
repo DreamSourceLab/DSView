@@ -52,7 +52,11 @@ DSDialog::DSDialog(QWidget *parent, bool hasClose):
 }
 
 DSDialog::DSDialog(QWidget *parent, bool hasClose, bool bBaseButton) :
+#ifdef Q_OS_LINUX
+    QDialog(NULL),  //enable the popup dialog draged.
+#else
     QDialog(parent),
+#endif
     m_bBaseButton(bBaseButton)
 {
     (void)parent;

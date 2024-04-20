@@ -35,13 +35,10 @@
 #include "../appcontrol.h"
 #include "../dsvdef.h"
 #include "../ui/fn.h"
+#include "../log.h"
 
 namespace pv {
 namespace toolbars {
-
-namespace{
-    static bool _is_able_drag = true;
-}
 
 TitleBar::TitleBar(bool top, QWidget *parent, ITitleParent *titleParent, bool hasClose) :
     QWidget(parent)
@@ -58,8 +55,13 @@ TitleBar::TitleBar(bool top, QWidget *parent, ITitleParent *titleParent, bool ha
    _is_native = false;
    _titleParent = titleParent;
    _is_done_moved = false; 
+   _is_able_drag = true;
 
     assert(parent);
+
+#ifdef _WIN32
+  _hMonitor = NULL;
+#endif
 
     setObjectName("TitleBar");
     setContentsMargins(0,0,0,0);
@@ -262,6 +264,12 @@ void TitleBar::mouseMoveEvent(QMouseEvent *event)
         if (!_moving){
             if (ABS_VAL(datX) >= 2 || ABS_VAL(datY) >= 2){
                 _moving = true;
+
+#ifdef _WIN32
+    POINT cursorPos;
+    GetCursorPos(&cursorPos);
+    _hMonitor = MonitorFromPoint(pt, MONITOR_DEFAULTTONEAREST);
+#endif
             }
             else{
                 return;
@@ -278,7 +286,18 @@ void TitleBar::mouseMoveEvent(QMouseEvent *event)
             _titleParent->MoveWindow(x, y);
         }
         else{
-            _parent->move(x, y);  
+
+#ifdef _WIN32
+    POINT cursorPos;
+    GetCursorPos(&cursorPos);
+    HMONITOR hMonitor = MonitorFromPoint(pt, MONITOR_DEFAULTTONEAREST);
+    if (hMonitor != _hMonitor){
+        event->ignore();
+        return;
+    }
+#endif
+
+            _parent->move(x, y);
         }
         
         event->accept();

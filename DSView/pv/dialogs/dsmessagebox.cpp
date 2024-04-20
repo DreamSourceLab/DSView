@@ -38,7 +38,11 @@ namespace pv {
 namespace dialogs {
 
 DSMessageBox::DSMessageBox(QWidget *parent,const QString title) :
+#ifdef Q_OS_LINUX
+    QDialog(NULL)  //enable the popup dialog draged.
+#else
     QDialog(parent)
+#endif
 {
     (void)parent;
     _layout = NULL;
