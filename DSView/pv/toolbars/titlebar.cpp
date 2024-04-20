@@ -30,6 +30,7 @@
 #include <QStyleOption>
 #include <assert.h>
 #include <QTimer>
+#include <QGuiApplication>
 
 #include "../config/appconfig.h"
 #include "../appcontrol.h"
@@ -284,10 +285,14 @@ void TitleBar::mouseMoveEvent(QMouseEvent *event)
         if (screenRect.width() > 0 && QGuiApplication::screens().size() > 1)
         {
             QRect rect = _parent->frameGeometry();
-            if (!(rect.left() > screenRect.left() && rect.right() < screenRect.right())){
-                event->ignore();
-                return;
-            } 
+
+            if (x < screenRect.left()){
+                x = screenRect.left();
+            }
+            if (x + _parent->frameGeometry().width() > screenRect.right())
+            {
+                x = screenRect.right() - _parent->frameGeometry().width();
+            }
         }
 #endif
 
