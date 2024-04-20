@@ -59,10 +59,6 @@ TitleBar::TitleBar(bool top, QWidget *parent, ITitleParent *titleParent, bool ha
 
     assert(parent);
 
-#ifdef _WIN32
-  _hMonitor = NULL;
-#endif
-
     setObjectName("TitleBar");
     setContentsMargins(0,0,0,0);
     setFixedHeight(32); 
@@ -264,12 +260,6 @@ void TitleBar::mouseMoveEvent(QMouseEvent *event)
         if (!_moving){
             if (ABS_VAL(datX) >= 2 || ABS_VAL(datY) >= 2){
                 _moving = true;
-
-#ifdef _WIN32
-    POINT cursorPos;
-    GetCursorPos(&cursorPos);
-    _hMonitor = MonitorFromPoint(pt, MONITOR_DEFAULTTONEAREST);
-#endif
             }
             else{
                 return;
@@ -288,13 +278,17 @@ void TitleBar::mouseMoveEvent(QMouseEvent *event)
         else{
 
 #ifdef _WIN32
-    POINT cursorPos;
-    GetCursorPos(&cursorPos);
-    HMONITOR hMonitor = MonitorFromPoint(pt, MONITOR_DEFAULTTONEAREST);
-    if (hMonitor != _hMonitor){
-        event->ignore();
-        return;
-    }
+
+        QRect screenRect = AppControl::Instance()->_screenRect;
+
+        if (screenRect.width() > 0)
+        {
+            QRect rect = _parent->frameGeometry();
+            if (!(rect.left() > screenRect.left() && rect.right() < screenRect.right())){
+                event->ignore();
+                return;
+            } 
+        }
 #endif
 
             _parent->move(x, y);

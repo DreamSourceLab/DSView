@@ -39,6 +39,7 @@
 #include "log.h"
 #include "mainframe.h"
 #include "dsvdef.h"
+#include "appcontrol.h"
 
 #define FIXED_WIDTH(widget) (widget->minimumWidth() >= widget->maximumWidth())
 #define FIXED_HEIGHT(widget) (widget->minimumHeight() >= widget->maximumHeight())
@@ -628,7 +629,8 @@ QScreen* WinNativeWidget::screenFromCurrentMonitorHandle()
     for (QScreen *screen : QGuiApplication::screens())
     {
         if (screen->geometry().topLeft() == top_left)
-        {
+        {   
+            AppControl::Instance()->_screenRect = screen->availableGeometry();
             return screen;
         }
     }

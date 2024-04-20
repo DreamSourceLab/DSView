@@ -23,6 +23,7 @@
 
 #include <string>
 #include <vector>
+#include <QRect>
 
 struct sr_context;
 class QWidget;
@@ -67,6 +68,7 @@ public:
 
 public:
     std::string        _open_file_name; 
+    QRect              _screenRect;
 
 private: 
     pv::SigSession      *_session;
