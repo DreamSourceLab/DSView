@@ -283,7 +283,8 @@ QLayout * DeviceOptions::get_property_form(QWidget * parent)
         i++;
 	}
 
-    _groupHeight1 = parent->sizeHint().height(); 
+    _groupHeight1 = parent->sizeHint().height() + 30; 
+ 
     parent->setFixedHeight(_groupHeight1); 
 
     return layout;

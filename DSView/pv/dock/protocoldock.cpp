@@ -1108,7 +1108,7 @@ void ProtocolDock::UpdateFont()
         pannelHeight = 100;
     }
 
-    _top_panel->setFixedHeight(pannelHeight); 
+    _top_panel->setMinimumHeight(pannelHeight);
  }
 
  void ProtocolDock::on_show_ann_keyinput()
