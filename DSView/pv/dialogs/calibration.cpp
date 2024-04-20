@@ -317,6 +317,10 @@ void Calibration::on_abort()
                        Qt::WindowMinimizeButtonHint | Qt::WindowMaximizeButtonHint);
     dlg.setCancelButton(NULL);
 
+    QFutureWatcher<void> watcher;
+    connect(&watcher,SIGNAL(finished()),&dlg,SLOT(cancel()));
+    watcher.setFuture(future);
+
     dlg.exec();
     this->show();
 }
