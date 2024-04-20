@@ -281,7 +281,7 @@ void TitleBar::mouseMoveEvent(QMouseEvent *event)
 
         QRect screenRect = AppControl::Instance()->_screenRect;
 
-        if (screenRect.width() > 0)
+        if (screenRect.width() > 0 && QGuiApplication::screens().size() > 1)
         {
             QRect rect = _parent->frameGeometry();
             if (!(rect.left() > screenRect.left() && rect.right() < screenRect.right())){
