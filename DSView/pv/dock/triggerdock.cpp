@@ -1097,7 +1097,7 @@ void TriggerDock::UpdateFont()
         {
             QRect rc = fm.boundingRect(o->text());
             QSize size(rc.width() + 20, rc.height() + 6); 
-            o->setFixedSize(size);
+            o->setMinimumSize(size);
             lineH = size.height();
         }       
     }
