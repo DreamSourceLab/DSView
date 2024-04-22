@@ -158,7 +158,6 @@ ProtocolDock::ProtocolDock(QWidget *parent, view::View &view, SigSession *sessio
     _ann_search_button = new QPushButton(bot_panel); //search icon
     _nxt_button = new QPushButton(bot_panel);
     _ann_search_edit = new PopupLineEdit(bot_panel);
-    _ann_search_edit->EnableCatchKeyPress(true);
     
     _ann_search_button->setFixedWidth(_ann_search_button->height());
     _ann_search_button->setDisabled(true);

@@ -27,6 +27,7 @@
 #include <QMouseEvent>
 #include <QWidget>
 #include <QDialog>
+#include <QSpinBox>
 
 class IKeywordActive{
 public:
@@ -69,13 +70,16 @@ public:
 signals:
     void sig_inputEnd(QString text);
 
+private slots:
+    void onCheckPostion();
+
 protected: 
     void changeEvent(QEvent *event) override;
-
     void InputRelease();
 
 private:
     QLineEdit   *_textInput;
+    QWidget     *_line;
 };
 
 //---------PopupLineEdit
@@ -87,13 +91,8 @@ public:
     explicit PopupLineEdit(QWidget *parent = nullptr);
     explicit PopupLineEdit(const QString &, QWidget *parent = nullptr);
 
-    inline void EnableCatchKeyPress(bool enabled){
-        _is_catch_keypress = enabled;
-    }
-
 protected:
     void mousePressEvent(QMouseEvent *event) override; 
-    void keyPressEvent(QKeyEvent *event) override;
 
 private slots:
     void onPopupInputEditEnd(QString text);
@@ -102,8 +101,58 @@ private:
     void showPupopInput();
 
 private:
-    bool        _is_catch_keypress;
     QString     _old_text;
+};
+
+//---------PopupSpinBoxInput
+class PopupSpinBoxInput : public QDialog
+{
+ Q_OBJECT
+
+public:
+    explicit PopupSpinBoxInput(QWidget *parent = nullptr);
+
+    void Popup(QWidget *editline);
+
+    inline QSpinBox* GetInput(){
+        return _textInput;
+    }
+
+signals:
+    void sig_inputEnd(int value);
+
+private slots:
+    void onCheckPostion();
+
+protected: 
+    void changeEvent(QEvent *event) override;
+
+    void InputRelease();
+
+private:
+    QSpinBox   *_textInput;
+    QWidget     *_line;
+};
+
+//---------PopupSpinBox
+class PopupSpinBox : public QSpinBox
+{
+    Q_OBJECT
+
+public:
+    explicit PopupSpinBox(QWidget *parent = nullptr); 
+
+protected:
+    void mousePressEvent(QMouseEvent *event) override; 
+
+private slots:
+    void onPopupInputEditEnd(int value);
+
+private:
+    void showPupopInput();
+
+private:
+    int         _old_value;
 };
 
 #endif

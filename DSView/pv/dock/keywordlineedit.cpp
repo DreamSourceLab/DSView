@@ -21,8 +21,14 @@
 
 #include "keywordlineedit.h"
 #include <QHBoxLayout>
+#include <QTimer>
 #include "../config/appconfig.h"
 #include "../ui/langresource.h"
+#include "../log.h"
+
+namespace{
+    QTimer *move_timer = NULL;
+}
 
 KeywordLineEdit::KeywordLineEdit(QWidget *parent, IKeywordActive *active)
 :QLineEdit(parent)
@@ -60,6 +66,7 @@ PopupLineEditInput::PopupLineEditInput(QWidget *parent)
     :QDialog(parent)
 {  
     setWindowFlags(Qt::Dialog | Qt::FramelessWindowHint | Qt::WindowSystemMenuHint);
+    _line = NULL;
 
     QHBoxLayout *lay = new QHBoxLayout();
     lay->setContentsMargins(0,0,0,0);
@@ -93,11 +100,33 @@ void PopupLineEditInput::InputRelease()
     sig_inputEnd(_textInput->text());
     this->close();
     this->deleteLater();
+
+    if (move_timer != NULL){
+        move_timer->stop();
+        delete move_timer;
+        move_timer = NULL;
+    }
+}
+
+void PopupLineEditInput::onCheckPostion()
+{
+    if (_line != NULL){
+        QPoint p1 = _line->pos();
+        QPoint p2 = _line->mapToGlobal(p1);
+        int x = p2.x() - p1.x();
+        int y = p2.y() - p1.y();
+
+        QPoint p = this->pos();
+        if (p.x() != x || p.y() != y){
+            this->move(x, y);
+        }       
+    }
 }
 
 void PopupLineEditInput::Popup(QWidget *editline)
 {
     assert(editline);
+    _line = editline;
 
     _textInput->setFixedSize(editline->size());
     this->setFixedSize(editline->size());
@@ -112,9 +141,20 @@ void PopupLineEditInput::Popup(QWidget *editline)
 
     _textInput->setFocus(); 
     _textInput->setCursorPosition(_textInput->text().length());
+
+    if (move_timer != NULL){
+        move_timer->stop();
+        delete move_timer;
+        move_timer = NULL;
+    }
+    move_timer = new QTimer(this);
+    move_timer->setInterval(100);
+
+    connect(move_timer, SIGNAL(timeout()), this, SLOT(onCheckPostion()));
+    move_timer->start();
+
     this->show();
 }
-
 
 //---------PopupLineEdit
  PopupLineEdit::PopupLineEdit(QWidget *parent)
@@ -126,21 +166,13 @@ void PopupLineEditInput::Popup(QWidget *editline)
 PopupLineEdit::PopupLineEdit(const QString &text, QWidget *parent)
     :QLineEdit(text, parent)
 {
-    _is_catch_keypress = true;
+
 }
 
 void PopupLineEdit::mousePressEvent(QMouseEvent *event)
 {
     showPupopInput();
     QLineEdit::mousePressEvent(event); 
-}
-
-void PopupLineEdit::keyPressEvent(QKeyEvent *event)
-{
-    if (_is_catch_keypress){
-        showPupopInput();
-    }
-    QLineEdit::keyPressEvent(event);
 }
 
 void PopupLineEdit::showPupopInput()
@@ -180,3 +212,135 @@ void PopupLineEdit::onPopupInputEditEnd(QString text)
     }    
 }
  
+//---------PopupSpinBoxInput
+PopupSpinBoxInput::PopupSpinBoxInput(QWidget *parent)
+    :QDialog(parent)
+{  
+    setWindowFlags(Qt::Dialog | Qt::FramelessWindowHint | Qt::WindowSystemMenuHint);
+
+    _line = NULL;
+
+    QHBoxLayout *lay = new QHBoxLayout();
+    lay->setContentsMargins(0,0,0,0);
+    _textInput = new QSpinBox(this);
+    lay->addWidget(_textInput);
+    this->setLayout(lay);
+
+    QFont font = this->font();
+    font.setPointSizeF(AppConfig::Instance().appOptions.fontSize);
+    _textInput->setFont(font);
+}
+
+void PopupSpinBoxInput::changeEvent(QEvent *event)
+{
+    if (event->type() == QEvent::ActivationChange){
+        if (this->isActiveWindow() == false){
+            InputRelease();
+            return;
+        }
+    }
+
+    QWidget::changeEvent(event);
+}
+
+void PopupSpinBoxInput::InputRelease()
+{
+    sig_inputEnd(_textInput->value());
+    this->close();
+    this->deleteLater();
+
+    if (move_timer != NULL){
+        move_timer->stop();
+        delete move_timer;
+        move_timer = NULL;
+    }
+}
+
+void PopupSpinBoxInput::onCheckPostion()
+{
+    if (_line != NULL){
+        QPoint p1 = _line->pos();
+        QPoint p2 = _line->mapToGlobal(p1);
+        int x = p2.x() - p1.x();
+        int y = p2.y() - p1.y();
+
+        QPoint p = this->pos();
+        if (p.x() != x || p.y() != y){
+            this->move(x, y);
+        }       
+    }
+}
+
+void PopupSpinBoxInput::Popup(QWidget *editline)
+{
+    assert(editline);
+    _line = editline;
+
+    _textInput->setFixedSize(editline->size());
+    this->setFixedSize(editline->size());
+
+    QPoint pt = mapToGlobal(editline->rect().bottomLeft());    
+
+    QPoint p1 = editline->pos();
+    QPoint p2 = editline->mapToGlobal(p1);
+    int x = p2.x() - p1.x();
+    int y = p2.y() - p1.y();
+    this->move(x, y);
+
+    _textInput->setFocus();
+
+    if (move_timer != NULL){
+        move_timer->stop();
+        delete move_timer;
+        move_timer = NULL;
+    }
+    move_timer = new QTimer(this);
+    move_timer->setInterval(100);
+
+    connect(move_timer, SIGNAL(timeout()), this, SLOT(onCheckPostion()));
+    move_timer->start();
+
+    this->show();
+}
+
+//---------PopupSpinBox
+PopupSpinBox::PopupSpinBox(QWidget *parent)
+    :QSpinBox(parent)
+{
+  
+}
+
+void PopupSpinBox::mousePressEvent(QMouseEvent *event)
+{
+    showPupopInput();
+    QSpinBox::mousePressEvent(event); 
+}
+
+void PopupSpinBox::showPupopInput()
+{
+#ifdef _WIN32
+    PopupSpinBoxInput *input = new PopupSpinBoxInput(this);
+    input->GetInput()->setValue(this->value());
+    input->setFont(this->font());
+    input->GetInput()->setButtonSymbols(this->buttonSymbols());
+
+    int min = this->minimum();
+    int max = this->maximum();
+    input->GetInput()->setRange(min, max);
+
+    _old_value = this->value();
+
+    connect(input, SIGNAL(sig_inputEnd(int)), this, SLOT(onPopupInputEditEnd(int)));
+    input->Popup(this);
+#endif
+}
+
+void PopupSpinBox::onPopupInputEditEnd(int value)
+{  
+    this->setFocus();
+    this->setValue(value);
+   
+    if (value != _old_value){
+        valueChanged(value);
+    }    
+}
