@@ -27,8 +27,8 @@
 #include <list>
 #include <utility>
 #include <QWidget>
-#include <QLineEdit>
 #include "../ui/uimanager.h"
+#include "../dock/keywordlineedit.h"
 
 namespace pv {
 namespace view {
@@ -97,7 +97,7 @@ private:
     bool _nameFlag;
 	QPoint _mouse_point;
 	QPoint _mouse_down_point;
-    QLineEdit *nameEdit;
+    PopupLineEdit *nameEdit;
     std::list<std::pair<Trace*, int> > _drag_traces;
     Trace *_context_trace;
     bool    _mouse_is_down;

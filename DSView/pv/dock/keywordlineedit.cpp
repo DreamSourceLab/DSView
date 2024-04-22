@@ -55,30 +55,8 @@ void KeywordLineEdit::SetInputText(QString text)
     this->setText(text);
 }
 
-//----------------SimpleKeywordLineEdit
- SimpleKeywordLineEdit::SimpleKeywordLineEdit(QWidget *parent)
-    :QLineEdit(parent)
-{
-    _is_catch_keypress = false;
-}
-
-void SimpleKeywordLineEdit::mousePressEvent(QMouseEvent *e)
-{
-    sig_click();
-    QLineEdit::mousePressEvent(e); 
-}
-
-void SimpleKeywordLineEdit::keyPressEvent(QKeyEvent *e)
-{
-    if (_is_catch_keypress){
-        sig_click();
-    }
-    QLineEdit::keyPressEvent(e);
-}
-
-//----------------------DecoderSearchInput
-
-DecoderSearchInput::DecoderSearchInput(QWidget *parent)
+//---------PopupLineEditInput
+PopupLineEditInput::PopupLineEditInput(QWidget *parent)
     :QDialog(parent)
 {  
     setWindowFlags(Qt::Dialog | Qt::FramelessWindowHint | Qt::WindowSystemMenuHint);
@@ -98,17 +76,7 @@ DecoderSearchInput::DecoderSearchInput(QWidget *parent)
     });
 }
 
-QString DecoderSearchInput::GetText()
-{
-    return _textInput->text();
-}
-
-void DecoderSearchInput::SetText(QString text)
-{
-    _textInput->setText(text);
-}
-
-void DecoderSearchInput::changeEvent(QEvent *event)
+void PopupLineEditInput::changeEvent(QEvent *event)
 {
     if (event->type() == QEvent::ActivationChange){
         if (this->isActiveWindow() == false){
@@ -120,14 +88,14 @@ void DecoderSearchInput::changeEvent(QEvent *event)
     QWidget::changeEvent(event);
 }
 
-void DecoderSearchInput::InputRelease()
+void PopupLineEditInput::InputRelease()
 {
     sig_inputEnd(_textInput->text());
     this->close();
     this->deleteLater();
 }
 
-void DecoderSearchInput::Popup(QWidget *editline)
+void PopupLineEditInput::Popup(QWidget *editline)
 {
     assert(editline);
 
@@ -146,3 +114,68 @@ void DecoderSearchInput::Popup(QWidget *editline)
     _textInput->setCursorPosition(_textInput->text().length());
     this->show();
 }
+
+
+//---------PopupLineEdit
+ PopupLineEdit::PopupLineEdit(QWidget *parent)
+    :PopupLineEdit("", parent)
+{
+
+}
+
+PopupLineEdit::PopupLineEdit(const QString &text, QWidget *parent)
+    :QLineEdit(text, parent)
+{
+    _is_catch_keypress = true;
+}
+
+void PopupLineEdit::mousePressEvent(QMouseEvent *event)
+{
+    showPupopInput();
+    QLineEdit::mousePressEvent(event); 
+}
+
+void PopupLineEdit::keyPressEvent(QKeyEvent *event)
+{
+    if (_is_catch_keypress){
+        showPupopInput();
+    }
+    QLineEdit::keyPressEvent(event);
+}
+
+void PopupLineEdit::showPupopInput()
+{
+#ifdef _WIN32
+    PopupLineEditInput *input = new PopupLineEditInput(this);
+
+    QString mask = this->inputMask();
+    if (mask != ""){
+        input->GetInput()->setInputMask(mask);
+    }
+
+    auto regular = this->validator();
+    if (regular != NULL){
+        input->GetInput()->setValidator(regular);
+    }
+
+    input->GetInput()->setMaxLength(this->maxLength());
+    input->GetInput()->setText(this->text());
+
+    _old_text = this->text();
+
+    connect(input, SIGNAL(sig_inputEnd(QString)), this, SLOT(onPopupInputEditEnd(QString)));
+    input->Popup(this);
+#endif
+}
+
+void PopupLineEdit::onPopupInputEditEnd(QString text)
+{
+    this->setText(text);
+    this->setFocus();
+    this->setCursorPosition(this->text().length());
+
+    if (text != _old_text){
+        editingFinished();
+    }    
+}
+ 

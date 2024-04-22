@@ -28,7 +28,6 @@
 #include <QLabel>
 #include <QRadioButton>
 #include <QSlider>
-#include <QLineEdit>
 #include <QSpinBox>
 #include <QGroupBox>
 #include <QCheckBox>
@@ -43,6 +42,7 @@
 #include "../ui/dscombobox.h"
 #include "../interface/icallbacks.h"
 #include "../ui/uimanager.h"
+#include "keywordlineedit.h"
 
 namespace pv {
 
@@ -75,7 +75,7 @@ private:
     void reStyle();
 
     void setup_adv_tab();
-    void lineEdit_highlight(QLineEdit *dst);
+    void lineEdit_highlight(PopupLineEdit *dst);
 
       /*
      * commit trigger setting
@@ -119,33 +119,33 @@ private:
     QVector <QGroupBox *> _stage_groupBox_list;
     QVector <QLabel *>    _mu_label_list;
     QVector <DsComboBox *> _logic_comboBox_list;
-    QVector <QLineEdit *> _value0_lineEdit_list;
-    QVector <QLineEdit *> _value0_ext32_lineEdit_list;
+    QVector <PopupLineEdit *> _value0_lineEdit_list;
+    QVector <PopupLineEdit *> _value0_ext32_lineEdit_list;
     QVector <QSpinBox *> _count_spinBox_list;
     QVector <DsComboBox *> _inv0_comboBox_list;
-    QVector <QLineEdit *> _value1_lineEdit_list;
-    QVector <QLineEdit *> _value1_ext32_lineEdit_list;
+    QVector <PopupLineEdit *> _value1_lineEdit_list;
+    QVector <PopupLineEdit *> _value1_ext32_lineEdit_list;
     QVector <DsComboBox *> _inv1_comboBox_list;
     QVector <QCheckBox *> _contiguous_checkbox_list;
 
     QTabWidget *_adv_tabWidget;
     QGroupBox *_serial_groupBox;
     QLabel *_serial_start_label;
-    QLineEdit *_serial_start_lineEdit;
-    QLineEdit *_serial_start_ext32_lineEdit;
+    PopupLineEdit *_serial_start_lineEdit;
+    PopupLineEdit *_serial_start_ext32_lineEdit;
     QLabel *_serial_stop_label;
-    QLineEdit *_serial_stop_lineEdit;
-    QLineEdit *_serial_stop_ext32_lineEdit;
+    PopupLineEdit *_serial_stop_lineEdit;
+    PopupLineEdit *_serial_stop_ext32_lineEdit;
     QLabel *_serial_edge_label;
-    QLineEdit *_serial_edge_lineEdit;
-    QLineEdit *_serial_edge_ext32_lineEdit;
+    PopupLineEdit *_serial_edge_lineEdit;
+    PopupLineEdit *_serial_edge_ext32_lineEdit;
     QLabel *_serial_data_label;
     DsComboBox *_serial_data_comboBox;
     QLabel *_serial_value_label;
-    QLineEdit *_serial_value_lineEdit;
+    PopupLineEdit *_serial_value_lineEdit;
     DsComboBox *_serial_bits_comboBox;
     QLabel *_serial_hex_label;
-    QLineEdit *_serial_hex_lineEdit;
+    PopupLineEdit *_serial_hex_lineEdit;
     QLabel *_serial_hex_ck_label;
 
     QLabel *_serial_note_label;

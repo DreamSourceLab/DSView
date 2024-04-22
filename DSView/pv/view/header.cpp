@@ -64,7 +64,7 @@ Header::Header(View &parent) :
     _context_trace = NULL;
     _mouse_is_down = false;
     
-    nameEdit = new QLineEdit(this);
+    nameEdit = new PopupLineEdit(this);
     nameEdit->setFixedWidth(100);
     nameEdit->hide();
 

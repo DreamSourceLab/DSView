@@ -52,41 +52,19 @@ private:
     bool            _bText;
 };
 
-//--------------SimpleKeywordLineEdit
-class SimpleKeywordLineEdit : public QLineEdit
-{
-    Q_OBJECT
-
-public:
-    SimpleKeywordLineEdit(QWidget *parent);
-
-    inline void EnableCatchKeyPress(bool enabled){
-        _is_catch_keypress = enabled;
-    }
-
-signals:
-    void sig_click();
-
-protected:
-    void mousePressEvent(QMouseEvent *e); 
-    void keyPressEvent(QKeyEvent *e) override;
-
-private:
-    bool      _is_catch_keypress;
-};
-
-//--DecoderSearchInput
-class DecoderSearchInput : public QDialog
+//---------PopupLineEditInput
+class PopupLineEditInput : public QDialog
 {
  Q_OBJECT
 
 public:
-    explicit DecoderSearchInput(QWidget *parent = nullptr);
-
-    QString GetText();
-    void SetText(QString text);
+    explicit PopupLineEditInput(QWidget *parent = nullptr);
 
     void Popup(QWidget *editline);
+
+    inline QLineEdit* GetInput(){
+        return _textInput;
+    }
 
 signals:
     void sig_inputEnd(QString text);
@@ -97,6 +75,35 @@ protected:
     void InputRelease();
 
 private:
-    QLineEdit   *_textInput;};
+    QLineEdit   *_textInput;
+};
+
+//---------PopupLineEdit
+class PopupLineEdit : public QLineEdit
+{
+    Q_OBJECT
+
+public:
+    explicit PopupLineEdit(QWidget *parent = nullptr);
+    explicit PopupLineEdit(const QString &, QWidget *parent = nullptr);
+
+    inline void EnableCatchKeyPress(bool enabled){
+        _is_catch_keypress = enabled;
+    }
+
+protected:
+    void mousePressEvent(QMouseEvent *event) override; 
+    void keyPressEvent(QKeyEvent *event) override;
+
+private slots:
+    void onPopupInputEditEnd(QString text);
+
+private:
+    void showPupopInput();
+
+private:
+    bool        _is_catch_keypress;
+    QString     _old_text;
+};
 
 #endif

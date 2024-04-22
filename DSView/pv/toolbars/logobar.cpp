@@ -31,8 +31,7 @@
 #include <QComboBox>
 #include <QFormLayout>
 #include <QWidget>
-#include <QCheckBox>
-#include <QLineEdit>
+#include <QCheckBox> 
 #include <QHBoxLayout>
 #include <QFile> 
 #include <QLabel>

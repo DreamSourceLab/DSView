@@ -24,7 +24,6 @@
 #include <assert.h>
 #include <math.h> 
 #include <QFormLayout>
-#include <QLineEdit>
 #include <QApplication>
 
 #include "trace.h"

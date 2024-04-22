@@ -34,12 +34,9 @@
 #include <QSplitter>
 #include <QTableView>
 #include <QSortFilterProxyModel>
-#include <QLineEdit> 
-
 #include <vector>
 #include <mutex>
 #include <list>
-
 #include "../data/decodermodel.h"
 #include "protocolitemlayer.h"
 #include "keywordlineedit.h"
@@ -143,9 +140,7 @@ private slots:
     void search_done();
     void search_changed();
     void search_update();
-    void show_protocol_select();
-    void on_show_ann_keyinput();
-    void on_ann_search_changed(QString text);   
+    void show_protocol_select(); 
 
 private:
     SigSession *_session;
@@ -158,7 +153,7 @@ private:
     QTableView  *_table_view;
     QPushButton *_pre_button;
     QPushButton *_nxt_button;
-    SimpleKeywordLineEdit *_ann_search_edit; 
+    PopupLineEdit *_ann_search_edit; 
     QLabel *_matchs_label;
     QLabel *_matchs_title_label;
     QLabel *_bot_title_label;

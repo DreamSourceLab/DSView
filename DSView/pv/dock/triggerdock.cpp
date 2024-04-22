@@ -239,7 +239,7 @@ void TriggerDock::widget_enable(int index)
 
 void TriggerDock::value_changed()
 {
-    QLineEdit* sc=dynamic_cast<QLineEdit*>(sender());
+    PopupLineEdit* sc=dynamic_cast<PopupLineEdit*>(sender());
     if(sc != NULL) {
         for (int i = 0; i < TriggerProbes*2-1; i++) {
             if ((i >= sc->text().size()) || (i % 2 == 0 && sc->text().at(i) == ' ')) {
@@ -584,7 +584,7 @@ void TriggerDock::setup_adv_tab()
         _logic_comboBox->setCurrentIndex(1);
         _logic_comboBox_list.push_back(_logic_comboBox);
 
-        QLineEdit *_value0_lineEdit = new QLineEdit("X X X X X X X X X X X X X X X X", _stage_tabWidget);
+        PopupLineEdit *_value0_lineEdit = new PopupLineEdit("X X X X X X X X X X X X X X X X", _stage_tabWidget);
         _value0_lineEdit->setFont(font);
         _value0_lineEdit->setValidator(value_validator);
         _value0_lineEdit->setMaxLength(TriggerProbes * 2 - 1);
@@ -601,7 +601,7 @@ void TriggerDock::setup_adv_tab()
         _inv0_comboBox->addItem("!=");
         _inv0_comboBox_list.push_back(_inv0_comboBox);
 
-        QLineEdit *_value1_lineEdit = new QLineEdit("X X X X X X X X X X X X X X X X", _stage_tabWidget);
+        PopupLineEdit *_value1_lineEdit = new PopupLineEdit("X X X X X X X X X X X X X X X X", _stage_tabWidget);
         _value1_lineEdit->setFont(font);
         _value1_lineEdit->setValidator(value_validator);
         _value1_lineEdit->setMaxLength(TriggerProbes * 2 - 1);
@@ -638,7 +638,7 @@ void TriggerDock::setup_adv_tab()
 
         row = 1;
         if (_cur_ch_num == 32) {
-            QLineEdit *_value0_ext32_lineEdit = new QLineEdit("X X X X X X X X X X X X X X X X", _stage_tabWidget);
+            PopupLineEdit *_value0_ext32_lineEdit = new PopupLineEdit("X X X X X X X X X X X X X X X X", _stage_tabWidget);
             _value0_ext32_lineEdit->setFont(font);
             _value0_ext32_lineEdit->setValidator(value_validator);
             _value0_ext32_lineEdit->setMaxLength(TriggerProbes * 2 - 1);
@@ -646,7 +646,7 @@ void TriggerDock::setup_adv_tab()
             _value0_ext32_lineEdit->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Preferred);
             _value0_ext32_lineEdit_list.push_back(_value0_ext32_lineEdit);
 
-            QLineEdit *_value1_ext32_lineEdit = new QLineEdit("X X X X X X X X X X X X X X X X", _stage_tabWidget);
+            PopupLineEdit *_value1_ext32_lineEdit = new PopupLineEdit("X X X X X X X X X X X X X X X X", _stage_tabWidget);
             _value1_ext32_lineEdit->setFont(font);
             _value1_ext32_lineEdit->setValidator(value_validator);
             _value1_ext32_lineEdit->setMaxLength(TriggerProbes * 2 - 1);
@@ -724,7 +724,7 @@ void TriggerDock::setup_adv_tab()
     _serial_groupBox->setFlat(true);
 
     _serial_start_label = new QLabel(_serial_groupBox);
-    _serial_start_lineEdit = new QLineEdit("X X X X X X X X X X X X X X X X", _serial_groupBox);
+    _serial_start_lineEdit = new PopupLineEdit("X X X X X X X X X X X X X X X X", _serial_groupBox);
     _serial_start_lineEdit->setFont(font);
     _serial_start_lineEdit->setValidator(value_validator);
     _serial_start_lineEdit->setMaxLength(TriggerProbes * 2 - 1);
@@ -732,7 +732,7 @@ void TriggerDock::setup_adv_tab()
     _serial_start_lineEdit->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Preferred);
 
     _serial_stop_label = new QLabel(_serial_groupBox);
-    _serial_stop_lineEdit = new QLineEdit("X X X X X X X X X X X X X X X X", _serial_groupBox);
+    _serial_stop_lineEdit = new PopupLineEdit("X X X X X X X X X X X X X X X X", _serial_groupBox);
     _serial_stop_lineEdit->setFont(font);
     _serial_stop_lineEdit->setValidator(value_validator);
     _serial_stop_lineEdit->setMaxLength(TriggerProbes * 2 - 1);
@@ -740,7 +740,7 @@ void TriggerDock::setup_adv_tab()
     _serial_stop_lineEdit->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Preferred);
 
     _serial_edge_label = new QLabel(_serial_groupBox);
-    _serial_edge_lineEdit = new QLineEdit("X X X X X X X X X X X X X X X X", _serial_groupBox);
+    _serial_edge_lineEdit = new PopupLineEdit("X X X X X X X X X X X X X X X X", _serial_groupBox);
     _serial_edge_lineEdit->setFont(font);
     _serial_edge_lineEdit->setValidator(value_validator);
     _serial_edge_lineEdit->setMaxLength(TriggerProbes * 2 - 1);
@@ -755,7 +755,7 @@ void TriggerDock::setup_adv_tab()
     }
 
     _serial_value_label = new QLabel(_serial_groupBox);
-    _serial_value_lineEdit = new QLineEdit("X X X X X X X X X X X X X X X X", _serial_groupBox);
+    _serial_value_lineEdit = new PopupLineEdit("X X X X X X X X X X X X X X X X", _serial_groupBox);
     _serial_value_lineEdit->setFont(font);
     _serial_value_lineEdit->setMaxLength(TriggerProbes * 2 - 1);
     _serial_value_lineEdit->setInputMask(mask);
@@ -766,7 +766,7 @@ void TriggerDock::setup_adv_tab()
     _serial_value_lineEdit->setValidator(value_validator2);
 
     _serial_hex_label = new QLabel(_serial_groupBox);
-    _serial_hex_lineEdit = new QLineEdit("", _serial_groupBox);
+    _serial_hex_lineEdit = new PopupLineEdit("", _serial_groupBox);
     _serial_hex_lineEdit->setMaxLength(4);
     QRegularExpression value_rx_hex("[0-9a-fA-F]+");
     QValidator *value_validator_hex = new QRegularExpressionValidator(value_rx_hex, _stage_tabWidget);
@@ -802,21 +802,21 @@ void TriggerDock::setup_adv_tab()
 
     row = 1;
     if (_cur_ch_num == 32) {
-        _serial_start_ext32_lineEdit = new QLineEdit("X X X X X X X X X X X X X X X X", _serial_groupBox);
+        _serial_start_ext32_lineEdit = new PopupLineEdit("X X X X X X X X X X X X X X X X", _serial_groupBox);
         _serial_start_ext32_lineEdit->setFont(font);
         _serial_start_ext32_lineEdit->setValidator(value_validator);
         _serial_start_ext32_lineEdit->setMaxLength(TriggerProbes * 2 - 1);
         _serial_start_ext32_lineEdit->setInputMask(mask);
         _serial_start_ext32_lineEdit->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Preferred);
 
-        _serial_stop_ext32_lineEdit = new QLineEdit("X X X X X X X X X X X X X X X X", _serial_groupBox);
+        _serial_stop_ext32_lineEdit = new PopupLineEdit("X X X X X X X X X X X X X X X X", _serial_groupBox);
         _serial_stop_ext32_lineEdit->setFont(font);
         _serial_stop_ext32_lineEdit->setValidator(value_validator);
         _serial_stop_ext32_lineEdit->setMaxLength(TriggerProbes * 2 - 1);
         _serial_stop_ext32_lineEdit->setInputMask(mask);
         _serial_stop_ext32_lineEdit->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Preferred);
 
-        _serial_edge_ext32_lineEdit = new QLineEdit("X X X X X X X X X X X X X X X X", _serial_groupBox);
+        _serial_edge_ext32_lineEdit = new PopupLineEdit("X X X X X X X X X X X X X X X X", _serial_groupBox);
         _serial_edge_ext32_lineEdit->setFont(font);
         _serial_edge_ext32_lineEdit->setValidator(value_validator);
         _serial_edge_ext32_lineEdit->setMaxLength(TriggerProbes * 2 - 1);
@@ -924,7 +924,7 @@ void TriggerDock::setup_adv_tab()
     UpdateFont();
 }
 
-void TriggerDock::lineEdit_highlight(QLineEdit *dst) {
+void TriggerDock::lineEdit_highlight(PopupLineEdit *dst) {
     if (dst == NULL)
         return;
 
@@ -1088,7 +1088,7 @@ void TriggerDock::UpdateFont()
     font2.setPointSizeF(AppConfig::Instance().appOptions.fontSize);
     QFontMetrics fm(font2);  
 
-    auto edits = this->findChildren<QLineEdit*>();
+    auto edits = this->findChildren<PopupLineEdit*>();
     int lineH = 30;
 
     for(auto o : edits)
