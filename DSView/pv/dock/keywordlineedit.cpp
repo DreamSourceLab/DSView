@@ -160,6 +160,7 @@ void PopupLineEdit::showPupopInput()
 
     input->GetInput()->setMaxLength(this->maxLength());
     input->GetInput()->setText(this->text());
+    input->setFont(this->font());
 
     _old_text = this->text();
 
