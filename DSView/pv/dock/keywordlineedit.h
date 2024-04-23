@@ -89,12 +89,13 @@ class PopupLineEdit : public QLineEdit
 
 public:
     explicit PopupLineEdit(QWidget *parent = nullptr);
-    explicit PopupLineEdit(const QString &, QWidget *parent = nullptr);
-    explicit PopupLineEdit(bool isNumberMode, QWidget *parent = nullptr);
+    explicit PopupLineEdit(const QString &text, QWidget *parent = nullptr);
 
     inline bool is_number_mode(){
         return _is_number_mode;
     }
+
+    bool set_number_mode(bool isNumberMode);
 
     int value();
 

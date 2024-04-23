@@ -168,12 +168,6 @@ PopupLineEdit::PopupLineEdit(const QString &text, QWidget *parent)
     _is_number_mode = false; 
 }
 
- PopupLineEdit::PopupLineEdit(bool isNumberMode, QWidget *parent)
-    :QLineEdit(parent)
- {
-    _is_number_mode = isNumberMode;
- }
-
 void PopupLineEdit::mousePressEvent(QMouseEvent *event)
 {
     showPupopInput();
@@ -190,11 +184,6 @@ void PopupLineEdit::showPupopInput()
         input->GetInput()->setInputMask(mask);
     }
 
-    auto regular = this->validator();
-    if (regular != NULL){
-        input->GetInput()->setValidator(regular);
-    }
-
     input->GetInput()->setMaxLength(this->maxLength());
     input->GetInput()->setText(this->text());
     input->setFont(this->font());
@@ -202,6 +191,12 @@ void PopupLineEdit::showPupopInput()
     if (_is_number_mode){
         QIntValidator *validator = new QIntValidator();
         input->GetInput()->setValidator(validator);
+    }
+    else{
+        auto regular = this->validator();
+        if (regular != NULL){
+            input->GetInput()->setValidator(regular);
+        }
     }
 
     _old_text = this->text();
@@ -220,6 +215,19 @@ void PopupLineEdit::onPopupInputEditEnd(QString text)
     if (text != _old_text){
         editingFinished();
     }    
+}
+
+bool PopupLineEdit::set_number_mode(bool isNumberMode)
+{
+    _is_number_mode = isNumberMode;
+
+    if (_is_number_mode){
+        QIntValidator *validator = new QIntValidator();
+        setValidator(validator);
+    }
+    else{
+        setValidator(NULL);
+    }
 }
 
 int PopupLineEdit::value()

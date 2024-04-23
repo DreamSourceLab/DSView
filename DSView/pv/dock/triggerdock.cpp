@@ -588,7 +588,8 @@ void TriggerDock::setup_adv_tab()
         _value0_lineEdit->setInputMask(mask);
         _value0_lineEdit->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Preferred);
         _value0_lineEdit_list.push_back(_value0_lineEdit);
-        PopupLineEdit *_count_spinBox = new PopupLineEdit(true, _stage_tabWidget);
+        PopupLineEdit *_count_spinBox = new PopupLineEdit(_stage_tabWidget);
+        _count_spinBox->set_number_mode(true);
        // _count_spinBox->setRange(1, INT32_MAX);
         //_count_spinBox->setButtonSymbols(QAbstractSpinBox::NoButtons);
         _count_spinBox_list.push_back(_count_spinBox);
