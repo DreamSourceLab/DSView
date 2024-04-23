@@ -67,6 +67,10 @@ public:
         return _textInput;
     }
 
+    inline void input_close(){
+        InputRelease();
+    }
+
 signals:
     void sig_inputEnd(QString text);
 
@@ -95,11 +99,20 @@ public:
         return _is_number_mode;
     }
 
-    bool set_number_mode(bool isNumberMode);
+    void set_number_mode(bool isNumberMode);
+
+    inline bool is_instant_mode(){
+        return _is_instant;
+    }
+
+    inline void set_instant_mode(bool isInstant){
+        _is_instant = isInstant;
+    }
 
     int value();
-
     void setValue(int value);
+    void show();
+    void hide();
 
 protected:
     void mousePressEvent(QMouseEvent *event) override; 
@@ -113,6 +126,8 @@ private:
 private:
     QString     _old_text;
     bool        _is_number_mode;
+    bool        _is_instant;
+    PopupLineEditInput  *_popup_input;
 };
 
 #endif

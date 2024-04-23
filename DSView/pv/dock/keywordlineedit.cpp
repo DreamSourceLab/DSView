@@ -165,7 +165,9 @@ void PopupLineEditInput::Popup(QWidget *editline)
 PopupLineEdit::PopupLineEdit(const QString &text, QWidget *parent)
     :QLineEdit(text, parent)
 {
-    _is_number_mode = false; 
+    _is_number_mode = false;
+    _is_instant = false;
+    _popup_input = NULL;
 }
 
 void PopupLineEdit::mousePressEvent(QMouseEvent *event)
@@ -217,7 +219,7 @@ void PopupLineEdit::onPopupInputEditEnd(QString text)
     }    
 }
 
-bool PopupLineEdit::set_number_mode(bool isNumberMode)
+void PopupLineEdit::set_number_mode(bool isNumberMode)
 {
     _is_number_mode = isNumberMode;
 
@@ -244,4 +246,24 @@ int PopupLineEdit::value()
 void PopupLineEdit::setValue(int value)
 {
     this->setText(QString::number(value));    
+}
+
+void PopupLineEdit::show()
+{
+    QLineEdit::show();
+
+#ifdef _WIN32
+    if (_is_instant){
+        showPupopInput();
+    }
+#endif
+}
+
+void PopupLineEdit::hide()
+{
+    if (_popup_input != NULL){
+        _popup_input->input_close();
+    }
+
+    QLineEdit::hide();
 }
