@@ -744,7 +744,7 @@ void DeviceOptions::analog_probes(QGridLayout &layout)
     layout.addWidget(tabWidget, 0, 0, 1, 1);
 
     this->update_font();
-    _groupHeight2 = tabWidget->sizeHint().height() + 10;
+    _groupHeight2 = tabWidget->sizeHint().height() + 50;
     _dynamic_panel->setFixedHeight(_groupHeight2); 
 
     connect(tabWidget, SIGNAL(currentChanged(int)), this, SLOT(on_anlog_tab_changed(int)));
