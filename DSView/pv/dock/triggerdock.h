@@ -121,7 +121,7 @@ private:
     QVector <DsComboBox *> _logic_comboBox_list;
     QVector <PopupLineEdit *> _value0_lineEdit_list;
     QVector <PopupLineEdit *> _value0_ext32_lineEdit_list;
-    QVector <QSpinBox *> _count_spinBox_list;
+    QVector <PopupLineEdit *> _count_spinBox_list;
     QVector <DsComboBox *> _inv0_comboBox_list;
     QVector <PopupLineEdit *> _value1_lineEdit_list;
     QVector <PopupLineEdit *> _value1_ext32_lineEdit_list;

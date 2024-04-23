@@ -90,6 +90,15 @@ class PopupLineEdit : public QLineEdit
 public:
     explicit PopupLineEdit(QWidget *parent = nullptr);
     explicit PopupLineEdit(const QString &, QWidget *parent = nullptr);
+    explicit PopupLineEdit(bool isNumberMode, QWidget *parent = nullptr);
+
+    inline bool is_number_mode(){
+        return _is_number_mode;
+    }
+
+    int value();
+
+    void setValue(int value);
 
 protected:
     void mousePressEvent(QMouseEvent *event) override; 
@@ -102,57 +111,7 @@ private:
 
 private:
     QString     _old_text;
-};
-
-//---------PopupSpinBoxInput
-class PopupSpinBoxInput : public QDialog
-{
- Q_OBJECT
-
-public:
-    explicit PopupSpinBoxInput(QWidget *parent = nullptr);
-
-    void Popup(QWidget *editline);
-
-    inline QSpinBox* GetInput(){
-        return _textInput;
-    }
-
-signals:
-    void sig_inputEnd(int value);
-
-private slots:
-    void onCheckPostion();
-
-protected: 
-    void changeEvent(QEvent *event) override;
-
-    void InputRelease();
-
-private:
-    QSpinBox   *_textInput;
-    QWidget     *_line;
-};
-
-//---------PopupSpinBox
-class PopupSpinBox : public QSpinBox
-{
-    Q_OBJECT
-
-public:
-    explicit PopupSpinBox(QWidget *parent = nullptr); 
-
-protected:
-    void mousePressEvent(QMouseEvent *event) override; 
-
-private slots:
-    void onPopupInputEditEnd(int value);
-
-private:
-    void showPupopInput();
-
-private:
-    int         _old_value;
+    bool        _is_number_mode;
 };
 
 #endif
