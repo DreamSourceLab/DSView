@@ -202,19 +202,23 @@ void PopupLineEdit::showPupopInput()
     }
 
     _old_text = this->text();
+    _popup_input = input;
 
     connect(input, SIGNAL(sig_inputEnd(QString)), this, SLOT(onPopupInputEditEnd(QString)));
-    input->Popup(this);
+    input->Popup(this);    
 #endif
 }
 
 void PopupLineEdit::onPopupInputEditEnd(QString text)
 {
+    _popup_input = NULL;
+
     this->setText(text);
     this->setFocus();
     this->setCursorPosition(this->text().length());
 
     if (text != _old_text){
+        setModified(true);
         editingFinished();
     }    
 }
@@ -250,19 +254,21 @@ void PopupLineEdit::setValue(int value)
 
 void PopupLineEdit::show()
 {
-    QLineEdit::show();
-
 #ifdef _WIN32
     if (_is_instant){
         showPupopInput();
+        return;
     }
 #endif
+
+    QLineEdit::show();
 }
 
 void PopupLineEdit::hide()
 {
     if (_popup_input != NULL){
         _popup_input->input_close();
+        _popup_input = NULL;
     }
 
     QLineEdit::hide();

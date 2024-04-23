@@ -67,6 +67,7 @@ Header::Header(View &parent) :
     nameEdit = new PopupLineEdit(this);
     nameEdit->setFixedWidth(100);
     nameEdit->hide();
+    nameEdit->set_instant_mode(true);
 
 	setMouseTracking(true);
 
