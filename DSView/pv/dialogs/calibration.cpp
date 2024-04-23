@@ -232,18 +232,21 @@ void Calibration::update_device_info()
     update();
 }
 
-void Calibration::accept()
-{
-    using namespace Qt;
+void Calibration::reject()
+{ 
     _device_agent->set_config_bool(SR_CONF_CALI, false);
-    QDialog::accept();
+    sig_closed();
+    close();
 }
 
-void Calibration::reject()
+void Calibration::keyPressEvent(QKeyEvent *event)
 {
-    using namespace Qt;
-    _device_agent->set_config_bool(SR_CONF_CALI, false);
-    QDialog::reject();
+    if (event->key() == Qt::Key_Escape) {
+        reject();
+    }
+    else { 
+        DSDialog::keyPressEvent(event);
+    }
 }
 
 void Calibration::set_value(int value)

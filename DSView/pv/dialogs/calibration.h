@@ -49,11 +49,12 @@ public:
 
     void update_device_info();
     
-protected:
-	void accept();
+signals:
+    void sig_closed();
+    
+private: 
     void reject();
-
-private:
+    void keyPressEvent(QKeyEvent *event) override;
     void retranslateUi();
 
     //IUiWindow

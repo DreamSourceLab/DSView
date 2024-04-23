@@ -101,6 +101,7 @@ View::View(SigSession *session, pv::toolbars::SamplingBar *sampling_bar, QWidget
 {  
    _trig_cursor = NULL;
    _search_cursor = NULL;
+   _cali = NULL;
 
    _session = session;
    _device_agent = session->get_device();
@@ -187,9 +188,6 @@ View::View(SigSession *session, pv::toolbars::SamplingBar *sampling_bar, QWidget
     _search_pos = 0;
     _search_cursor = new Cursor(*this, -1, _search_pos);
     _search_cursor->set_colour(fore);
-
-    _cali = new pv::dialogs::Calibration(this);
-    _cali->hide();
 
 	connect(horizontalScrollBar(), SIGNAL(valueChanged(int)), this, SLOT(h_scroll_value_changed(int)));
 	connect(verticalScrollBar(), SIGNAL(valueChanged(int)), this, SLOT(v_scroll_value_changed(int)));
@@ -1274,20 +1272,36 @@ void View::scroll_to_logic_last_data_time()
 // -- calibration dialog
 void View::show_calibration()
 {
+    if (_cali != NULL){
+        _cali->deleteLater();
+        _cali = NULL;
+    }
+
+    _cali = new pv::dialogs::Calibration(this);
+    connect(_cali, SIGNAL(sig_closed()), this, SLOT(on_calibration_closed()));
     _cali->update_device_info();
     _cali->show();
 }
 
+void View::on_calibration_closed()
+{
+    if (_cali != NULL){
+        _cali->deleteLater();
+        _cali = NULL;
+    }
+}
+
 void View::hide_calibration()
 {
-    _cali->hide();
+    on_calibration_closed();
 }
 
 void View::vDial_updated()
 {
-    if (_cali->isVisible()) {
+    if (_cali != NULL) {
         _cali->update_device_info();
     }
+
     auto math_trace = _session->get_math_trace();
     if (math_trace && math_trace->enabled()) {
         math_trace->update_vDial();

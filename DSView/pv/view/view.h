@@ -417,6 +417,7 @@ private slots:
     void on_measure_updated();
 
     void splitterMoved(int pos, int index);
+    void on_calibration_closed();
 
 private:
     void set_trig_cursor_posistion(uint64_t percent);
