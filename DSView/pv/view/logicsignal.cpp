@@ -296,10 +296,12 @@ bool LogicSignal::measure(const QPointF &p, uint64_t &index0, uint64_t &index1, 
         if (_data->empty() || !_data->has_data(_probe->index))
             return false;
 
-        const uint64_t end = _data->get_sample_count() - 1;
+        const uint64_t end = _data->get_ring_sample_count() - 1;
         uint64_t index = _data->samplerate() * _view->scale() * (_view->offset() + p.x());
-        if (index > end)
+        
+        if (index > end){
             return false;
+        }
 
         bool sample = _data->get_sample(index, get_index());
         if (index == 0){
@@ -347,7 +349,7 @@ bool LogicSignal::is_by_edge(const QPointF &p, uint64_t &index, int radius)
         if (_data->empty() || !_data->has_data(_probe->index))
             return false;
 
-        const uint64_t end = _data->get_sample_count() - 1;
+        const uint64_t end = _data->get_ring_sample_count() - 1;
         const double pos = _data->samplerate() * _view->scale() * (_view->offset() + p.x());
         index = floor(pos + 0.5);
         if (index > end)
@@ -400,7 +402,7 @@ bool LogicSignal::edge(const QPointF &p, uint64_t &index, int radius)
         if (_data->empty() || !_data->has_data(_probe->index))
             return false;
 
-        const uint64_t end = _data->get_sample_count() - 1;
+        const uint64_t end = _data->get_ring_sample_count() - 1;
         const double pos = _data->samplerate() * _view->scale() * (_view->offset() + p.x());
         index = floor(pos + 0.5);
         if (index > end)
@@ -455,7 +457,7 @@ bool LogicSignal::edges(uint64_t end, uint64_t start, uint64_t &rising, uint64_t
         return false;
 
     uint64_t index = min(start, end);
-    const uint64_t sample_count = _data->get_sample_count();
+    const uint64_t sample_count = _data->get_ring_sample_count();
     end = max(start, end);
     start = index;
     if (end > (sample_count - 1))
