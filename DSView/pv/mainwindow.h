@@ -244,7 +244,6 @@ private:
 
     int         _key_value;
     bool        _key_vaild;
-    QTimer      _load_device_timer;
 };
 
 } // namespace pv

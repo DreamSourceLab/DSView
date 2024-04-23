@@ -317,24 +317,17 @@ namespace pv
             }
         }
 
-        // Load the device after the view is ready.
-        connect(&_load_device_timer, SIGNAL(timeout()), this, SLOT(on_load_device_first()));
-        _load_device_timer.start(100);
+        on_load_device_first();
     }
 
     void MainWindow::on_load_device_first()
     {
-        if (_view->view_is_ready())
-        {
-            if (tmp_file != ""){
-                on_load_file(tmp_file);
-                tmp_file = "";
-            }
-            else{
-                _session->set_default_device();
-            }
-
-            _load_device_timer.stop();
+        if (tmp_file != ""){
+            on_load_file(tmp_file);
+            tmp_file = "";
+        }
+        else{
+            _session->set_default_device();
         }
     }
 
