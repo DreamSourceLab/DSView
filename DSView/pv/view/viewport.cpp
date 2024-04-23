@@ -840,6 +840,10 @@ void Viewport:: mouseMoveEvent(QMouseEvent *event)
                         if (mode == DSO && s->signal_type() == SR_CHANNEL_DSO) {
                             view::DsoSignal *dsoSig = (view::DsoSignal*)s;
                             curX = min(dsoSig->get_view_rect().right(), curX);
+
+                            if (curX < dsoSig->get_view_rect().left()){
+                                curX = dsoSig->get_view_rect().left();
+                            }
                             break;
                         }
                     }
@@ -848,14 +852,17 @@ void Viewport:: mouseMoveEvent(QMouseEvent *event)
                     const double pos_delta = pos - (uint64_t)pos;
                     const double curP = _view.index2pixel(index0);
                     const double curN = _view.index2pixel(index1);
+
                     if (logic && (curX - curP < SnapMinSpace || curN - curX < SnapMinSpace)) {
                         if (curX - curP < curN - curX)
                             grabbed_marker->set_index(index0);
                         else
                             grabbed_marker->set_index(index1);
-                    } else if ( pos_delta < 0.5) {
+                    }
+                    else if ( pos_delta < 0.5) {
                         grabbed_marker->set_index((uint64_t)floor(pos));
-                    } else {
+                    }
+                    else {
                         grabbed_marker->set_index((uint64_t)ceil(pos));
                     }
 
@@ -865,17 +872,26 @@ void Viewport:: mouseMoveEvent(QMouseEvent *event)
 
                     _view.cursor_moving();
                     _curs_moved = true;
-                } else {
+                }
+                else {
                     if (_view.xcursors_shown()) {
                         auto &xcursor_list = _view.get_xcursorList();
-                        auto i = xcursor_list.begin();
                         const QRect xrect = _view.get_view_rect();
 
-                        while (i != xcursor_list.end()) {
-                            if ((*i)->grabbed() != XCursor::XCur_None) {
-                                if ((*i)->grabbed() == XCursor::XCur_Y) {
-                                    double rate = (_view.hover_point().x() - xrect.left()) * 1.0 / xrect.width();                                    
-                                    (*i)->set_value((*i)->grabbed(), min(rate, 1.0));
+                        for (auto xc : xcursor_list) {
+                            if (xc->grabbed() != XCursor::XCur_None) {
+                                if (xc->grabbed() == XCursor::XCur_Y) {
+                                    int hover_x = _view.hover_point().x();
+
+                                    if (hover_x  < xrect.left()){
+                                        hover_x = xrect.left();
+                                    }
+                                    if (hover_x > xrect.right()){
+                                        hover_x = xrect.right();
+                                    }
+
+                                    double rate = (hover_x - xrect.left()) * 1.0 / xrect.width();                                    
+                                    xc->set_value(xc->grabbed(), min(rate, 1.0));
                                 }
                                 else {
                                     int msy = _view.hover_point().y();
@@ -884,12 +900,11 @@ void Viewport:: mouseMoveEvent(QMouseEvent *event)
                                         msy = body_y;
                                      
                                     double rate = (msy - xrect.top()) * 1.0 / xrect.height();
-                                    (*i)->set_value((*i)->grabbed(), max(rate, 0.0));
+                                    xc->set_value(xc->grabbed(), max(rate, 0.0));
                                 }
                                 _xcurs_moved = true;
                                 break;
                             }
-                            i++;
                         }
                     }
                 }
