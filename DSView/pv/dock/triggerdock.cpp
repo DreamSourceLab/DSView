@@ -546,6 +546,7 @@ void TriggerDock::setup_adv_tab()
         _adv_tabWidget->widget(i-1)->deleteLater();
         _adv_tabWidget->removeTab(i-1);
     }
+
     _logic_comboBox_list.clear();
     _value0_lineEdit_list.clear();
     _count_spinBox_list.clear();
@@ -562,9 +563,12 @@ void TriggerDock::setup_adv_tab()
     _value0_ext32_lineEdit_list.clear();
     _value1_ext32_lineEdit_list.clear();
 
-    QFont font("Monaco");
-    font.setStyleHint(QFont::Monospace);
-    font.setFixedPitch(true);
+   // QFont font("Monaco");
+   // font.setStyleHint(QFont::Monospace);
+   // font.setFixedPitch(true);
+
+    QFont font = this->font();
+    font.setPointSizeF(AppConfig::Instance().appOptions.fontSize);
 
     _stage_tabWidget = new QTabWidget(_widget);
     _stage_tabWidget->setTabPosition(QTabWidget::East);
@@ -1091,8 +1095,8 @@ void TriggerDock::UpdateFont()
 
     for(auto o : edits)
     { 
-        if (o != _serial_hex_lineEdit)
-        {
+        if (o != _serial_hex_lineEdit && o->text() != "")
+        { 
             QRect rc = fm.boundingRect(o->text());
             QSize size(rc.width() + 20, rc.height() + 6); 
             o->setMinimumSize(size);
@@ -1109,7 +1113,7 @@ void TriggerDock::UpdateFont()
  
     int pageHeight = (lineH + 15) * lines;
     pageHeight += lineH * 10;
-    pageHeight += 350;
+    pageHeight += 250;
   
     _serial_groupBox->setFixedHeight(pageHeight);
 }
