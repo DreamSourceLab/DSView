@@ -78,32 +78,33 @@ KeyLineEdit::KeyLineEdit(const QString &text, QWidget *parent)
 
 void KeyLineEdit::keyPressEvent(QKeyEvent *event)
 {  
+    int key = event->key();
+    QString old_text = this->text();
+
     QLineEdit::keyPressEvent(event);
 
-    if (_is_number_mode && (_min != 0 || _max != 0))
-    {
-        if (event->key() >= '0' && event->key() <= '9')
-        {
-            QString new_text = text();
+    if (_is_number_mode && key >= '0' && key <= '9')
+    { 
+        QString new_text = text();
 
-            if (new_text != "")
-            {
-                int v = new_text.toInt();
-                int old_v = v;
+        if (new_text != ""){
+            int v = new_text.toInt();
 
+            if (_min != 0 || _max != 0){
                 if (v < _min ){
                     v = _min;
                 }
                 else if (v > _max){
                     v = _max;
                 }
-
-                if (v != old_v){
-                    setText(QString::number(v));
-                    valueChanged(v);
-                }
             }
-        }
+            new_text = QString::number(v);
+
+            if (new_text != old_text){
+                setText(new_text);
+                valueChanged(v);
+            }
+        }        
     }
 }
 
@@ -301,7 +302,7 @@ void PopupLineEdit::showPupopInput()
 #ifdef _WIN32
     PopupLineEditInput *input = new PopupLineEditInput(this);
     auto line = input->GetInput();
-
+ 
     QString mask = this->inputMask();
     if (mask != ""){
         line->setInputMask(mask);
@@ -333,7 +334,7 @@ void PopupLineEdit::showPupopInput()
         connect(line, SIGNAL(valueChanged(int)), this, SLOT(onPopupInputValueChanged(int)));
     }
 
-    input->Popup(this);    
+    input->Popup(this);
 #endif
 }
 
