@@ -311,9 +311,13 @@ void PopupLineEdit::showPupopInput()
     line->setText(this->text());
     line->setFont(this->font());
     line->set_number_mode(_is_number_mode);
-    line->setRange(_min, _max); 
-
-    if (!_is_number_mode){
+   
+    if (_is_number_mode){
+        if (_max != 0 || _min != 0){
+            line->setRange(_min, _max); 
+        }        
+    }
+    else{
         auto regular = this->validator();
         if (regular != NULL){
             line->setValidator(regular);
