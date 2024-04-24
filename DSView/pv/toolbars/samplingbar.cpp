@@ -280,13 +280,10 @@ namespace pv
                 bool test;
                 bool ret;
 
-                if (mode == DSO)
-                {   
-                    
+                if (mode == DSO){
                     _device_agent->get_config_bool(SR_CONF_ZERO, zero);
                    
-                    if (zero)
-                    {
+                    if (zero){
                         zero_adj();
                         return;
                     }
@@ -333,7 +330,7 @@ namespace pv
                     break;
             }
 
-            _sample_count.setCurrentIndex(i);
+            set_sample_count_index(i);
             commit_hori_res();
 
             if (_session->is_working() == false)
@@ -354,7 +351,7 @@ namespace pv
             if (_session->is_working())
                 _session->stop_capture();
 
-            _sample_count.setCurrentIndex(index_back);
+            set_sample_count_index(index_back);
             commit_hori_res();
         }
 
@@ -598,11 +595,11 @@ namespace pv
 
             if (pre_duration > _sample_count.itemData(0).value<double>())
             {
-                _sample_count.setCurrentIndex(0);
+                set_sample_count_index(0);
             }
             else if (pre_duration < _sample_count.itemData(_sample_count.count() - 1).value<double>())
             {
-                _sample_count.setCurrentIndex(_sample_count.count() - 1);
+                set_sample_count_index(_sample_count.count() - 1);
             }
             else
             {
@@ -611,7 +608,7 @@ namespace pv
                     double sel_val = _sample_count.itemData(i).value<double>();
                     if (pre_duration >= sel_val)
                     {
-                        _sample_count.setCurrentIndex(i);
+                        set_sample_count_index(i);
                         break;
                     }
                 }
@@ -669,7 +666,7 @@ namespace pv
                     double sel_val = _sample_count.itemData(i).value<double>();
                     if (duration >= sel_val)
                     {
-                        _sample_count.setCurrentIndex(i);
+                        set_sample_count_index(i);
                         break;
                     }
                 }
@@ -678,19 +675,27 @@ namespace pv
             _updating_sample_count = false;
         }
 
-        void SamplingBar::on_samplecount_sel(int index)
-        {
-            (void)index;
+        void SamplingBar::apply_sample_count(double &hori_res)
+        {   
+            hori_res = -1;
 
             if (_device_agent->get_work_mode() == DSO){
-                commit_hori_res();
+                hori_res = commit_hori_res();
 
                 if (_session->have_view_data() == false){
                     _session->apply_samplerate();
                 }
-            }                
+            }
 
             _session->broadcast_msg(DSV_MSG_DEVICE_DURATION_UPDATED);
+        }
+
+        void SamplingBar::on_samplecount_sel(int index)
+        {
+            (void)index;
+
+            double hori_res = -1;
+            apply_sample_count(hori_res);
         }
 
         double SamplingBar::get_hori_res()
@@ -700,27 +705,30 @@ namespace pv
 
         double SamplingBar::hori_knob(int dir)
         {
+            int mode = _session->get_device()->get_work_mode();
+
+            assert(mode == DSO);
+
             double hori_res = -1;
+            int cur_index = -1;
 
             disconnect(&_sample_count, SIGNAL(currentIndexChanged(int)), this, SLOT(on_samplecount_sel(int)));
 
-            if (0 == dir)
-            {
-                hori_res = commit_hori_res();
+            if ((dir > 0) && (_sample_count.currentIndex() > 0)){
+                cur_index = _sample_count.currentIndex() - 1;
             }
-            else if ((dir > 0) && (_sample_count.currentIndex() > 0))
-            {
-                _sample_count.setCurrentIndex(_sample_count.currentIndex() - 1);
-                hori_res = commit_hori_res();
-            }
-            else if ((dir < 0) && (_sample_count.currentIndex() < _sample_count.count() - 1))
-            {
-                _sample_count.setCurrentIndex(_sample_count.currentIndex() + 1);
-                hori_res = commit_hori_res();
+            else if ((dir < 0) && (_sample_count.currentIndex() < _sample_count.count() - 1)){
+                cur_index = _sample_count.currentIndex() + 1;                
             }
 
             connect(&_sample_count, SIGNAL(currentIndexChanged(int)),
                     this, SLOT(on_samplecount_sel(int)));
+
+            if (cur_index != -1){
+                set_sample_count_index(cur_index);
+            }
+
+            apply_sample_count(hori_res); 
 
             return hori_res;
         }
@@ -1274,6 +1282,11 @@ namespace pv
             ui::set_toolbar_font(this, font);
 
             update_view_status();
+        }
+
+        void SamplingBar::set_sample_count_index(int index)
+        {
+            _sample_count.setCurrentIndex(index);
         }
 
     } // namespace toolbars

@@ -128,6 +128,10 @@ namespace pv
             void UpdateTheme() override;
             void UpdateFont() override;
 
+            void set_sample_count_index(int index);
+
+            void apply_sample_count(double &hori_res);
+
         private slots:
             void on_collect_mode();
             void on_run_stop();

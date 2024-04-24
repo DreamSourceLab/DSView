@@ -1413,12 +1413,30 @@ bool View::get_dso_trig_moved()
 
 double View::index2pixel(uint64_t index, bool has_hoff)
 {
+    const uint64_t rateValue = session().cur_snap_samplerate();
+    const double scaleValue = scale();
+    const int64_t offsetValue = offset();    
+    const double hoffValue = trig_hoff();
+
+    double pixels = 0;
+
+    const double samples_per_pixel = rateValue * scaleValue;
+
+    if (has_hoff){
+        pixels = index / samples_per_pixel - offsetValue + hoffValue / samples_per_pixel;
+    }
+    else{
+        pixels = index / samples_per_pixel - offsetValue;
+    }
+
+    /*
     const double samples_per_pixel = session().cur_snap_samplerate() * scale();
     double pixels;
     if (has_hoff)
         pixels = index/samples_per_pixel - offset() + trig_hoff()/samples_per_pixel;
     else
         pixels = index/samples_per_pixel - offset();
+        */
 
     return pixels;
 }
@@ -1429,11 +1447,12 @@ uint64_t View::pixel2index(double pixel)
     const double scaleValue = scale();
     const int64_t offsetValue = offset();    
     const double hoffValue = trig_hoff();
-   
+ 
     const double samples_per_pixel = rateValue * scaleValue;
     const double index = (pixel + offsetValue) * samples_per_pixel - hoffValue;
 
     const uint64_t sampleIndex = (uint64_t)std::round(index);
+
     return sampleIndex;
 
     //const double samples_per_pixel = session().cur_snap_samplerate() * scale();
