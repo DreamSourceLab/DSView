@@ -138,7 +138,6 @@ private:
     QWidget     *_container_panel;
     QVBoxLayout *_container_lay;   
     QWidget     *_dynamic_panel;
-   // QWidget     *_dynamic_panel;
     int     _width;
     int     _groupHeight1;
     int     _groupHeight2;
@@ -149,9 +148,9 @@ private:
 
 	pv::prop::binding::DeviceOptions _device_options_binding;
     std::vector<pv::prop::binding::ProbeOptions *> _probe_options_binding_list;
-    std::vector<ChannelModePair> _channel_mode_indexs;
-    std::vector<struct sr_channel*>     _dso_channel_list;
-    bool    _have_no_channel;
+    std::vector<ChannelModePair>    _channel_mode_indexs;
+    std::vector<struct sr_channel*> _dso_channel_list;
+    std::vector<bool>   _lst_probe_enabled_status;
 };
 
 } // namespace dialogs

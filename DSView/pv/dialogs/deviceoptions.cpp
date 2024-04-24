@@ -100,7 +100,6 @@ DeviceOptions::DeviceOptions(QWidget *parent) :
     _container_lay = NULL;
     _isBuilding = false;
     _cur_analog_tag_index = 0;
-    _have_no_channel = false;
 
     SigSession *session = AppControl::Instance()->GetSession();
     _device_agent = session->get_device();
@@ -226,12 +225,9 @@ void DeviceOptions::accept()
             it++;
         }
 
-        _have_no_channel = false;
-
         QDialog::accept();        
     }
-    else {
-        _have_no_channel = true;
+    else { 
         QString strMsg(L_S(STR_PAGE_MSG, S_ID(IDS_MSG_ALL_CHANNEL_DISABLE), "All channel disabled! Please enable at least one channel."));
         MsgBox::Show(strMsg);        
     }
@@ -572,6 +568,11 @@ void DeviceOptions::analog_channel_check()
         }
     }
 
+    _lst_probe_enabled_status.clear();    
+    for (auto ck : _probes_checkBox_list){
+        _lst_probe_enabled_status.push_back(ck->isChecked());
+    }
+
     build_dynamic_panel();
     try_resize_scroll();
 }
@@ -673,6 +674,8 @@ void DeviceOptions::analog_probes(QGridLayout &layout)
 
     QFont font = this->font();
     font.setPointSizeF(AppConfig::Instance().appOptions.fontSize);
+
+    int ch_dex = 0;
     
     for (const GSList *l = _device_agent->get_channels(); l; l = l->next) {
         sr_channel *const probe = (sr_channel*)l->data;
@@ -684,11 +687,19 @@ void DeviceOptions::analog_probes(QGridLayout &layout)
         QGridLayout *probe_layout = new QGridLayout(probe_widget);
         probe_widget->setLayout(probe_layout); 
 
+        bool ch_enabled = probe->enabled;
+        if (ch_dex < _lst_probe_enabled_status.size()){
+            ch_enabled = _lst_probe_enabled_status[ch_dex];
+        }
+
+        ch_dex++;
+
         QCheckBox *probe_checkBox = new QCheckBox(this);
         QVariant vlayout = QVariant::fromValue((void *)probe_layout);
         probe_checkBox->setProperty("Layout", vlayout);
         probe_checkBox->setProperty("Enable", true);
-        probe_checkBox->setCheckState(probe->enabled ? Qt::Checked : Qt::Unchecked);
+        probe_checkBox->setChecked(ch_enabled);
+       // probe_checkBox->setCheckState(probe->enabled ? Qt::Checked : Qt::Unchecked);
         _probes_checkBox_list.push_back(probe_checkBox);
 
         QLabel *en_label = new QLabel(L_S(STR_PAGE_DLG, S_ID(IDS_DLG_ENABLE), "Enable: "), this);
