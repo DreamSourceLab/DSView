@@ -431,17 +431,25 @@ void MathTrace::paint_hover_measure(QPainter &p, QColor fore, QColor back)
     }
 
     auto &cursor_list = _view->get_cursorList();
-    auto i = cursor_list.begin();
 
-    while (i != cursor_list.end()) {
+    for (auto cursor : cursor_list) {
         float pt_value;
-        const QPointF pt = get_point((*i)->index(), pt_value);
-        QString pt_str = get_voltage(pt_value, 2);
+        bool bError = false;
+
+        const QPointF pt = get_point(cursor->index(), pt_value, bError);
+
+        if (bError){
+            continue; //Have no value
+        }
+
+        const QString pt_str = get_voltage(pt_value, 2);    
+
         const int pt_width = p.boundingRect(0, 0, INT_MAX, INT_MAX,
             Qt::AlignLeft | Qt::AlignTop, pt_str).width() + 10;
         const int pt_height = p.boundingRect(0, 0, INT_MAX, INT_MAX,
             Qt::AlignLeft | Qt::AlignTop, pt_str).height();
         QRectF pt_rect(pt.x(), pt.y()-pt_height/2, pt_width, pt_height);
+
         if (pt_rect.right() > get_view_rect().right())
             pt_rect.moveRight(pt.x());
         if (pt_rect.top() < get_view_rect().top())
@@ -453,8 +461,6 @@ void MathTrace::paint_hover_measure(QPainter &p, QColor fore, QColor back)
         p.drawLine(pt.x()-2, pt.y()-2, pt.x()+2, pt.y()+2);
         p.drawLine(pt.x()+2, pt.y()-2, pt.x()-2, pt.y()+2);
         p.drawText(pt_rect, Qt::AlignCenter | Qt::AlignTop | Qt::TextDontClip, pt_str);
-
-        i++;
     }
 }
 
@@ -472,14 +478,23 @@ bool MathTrace::measure(const QPointF &p)
     if (_hover_index >= _math_stack->get_sample_num())
         return false;
 
-    _hover_point = get_point(_hover_index, _hover_voltage);
+    bool bError;
+    _hover_point = get_point(_hover_index, _hover_voltage, bError);
     _hover_en = true;
-    return true;
+
+    return !bError;
 }
 
-QPointF MathTrace::get_point(uint64_t index, float &value)
+QPointF MathTrace::get_point(uint64_t index, float &value, bool &out_Error)
 {
     QPointF pt = QPointF(0, 0);
+
+    out_Error = false;
+
+    if (index >= _math_stack->get_sample_num()){
+        out_Error = true;
+        return pt;
+    }
 
     const float top = get_view_rect().top();
     const float bottom = get_view_rect().bottom();

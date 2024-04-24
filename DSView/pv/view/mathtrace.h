@@ -81,7 +81,7 @@ public:
       *
       */
     bool measure(const QPointF &p);
-    QPointF get_point(uint64_t index, float &value);
+    QPointF get_point(uint64_t index, float &value, bool &out_Error);
 
 
     /**
