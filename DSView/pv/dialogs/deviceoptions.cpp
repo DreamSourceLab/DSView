@@ -930,7 +930,7 @@ void DeviceOptions::try_resize_scroll()
 
 void DeviceOptions::keyPressEvent(QKeyEvent *event) 
 {
-    if (event->key() == Qt::Key_Escape && _have_no_channel) {
+    if (event->key() == Qt::Key_Escape) {
         event->ignore();
         return;
     }
