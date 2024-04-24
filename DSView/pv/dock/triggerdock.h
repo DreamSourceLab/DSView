@@ -108,7 +108,7 @@ private:
     QRadioButton *_adv_radioButton;
 
     QLabel *_position_label;
-    QSpinBox *_position_spinBox;
+    PopupLineEdit *_position_spinBox;
     QSlider *_position_slider;
 
     QLabel *_stages_label;

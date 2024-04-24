@@ -53,6 +53,51 @@ private:
     bool            _bText;
 };
 
+//---------KeyLineEdit
+class KeyLineEdit : public QLineEdit
+{
+    Q_OBJECT
+
+public:
+    explicit KeyLineEdit(QWidget *parent = nullptr);
+    explicit KeyLineEdit(const QString &text, QWidget *parent = nullptr);
+
+    inline void setRange(int min, int max){
+        _max = max;
+        _min = min; 
+        _is_spin_mode = true;
+        set_number_mode(true);
+    }
+
+    inline bool is_number_mode(){
+        return _is_number_mode;
+    }
+
+    void set_number_mode(bool isNumberMode);
+
+    inline void enable_spin_mode(bool enabled){
+        _is_spin_mode = enabled;
+    }
+
+    int value();
+
+signals:
+    void valueChanged(int v);
+
+public slots:
+    void setValue(int v);
+
+private:
+    void keyPressEvent(QKeyEvent *event) override;
+    void wheelEvent(QWheelEvent *event) override;
+
+protected:
+    int         _min;
+    int         _max;
+    bool        _is_number_mode;
+    bool        _is_spin_mode;
+};
+
 //---------PopupLineEditInput
 class PopupLineEditInput : public QDialog
 {
@@ -63,7 +108,7 @@ public:
 
     void Popup(QWidget *editline);
 
-    inline QLineEdit* GetInput(){
+    inline KeyLineEdit* GetInput(){
         return _textInput;
     }
 
@@ -75,19 +120,19 @@ signals:
     void sig_inputEnd(QString text);
 
 private slots:
-    void onCheckPostion();
+    void onCheckPositionTimeout(); 
 
 protected: 
     void changeEvent(QEvent *event) override;
     void InputRelease();
 
 private:
-    QLineEdit   *_textInput;
-    QWidget     *_line;
+    KeyLineEdit     *_textInput;
+    QWidget         *_line;
 };
 
 //---------PopupLineEdit
-class PopupLineEdit : public QLineEdit
+class PopupLineEdit : public KeyLineEdit
 {
     Q_OBJECT
 
@@ -95,37 +140,25 @@ public:
     explicit PopupLineEdit(QWidget *parent = nullptr);
     explicit PopupLineEdit(const QString &text, QWidget *parent = nullptr);
 
-    inline bool is_number_mode(){
-        return _is_number_mode;
-    }
-
-    void set_number_mode(bool isNumberMode);
-
-    inline bool is_instant_mode(){
-        return _is_instant;
-    }
-
     inline void set_instant_mode(bool isInstant){
         _is_instant = isInstant;
     }
 
-    int value();
-    void setValue(int value);
     void show();
     void hide();
+
+private slots:
+    void onPopupInputEditEnd(QString text);
+    void onPopupInputValueChanged(int v);
 
 protected:
     void mousePressEvent(QMouseEvent *event) override; 
 
-private slots:
-    void onPopupInputEditEnd(QString text);
-
 private:
-    void showPupopInput();
+    void showPupopInput();    
 
 private:
     QString     _old_text;
-    bool        _is_number_mode;
     bool        _is_instant;
     PopupLineEditInput  *_popup_input;
 };

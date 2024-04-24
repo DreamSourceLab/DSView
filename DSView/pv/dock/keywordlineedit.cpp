@@ -61,16 +61,133 @@ void KeywordLineEdit::SetInputText(QString text)
     this->setText(text);
 }
 
+//---------KeyLineEdit
+KeyLineEdit::KeyLineEdit(QWidget *parent)
+    :KeyLineEdit("", parent)
+{   
+}
+
+KeyLineEdit::KeyLineEdit(const QString &text, QWidget *parent)
+    :QLineEdit(text, parent)
+{
+    _min = 0;
+    _max = 0;
+    _is_number_mode = false;
+    _is_spin_mode = false;
+}
+
+void KeyLineEdit::keyPressEvent(QKeyEvent *event)
+{  
+    QLineEdit::keyPressEvent(event);
+
+    if (_is_number_mode && (_min != 0 || _max != 0))
+    {
+        if (event->key() >= '0' && event->key() <= '9')
+        {
+            QString new_text = text();
+
+            if (new_text != "")
+            {
+                int v = new_text.toInt();
+                int old_v = v;
+
+                if (v < _min ){
+                    v = _min;
+                }
+                else if (v > _max){
+                    v = _max;
+                }
+
+                if (v != old_v){
+                    setText(QString::number(v));
+                    valueChanged(v);
+                }
+            }
+        }
+    }
+}
+
+void KeyLineEdit::wheelEvent(QWheelEvent *event)
+{  
+    if (_is_number_mode && _is_spin_mode)
+    {
+        QString new_text = text();
+
+        if (new_text != "")
+        {
+            int v = new_text.toInt();
+            int old_v = v;
+
+            if (event->delta() > 0){
+                v++;
+            }
+            else{
+                v--;
+            }
+
+            if (_min != 0 || _max != 0)
+            {
+                if (v < _min ){
+                    v = _min;
+                }
+                else if (v > _max){
+                    v = _max;
+                }
+            }
+            
+            if (v != old_v){
+                setText(QString::number(v));
+                valueChanged(v);
+            }
+        } 
+
+        event->accept();
+        return;
+    } 
+
+    QLineEdit::wheelEvent(event);
+}
+
+void KeyLineEdit::setValue(int v)
+{   
+    _is_number_mode = true;
+    this->setText(QString::number(v));    
+}
+
+int KeyLineEdit::value()
+{
+    assert(_is_number_mode);
+
+    QString text = this->text();
+    if (text != ""){
+        return text.toInt();
+    }
+    return 0;
+}
+
+void KeyLineEdit::set_number_mode(bool isNumberMode)
+{
+    _is_number_mode = isNumberMode;
+
+    if (_is_number_mode){
+        QIntValidator *validator = new QIntValidator();
+        setValidator(validator);
+    }
+    else{
+        setValidator(NULL);
+    }
+}
+
 //---------PopupLineEditInput
 PopupLineEditInput::PopupLineEditInput(QWidget *parent)
     :QDialog(parent)
 {  
     setWindowFlags(Qt::Dialog | Qt::FramelessWindowHint | Qt::WindowSystemMenuHint);
     _line = NULL;
-
+ 
     QHBoxLayout *lay = new QHBoxLayout();
     lay->setContentsMargins(0,0,0,0);
-    _textInput = new QLineEdit(this);
+    _textInput = new KeyLineEdit(this);
     lay->addWidget(_textInput);
     this->setLayout(lay);
 
@@ -95,6 +212,7 @@ void PopupLineEditInput::changeEvent(QEvent *event)
     QWidget::changeEvent(event);
 }
 
+
 void PopupLineEditInput::InputRelease()
 {
     sig_inputEnd(_textInput->text());
@@ -108,7 +226,7 @@ void PopupLineEditInput::InputRelease()
     }
 }
 
-void PopupLineEditInput::onCheckPostion()
+void PopupLineEditInput::onCheckPositionTimeout()
 {
     if (_line != NULL){
         QPoint p1 = _line->pos();
@@ -150,7 +268,7 @@ void PopupLineEditInput::Popup(QWidget *editline)
     move_timer = new QTimer(this);
     move_timer->setInterval(100);
 
-    connect(move_timer, SIGNAL(timeout()), this, SLOT(onCheckPostion()));
+    connect(move_timer, SIGNAL(timeout()), this, SLOT(onCheckPositionTimeout()));
     move_timer->start();
 
     this->show();
@@ -163,41 +281,42 @@ void PopupLineEditInput::Popup(QWidget *editline)
 }
 
 PopupLineEdit::PopupLineEdit(const QString &text, QWidget *parent)
-    :QLineEdit(text, parent)
+    :KeyLineEdit(text, parent)
 {
     _is_number_mode = false;
     _is_instant = false;
     _popup_input = NULL;
+    _min = 0;
+    _max = 0;
 }
 
 void PopupLineEdit::mousePressEvent(QMouseEvent *event)
 {
     showPupopInput();
-    QLineEdit::mousePressEvent(event); 
+    KeyLineEdit::mousePressEvent(event); 
 }
 
 void PopupLineEdit::showPupopInput()
 {
 #ifdef _WIN32
     PopupLineEditInput *input = new PopupLineEditInput(this);
+    auto line = input->GetInput();
 
     QString mask = this->inputMask();
     if (mask != ""){
-        input->GetInput()->setInputMask(mask);
+        line->setInputMask(mask);
     }
 
-    input->GetInput()->setMaxLength(this->maxLength());
-    input->GetInput()->setText(this->text());
-    input->setFont(this->font());
+    line->setMaxLength(this->maxLength());
+    line->setText(this->text());
+    line->setFont(this->font());
+    line->set_number_mode(_is_number_mode);
+    line->setRange(_min, _max); 
 
-    if (_is_number_mode){
-        QIntValidator *validator = new QIntValidator();
-        input->GetInput()->setValidator(validator);
-    }
-    else{
+    if (!_is_number_mode){
         auto regular = this->validator();
         if (regular != NULL){
-            input->GetInput()->setValidator(regular);
+            line->setValidator(regular);
         }
     }
 
@@ -205,6 +324,11 @@ void PopupLineEdit::showPupopInput()
     _popup_input = input;
 
     connect(input, SIGNAL(sig_inputEnd(QString)), this, SLOT(onPopupInputEditEnd(QString)));
+
+    if (_is_number_mode){
+        connect(line, SIGNAL(valueChanged(int)), this, SLOT(onPopupInputValueChanged(int)));
+    }
+
     input->Popup(this);    
 #endif
 }
@@ -220,36 +344,17 @@ void PopupLineEdit::onPopupInputEditEnd(QString text)
     if (text != _old_text){
         setModified(true);
         editingFinished();
+
+        if (_is_number_mode){
+            valueChanged(value());
+        }
     }    
 }
 
-void PopupLineEdit::set_number_mode(bool isNumberMode)
+void PopupLineEdit::onPopupInputValueChanged(int v)
 {
-    _is_number_mode = isNumberMode;
-
-    if (_is_number_mode){
-        QIntValidator *validator = new QIntValidator();
-        setValidator(validator);
-    }
-    else{
-        setValidator(NULL);
-    }
-}
-
-int PopupLineEdit::value()
-{
-    assert(_is_number_mode);
-
-    QString text = this->text();
-    if (text != ""){
-        return text.toInt();
-    }
-    return 0;
-}
-
-void PopupLineEdit::setValue(int value)
-{
-    this->setText(QString::number(value));    
+    setValue(v);
+    valueChanged(v);
 }
 
 void PopupLineEdit::show()

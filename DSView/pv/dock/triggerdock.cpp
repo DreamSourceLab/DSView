@@ -80,9 +80,10 @@ TriggerDock::TriggerDock(QWidget *parent, SigSession *session) :
     _adv_radioButton = new QRadioButton(_widget);
 
     _position_label = new QLabel(_widget);
-    _position_spinBox = new QSpinBox(_widget);
+    _position_spinBox = new PopupLineEdit(_widget);
     _position_spinBox->setRange(MinTrigPosition, DS_MAX_TRIG_PERCENT);
-    _position_spinBox->setButtonSymbols(QAbstractSpinBox::NoButtons);
+    _position_spinBox->setValue(1);
+   // _position_spinBox->setButtonSymbols(QAbstractSpinBox::NoButtons);
     _position_slider = new QSlider(Qt::Horizontal, _widget);
     _position_slider->setRange(MinTrigPosition, DS_MAX_TRIG_PERCENT);
     connect(_position_slider, SIGNAL(valueChanged(int)), _position_spinBox, SLOT(setValue(int)));
@@ -594,7 +595,7 @@ void TriggerDock::setup_adv_tab()
         _value0_lineEdit_list.push_back(_value0_lineEdit);
         PopupLineEdit *_count_spinBox = new PopupLineEdit(_stage_tabWidget);
         _count_spinBox->set_number_mode(true);
-       // _count_spinBox->setRange(1, INT32_MAX);
+        _count_spinBox->setRange(1, INT32_MAX);
         //_count_spinBox->setButtonSymbols(QAbstractSpinBox::NoButtons);
         _count_spinBox_list.push_back(_count_spinBox);
         DsComboBox *_inv0_comboBox = new DsComboBox(_stage_tabWidget);
