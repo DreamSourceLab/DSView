@@ -37,6 +37,7 @@
 #include "../ui/msgbox.h"
 #include "../config/appconfig.h"
 #include "../ui/fn.h"
+#include "keywordlineedit.h"
 
 using namespace boost;
 using namespace std;
@@ -52,9 +53,9 @@ DsoTriggerDock::DsoTriggerDock(QWidget *parent, SigSession *session) :
     _widget = new QWidget(this);
 
     _position_label = new QLabel(_widget);
-    _position_spinBox = new QSpinBox(_widget);
+    _position_spinBox = new PopupLineEdit(_widget);
     _position_spinBox->setRange(1, 99);
-    _position_spinBox->setButtonSymbols(QAbstractSpinBox::NoButtons);
+    //_position_spinBox->setButtonSymbols(QAbstractSpinBox::NoButtons);
     _position_slider = new QSlider(Qt::Horizontal, _widget);
     _position_slider->setRange(1, 99);
     connect(_position_slider, SIGNAL(valueChanged(int)), _position_spinBox, SLOT(setValue(int)));
@@ -69,9 +70,9 @@ DsoTriggerDock::DsoTriggerDock(QWidget *parent, SigSession *session) :
     _holdoff_comboBox->addItem(L_S(STR_PAGE_DLG, S_ID(IDS_DLG_US), "uS"), QVariant::fromValue(1000));
    
     _holdoff_comboBox->setCurrentIndex(0);
-    _holdoff_spinBox = new QSpinBox(_widget);
+    _holdoff_spinBox = new PopupLineEdit(_widget);
     _holdoff_spinBox->setRange(0, 999);
-    _holdoff_spinBox->setButtonSymbols(QAbstractSpinBox::NoButtons);
+   // _holdoff_spinBox->setButtonSymbols(QAbstractSpinBox::NoButtons);
     _holdoff_slider = new QSlider(Qt::Horizontal, _widget);
     _holdoff_slider->setRange(0, 999);
 
@@ -237,10 +238,14 @@ void DsoTriggerDock::hold_changed(int hold)
     int ret;
     uint64_t holdoff;
 
-    if (_holdoff_comboBox->currentData().toDouble() == 1000000000)
+    if (_holdoff_comboBox->currentData().toDouble() == 1000000000){
         _holdoff_slider->setRange(0, 10);
-    else
+        _holdoff_spinBox->setRange(0, 10);
+    }
+    else{
         _holdoff_slider->setRange(0, 999);
+        _holdoff_spinBox->setRange(0, 999);
+    }
 
     holdoff = _holdoff_slider->value() * _holdoff_comboBox->currentData().toDouble() / 10;
     ret = _session->get_device()->set_config_uint64(

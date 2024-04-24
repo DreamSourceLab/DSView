@@ -30,10 +30,10 @@
 #include <QLabel>
 #include <QRadioButton>
 #include <vector>
-
 #include "../ui/dscombobox.h"
 #include "../interface/icallbacks.h"
 #include "../ui/uimanager.h"
+#include "keywordlineedit.h"
 
 namespace pv {
 
@@ -84,12 +84,12 @@ private:
     QWidget *_widget;
 
     DsComboBox *_holdoff_comboBox;
-    QSpinBox *_holdoff_spinBox;
+    PopupLineEdit *_holdoff_spinBox;
     QSlider *_holdoff_slider;
 
     QSlider *_margin_slider;
 
-    QSpinBox *_position_spinBox;
+    PopupLineEdit *_position_spinBox;
     QSlider *_position_slider;
 
     QButtonGroup *_source_group;
