@@ -98,10 +98,11 @@ void KeyLineEdit::keyPressEvent(QKeyEvent *event)
                     v = _max;
                 }
             }
-            new_text = QString::number(v);
 
-            if (new_text != old_text){
-                setText(new_text);
+            new_text = QString::number(v);
+            setText(new_text); //Maby need to restore the old value.
+
+            if (new_text != old_text){               
                 valueChanged(v);
             }
         }        
@@ -164,6 +165,14 @@ int KeyLineEdit::value()
         return text.toInt();
     }
     return 0;
+}
+
+void KeyLineEdit::setRange(int min, int max)
+{
+    _max = max;
+    _min = min; 
+    _is_spin_mode = true;
+    set_number_mode(true);
 }
 
 void KeyLineEdit::set_number_mode(bool isNumberMode)
@@ -382,4 +391,13 @@ void PopupLineEdit::hide()
     }
 
     QLineEdit::hide();
+}
+
+void PopupLineEdit::setRange(int min, int max)
+{
+    KeyLineEdit::setRange(min, max);
+
+    if (_popup_input != NULL){
+        _popup_input->GetInput()->setRange(min, max);
+    }
 }

@@ -466,6 +466,7 @@ void DsoTriggerDock::update_view()
         
         auto v1 = holdoff * 10.0 / _holdoff_comboBox->currentData().toDouble();
         _holdoff_spinBox->setValue(v1);
+        _holdoff_slider->setValue(v1);
     }
 
     connect(_holdoff_slider, SIGNAL(valueChanged(int)), this, SLOT(hold_changed(int)));

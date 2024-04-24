@@ -61,17 +61,12 @@ class KeyLineEdit : public QLineEdit
 public:
     explicit KeyLineEdit(QWidget *parent = nullptr);
     explicit KeyLineEdit(const QString &text, QWidget *parent = nullptr);
-
-    inline void setRange(int min, int max){
-        _max = max;
-        _min = min; 
-        _is_spin_mode = true;
-        set_number_mode(true);
-    }
-
+ 
     inline bool is_number_mode(){
         return _is_number_mode;
     }
+
+    virtual void setRange(int min, int max);
 
     void set_number_mode(bool isNumberMode);
 
@@ -146,6 +141,8 @@ public:
 
     void show();
     void hide();
+
+    void setRange(int min, int max) override;
 
 private slots:
     void onPopupInputEditEnd(QString text);
