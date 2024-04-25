@@ -1086,6 +1086,7 @@ void TriggerDock::UpdateFont()
     _adv_tabWidget->setFont(font);
     _adv_tabWidget->widget(0)->setFont(font);
     _adv_tabWidget->widget(1)->setFont(font);
+    _adv_tabWidget->tabBar()->setFont(font);
 
     QFont font2 = this->font();
     font2.setPointSizeF(AppConfig::Instance().appOptions.fontSize);
