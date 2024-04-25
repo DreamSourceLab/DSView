@@ -25,16 +25,26 @@
 #include <QWidget>
 #include <QToolButton>
 #include <QMouseEvent>
+#include <QPoint>
 
 
 class XToolButton : public QToolButton
 { 
+    Q_OBJECT
+
 public:
     XToolButton(QWidget *parent = nullptr);
     
-protected:
+private:
     void mousePressEvent(QMouseEvent *event) override;
-};
+    void mouseReleaseEvent(QMouseEvent *event) override;
 
+private slots:
+    void onHidePopupMenu();
+
+private:
+    QMenu      *_menu;
+    bool        _is_mouse_down;
+};
 
 #endif

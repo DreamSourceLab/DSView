@@ -21,29 +21,92 @@
 
 #include "xtoolbutton.h"
 #include <QMenu>
-#include "../log.h"
+#include <QApplication>
+#include "../log.h" 
 
+namespace
+{
+    static int _click_times = 0;
+    static XToolButton *_lst_button = NULL;
+} 
 
 XToolButton::XToolButton(QWidget *parent)
     :QToolButton(parent)
 {
-
+    _menu = NULL;
+    _is_mouse_down = false; 
 }
 
 void XToolButton::mousePressEvent(QMouseEvent *event)
 {
-    
-#ifdef _WIN32 
-    if (event->button() == Qt::LeftButton)
-    {
-        QMenu* menu = this->menu();
-        if (menu){
-            QPoint pt = mapToGlobal(rect().bottomLeft());
-            menu->popup(pt);
-            return; 
-        }
-    }
-#endif
+    _is_mouse_down = true;
 
+    if (_lst_button != this){
+        _click_times = 0;
+    }
+
+    _lst_button = this;
+
+#ifdef _WIN32
+    _menu = this->menu();
+    if (_menu == NULL){
+        QToolButton::mousePressEvent(event); // is not a popup menu.
+        return;
+    }
+
+    _click_times++;     
+
+    if (event->button() != Qt::LeftButton){
+        setCheckable(true);
+        setChecked(false);
+        setCheckable(false);        
+        return;
+    }
+
+    if (_click_times % 2 == 1){
+        setCheckable(true);
+        setChecked(true);
+        QPoint pt = mapToGlobal(rect().bottomLeft());
+        connect(_menu, SIGNAL(aboutToHide()), this, SLOT(onHidePopupMenu()));
+        _menu->popup(pt);
+    }
+    else{
+        setCheckable(true);
+        setChecked(false);
+        setCheckable(false);
+    }
+    
+#else
     QToolButton::mousePressEvent(event);
+#endif
+}
+
+void XToolButton::mouseReleaseEvent(QMouseEvent *event)
+{
+    _is_mouse_down = false;
+    QToolButton::mouseReleaseEvent(event);
+}
+
+void XToolButton::onHidePopupMenu()
+{   
+#ifdef _WIN32 
+
+    setCheckable(true);
+    setChecked(false);
+    setCheckable(false);
+
+    QWidget *widgetUnderMouse = qApp->widgetAt(QCursor::pos());
+    if (widgetUnderMouse != this){
+        _is_mouse_down = false;
+    }
+
+    if (!_is_mouse_down || _lst_button != this){
+       _click_times = 0;
+    }
+   
+    if (_menu != NULL){
+        disconnect(_menu, SIGNAL(aboutToHide()), this, SLOT(onHidePopupMenu()));
+    } 
+
+#endif
 }

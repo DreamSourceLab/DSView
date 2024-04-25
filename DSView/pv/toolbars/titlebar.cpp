@@ -70,9 +70,9 @@ TitleBar::TitleBar(bool top, QWidget *parent, ITitleParent *titleParent, bool ha
     lay1->addWidget(_title);
 
     if (_isTop) {
-        _minimizeButton = new XToolButton(this);
+        _minimizeButton = new QToolButton(this);
         _minimizeButton->setObjectName("MinimizeButton");
-        _maximizeButton = new XToolButton(this);
+        _maximizeButton = new QToolButton(this);
         _maximizeButton->setObjectName("MaximizeButton");
 
         lay1->addWidget(_minimizeButton);
@@ -85,7 +85,7 @@ TitleBar::TitleBar(bool top, QWidget *parent, ITitleParent *titleParent, bool ha
     }
 
     if (_isTop || _hasClose) {
-        _closeButton= new XToolButton(this);
+        _closeButton= new QToolButton(this);
         _closeButton->setObjectName("CloseButton");
         lay1->addWidget(_closeButton);
         connect(_closeButton, SIGNAL( clicked()), parent, SLOT(close()));

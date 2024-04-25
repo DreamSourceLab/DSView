@@ -29,6 +29,7 @@
 #include <QFormLayout>
 #include <QSlider>
 #include <list> 
+#include <QKeyEvent>
 #include "../toolbars/titlebar.h"
 #include "dsdialog.h"
 #include "../ui/uimanager.h"
