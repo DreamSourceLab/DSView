@@ -444,6 +444,7 @@ set(DSView_HEADERS
     DSView/pv/utility/array.h
     DSView/pv/deviceagent.h
     DSView/pv/ui/fn.h
+    DSView/pv/ui/xtoolbutton.h
 )
  
 #===============================================================================
