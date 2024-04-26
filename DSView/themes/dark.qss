@@ -30,7 +30,7 @@
 QToolTip
 {
     border: 1px solid #eff0f1;
-    background-color: #262626;
+    background-color: #1F1F1F;
     alternate-background-color: #3b4045;
     color: #eff0f1;
     padding: 1px;
@@ -40,7 +40,7 @@ QToolTip
 QWidget
 {
     color: #eff0f1;
-    background-color: #262626;
+    background-color: #1F1F1F;
     selection-background-color:#1185D1;
     selection-color: #eff0f1;
     background-clip: border;
@@ -218,7 +218,7 @@ QRadioButton::indicator:unchecked:disabled
 
 QMenuBar
 {
-    background-color: #262626;
+    background-color: #1F1F1F;
     color: #eff0f1;
 }
 
@@ -328,7 +328,7 @@ QMenu::right-arrow
 QWidget:disabled
 {
     color: #454545;
-    background-color: #262626;
+    background-color: #1F1F1F;
 }
 
 QAbstractItemView
@@ -350,7 +350,7 @@ QSlider:focus
 
 QLineEdit
 {
-    background-color: #202020;
+    background-color: #181818;
     padding: 2px;
     border-style: solid;
     border: 1px solid #393939;
@@ -360,7 +360,7 @@ QLineEdit
 
 QTextEdit
 {
-    background-color: #202020;
+    background-color: #181818;
     padding: 2px;
     border-style: solid;
     border: 1px solid #393939;
@@ -390,12 +390,12 @@ QScrollBar:horizontal
     margin: 3px 12px 3px 12px;
     border: 1px transparent;
     border-radius: 3px;
-    background-color: #202020;
+    background-color: #181818;
 }
 
 QScrollBar::handle:horizontal
 {
-    background-color: #5F5F5F;
+    background-color: #6F6F6F;
     min-width: 20px;
     border-radius: 3px;
 }
@@ -456,7 +456,7 @@ QScrollBar::sub-page:horizontal
 
 QScrollBar:vertical
 {
-    background-color: #202020;
+    background-color: #181818;
     width: 12px;
     margin: 12px 3px 12px 3px;
     border: 1px transparent;
@@ -465,7 +465,7 @@ QScrollBar:vertical
 
 QScrollBar::handle:vertical
 {
-    background-color: #5F5F5F;
+    background-color: #6F6F6F;
     min-height: 20px;
     border-radius: 3px;
 }
@@ -527,7 +527,7 @@ QScrollBar::sub-page:vertical
 
 QTextEdit
 {
-    background-color: #202020;
+    background-color: #181818;
     color: #eff0f1;
     border: 1px solid #393939;
     margin: 0;
@@ -586,7 +586,7 @@ QStackedWidget
 QToolBar
 {
     border: 1px transparent;
-    background: 1px solid #262626;
+    background: 1px solid #1F1F1F;
     padding: 0px;
 }
 
@@ -621,9 +621,9 @@ QToolBar::separator:vertical
 QPushButton
 {
     color: #eff0f1;
-    background-color: #262626;
+    background-color: #1F1F1F;
     border-width: 1px;
-    border-color: #131313;
+    border-color: #0F0F0F;
     border-style: solid;
     padding: 5px;
     border-radius: 5px;
@@ -632,7 +632,7 @@ QPushButton
 
 QPushButton:disabled
 {
-    background-color: #262626;
+    background-color: #1F1F1F;
     border-width: 1px;
     border-color: #393939;
     border-style: solid;
@@ -651,7 +651,7 @@ QPushButton:focus
 
 QPushButton:pressed
 {
-    background-color: #262626;
+    background-color: #1F1F1F;
     padding-top: -15px;
     padding-bottom: -17px;
 }
@@ -659,14 +659,14 @@ QPushButton:pressed
 
 QPushButton:checked{
     background-color: QLinearGradient( x1: 0, y1: 0, x2: 0, y2: 1,
-                                       stop: 0.0 #262626,
+                                       stop: 0.0 #1F1F1F,
                                        stop: 0.5 #737373,
-                                       stop: 1 #262626);
+                                       stop: 1 #1F1F1F);
 }
 
 QPushButton:hover
 {
-    background-color: #262626;
+    background-color: #1F1F1F;
     border: 1px solid #1185D1;
     color: #eff0f1;
     padding-top: 6px;
@@ -676,9 +676,9 @@ QPushButton:hover
 QPushButton:checked:hover
 {
     background-color: QLinearGradient( x1: 0, y1: 0, x2: 0, y2: 1,
-                                       stop: 0.0 #262626,
+                                       stop: 0.0 #1F1F1F,
                                        stop: 0.5 #737373,
-                                       stop: 1 #262626);
+                                       stop: 1 #1F1F1F);
     border: 1px solid #1185D1;
     color: #eff0f1;
     padding-top: 6px;
@@ -708,7 +708,7 @@ QComboBox:on
 QComboBox
 {
     selection-background-color: #3d8ec9;
-    background-color: #202020;
+    background-color: #181818;
     border-style: solid;
     border: 1px solid #393939;
     border-radius: 2px;
@@ -879,13 +879,13 @@ QTabBar::tab
 QTabBar::tab:!selected
 {
     color: white;
-    background-color: #262626;
+    background-color: #1F1F1F;
 }
 
 QTabBar::tab:disabled
 {
     color: #454545;
-    background-color: #262626;
+    background-color: #1F1F1F;
 }
 
 /* TOP TABS */
@@ -1006,10 +1006,16 @@ QTabBar QToolButton::left-arrow:disabled
 
 QDockWidget
 {
-    background: #262626;
+    background: #1F1F1F;
     border: 1px transparent;
     titlebar-close-icon: url(:/dark/transparent.svg);
     titlebar-normal-icon: url(:/dark/transparent.svg);
+}
+
+QDockWidget::title {
+  background-color: #181818;
+  padding-top: 7px;
+  border: 1px solid #292929;
 }
 
 QDockWidget::close-button,
@@ -1049,7 +1055,7 @@ QTreeView,
 QListView
 {
     border: 1px solid #76797c;
-    background-color: #262626;
+    background-color: #1F1F1F;
 }
 
 QTreeView::branch:has-siblings:!adjoins-item
@@ -1084,7 +1090,7 @@ QTreeView::branch:open:has-children:has-siblings
 
 QSlider::groove:horizontal
 {
-    border: 1px solid #262626;
+    border: 1px solid #1F1F1F;
     height: 1px;
     background: #808080;
     margin: 0px;
@@ -1093,7 +1099,7 @@ QSlider::groove:horizontal
 
 QSlider::handle:horizontal
 {
-    background: #262626;
+    background: #1F1F1F;
     border: 1px solid #1185D1;
     width: 7px;
     height: 7px;
@@ -1103,7 +1109,7 @@ QSlider::handle:horizontal
 
 QSlider::groove:vertical
 {
-    border: 1px solid #262626;
+    border: 1px solid #1F1F1F;
     width: 4px;
     background: #808080;
     margin: 0px;
@@ -1112,7 +1118,7 @@ QSlider::groove:vertical
 
 QSlider::handle:vertical
 {
-    background: #262626;
+    background: #1F1F1F;
     border: 1px solid #626568;
     width: 16px;
     height: 16px;
@@ -1142,7 +1148,7 @@ QSlider::sub-page:vertical
 
 QSlider::handle:disabled
 {
-    background: #262626;
+    background: #1F1F1F;
     border: 1px solid #76797C;
 }
 
@@ -1162,13 +1168,13 @@ QSlider::sub-page:disabled
 QToolButton#MaximizeButton {
     background-color: transparent;
     border-left: 1px solid QLinearGradient( x1: 0, y1: 0, x2: 0, y2: 1,
-                                            stop: 0.0 #262626, stop: 0.3 #606060,
+                                            stop: 0.0 #1F1F1F, stop: 0.3 #606060,
                                             stop: 0.5 #707070,
-                                            stop: 0.7 #606060, stop: 1 #262626);
+                                            stop: 0.7 #606060, stop: 1 #1F1F1F);
     border-right: 1px solid QLinearGradient( x1: 0, y1: 0, x2: 0, y2: 1,
-                                            stop: 0.0 #262626, stop: 0.3 #606060,
+                                            stop: 0.0 #1F1F1F, stop: 0.3 #606060,
                                             stop: 0.5 #707070,
-                                            stop: 0.7 #606060, stop: 1 #262626);
+                                            stop: 0.7 #606060, stop: 1 #1F1F1F);
     border-radius: 0px;
     margin: 0px;
     padding: 0px;
@@ -1185,9 +1191,9 @@ QToolButton#CloseButton {
 
 QToolButton#FileCloseButton {
     background-color: QLinearGradient( x1: 0, y1: 0, x2: 0, y2: 1,
-                                       stop: 0.0 #262626, stop: 0.1 #D50F25,
+                                       stop: 0.0 #1F1F1F, stop: 0.1 #D50F25,
                                        stop: 0.5 #D50F25,
-                                       stop: 0.9 #D50F25, stop: 1 #262626);
+                                       stop: 0.9 #D50F25, stop: 1 #1F1F1F);
     border: 1px transparent;
     border-radius: 0px;
     margin: 0px;
@@ -1197,16 +1203,16 @@ QToolButton#FileCloseButton {
 QToolButton#MinimizeButton:hover, QToolButton#MinimizeButton::menu-button:hover,
 QToolButton#MaximizeButton:hover, QToolButton#MaximizeButton::menu-button:hover{
     background-color: QLinearGradient( x1: 0, y1: 0, x2: 0, y2: 1,
-                                       stop: 0.0 #262626, stop: 0.4 #4E4D4D,
+                                       stop: 0.0 #1F1F1F, stop: 0.4 #4E4D4D,
                                        stop: 0.5 #4A4949,
-                                       stop: 0.6 #4E4D4D, stop: 1 #262626);
+                                       stop: 0.6 #4E4D4D, stop: 1 #1F1F1F);
 }
 
 QToolButton#CloseButton:hover, QToolButton#CloseButton::menu-button:hover {
 background-color: QLinearGradient( x1: 0, y1: 0, x2: 0, y2: 1,
-                                   stop: 0.0 #262626, stop: 0.2 #A82F2F,
+                                   stop: 0.0 #1F1F1F, stop: 0.2 #A82F2F,
                                    stop: 0.5 #D50F25,
-                                   stop: 0.8 #A82F2F, stop: 1 #262626);
+                                   stop: 0.8 #A82F2F, stop: 1 #1F1F1F);
 }
 
 QToolButton#FileCloseButton:hover, QToolButton#FileCloseButton::menu-button:hover {
@@ -1254,9 +1260,9 @@ QToolButton::menu-button:hover
 QToolButton::menu-button:checked:hover 
 {
     background-color: QLinearGradient( x1: 0, y1: 0, x2: 0, y2: 1,
-                                       stop: 0.0 #262626, stop: 0.4 #4F4F4F,
+                                       stop: 0.0 #1F1F1F, stop: 0.4 #4F4F4F,
                                        stop: 0.5 #4A4A4A,
-                                       stop: 0.6 #4F4F4F, stop: 1 #262626);
+                                       stop: 0.6 #4F4F4F, stop: 1 #1F1F1F);
     padding-top: 1px;
     padding-left: 2px;
     padding-right: 2px;
@@ -1266,9 +1272,9 @@ QToolButton::menu-button:checked:hover
 QToolButton:checked, QToolButton:pressed,
 QToolButton::menu-button:pressed {
     background-color: QLinearGradient( x1: 0, y1: 0, x2: 0, y2: 1,
-                                       stop: 0.0 #262626,
+                                       stop: 0.0 #1F1F1F,
                                        stop: 0.5 #4A4A4A,
-                                       stop: 1.0 #262626);
+                                       stop: 1.0 #1F1F1F);
     padding-top: 2px;
     padding-left: 2px;
     padding-right: 2px;
@@ -1341,7 +1347,7 @@ QTableView
 {
     border: 1px transparent;
     gridline-color: #6c6c6c;
-    background-color: #202020;
+    background-color: #181818;
 }
 
 
@@ -1391,7 +1397,7 @@ QHeaderView
 
 QHeaderView::section
 {
-    background-color: #262626;
+    background-color: #1F1F1F;
     color: #eff0f1;
     padding: 4px;
     border: 1px transparent;
@@ -1442,7 +1448,7 @@ QHeaderView::up-arrow
 
 QTableCornerButton::section
 {
-    background-color: #262626;
+    background-color: #1F1F1F;
     border: 1px transparent;
     border-radius: 2px;
 }
@@ -1455,7 +1461,7 @@ QToolBox
 
 QToolBox:selected
 {
-    background-color: #262626;
+    background-color: #1F1F1F;
     border-color: #1185D1;
 }
 
@@ -1479,18 +1485,18 @@ QAbstractScrollArea
 {
     border-radius: 2px;
     border: 0px;
-    background-color: #262626;
+    background-color: #1F1F1F;
 }
 
 QSplitter::handle:horizontal,
 QMainWindow::separator
 {
     background-color: QLinearGradient( x1: 0, y1: 0, x2: 0, y2: 1,
-                                       stop: 0.0 #262626,
+                                       stop: 0.0 #1F1F1F,
                                        stop: 0.4 #333333,
                                        stop: 0.5 #404040,
                                        stop: 0.6 #333333,
-                                       stop: 1 #262626);
+                                       stop: 1 #1F1F1F);
     color: white;
     padding-left: 0px;
     spacing: 0px;
@@ -1502,11 +1508,11 @@ QSplitter::handle:horizontal:hover,
 QMainWindow::separator:hover
 {
     background-color: QLinearGradient( x1: 0, y1: 0, x2: 0, y2: 1,
-                                       stop: 0.0 #262626,
+                                       stop: 0.0 #1F1F1F,
                                        stop: 0.1 #333333,
                                        stop: 0.5 #404040,
                                        stop: 0.9 #333333,
-                                       stop: 1 #262626);
+                                       stop: 1 #1F1F1F);
     color: white;
     padding-left: 0px;
     spacing: 0px;
@@ -1516,21 +1522,21 @@ QMainWindow::separator:hover
 
 QSplitter::handle:vertical  {
     background-color: QLinearGradient( x1: 0, y1: 0, x2: 1, y2: 0,
-                                       stop: 0.0 #262626,
+                                       stop: 0.0 #1F1F1F,
                                        stop: 0.3 #505050,
                                        stop: 0.5 #606060,
                                        stop: 0.7 #505050,
-                                       stop: 1 #262626);
+                                       stop: 1 #1F1F1F);
     height: 3px;
 }
 
 QSplitter::handle:vertical:hover {
     background-color: QLinearGradient( x1: 0, y1: 0, x2: 1, y2: 0,
-                                       stop: 0.0 #262626,
+                                       stop: 0.0 #1F1F1F,
                                        stop: 0.1 #505050,
                                        stop: 0.5 #606060,
                                        stop: 0.8 #505050,
-                                       stop: 1 #262626);
+                                       stop: 1 #1F1F1F);
     height: 3px;
 }
 
@@ -1538,7 +1544,7 @@ QSplitter::handle:vertical:hover {
 QProgressBar:horizontal
 {
     background-color: #626568;
-    border: 1px solid #262626;
+    border: 1px solid #1F1F1F;
     border-radius: 3px;
     height: 5px;
     text-align: right;
@@ -1559,7 +1565,7 @@ QSpinBox,
 QDoubleSpinBox
 {
     padding-right: 0px;
-    background-color: #202020;
+    background-color: #181818;
     border-style: solid;
     border: 1px solid #393939;
     border-radius: 2px;
