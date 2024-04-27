@@ -20,6 +20,7 @@
 
 #
 # 2024/3/18 DreamSourceLab : fix channel display error
+# 2024/4/26 DreamSourceLab : add new option sampling edge
 #
 
 import sigrokdecode as srd
@@ -43,8 +44,10 @@ class Decoder(srd.Decoder):
     )
     options = (
         {'id': 'bps', 'desc': 'Bits per sample', 'default': 16, 'idn':'dec_tdm_audio_opt_bps' },
-        {'id': 'channels', 'desc': 'Channels per frame', 'default': MAX_CHANNELS, 'idn':'dec_tdm_audio_opt_channels' },
-        {'id': 'edge', 'desc': 'Clock edge to sample on', 'default': 'rising', 'values': ('rising', 'falling') , 'idn':'dec_tdm_audio_opt_edge'}
+        {'id': 'channels', 'desc': 'Channels per frame', 'default': MAX_CHANNELS,
+            'values': tuple(range(1, MAX_CHANNELS + 1)), 'idn':'dec_tdm_audio_opt_channels' },
+        {'id': 'edge', 'desc': 'Clock edge to sample on', 'default': 'rising', 'values': ('rising', 'falling') , 'idn':'dec_tdm_audio_opt_edge'},
+        {'id': 'sampling edge', 'desc': 'Sampling Edge', 'default': 'first edge', 'values': ('first edge', 'second edge'), 'idn':'dec_tdm_audio_opt_sampling_edge'},
     )
     annotations = tuple(('ch%d' % i, 'Ch%d' % i) for i in range(MAX_CHANNELS))
     annotation_rows = tuple(('ch%d-vals' % i, 'Ch%d' % i, (i,)) for i in range(MAX_CHANNELS))
@@ -112,9 +115,13 @@ class Decoder(srd.Decoder):
             
             if frame != self.lastframe and frame == 1:
                 self.channel = 0
-                self.bitcount = 0
-                self.data = 0
+                if self.options['sampling edge'] == 'first edge':
+                    self.bitcount = 1
+                    self.data = data
+                else:
+                    self.bitcount = 0
+                    self.data = 0
                 if self.ss_block is None:
-                    self.ss_block = 0
+                    self.ss_block = self.samplenum
                     
             self.lastframe = frame

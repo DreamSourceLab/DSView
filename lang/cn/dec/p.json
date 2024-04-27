@@ -396,6 +396,10 @@
         "text": "采样的时钟边沿"
     },
     {
+        "id": "dec_tdm_audio_opt_sampling_edge",
+        "text": "采样边沿"
+    },
+    {
         "id": "dec_timing_chan_data",
         "text": "数据线"
     },
