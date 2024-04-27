@@ -1135,7 +1135,9 @@ QString View::get_measure(QString option)
 
 QString View::get_cm_time(int index)
 {
-    return _ruler->format_real_time(get_cursor_samples(index), _session->cur_snap_samplerate());
+    uint64_t sampleIndex = get_cursor_samples(index);
+    uint64_t sampleRate = _session->cur_snap_samplerate();
+    return _ruler->format_real_time(sampleIndex, sampleRate);
 }
 
 QString View::get_cm_delta(int index1, int index2)

@@ -174,10 +174,17 @@ QString Ruler::format_time(double t)
 
 QString Ruler::format_real_time(uint64_t delta_index, uint64_t sample_rate)
 {
-    uint64_t delta_time = std::pow(10, 12) / sample_rate * delta_index;
+    double v1 = (double)std::pow(10, 12) / (double)sample_rate;
+    double delta_time_double = v1 * delta_index;
+    uint64_t delta_time = v1 * delta_index;
 
-    if (delta_time == 0)
+    if (delta_time_double > UINT64_MAX){
+        return "INF";
+    }
+
+    if (delta_time == 0) {
         return "0";
+    }
 
     int zero = 0;
     int prefix = (int)floor(log10(delta_time));
