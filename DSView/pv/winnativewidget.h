@@ -96,6 +96,8 @@ public:
 
     void ReShowWindow();
 
+    static void EnalbeNoClientArea(bool bEnabled);
+
 private:   
     QScreen* screenFromCurrentMonitorHandle();
     bool isWinXOrGreater(DWORD major_version, DWORD minor_version, DWORD build_number);

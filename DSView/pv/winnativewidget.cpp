@@ -51,6 +51,11 @@
 
 namespace pv {
 
+namespace
+{
+    bool g_enable_ncclient = true;
+}
+
 //-----------------------------WinNativeWidget 
 WinNativeWidget::WinNativeWidget(const int x, const int y, const int width, 
         const int height, QColor backColor)
@@ -379,6 +384,10 @@ LRESULT WinNativeWidget::hitTest(HWND hWnd, WPARAM wParam, LPARAM lParam)
 
     long x = GET_X_LPARAM(lParam);
     long y = GET_Y_LPARAM(lParam);
+
+    if (!g_enable_ncclient){
+        return HTCLIENT;
+    }
 
     // Check if the size can to resize.
     if (!IsMaxsized())
@@ -795,6 +804,11 @@ void WinNativeWidget::setShadowStatus(int windowStatus)
             break;
         }     
     }
+}
+
+void WinNativeWidget::EnalbeNoClientArea(bool bEnabled)
+{
+    g_enable_ncclient = bEnabled;
 }
 
 }

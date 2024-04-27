@@ -24,6 +24,10 @@
 #include <QApplication>
 #include "../log.h" 
 
+#ifdef _WIN32
+#include "winnativewidget.h"
+#endif
+
 namespace
 {
     static int _click_times = 0;
@@ -68,6 +72,7 @@ void XToolButton::mousePressEvent(QMouseEvent *event)
         setChecked(true);
         QPoint pt = mapToGlobal(rect().bottomLeft());
         connect(_menu, SIGNAL(aboutToHide()), this, SLOT(onHidePopupMenu()));
+        pv::WinNativeWidget::EnalbeNoClientArea(false);
         _menu->popup(pt);
     }
     else{
@@ -94,6 +99,8 @@ void XToolButton::onHidePopupMenu()
     setCheckable(true);
     setChecked(false);
     setCheckable(false);
+
+    pv::WinNativeWidget::EnalbeNoClientArea(true);
 
     QWidget *widgetUnderMouse = qApp->widgetAt(QCursor::pos());
     if (widgetUnderMouse != this){
