@@ -1412,6 +1412,7 @@ namespace pv
         qss.close();
 
         UiManager::Instance()->Update(UI_UPDATE_ACTION_THEME);
+        UiManager::Instance()->Update(UI_UPDATE_ACTION_FONT);
 
         data_updated();
     }
