@@ -22,10 +22,11 @@
 #include "xtoolbutton.h"
 #include <QMenu>
 #include <QApplication>
+#include <QTimer>
 #include "../log.h" 
 
 #ifdef _WIN32
-#include "winnativewidget.h"
+#include "../winnativewidget.h"
 #endif
 
 namespace
@@ -99,9 +100,7 @@ void XToolButton::onHidePopupMenu()
     setCheckable(true);
     setChecked(false);
     setCheckable(false);
-
-    pv::WinNativeWidget::EnalbeNoClientArea(true);
-
+ 
     QWidget *widgetUnderMouse = qApp->widgetAt(QCursor::pos());
     if (widgetUnderMouse != this){
         _is_mouse_down = false;
@@ -114,6 +113,10 @@ void XToolButton::onHidePopupMenu()
     if (_menu != NULL){
         disconnect(_menu, SIGNAL(aboutToHide()), this, SLOT(onHidePopupMenu()));
     } 
+
+    QTimer::singleShot(300, this, [this](){
+                pv::WinNativeWidget::EnalbeNoClientArea(true);
+            });
 
 #endif
 }
