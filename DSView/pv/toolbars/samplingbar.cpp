@@ -705,30 +705,41 @@ namespace pv
 
         double SamplingBar::hori_knob(int dir)
         {
-            int mode = _session->get_device()->get_work_mode();
-
-            assert(mode == DSO);
-
             double hori_res = -1;
-            int cur_index = -1;
+
+            if (_session->get_device()->get_work_mode() != DSO){
+                assert(false);
+            }
 
             disconnect(&_sample_count, SIGNAL(currentIndexChanged(int)), this, SLOT(on_samplecount_sel(int)));
 
-            if ((dir > 0) && (_sample_count.currentIndex() > 0)){
-                cur_index = _sample_count.currentIndex() - 1;
+            if (0 == dir)
+            {
+                hori_res = commit_hori_res();
             }
-            else if ((dir < 0) && (_sample_count.currentIndex() < _sample_count.count() - 1)){
-                cur_index = _sample_count.currentIndex() + 1;                
+            else if ((dir > 0) && (_sample_count.currentIndex() > 0))
+            {
+                set_sample_count_index(_sample_count.currentIndex() - 1);
+                hori_res = commit_hori_res();
+
+                if (_session->have_view_data() == false){                   
+                    _session->apply_samplerate(); 
+                    _session->broadcast_msg(DSV_MSG_DEVICE_DURATION_UPDATED);                 
+                }
+            }
+            else if ((dir < 0) && (_sample_count.currentIndex() < _sample_count.count() - 1))
+            {
+                set_sample_count_index(_sample_count.currentIndex() + 1); 
+                hori_res = commit_hori_res();             
+
+                if (_session->have_view_data() == false){
+                    _session->apply_samplerate();
+                    _session->broadcast_msg(DSV_MSG_DEVICE_DURATION_UPDATED);
+                }
             }
 
             connect(&_sample_count, SIGNAL(currentIndexChanged(int)),
                     this, SLOT(on_samplecount_sel(int)));
-
-            if (cur_index != -1){
-                set_sample_count_index(cur_index);
-            }
-
-            apply_sample_count(hori_res); 
 
             return hori_res;
         }
