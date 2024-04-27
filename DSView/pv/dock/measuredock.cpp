@@ -500,6 +500,7 @@ void MeasureDock::on_edge_channel_selected()
     }
 
     update_edge();
+    adjusLabelSize();
 }
 
 void MeasureDock::add_edge_measure()
