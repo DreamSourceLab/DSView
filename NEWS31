@@ -1,3 +1,32 @@
+v1.3.2 (2024-04-27)
+----------
+  --common
+  *Fix crashes when dragging windows between screens
+  *Add drag-and-drop and window arrangement support for native Windows windows
+  *Improve adaptive window and font display at different DPI settings
+  *Fix the issue of missing firmware on macOS
+  *Modify the color allocation of the cursor to improve clarity.
+  *Fix log file creation issue on Windows
+  *Fix display area coverage and font rendering problems
+
+  --for logic analyzer
+  *Add region waveform save and export feature
+  *Fix crashes from cursor placement beyond waveform area during decoding
+  *Fix crashes with specific sampling parameters in loop mode
+  *Fix crashes from multi-byte search in decoding results
+  *Improve distance measurement edge selection
+  *Add reminder for channel settings when adding a decoder
+  *Implement auto-scroll to latest waveform in loop mode
+  *Fix protocol decoding issues (CAN/QSPI/DMX512/LIN/...)
+
+  --for oscilloscope
+  *Improve pulse count measurement accuracy
+  *Fix file export issue with single channel enabled
+  *Resolve crashes from FFT parameter modification during data acquisition
+  *Fix waveform and vertical resolution calculation issues in math operations
+  *Fix waveform anomalies from channel offset exceeding boundaries
+  *Improve accuracy of mouse measurements
+
 v1.3.1 -- (2023-09-28)
 ----------
   --common
