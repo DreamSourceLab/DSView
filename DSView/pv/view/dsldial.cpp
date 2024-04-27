@@ -187,7 +187,9 @@ void dslDial::set_value(uint64_t value)
 }
 
 void dslDial::set_factor(uint64_t factor)
-{
+{   
+    assert(factor > 0);
+    
     if (_factor != factor) {
         _factor = factor;
     }

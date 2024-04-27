@@ -203,28 +203,34 @@ uint64_t MathStack::default_vDialValue()
 uint64_t MathStack::default_factor()
 {
     uint64_t value = 0;
-    const uint64_t factor1 = _dsoSig1->get_vDial()->get_factor();
+    const uint64_t factor1 = _dsoSig1->get_vDial()->get_factor();    
     const uint64_t factor2 = _dsoSig2->get_vDial()->get_factor();
+    assert(factor1 > 0);
+    assert(factor2 > 0);
     const uint64_t v1 = _dsoSig1->get_vDial()->get_value() * factor1;
     const uint64_t v2 = _dsoSig2->get_vDial()->get_value() * factor2;
 
     switch(_type) {
-    case MATH_ADD:
-    case MATH_SUB:
-        value = v1 > v2 ? factor1 : factor2;
-        break;
-    case MATH_MUL:
-        value = factor1 * factor2;
-        break;
-    case MATH_DIV:
-        value = factor1 / factor2;
-        break;
+        case MATH_ADD:
+        case MATH_SUB:
+            value = v1 > v2 ? factor1 : factor2;
+            break;
+        case MATH_MUL:
+            value = factor1 * factor2;
+            break;
+        case MATH_DIV:
+            value = factor1 / factor2;
+            break;
+    }
+
+    if (value == 0){
+        value = 1;
     }
 
     return value;
 }
 
-view::dslDial * MathStack::get_vDial()
+view::dslDial* MathStack::get_vDial()
 {
     QVector<uint64_t> vValue;
     QVector<QString> vUnit;
