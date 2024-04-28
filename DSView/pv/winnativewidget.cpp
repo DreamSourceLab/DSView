@@ -726,9 +726,15 @@ void WinNativeWidget::hideBorder()
     }
 }
 
-bool WinNativeWidget::isWinXOrGreater(DWORD major_version, DWORD minor_version, DWORD build_number)
-{
-    bool is_win_x_or_greater = false;
+bool WinNativeWidget::getWinSysVersion(DWORD *major_version, DWORD *minor_version, DWORD *build_number)
+{  
+    assert(major_version);
+    assert(minor_version);
+    assert(build_number);
+
+    *major_version = 0;
+    *minor_version = 0;
+    *build_number = 0;
 
     typedef NTSTATUS(WINAPI *tRtlGetVersion)(LPOSVERSIONINFOEXW);
     tRtlGetVersion pRtlGetVersion = tRtlGetVersion(QLibrary::resolve("ntdll", "RtlGetVersion"));
@@ -739,20 +745,47 @@ bool WinNativeWidget::isWinXOrGreater(DWORD major_version, DWORD minor_version, 
         memset(&os_info, 0, sizeof(OSVERSIONINFOEXW));
         os_info.dwOSVersionInfoSize = sizeof(OSVERSIONINFOEXW);
         NTSTATUS status = pRtlGetVersion(&os_info);
+
         if (status == 0)
-        {
-            is_win_x_or_greater = (os_info.dwMajorVersion >= major_version &&
-                                   os_info.dwMinorVersion >= minor_version &&
-                                   os_info.dwBuildNumber >= build_number);
+        {   
+            *major_version = os_info.dwMajorVersion;
+            *minor_version = os_info.dwMinorVersion;
+            *build_number = os_info.dwBuildNumber;
+            return true;            
         }
     }
 
-    return is_win_x_or_greater;
+    return false;
 }
 
 bool WinNativeWidget::IsWin11OrGreater()
 {
-    return isWinXOrGreater(10, 0, 22000);
+    DWORD major_version = 0;
+    DWORD minor_version = 0;
+    DWORD build_number = 0;
+
+    if (getWinSysVersion(&major_version, &minor_version, &build_number)){
+        if (major_version >= 10 && build_number >= 22000){
+            return true;
+        }
+    }
+
+    return false;
+}
+
+bool WinNativeWidget::IsWin7()
+{
+    DWORD major_version = 0;
+    DWORD minor_version = 0;
+    DWORD build_number = 0;
+
+    if (getWinSysVersion(&major_version, &minor_version, &build_number)){
+        if (major_version == 6 && minor_version == 1){
+            return true;
+        }
+    }
+
+    return false;
 }
 
 int WinNativeWidget::GetDevicePixelRatio()
