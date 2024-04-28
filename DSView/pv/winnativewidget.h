@@ -87,6 +87,7 @@ public:
     void SetBorderColor(QColor color);
     static bool IsWin11OrGreater();
     static bool IsWin7();
+    static bool getWinSysVersion(DWORD *major_version, DWORD *minor_version, DWORD *build_number);
 
     inline void SetTitleBarWidget(QWidget *w){
         _titleBarWidget = w;
@@ -101,7 +102,7 @@ public:
 
 private:   
     QScreen* screenFromCurrentMonitorHandle(); 
-    bool getWinSysVersion(DWORD *major_version, DWORD *minor_version, DWORD *build_number);
+    
     void showBorder();
     void hideBorder();
     static RECT GetMonitorArea(HMONITOR hMonitor, bool isPhysics);
