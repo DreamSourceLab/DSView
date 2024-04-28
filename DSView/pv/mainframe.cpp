@@ -778,6 +778,11 @@ void MainFrame::AttachNativeWindow()
     nativeWindow->SetBorderColor(QColor(0x80, 0x80, 0x80));
     _parentNativeWidget = nativeWindow;
 
+    //Make sure the shadow displayed at a right position fisrt time for windows 10.
+    QTimer::singleShot(100, this, [this](){
+                _parentNativeWidget->ResizeChild();
+            });
+
 #endif
 }
 
