@@ -85,8 +85,8 @@ public:
     bool isActiveWindow();
 
     void SetBorderColor(QColor color);
-    bool IsWin11OrGreater();
-    bool IsWin7();
+    static bool IsWin11OrGreater();
+    static bool IsWin7();
 
     inline void SetTitleBarWidget(QWidget *w){
         _titleBarWidget = w;
@@ -126,6 +126,7 @@ private:
     WinShadow   *_shadow;
     QColor      _border_color;
     bool        _is_lose_foreground;
+    bool        _is_win7;
 };
 
 }

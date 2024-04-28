@@ -65,11 +65,13 @@ WinNativeWidget::WinNativeWidget(const int x, const int y, const int width,
     _hWnd = NULL;
     _event_callback = NULL;
     _is_lose_foreground = false;
-   
-    _titleBarWidget = NULL;
-    _is_native_border = IsWin11OrGreater();
     _hCurrentMonitor = NULL;
     _shadow = NULL; 
+    _titleBarWidget = NULL;
+
+    _is_native_border = IsWin11OrGreater();
+    _is_win7 = IsWin7();
+
     _border_color = QColor(0x80,0x80,0x80);
     int r = backColor.red();
     int g = backColor.green();
@@ -77,7 +79,6 @@ WinNativeWidget::WinNativeWidget(const int x, const int y, const int width,
 
     HINSTANCE hInstance = GetModuleHandle(nullptr);
     WNDCLASSEX wcx;
-
     memset(&wcx, 0, sizeof(WNDCLASSEXW));
 
     wcx.cbSize = sizeof(WNDCLASSEX);
@@ -364,6 +365,13 @@ LRESULT CALLBACK WinNativeWidget::WndProc(HWND hWnd, UINT message, WPARAM wParam
                 return self->hitTest(hWnd, wParam, lParam);
             }
             break;           
+        }
+        case WM_MOUSEWHEEL:
+        {
+            if (self->_is_win7 && self->_childWindow != NULL){
+                return SendMessage(self->_childWindow, message, wParam, lParam);
+            }
+            break;
         }
     }
 
