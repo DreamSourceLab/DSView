@@ -98,11 +98,9 @@ bool LangResource::Load(int lang)
     }
 
     _cur_lang = lang;
-
     _query_decoders.clear();
-
-    release_self();
-
+    release_self(); 
+     
     num = sizeof(lange_page_keys) / sizeof(lang_page_item);
 
     for (int i = 0; i < num; i++)
@@ -131,6 +129,7 @@ void LangResource::release_self()
         delete p;
     }
     _pages.clear();
+    _current_page = NULL;
 }
 
 void LangResource::load_page(Lang_resource_page &p)
@@ -225,8 +224,9 @@ const char* LangResource::get_lang_text(int page_id, const char *str_id, const c
         return default_str;
     }
 
-    if (_current_page->_loaded == false)
+    if (_current_page->_loaded == false){
         load_page(*_current_page);
+    }
 
     std::string key(str_id);
 

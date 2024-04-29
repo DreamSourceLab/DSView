@@ -108,7 +108,6 @@ Viewport::Viewport(View &parent, View_type type) :
     _xAction = xAction;
  
     setContextMenuPolicy(Qt::CustomContextMenu);
-    this->update_font();
 
     connect(&_trigger_timer, SIGNAL(timeout()),this, SLOT(on_trigger_timer()));
     connect(&_drag_timer, SIGNAL(timeout()),this, SLOT(on_drag_timer())); 
@@ -2144,22 +2143,10 @@ void Viewport::add_cursor_x()
     _view.show_xcursors(true);
 }
 
-void Viewport::update_font()
-{
-    QFont font = this->font();
-    font.setPointSizeF(AppConfig::Instance().appOptions.fontSize);
-    _yAction->setFont(font);
-    _xAction->setFont(font);
-}
-
-void Viewport::update_lang()
+void Viewport::UpdateLanguage()
 {
     _yAction->setText(L_S(STR_PAGE_DLG, S_ID(IDS_DLG_ADD_Y_CURSOR), "Add Y-cursor"));
     _xAction->setText(L_S(STR_PAGE_DLG, S_ID(IDS_DLG_ADD_X_CURSOR), "Add X-cursor"));
-}
-
-void Viewport::UpdateLanguage()
-{
 }
 
 void Viewport::UpdateTheme()
@@ -2168,7 +2155,10 @@ void Viewport::UpdateTheme()
 
 void Viewport::UpdateFont()
 { 
-    update_font();
+    QFont font = this->font();
+    font.setPointSizeF(AppConfig::Instance().appOptions.fontSize);
+    _yAction->setFont(font);
+    _xAction->setFont(font);
 }
 
 } // namespace view

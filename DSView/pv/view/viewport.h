@@ -118,9 +118,7 @@ public:
     void set_receive_len(quint64 length);
     void unshow_wait_trigger();
     void show_wait_trigger();
-
-    void update_lang();
-    void update_font();
+    
     void measure();
     void update(int event);
 
