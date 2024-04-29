@@ -70,7 +70,6 @@ WinNativeWidget::WinNativeWidget(const int x, const int y, const int width,
     _titleBarWidget = NULL;
 
     _is_native_border = IsWin11OrGreater();
-    _is_win7 = IsWin7();
 
     _border_color = QColor(0x80,0x80,0x80);
     int r = backColor.red();
@@ -368,7 +367,8 @@ LRESULT CALLBACK WinNativeWidget::WndProc(HWND hWnd, UINT message, WPARAM wParam
         }
         case WM_MOUSEWHEEL:
         {
-            if (self->_is_win7 && self->_childWindow != NULL){
+            // If system not send this message to the focus window, the native window will be received it.
+            if (self->_childWindow != NULL){
                 return SendMessage(self->_childWindow, message, wParam, lParam);
             }
             break;

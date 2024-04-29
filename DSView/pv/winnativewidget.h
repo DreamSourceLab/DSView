@@ -127,7 +127,6 @@ private:
     WinShadow   *_shadow;
     QColor      _border_color;
     bool        _is_lose_foreground;
-    bool        _is_win7;
 };
 
 }
