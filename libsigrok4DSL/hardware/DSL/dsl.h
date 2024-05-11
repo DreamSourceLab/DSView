@@ -775,6 +775,61 @@ static const struct DSL_profile supported_DSLogic[] = {
       SR_MHZ(400)}
     },
 
+    {0x2A0E, 0x0034, LIBUSB_SPEED_HIGH, "DreamSourceLab", "DSLogic PLus", NULL,
+     "DSLogicPlus-pgl12-2.fw",
+     "DSLogicPlus-pgl12-2.bin",
+     "DSLogicPlus-pgl12-2.bin",
+     {CAPS_MODE_LOGIC,
+      CAPS_FEATURE_VTH | CAPS_FEATURE_BUF | CAPS_FEATURE_MAX25_VTH | CAPS_FEATURE_SECURITY,
+      (1 << DSL_STREAM20x16) | (1 << DSL_STREAM25x12) | (1 << DSL_STREAM50x6) | (1 << DSL_STREAM100x3) |
+      (1 << DSL_BUFFER100x16) | (1 << DSL_BUFFER200x8) | (1 << DSL_BUFFER400x4),
+      16,
+      SR_MB(256),
+      0,
+      DSL_BUFFER100x16,
+      0,
+      samplerates400,
+      0,
+      DSL_STREAM20x16,
+      SR_MHZ(1),
+      SR_Mn(1),
+      0,
+      0,
+      0,
+      0,
+      0,
+      SR_MHZ(200),
+      SR_MHZ(400)}
+    },
+
+    {0x2A0E, 0x0035, LIBUSB_SPEED_HIGH, "DreamSourceLab", "DSLogic U2Basic", NULL,
+     "DSLogicU2Basic-pgl12-2.fw",
+     "DSLogicU2Basic-pgl12-2.bin",
+     "DSLogicU2Basic-pgl12-2.bin",
+     {CAPS_MODE_LOGIC,
+      CAPS_FEATURE_VTH | CAPS_FEATURE_BUF | CAPS_FEATURE_MAX25_VTH | CAPS_FEATURE_SECURITY,
+      (1 << DSL_STREAM20x16) | (1 << DSL_STREAM25x12) | (1 << DSL_STREAM50x6) | (1 << DSL_STREAM100x3) |
+      (1 << DSL_BUFFER100x16),
+      16,
+      SR_MB(64),
+      0,
+      DSL_BUFFER100x16,
+      0,
+      samplerates100,
+      0,
+      DSL_STREAM20x16,
+      SR_MHZ(1),
+      SR_Mn(1),
+      0,
+      0,
+      0,
+      0,
+      0,
+      SR_MHZ(200),
+      SR_MHZ(400)}
+    },
+
+
     { 0, 0, LIBUSB_SPEED_UNKNOWN, 0, 0, 0, 0, 0, 0, {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}}
 };
 
