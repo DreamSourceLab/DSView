@@ -59,6 +59,8 @@ ProtocolExp::ProtocolExp(QWidget *parent, SigSession *session) :
         Qt::Horizontal, this),
     _export_cancel(false)
 {
+    _bAbleClose = false;
+
     _format_combobox = new DsComboBox(this);
     //tr
     _format_combobox->addItem("Comma-Separated Values (*.csv)");
@@ -102,27 +104,51 @@ ProtocolExp::ProtocolExp(QWidget *parent, SigSession *session) :
     layout()->addLayout(_layout);
     setTitle(L_S(STR_PAGE_DLG, S_ID(IDS_DLG_PROTOCOL_EXPORT), "Protocol Export"));
 
-    connect(&_button_box, SIGNAL(accepted()), this, SLOT(accept()));
-    connect(&_button_box, SIGNAL(rejected()), this, SLOT(reject()));
-    connect(_session->device_event_object(), SIGNAL(device_updated()), this, SLOT(reject()));
+    connect(&_button_box, SIGNAL(accepted()), this, SLOT(onAccept()));
+    connect(&_button_box, SIGNAL(rejected()), this, SLOT(onReject()));
+    connect(_session->device_event_object(), SIGNAL(device_updated()), this, SLOT(onReject()));
+
+    connect(&m_timer, &QTimer::timeout, this, &ProtocolExp::on_timeout);
+    m_timer.setInterval(200);
 
 }
 
-void ProtocolExp::accept()
-{   
-    if (_session->have_decoded_result() == false)
+void ProtocolExp::on_timeout()
+{
+    if (_bAbleClose){
+        closeSelf();
+    }
+}
+
+void ProtocolExp::onReject()
+{
+    using namespace Qt;
+
+    QDialog::reject();
+    this->deleteLater();
+}
+
+void ProtocolExp::cancel_export()
+{
+    _export_cancel = true;
+}
+
+void ProtocolExp::closeSelf()
+{
+    close();
+    this->deleteLater();
+}
+
+void ProtocolExp::onAccept()
+{
+    if (_session->have_decoded_result() == false 
+            || _row_sel_list.empty())
     {
         QString errMsg = L_S(STR_PAGE_MSG, S_ID(IDS_MSG_NO_DECODED_RESULT), "No data to export");
         MsgBox::Show(errMsg);
         return;
     }
-
-    QDialog::accept();
-
-    if (_row_sel_list.empty()){
-        return;
-    }
-
+ 
     QList<QString> supportedFormats;
     for (int i = _format_combobox->count() - 1; i >= 0; i--)
     {
@@ -170,6 +196,7 @@ void ProtocolExp::accept()
     QFuture<void> future;
     future = QtConcurrent::run([&]{
                     save_proc();
+                    _bAbleClose = true;
                });
 
     Qt::WindowFlags flags = Qt::CustomizeWindowHint;
@@ -186,6 +213,8 @@ void ProtocolExp::accept()
     connect(this, SIGNAL(export_progress(int)), &dlg, SLOT(setValue(int)));
     connect(&dlg, SIGNAL(canceled()), this, SLOT(cancel_export()));
 
+    m_timer.start();
+    this->hide();
     watcher.setFuture(future);
     dlg.exec();
 
@@ -333,18 +362,6 @@ bool ProtocolExp::compare_ann_index(const data::decode::Annotation *a,
     assert(a);
     assert(b);
     return a->start_sample() < b->start_sample();
-}
-
-void ProtocolExp::reject()
-{
-    using namespace Qt;
-
-    QDialog::reject();
-}
-
-void ProtocolExp::cancel_export()
-{
-    _export_cancel = true;
 }
 
 } // namespace dialogs
