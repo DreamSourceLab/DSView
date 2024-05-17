@@ -608,6 +608,7 @@ private:
     
     bool        _is_action;
     uint64_t    _dso_packet_count;
+    bool        _is_task_end;
  
 
     ISessionCallback *_callback;

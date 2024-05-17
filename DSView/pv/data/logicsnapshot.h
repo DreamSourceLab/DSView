@@ -249,7 +249,7 @@ private:
     uint64_t    _last_sample[CHANNEL_MAX_COUNT];
     uint64_t    _last_calc_count[CHANNEL_MAX_COUNT];
     bool        _is_loop;
-    uint64_t    _loop_offset;
+    volatile uint64_t   _loop_offset;
     bool        _able_free;
     std::vector<void*> _free_block_list;
     struct BlockIndex _cur_ref_block_indexs[CHANNEL_MAX_COUNT];

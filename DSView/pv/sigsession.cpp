@@ -103,6 +103,7 @@ namespace pv
         _decoder_pannel = NULL;
         _is_triged = false;
         _dso_status_valid = false;
+        _is_task_end = false;
 
         _data_list.push_back(new SessionData());
         _data_list.push_back(new SessionData());
@@ -707,6 +708,8 @@ namespace pv
         }
 
         capture_init();
+
+        _is_task_end = false;
 
         if (_device_agent.start() == false){
             dsv_err("Start collect error!");
@@ -1415,16 +1418,19 @@ namespace pv
 
         case SR_DF_LOGIC:
             assert(packet->payload);
+            assert(!_is_task_end);
             feed_in_logic(*(const sr_datafeed_logic *)packet->payload);
             break;
 
         case SR_DF_DSO:
             assert(packet->payload);
+            assert(!_is_task_end);
             feed_in_dso(*(const sr_datafeed_dso *)packet->payload);
             break;
 
         case SR_DF_ANALOG:
             assert(packet->payload);
+            assert(!_is_task_end);
             feed_in_analog(*(const sr_datafeed_analog *)packet->payload);
             break;
 
@@ -1444,6 +1450,7 @@ namespace pv
             _capture_data->get_logic()->capture_ended();
             _capture_data->get_dso()->capture_ended();
             _capture_data->get_analog()->capture_ended();
+            _is_task_end = true;
 
             if (packet->status != SR_PKT_OK)
             {
