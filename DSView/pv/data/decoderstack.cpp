@@ -560,6 +560,11 @@ void DecoderStack::decode_data(const uint64_t decode_start, const uint64_t decod
 
                 uint64_t align_sample_count = _snapshot->get_ring_sample_count();
 
+                if (align_sample_count == 0){
+                    dsv_info("Have no data to decode.");
+                    return;
+                }
+
                 if (end_index >= align_sample_count){
                     end_index = align_sample_count - 1;
                     dsv_info("Reset the decode end sample, new:%llu, old:%llu", 

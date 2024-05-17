@@ -1688,7 +1688,15 @@ namespace pv
     {
         auto trace = get_decoder_trace(index);
 
-        if (trace && trace->create_popup(false))
+        if (trace == NULL){
+            return;
+        }
+
+        if (!trace->create_popup(false)){
+            return;
+        }
+
+        if (have_view_data() && !is_working())
         {
             remove_decode_task(trace); // remove old task
             trace->decoder()->clear();
@@ -1868,8 +1876,7 @@ namespace pv
         std::lock_guard<std::mutex> lock(_decode_task_mutex);
         _decode_tasks.push_back(trace);
 
-        if (!_is_decoding)
-        {
+        if (!_is_decoding){
             if (_decode_thread.joinable())
                 _decode_thread.join();
 
