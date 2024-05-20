@@ -231,7 +231,7 @@ class Decoder(srd.Decoder):
 
     def handle_cmd24(self):
         # CMD24: WRITE_BLOCK
-        self.putc(Ann.CMD24, 'Write a block to address {$}', self.arg))
+        self.putc(Ann.CMD24, 'Write a block to address {$}', self.arg)
         self.is_cmd24 = True
         self.state = 'GET RESPONSE R1'
 
