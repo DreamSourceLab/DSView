@@ -124,8 +124,11 @@ public:
 
     bool has_data(int sig_index);
     int get_block_num();
+    int get_block_num_unlock();
     uint64_t get_block_size(int block_index);
+    uint64_t get_block_size_unlock(int block_index);
     uint8_t *get_block_buf(int block_index, int sig_index, bool &sample);
+    uint8_t *get_block_buf_unlock(int block_index, int sig_index, bool &sample);
  
     bool pattern_search(int64_t start, int64_t end, int64_t& index,
                         std::map<uint16_t, QString> &pattern, bool isNext);

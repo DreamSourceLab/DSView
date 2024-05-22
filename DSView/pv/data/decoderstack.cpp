@@ -521,12 +521,10 @@ void DecoderStack::decode_data(const uint64_t decode_start, const uint64_t decod
 
     assert(logic_di);
 
-    uint64_t entry_cnt = 0;
     uint64_t i = decode_start;
     char *error = NULL; 
     bool bError = false;
     bool bEndTime = false;
-    //struct srd_push_param push_param;
 
     if( i >= decode_end){
         dsv_info("decode data index have been to end");
@@ -534,12 +532,11 @@ void DecoderStack::decode_data(const uint64_t decode_start, const uint64_t decod
 
     std::vector<const uint8_t *> chunk;
     std::vector<uint8_t> chunk_const;
-
     bool bCheckEnd = false;
     uint64_t end_index = decode_end;
+    uint64_t decoded_sample_count = 0;
 
     _progress = 0;
-    uint64_t sended_len  = 0;
     _is_decoding = true;
 
     void* lbp_array[35];
@@ -547,8 +544,8 @@ void DecoderStack::decode_data(const uint64_t decode_start, const uint64_t decod
     for (int j =0 ; j < logic_di->dec_num_channels; j++){
         lbp_array[j] = NULL;
     }
-  
-    while(i < end_index && !_no_memory && !status->_bStop)
+
+    while(i <= end_index && !_no_memory && !status->_bStop)
     {
         chunk.clear();
         chunk_const.clear();
@@ -567,7 +564,7 @@ void DecoderStack::decode_data(const uint64_t decode_start, const uint64_t decod
 
                 if (end_index >= align_sample_count){
                     end_index = align_sample_count - 1;
-                    dsv_info("Reset the decode end sample, new:%llu, old:%llu", 
+                    dsv_info("Reset the decode end sample index, new:%llu, old:%llu", 
                         (u64_t)end_index, (u64_t)decode_end);
                 }
 
@@ -580,14 +577,10 @@ void DecoderStack::decode_data(const uint64_t decode_start, const uint64_t decod
         else if (i >= _snapshot->get_ring_sample_count())
         {   
             // Wait the data is ready.
-            std::this_thread::sleep_for(std::chrono::milliseconds(100));
+            std::this_thread::sleep_for(std::chrono::milliseconds(200));
             continue;
         }
-
-        if (_is_capture_end && i == _snapshot->get_ring_sample_count()){
-            break;
-        }
-
+ 
         uint64_t chunk_end = end_index;
 
         for (int j =0 ; j < logic_di->dec_num_channels; j++) {
@@ -601,8 +594,9 @@ void DecoderStack::decode_data(const uint64_t decode_start, const uint64_t decod
             else {
                 if (_snapshot->has_data(sig_index)) {
                     const uint8_t *data_ptr = _snapshot->get_samples(i, chunk_end, sig_index, &lbp);
+                    bool flag = _snapshot->get_sample(i, sig_index);
                     chunk.push_back(data_ptr);
-                    chunk_const.push_back(_snapshot->get_sample(i, sig_index));
+                    chunk_const.push_back(flag);
 
                     if (_snapshot->is_able_free() == false)
                     {
@@ -621,12 +615,18 @@ void DecoderStack::decode_data(const uint64_t decode_start, const uint64_t decod
             }
         }
 
-        if (chunk_end > end_index)
-            chunk_end = end_index;
+        if (i > end_index){
+            bEndTime = true;
+            dsv_info("Decoding data to end.");
+            break;
+        }
+
+        if (chunk_end >= end_index)
+            chunk_end = end_index + 1;
         if (chunk_end - i > MaxChunkSize)
             chunk_end = i + MaxChunkSize;
 
-        bEndTime = (chunk_end == end_index);
+        bEndTime = (chunk_end > end_index);
 
         if (srd_session_send(
                 session,
@@ -639,7 +639,7 @@ void DecoderStack::decode_data(const uint64_t decode_start, const uint64_t decod
 
             if (error){
                 _error_message = QString::fromLocal8Bit(error);
-                dsv_err("Failed to call srd_session_send:%s", error);
+                dsv_err("ERROR: Failed to call srd_session_send:%s", error);
                 g_free(error);
                 error = NULL;
             }
@@ -648,11 +648,10 @@ void DecoderStack::decode_data(const uint64_t decode_start, const uint64_t decod
             break;
         }
 
-        sended_len += chunk_end - i; 
-        _progress = (int)(sended_len * 100 / end_index);
-
-        i = chunk_end;       
-
+        decoded_sample_count += chunk_end - i; 
+        _progress = (int)(decoded_sample_count * 100 / end_index);
+        i = chunk_end;   
+ 
         //use mutex
         {
             std::lock_guard<std::mutex> lock(_output_mutex);
@@ -663,8 +662,6 @@ void DecoderStack::decode_data(const uint64_t decode_start, const uint64_t decod
             last_cnt = i;
             new_decode_data();
         }
-
-        entry_cnt++;
     }
 
     _progress = 100;
@@ -681,14 +678,16 @@ void DecoderStack::decode_data(const uint64_t decode_start, const uint64_t decod
             dsv_err("Failed to call srd_session_end:%s", error);
         }
     }
- 
-    dsv_info("%s%llu", "send to decoder times: ", (u64_t)entry_cnt);
 
-    if (error != NULL)
+    if (error != NULL){
         g_free(error);
+    }
   
-    if (!_session->is_closed())
+    if (!_session->is_closed()){
         decode_done();
+    }
+
+    dsv_info("Decoded sample count:%llu", decoded_sample_count);
 }
 
 void DecoderStack::execute_decode_stack()
@@ -738,7 +737,7 @@ void DecoderStack::execute_decode_stack()
             decode_end = max(dec->decode_end(), decode_end);
 	}
 
-    dsv_info("decoder start sample:%llu, end sample:%llu, count:%llu", 
+    dsv_info("Decode start sample index:%llu, end sample index:%llu, count:%llu", 
             (u64_t)decode_start, (u64_t)decode_end, (u64_t)(decode_end - decode_start + 1));
 
 	// Start the session

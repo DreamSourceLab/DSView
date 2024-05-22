@@ -600,45 +600,70 @@ void LogicSnapshot::calc_mipmap(unsigned int order, uint8_t index0, uint8_t inde
 } 
 
 const uint8_t *LogicSnapshot::get_samples(uint64_t start_sample, uint64_t &end_sample, int sig_index, void **lbp)
-{ 
+{  
     std::lock_guard<std::mutex> lock(_mutex);
 
     uint64_t sample_count = _ring_sample_count;
-
     assert(start_sample < sample_count);
 
-    if (end_sample >= sample_count)
-        end_sample = sample_count - 1;
-
-    assert(end_sample <= sample_count);
-    assert(start_sample <= end_sample);
-
-    start_sample += _loop_offset;
-    _ring_sample_count += _loop_offset;
+    uint64_t logic_sample_index = start_sample + _loop_offset;
 
     int order = get_ch_order(sig_index);
-    uint64_t index0 = start_sample >> (LeafBlockPower + RootScalePower);
-    uint64_t index1 = (start_sample & RootMask) >> LeafBlockPower;
-    uint64_t offset = (start_sample & LeafMask) / 8;
+   // uint64_t index0 =  logic_sample_index >> (LeafBlockPower + RootScalePower);
+   // uint64_t index1 = (logic_sample_index & RootMask) >> LeafBlockPower;
+   // uint64_t offset = (start_sample & LeafMask) / 8;
 
-    end_sample = (index0 << (LeafBlockPower + RootScalePower)) +
+    uint64_t index0 = logic_sample_index / LeafBlockSamples / RootScale;
+    uint64_t index1 = (logic_sample_index / LeafBlockSamples) % RootScale;
+    uint64_t offset = (start_sample % LeafBlockSamples) / 8;
+
+    uint8_t *block_buffer = (uint8_t*)_ch_data[order][index0].lbp[index1];
+
+     int block_num = get_block_num_unlock();
+
+    if (_is_loop && _loop_offset > 0)
+    { 
+        uint64_t block0_sample = get_block_size_unlock(0) * 8;
+        bool flag = false;
+
+        if (start_sample < block0_sample){            
+            block_buffer = get_block_buf_unlock(0, sig_index, flag);
+            end_sample = block0_sample;
+            offset = start_sample / 8;
+        }
+        else{
+            uint64_t last_block_sample = get_block_size_unlock(block_num - 1) * 8;
+            offset = ((start_sample - block0_sample) % LeafBlockSamples) / 8;
+
+            if (start_sample >= sample_count - last_block_sample){
+                end_sample = sample_count;               
+            }
+            else{
+                int mid_block_num = (start_sample - block0_sample) / LeafBlockSamples + 1;
+                end_sample = mid_block_num * LeafBlockSamples + block0_sample;
+            }
+        }
+    }
+    else{
+        end_sample = (index0 << (LeafBlockPower + RootScalePower)) +
                  (index1 << LeafBlockPower) +
                  ~(~0ULL << LeafBlockPower);
 
-    end_sample = min(end_sample + 1, sample_count);
+        end_sample = min(end_sample + 1, sample_count);
+    }
 
-    _ring_sample_count -= _loop_offset;
-
-    if (order == -1 || _ch_data[order][index0].lbp[index1] == NULL)
+    if (order == -1 || block_buffer == NULL){
         return NULL;
+    }
     else{
-        if (lbp != NULL)
+        if (lbp != NULL){
             *lbp = _ch_data[order][index0].lbp[index1];
+        }
 
         _cur_ref_block_indexs[order].root_index = index0;
         _cur_ref_block_indexs[order].lbp_index  = index1;
         
-        return (uint8_t*)_ch_data[order][index0].lbp[index1] + offset;
+        return block_buffer + offset;
     }
 }
 
@@ -1361,8 +1386,14 @@ bool LogicSnapshot::has_data(int sig_index)
 }
 
 int LogicSnapshot::get_block_num()
+{
+    std::lock_guard<std::mutex> lock(_mutex);
+    return get_block_num_unlock();
+}
+
+int LogicSnapshot::get_block_num_unlock()
 {  
-    auto align_sample_count = get_ring_sample_count();
+    auto align_sample_count = _ring_sample_count;
     int block = align_sample_count / LeafBlockSamples;
 
     if (align_sample_count % LeafBlockSamples != 0){
@@ -1375,7 +1406,7 @@ int LogicSnapshot::get_block_num()
 
         if ((diff1 == 0 && diff2 != 0) ||
                 (diff1 != 0 && diff1 + diff2 > LeafBlockSamples)){
-            block++;   
+            block++;
         }
     }
 
@@ -1384,10 +1415,16 @@ int LogicSnapshot::get_block_num()
 
 uint64_t LogicSnapshot::get_block_size(int block_index)
 {
-    int block_num = get_block_num();
+    std::lock_guard<std::mutex> lock(_mutex);
+    return get_block_size_unlock(block_index);
+}
+
+uint64_t LogicSnapshot::get_block_size_unlock(int block_index)
+{
+    int block_num = get_block_num_unlock();
     assert(block_index < block_num);
 
-    auto align_sample_count = get_ring_sample_count();
+    auto align_sample_count = _ring_sample_count;
 
     if (_loop_offset > 0)
     {
@@ -1426,7 +1463,13 @@ uint64_t LogicSnapshot::get_block_size(int block_index)
 
 uint8_t *LogicSnapshot::get_block_buf(int block_index, int sig_index, bool &sample)
 {
-    int block_num = get_block_num();
+    std::lock_guard<std::mutex> lock(_mutex);
+    return get_block_buf_unlock(block_index, sig_index, sample);
+}
+
+uint8_t *LogicSnapshot::get_block_buf_unlock(int block_index, int sig_index, bool &sample)
+{
+    int block_num = get_block_num_unlock();
     assert(block_index < block_num);
 
     int order = get_ch_order(sig_index);
