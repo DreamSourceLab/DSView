@@ -221,9 +221,6 @@ void StoreSession::save_logic(pv::data::LogicSnapshot *logic_snapshot)
 {
     char chunk_name[20] = {0};
     uint16_t to_save_probes = 0;
-    bool sample;
-    int ret = SR_ERR;
-    int num;
 
     for(auto s : _session->get_signals()) {
         if (s->enabled() && logic_snapshot->has_data(s->get_index()))
@@ -231,7 +228,7 @@ void StoreSession::save_logic(pv::data::LogicSnapshot *logic_snapshot)
     }
 
     _unit_count = logic_snapshot->get_ring_sample_count() / 8 * to_save_probes;
-    num = logic_snapshot->get_block_num();
+    int block_count = logic_snapshot->get_block_num();
 
     uint64_t start_index = _start_index;
     uint64_t end_index = _end_index;
@@ -252,7 +249,7 @@ void StoreSession::save_logic(pv::data::LogicSnapshot *logic_snapshot)
 
     if (start_index > 0){
         start_index -= start_index % 64;         
-        start_block = LogicSnapshot::get_block_with_sample(start_index, &start_offset);
+        start_block = logic_snapshot->get_block_index_with_sample(start_index, &start_offset);
     }
     if (end_index > 0){
         if (end_index % 64 != 0){
@@ -263,7 +260,7 @@ void StoreSession::save_logic(pv::data::LogicSnapshot *logic_snapshot)
             end_index = 0;
         }
         else{
-            end_block = LogicSnapshot::get_block_with_sample(end_index, &end_offset);
+            end_block = logic_snapshot->get_block_index_with_sample(end_index, &end_offset);
         }
     }
 
@@ -278,81 +275,93 @@ void StoreSession::save_logic(pv::data::LogicSnapshot *logic_snapshot)
     }
 
     for(auto s : _session->get_signals()) 
-    {
+    { 
         int ch_type = s->get_type();
-        if (ch_type == SR_CHANNEL_LOGIC) {
-            int ch_index = s->get_index();
-            if (!s->enabled() || !logic_snapshot->has_data(ch_index))
-                continue;
-
-            for (int i = 0; !_canceled && i < num; i++) 
-            {
-                if (i < start_block){
-                    continue;
-                }
-                if (i > end_block && end_block > 0){
-                    break;
-                }
-
-                uint8_t *buf = logic_snapshot->get_block_buf(i, ch_index, sample);
-                uint64_t size = logic_snapshot->get_block_size(i);
-                bool need_malloc = (buf == NULL);
-
-                if (i == end_block && end_offset / 8 < size && end_offset > 0){
-                    size = end_offset / 8;
-                }
-
-                if (i == start_block && start_offset > 0){
-                    if (buf != NULL){
-                        buf += start_offset / 8;
-                    }
-                    size -= start_offset / 8;
-                }
-                
-                if (need_malloc) {
-                    buf = (uint8_t *)malloc(size);
-                    if (buf == NULL) {
-                        _has_error = true;
-                        _error = L_S(STR_PAGE_DLG, S_ID(IDS_MSG_STORESESS_SAVEPROC_ERROR1), 
-                                    "Failed to create zip file. Malloc error.");
-                    } else {
-                        memset(buf, sample ? 0xff : 0x0, size);
-                    }
-                }
-                
-                MakeChunkName(chunk_name, i - start_block, ch_index, ch_type, HEADER_FORMAT_VERSION);
-                ret = m_zipDoc.AddFromBuffer(chunk_name, (const char*)buf, size) ? SR_OK : -1;
-
-                if (ret != SR_OK) {
-                    if (!_has_error) {
-                        _has_error = true;
-                        _error = L_S(STR_PAGE_DLG, S_ID(IDS_MSG_STORESESS_SAVEPROC_ERROR2), 
-                                    "Failed to create zip file. Please check write permission of this path.");
-                    }
-                    progress_updated();
-                    if (_has_error)
-                        QFile::remove(_file_name);
-                    return;
-                }
-                _units_stored += size;
-
-                if (_units_stored > _unit_count 
-                        && start_index == 0
-                        && end_index == 0){
-                    dsv_err("Read block data error!");
-                    assert(false);
-                }
-
-                if (need_malloc)
-                    free(buf);
-                progress_updated();
-            }
+        if (ch_type != SR_CHANNEL_LOGIC){
+            continue;
         }
+
+        int ch_index = s->get_index();
+        if (!s->enabled() || !logic_snapshot->has_data(ch_index)){
+            continue;
+        }
+
+        for (int i = 0; !_canceled && i < block_count; i++) 
+        {
+            if (i < start_block){
+                continue;
+            }
+            if (i > end_block && end_block > 0){
+                break;
+            }
+
+            bool flag = false;
+            uint8_t *block_buf = logic_snapshot->get_block_buf(i, ch_index, flag);
+            uint64_t block_size = logic_snapshot->get_block_size(i);
+            bool need_malloc = (block_buf == NULL);
+
+            if (i == end_block && end_offset / 8 < block_size && end_offset > 0){
+                block_size = end_offset / 8;
+            }
+
+            if (i == start_block && start_offset > 0){
+                if (block_buf != NULL){
+                    block_buf += start_offset / 8;
+                }
+                block_size -= start_offset / 8;
+            }
+                
+            if (need_malloc) {
+                block_buf = (uint8_t *)malloc(block_size);
+                if (block_buf == NULL) {
+                    _has_error = true;
+                    _error = L_S(STR_PAGE_DLG, S_ID(IDS_MSG_STORESESS_SAVEPROC_ERROR1), 
+                                "Failed to create zip file. Malloc error.");
+                }
+                else {
+                    memset(block_buf, flag ? 0xff : 0x0, block_size);
+                }
+            }
+            
+            MakeChunkName(chunk_name, i - start_block, ch_index, ch_type, HEADER_FORMAT_VERSION);
+            int ret = m_zipDoc.AddFromBuffer(chunk_name, (const char*)block_buf, block_size) ? SR_OK : -1;
+
+            if (ret != SR_OK) {
+                if (!_has_error) {
+                    _has_error = true;
+                    _error = L_S(STR_PAGE_DLG, S_ID(IDS_MSG_STORESESS_SAVEPROC_ERROR2), 
+                                "Failed to create zip file. Please check write permission of this path.");
+                }
+                progress_updated();
+
+                if (_has_error){
+                    QFile::remove(_file_name);
+                }
+                if (need_malloc){
+                    free(block_buf);
+                }
+
+                return;
+            }
+            _units_stored += block_size;
+
+            if (_units_stored > _unit_count 
+                    && start_index == 0
+                    && end_index == 0){
+                dsv_err("Read block data error!");
+                assert(false);
+            }
+
+            if (need_malloc){
+                free(block_buf);
+            }
+            progress_updated();
+        }        
     }
 
     progress_updated();
 
-    if (_canceled || num == 0){
+    if (_canceled || block_count == 0){
         QFile::remove(_file_name);
     }
     else {
@@ -580,8 +589,6 @@ bool StoreSession::meta_gen(data::Snapshot *snapshot, std::string &str)
 
         uint64_t start_index = _start_index;
         uint64_t end_index = _end_index;
-        uint64_t start_offset = 0;
-        uint64_t end_offset = 0;
         int start_block = 0;
         int end_block = 0;
 
@@ -589,10 +596,10 @@ bool StoreSession::meta_gen(data::Snapshot *snapshot, std::string &str)
             end_index = 0;
         }
         if (start_index > 0){
-            start_block = LogicSnapshot::get_block_with_sample(start_index, &start_offset);
+            start_block = logic_snapshot->get_block_index_with_sample(start_index, NULL);
         }
         if (end_index > 0){
-            end_block = LogicSnapshot::get_block_with_sample(end_index, &end_offset);
+            end_block = logic_snapshot->get_block_index_with_sample(end_index, NULL);
         }
 
         if (start_index > 0 && end_index > 0){
@@ -986,8 +993,6 @@ void StoreSession::export_exec(data::Snapshot *snapshot)
 
         uint64_t start_index = _start_index;
         uint64_t end_index = _end_index;
-        uint64_t start_offset = 0;
-        uint64_t end_offset = 0;
         int start_block = 0;
         int end_block = 0;
 
@@ -1002,10 +1007,10 @@ void StoreSession::export_exec(data::Snapshot *snapshot)
         }
 
         if (start_index > 0){
-            start_block = LogicSnapshot::get_block_with_sample(start_index, &start_offset);
+            start_block = logic_snapshot->get_block_index_with_sample(start_index, NULL);
         }
         if (end_index > 0){
-            end_block = LogicSnapshot::get_block_with_sample(end_index, &end_offset);
+            end_block = logic_snapshot->get_block_index_with_sample(end_index, NULL);
         }
 
         if (start_index > 0 && end_index > 0){

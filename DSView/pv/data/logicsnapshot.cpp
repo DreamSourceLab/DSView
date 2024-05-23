@@ -1581,13 +1581,35 @@ void LogicSnapshot::free_head_blocks(int count)
     _lst_free_block_index = count;
 }
 
-int LogicSnapshot::get_block_with_sample(uint64_t index, uint64_t *out_offset)
+int LogicSnapshot::get_block_index_with_sample(uint64_t sample_index, uint64_t *out_offset)
 {
-    assert(out_offset);
+    std::lock_guard<std::mutex> lock(_mutex);
 
-    int block =  index / LeafBlockSamples;
-    *out_offset = index % LeafBlockSamples;
-    return block;
+    int block_index = 0;
+    uint64_t offset = 0;
+
+    if (_is_loop && _loop_offset > 0){ 
+        uint64_t block_sample0 = get_block_size_unlock(0) * 8;
+
+        if (sample_index < block_sample0){
+            block_index = 0;
+            offset = sample_index;
+        }
+        else{
+            block_index = (sample_index - block_sample0) / LeafBlockSamples + 1;
+            offset = (sample_index - block_sample0) % LeafBlockSamples;            
+        }
+    }
+    else{
+        block_index = sample_index / LeafBlockSamples;
+        offset = sample_index % LeafBlockSamples;
+    }
+
+    if (out_offset != NULL){
+        *out_offset = offset;
+    }
+
+    return block_index;
 }
 
 } // namespace data

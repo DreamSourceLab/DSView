@@ -124,12 +124,9 @@ public:
 
     bool has_data(int sig_index);
     int get_block_num();
-    int get_block_num_unlock();
+    uint8_t *get_block_buf(int block_index, int sig_index, bool &sample);   
     uint64_t get_block_size(int block_index);
-    uint64_t get_block_size_unlock(int block_index);
-    uint8_t *get_block_buf(int block_index, int sig_index, bool &sample);
-    uint8_t *get_block_buf_unlock(int block_index, int sig_index, bool &sample);
- 
+    
     bool pattern_search(int64_t start, int64_t end, int64_t& index,
                         std::map<uint16_t, QString> &pattern, bool isNext);
 
@@ -153,9 +150,12 @@ public:
         return _loop_offset;
     }
 
-    static int get_block_with_sample(uint64_t index, uint64_t *out_offset);
+    int get_block_index_with_sample(uint64_t sample_index, uint64_t *out_offset);
 
 private:
+    int get_block_num_unlock();
+    uint64_t get_block_size_unlock(int block_index);
+    uint8_t *get_block_buf_unlock(int block_index, int sig_index, bool &sample);
     bool get_sample_unlock(uint64_t index, int sig_index);
     bool get_sample_self(uint64_t index, int sig_index);
 
