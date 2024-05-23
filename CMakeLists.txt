@@ -668,6 +668,8 @@ install(FILES DSView/icons/logo.svg DESTINATION share/pixmaps RENAME dsview.svg)
 if(CMAKE_SYSTEM_NAME MATCHES "Linux")	
 	install(FILES DSView/DSView.desktop DESTINATION /usr/share/applications RENAME dsview.desktop)
 	
+	add_compile_definitions(_DEFAULT_SOURCE)
+
 	if(IS_DIRECTORY /usr/lib/udev/rules.d)
 		install(FILES DSView/DreamSourceLab.rules DESTINATION /usr/lib/udev/rules.d RENAME 60-dreamsourcelab.rules)
 	elseif(IS_DIRECTORY /lib/udev/rules.d)

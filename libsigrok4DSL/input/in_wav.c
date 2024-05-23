@@ -24,6 +24,7 @@
 #include <unistd.h>
 #include <fcntl.h>
 #include <string.h>
+#include <strings.h>
 #include "../log.h"
 #include <stdlib.h>
 
