@@ -287,24 +287,17 @@ SR_PRIV void sr_serial_dev_inst_free(struct sr_serial_dev_inst *serial);
 typedef int (*sr_receive_data_callback_t)(int fd, int revents, const struct sr_dev_inst *sdi);
 
 SR_PRIV void sr_hw_cleanup_all(void);
-SR_PRIV int sr_source_remove(int fd);
-SR_PRIV int sr_source_add(int fd, int events, int timeout,
-        sr_receive_data_callback_t cb, void *cb_data);
 
 /*--- session.c -------------------------------------------------------------*/
  
 SR_PRIV int usb_hotplug_callback(struct libusb_context *ctx, struct libusb_device *dev,
                                   libusb_hotplug_event event, void *user_data);
 
-SR_PRIV int sr_session_source_add(int fd, int events, int timeout,
-		sr_receive_data_callback_t cb, const struct sr_dev_inst *sdi);
-SR_PRIV int sr_session_source_add_pollfd(GPollFD *pollfd, int timeout,
-		sr_receive_data_callback_t cb, const struct sr_dev_inst *sdi);
-SR_PRIV int sr_session_source_add_channel(GIOChannel *channel, int events,
-		int timeout, sr_receive_data_callback_t cb, const struct sr_dev_inst *sdi);
-SR_PRIV int sr_session_source_remove(int fd);
-SR_PRIV int sr_session_source_remove_pollfd(GPollFD *pollfd);
-SR_PRIV int sr_session_source_remove_channel(GIOChannel *channel); 
+SR_PRIV int sr_session_source_add(gintptr poll_object, int events,
+                                  int timeout,
+                                  sr_receive_data_callback_t cb,
+                                  const struct sr_dev_inst *sdi);
+SR_PRIV int sr_session_source_remove(gintptr poll_object);
 
 /*--- std.c -----------------------------------------------------------------*/
 
@@ -312,9 +305,6 @@ typedef int (*dev_close_t)(struct sr_dev_inst *sdi);
 
 SR_PRIV int std_hw_init(struct sr_context *sr_ctx, struct sr_dev_driver *di,
 		const char *prefix);
-SR_PRIV int std_hw_dev_acquisition_stop_serial(struct sr_dev_inst *sdi,
-		void *cb_data, dev_close_t hw_dev_close_fn,
-		struct sr_serial_dev_inst *serial, const char *prefix);
 SR_PRIV int std_session_send_df_header(const struct sr_dev_inst *sdi,
 		const char *prefix);
 

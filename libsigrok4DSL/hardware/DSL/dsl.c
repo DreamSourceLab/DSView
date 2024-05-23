@@ -1955,6 +1955,20 @@ SR_PRIV int dsl_dev_open(struct sr_dev_driver *di, struct sr_dev_inst *sdi, gboo
         return SR_ERR;
     }
 
+    if (sdi->status == SR_ST_ACTIVE) {
+        ret = _pipe(devc->pipe_fds,0x1000,0x8000);
+        if (ret != SR_OK) {
+            sr_err("%s: pipe() failed", __func__);
+            return SR_ERR;
+        }
+        GIOChannel *new_channel;
+        new_channel = g_io_channel_unix_new(devc->pipe_fds[0]);
+        devc->channel = new_channel;
+        g_io_channel_set_flags(new_channel, 2, NULL);
+        g_io_channel_set_encoding(devc->channel,NULL,NULL);
+        g_io_channel_set_buffered(devc->channel,FALSE);
+    }
+
     if (devc->profile->dev_caps.feature_caps & CAPS_FEATURE_SECURITY) {
         ret = dsl_secuCheck(sdi, encryption, SECU_STEPS);
         if (ret != SR_OK){
