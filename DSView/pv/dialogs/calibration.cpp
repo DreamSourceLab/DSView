@@ -59,7 +59,7 @@ Calibration::Calibration(QWidget *parent) :
     _reset_btn = NULL;
     _exit_btn = NULL;
     _flayout = NULL;
-
+    _is_setting = false;
 
 #ifdef Q_OS_DARWIN
     Qt::WindowFlags flags = windowFlags();
@@ -98,6 +98,8 @@ Calibration::Calibration(QWidget *parent) :
 
     layout()->addLayout(glayout);
 
+    BuildUI();
+
     connect(_save_btn, SIGNAL(clicked()), this, SLOT(on_save()));
     connect(_abort_btn, SIGNAL(clicked()), this, SLOT(on_abort()));
     connect(_reset_btn, SIGNAL(clicked()), this, SLOT(on_reset()));
@@ -127,27 +129,12 @@ void Calibration::retranslateUi()
     setTitle(L_S(STR_PAGE_DLG, S_ID(IDS_DLG_MANUAL_CALIBRATION), "Manual Calibration"));
 }
 
-void Calibration::update_device_info()
-{ 
+void Calibration::BuildUI()
+{
     if (_device_agent->have_instance() == false){
         assert(false);
     }
-
-    for(std::list<QSlider *>::const_iterator i = _slider_list.begin();
-        i != _slider_list.end(); i++) {
-        (*i)->setParent(NULL);
-        _flayout->removeWidget((*i));
-        delete (*i);
-    }
-
-    _slider_list.clear();
-    for(std::list<QLabel *>::const_iterator i = _label_list.begin();
-        i != _label_list.end(); i++) {
-        (*i)->setParent(NULL);
-        _flayout->removeWidget((*i));
-        delete (*i);
-    }
-    _label_list.clear();
+    assert(_params.empty());
 
     _flayout->setSpacing(15);
 
@@ -155,26 +142,80 @@ void Calibration::update_device_info()
         sr_channel *const probe = (sr_channel*)l->data;
         assert(probe);
 
+        QSlider *gain_slider = new QSlider(Qt::Horizontal, this);
+        QLabel *gain_label = new QLabel("gain", this);
+        gain_label->setAlignment(Qt::AlignVCenter);   
+        _flayout->addRow(gain_label, gain_slider);
+ 
+        QSlider *off_slider = new QSlider(Qt::Horizontal, this);
+        QLabel *off_label = new QLabel("off", this);
+        off_label->setAlignment(Qt::AlignVCenter);   
+        _flayout->addRow(off_label, off_slider);
+
+        QSlider *comp_slider = NULL;
+        QLabel *comp_label = NULL;
+
+         bool comb_comp_en = false;
+        _device_agent->get_config_bool(SR_CONF_PROBE_COMB_COMP_EN, comb_comp_en);
+
+        if (comb_comp_en){
+            comp_slider = new QSlider(Qt::Horizontal, this);
+            comp_label = new QLabel("comp", this);
+            comp_label->setAlignment(Qt::AlignVCenter);
+            _flayout->addRow(comp_label, comp_slider);            
+        } 
+
+        channel_param_widget form;
+        form.gain.lable = gain_label;
+        form.gain.slider = gain_slider;
+        form.off.lable = off_label;
+        form.off.slider = off_slider;
+        form.comp.lable = comp_label;
+        form.comp.slider = comp_slider;
+        form.probe = probe;
+
+        _params.push_back(form);
+ 
+        connect(gain_slider, SIGNAL(valueChanged(int)), this, SLOT(set_value(int)));
+        connect(off_slider, SIGNAL(valueChanged(int)), this, SLOT(set_value(int))); 
+
+        if (comp_slider != NULL){
+            connect(comp_slider, SIGNAL(valueChanged(int)), this, SLOT(set_value(int)));
+        }
+    }
+
+    QWidget *spaceLine = new QWidget();
+    spaceLine->setFixedHeight(10);
+    _flayout->addRow(spaceLine);
+}
+
+void Calibration::update_device_info()
+{ 
+    if (_device_agent->have_instance() == false){
+        assert(false);
+    }
+
+    int dex = -1;
+    _is_setting = true;
+ 
+    for (const GSList *l = _device_agent->get_channels(); l; l = l->next) {
+        sr_channel *const probe = (sr_channel*)l->data;
+        dex++;
+        assert(dex < _params.size());
+        auto *form = &_params[dex];
+
+        assert(form->probe == probe);
+
         uint64_t vgain = 0, vgain_default = 0;
         int vgain_range = 0;
         
         _device_agent->get_config_uint64(SR_CONF_PROBE_VGAIN, vgain, probe, NULL);
         _device_agent->get_config_uint64(SR_CONF_PROBE_VGAIN_DEFAULT, vgain_default, probe, NULL);   
         _device_agent->get_config_uint16(SR_CONF_PROBE_VGAIN_RANGE, vgain_range, probe, NULL);
-
-        QSlider *gain_slider = new QSlider(Qt::Horizontal, this);
-        gain_slider->setRange(-vgain_range/2, vgain_range/2);
-        gain_slider->setValue(vgain - vgain_default);
-        gain_slider->setObjectName(VGAIN+probe->index);
-        QString gain_string = CHANNEL_LABEL + QString::number(probe->index) + VGAIN;
-        QLabel *gain_label = new QLabel(gain_string, this);
-        ui::adjust_label_size(gain_label, ui::ADJUST_HEIGHT);
-        gain_slider->setFixedHeight(gain_label->size().height());
-        gain_label->setAlignment(Qt::AlignVCenter);        
-        _flayout->addRow(gain_label, gain_slider);
-        _slider_list.push_back(gain_slider);
-        _label_list.push_back(gain_label);
-
+    
+        form->gain.slider->setRange(-vgain_range/2, vgain_range/2);
+        form->gain.slider->setValue(vgain - vgain_default);
+         
         uint64_t voff = 0;
         uint16_t voff_range = 0;
         int v;
@@ -185,51 +226,22 @@ void Calibration::update_device_info()
         if (_device_agent->get_config_uint16(SR_CONF_PROBE_PREOFF_MARGIN, v, probe, NULL)) {
             voff_range = (uint16_t)v;
         }
-
-        QSlider *off_slider = new QSlider(Qt::Horizontal, this);
-        off_slider->setRange(0, voff_range);
-        off_slider->setValue(voff);
-        off_slider->setObjectName(VOFF+probe->index);
-        QString off_string = CHANNEL_LABEL + QString::number(probe->index) + VOFF;
-        QLabel *off_label = new QLabel(off_string, this);
-        ui::adjust_label_size(off_label, ui::ADJUST_HEIGHT);
-        off_slider->setFixedHeight(off_label->size().height());
-        off_label->setAlignment(Qt::AlignVCenter);    
-        _flayout->addRow(off_label, off_slider);
-        _slider_list.push_back(off_slider);
-        _label_list.push_back(off_label);
-
-        bool comb_comp_en = false;
-        _device_agent->get_config_bool(SR_CONF_PROBE_COMB_COMP_EN, comb_comp_en);
-
-        if (comb_comp_en) {
+ 
+        form->off.slider->setRange(0, voff_range);
+        form->off.slider->setValue(voff);
+         
+        if (form->comp.slider != NULL) {
             int comb_comp = 0;
            _device_agent->get_config_int16(SR_CONF_PROBE_COMB_COMP, comb_comp, probe, NULL);
 
-            QSlider *comp_slider = new QSlider(Qt::Horizontal, this);
-            comp_slider->setRange(-127, 127);
-            comp_slider->setValue(comb_comp);
-            comp_slider->setObjectName(VCOMB+probe->index);
-            QString comp_string = CHANNEL_LABEL + QString::number(probe->index) + VCOMB;
-            QLabel *comp_label = new QLabel(comp_string, this);
-            ui::adjust_label_size(comp_label, ui::ADJUST_HEIGHT);
-            comp_slider->setFixedHeight(comp_label->size().height());
-            comp_label->setAlignment(Qt::AlignVCenter); 
-            _flayout->addRow(comp_label, comp_slider);
-            _slider_list.push_back(comp_slider);
-            _label_list.push_back(comp_label);
-            connect(comp_slider, SIGNAL(valueChanged(int)), this, SLOT(set_value(int)));
-        }
-
-        connect(gain_slider, SIGNAL(valueChanged(int)), this, SLOT(set_value(int)));
-        connect(off_slider, SIGNAL(valueChanged(int)), this, SLOT(set_value(int)));
+            form->comp.slider->setRange(-127, 127);
+            form->comp.slider->setValue(comb_comp);
+        } 
     }
-
-    QWidget *spaceLine = new QWidget();
-    spaceLine->setFixedHeight(10);
-    _flayout->addRow(spaceLine);
-
+ 
     update();
+
+    _is_setting = false;
 }
 
 void Calibration::reject()
@@ -251,26 +263,26 @@ void Calibration::keyPressEvent(QKeyEvent *event)
 
 void Calibration::set_value(int value)
 {
-    QSlider* sc = dynamic_cast<QSlider *>(sender());
+    if (_is_setting){
+        return;
+    }
 
-    for (const GSList *l = _device_agent->get_channels(); l; l = l->next) {
-        sr_channel *const probe = (sr_channel*)l->data;
-        assert(probe);
-        if (sc->objectName() == VGAIN+probe->index) {
+    const QSlider* sc = dynamic_cast<QSlider *>(sender());
+
+    for (auto &form : _params)
+    {
+        if (form.gain.slider == sc){
             uint64_t vgain_default;
-            if (_device_agent->get_config_uint64(SR_CONF_PROBE_VGAIN_DEFAULT, vgain_default, probe))
-            {
-                _device_agent->set_config_uint64(SR_CONF_PROBE_VGAIN, value+vgain_default, probe);          
+            if (_device_agent->get_config_uint64(SR_CONF_PROBE_VGAIN_DEFAULT, vgain_default, form.probe)){
+                _device_agent->set_config_uint64(SR_CONF_PROBE_VGAIN, value+vgain_default, form.probe);          
             }
-            break;
         }
-        else if (sc->objectName() == VOFF+probe->index) {
-           _device_agent->set_config_uint16(SR_CONF_PROBE_PREOFF, value, probe); 
-            break;
-        } else if (sc->objectName() == VCOMB+probe->index) {
-            _device_agent->set_config_int16(SR_CONF_PROBE_COMB_COMP, value, probe);
-            break;
+        else if (form.off.slider == sc){
+            _device_agent->set_config_uint16(SR_CONF_PROBE_PREOFF, value, form.probe); 
         }
+        else if (form.comp.slider == sc){
+            _device_agent->set_config_int16(SR_CONF_PROBE_COMB_COMP, value, form.probe);
+        } 
     }
 }
 
@@ -330,33 +342,7 @@ void Calibration::on_abort()
 
 void Calibration::reload_value()
 {
-    for (const GSList *l = _device_agent->get_channels(); l; l = l->next) {
-        sr_channel *const probe = (sr_channel*)l->data;
-        assert(probe);
-
-        uint64_t vgain = 0, vgain_default = 0;
-        int vgain_range = 0;
-        _device_agent->get_config_uint64(SR_CONF_PROBE_VGAIN, vgain, probe, NULL);
-        _device_agent->get_config_uint64(SR_CONF_PROBE_VGAIN_DEFAULT, vgain_default, probe, NULL);   
-        _device_agent->get_config_uint16(SR_CONF_PROBE_VGAIN_RANGE, vgain_range, probe, NULL);
-
-        int voff = 0;
-        int voff_range = 0;
-
-        _device_agent->get_config_uint16(SR_CONF_PROBE_PREOFF, voff, probe, NULL);
-        _device_agent->get_config_uint16(SR_CONF_PROBE_PREOFF_MARGIN, voff_range, probe, NULL);
-
-        for(std::list<QSlider*>::iterator i = _slider_list.begin();
-            i != _slider_list.end(); i++) {
-            if ((*i)->objectName() == VGAIN+probe->index) {
-                (*i)->setRange(-vgain_range/2, vgain_range/2);
-                (*i)->setValue(vgain - vgain_default);
-            } else if ((*i)->objectName() == VOFF+probe->index) {
-                (*i)->setRange(0, voff_range);
-                (*i)->setValue(voff);
-            }
-        }
-    }
+    update_device_info();
 }
 
 void Calibration::on_reset()
@@ -377,6 +363,42 @@ void Calibration::updateLangText()
     VOFF = sp + L_S(STR_PAGE_DLG, S_ID(IDS_CALIB_VOFF), "VOFF");
     VCOMB = sp + L_S(STR_PAGE_DLG, S_ID(IDS_CALIB_VCOMB), "VCOMB");
     CHANNEL_LABEL = L_S(STR_PAGE_DLG, S_ID(IDS_DLG_CHANNEL), "Channel");
+
+    for(auto &form : _params)
+    {
+        QString gain_string = CHANNEL_LABEL + QString::number(form.probe->index) + VGAIN;
+        QString off_string = CHANNEL_LABEL + QString::number(form.probe->index) + VOFF;
+        QString comp_string = CHANNEL_LABEL + QString::number(form.probe->index) + VCOMB;
+
+        form.gain.lable->setText(gain_string);
+        form.off.lable->setText(off_string);
+
+        if (form.comp.lable != NULL){
+            form.comp.lable->setText(comp_string);
+        }
+
+        {
+            auto lable = form.gain.lable;
+            auto slider = form.gain.slider;
+            ui::adjust_label_size(lable, ui::ADJUST_HEIGHT);
+            slider->setFixedHeight(lable->size().height());
+        }
+
+        {
+            auto lable = form.off.lable;
+            auto slider = form.off.slider;
+            ui::adjust_label_size(lable, ui::ADJUST_HEIGHT);
+            slider->setFixedHeight(lable->size().height());
+        }
+
+        if (form.comp.lable != NULL)
+        {
+            auto lable = form.comp.lable;
+            auto slider = form.comp.slider;
+            ui::adjust_label_size(lable, ui::ADJUST_HEIGHT);
+            slider->setFixedHeight(lable->size().height());
+        } 
+    }
 }
 
 void Calibration::UpdateLanguage()
