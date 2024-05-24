@@ -203,7 +203,7 @@ void StoreProgress::accept()
                 return;
             }
 
-            int total_count = _view->session().get_ring_sample_count();
+            uint64_t total_count = _view->session().get_ring_sample_count();
 
             if (start_index > total_count && end_index > total_count)
             {
@@ -394,7 +394,7 @@ void StoreProgress::on_change_file()
     {
 #ifdef _WIN32
         _file_path = file;
-        
+
         QTimer::singleShot(0, this, [this](){
             _fileLab->setText(_file_path); 
         });
