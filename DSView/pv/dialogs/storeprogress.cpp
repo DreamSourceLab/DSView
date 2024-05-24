@@ -390,8 +390,17 @@ void StoreProgress::on_change_file()
     else
         file = _store_session->MakeSaveFile(true);
 
-    if (file != ""){
+    if (file != "")
+    {
+#ifdef _WIN32
+        _file_path = file;
+        
+        QTimer::singleShot(0, this, [this](){
+            _fileLab->setText(_file_path); 
+        });
+#else
         _fileLab->setText(file); 
+#endif
 
         if (_ckOrigin != NULL){
             bool bFlag = file.endsWith(".csv");

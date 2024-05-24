@@ -93,7 +93,8 @@ private:
     QComboBox           *_end_cursor;
     view::View          *_view; 
     bool                _is_done;
-    QTimer              m_timer; 
+    QTimer              m_timer;
+    QString             _file_path;
 };
 
 } // dialogs
