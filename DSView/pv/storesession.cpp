@@ -986,8 +986,7 @@ void StoreSession::export_exec(data::Snapshot *snapshot)
 
     if (channel_type == SR_CHANNEL_LOGIC) {
         _unit_count = logic_snapshot->get_ring_sample_count();
-        int blk_num = logic_snapshot->get_block_num();
-        bool sample;
+        int blk_num = logic_snapshot->get_block_num();       
         std::vector<uint8_t *> buf_vec;
         std::vector<bool> buf_sample;
 
@@ -995,6 +994,8 @@ void StoreSession::export_exec(data::Snapshot *snapshot)
         uint64_t end_index = _end_index;
         int start_block = 0;
         int end_block = 0;
+        uint64_t start_offset = 0;
+        uint64_t end_offset = 0;
 
         if (start_index > logic_snapshot->get_ring_sample_count()){
             dsv_err("ERROR:the start curosr is invalid!");
@@ -1007,10 +1008,10 @@ void StoreSession::export_exec(data::Snapshot *snapshot)
         }
 
         if (start_index > 0){
-            start_block = logic_snapshot->get_block_index_with_sample(start_index, NULL);
+            start_block = logic_snapshot->get_block_index_with_sample(start_index, &start_offset);
         }
         if (end_index > 0){
-            end_block = logic_snapshot->get_block_index_with_sample(end_index, NULL);
+            end_block = logic_snapshot->get_block_index_with_sample(end_index, &end_offset);
         }
 
         if (start_index > 0 && end_index > 0){
@@ -1023,8 +1024,7 @@ void StoreSession::export_exec(data::Snapshot *snapshot)
             _unit_count = end_index;
         }
 
-        for (int blk = 0; !_canceled  &&  blk < blk_num; blk++) {
-            uint64_t buf_sample_num = logic_snapshot->get_block_size(blk) * 8;
+        for (int blk = 0; !_canceled  &&  blk < blk_num; blk++) {           
             buf_vec.clear();
             buf_sample.clear();
 
@@ -1033,32 +1033,54 @@ void StoreSession::export_exec(data::Snapshot *snapshot)
             if (blk > end_block && end_block > 0)
                 break;
 
+            uint64_t block_size = logic_snapshot->get_block_size(blk);
+
+            if (blk == end_block && end_offset / 8 < block_size && end_offset > 0){
+                block_size = end_offset / 8;
+            }
+            if (blk == start_block && start_offset > 0){
+                block_size -= start_offset / 8;
+            }
+ 
             for(auto s : _session->get_signals()) {
                 int ch_type = s->get_type();
                 if (ch_type == SR_CHANNEL_LOGIC) {
                     int ch_index = s->get_index();
-                    if (!logic_snapshot->has_data(ch_index))
+
+                    if (!logic_snapshot->has_data(ch_index)){
                         continue;
-                    uint8_t *buf = logic_snapshot->get_block_buf(blk, ch_index, sample);
-                    buf_vec.push_back(buf);
-                    buf_sample.push_back(sample);
+                    }
+
+                    bool flag = false;
+                    uint8_t *block_buf = logic_snapshot->get_block_buf(blk, ch_index, flag);
+
+                    if (start_block == blk && start_offset > 0 && block_buf != NULL){
+                        block_buf += start_offset / 8;
+                    }
+
+                    buf_vec.push_back(block_buf);
+                    buf_sample.push_back(flag);
                 }
             }
 
-            uint16_t unitsize = ceil(buf_vec.size() / 8.0);
+            const uint16_t unitsize = ceil(buf_vec.size() / 8.0);
             unsigned int usize = 8192;
             unsigned int size = usize;
+            const uint64_t buf_sample_num = block_size * 8;            
             struct sr_datafeed_logic lp;
 
+            uint8_t *xbuf = (uint8_t *)malloc(size * unitsize);
+            if (xbuf == NULL) {
+                _has_error = true;
+                _error = L_S(STR_PAGE_DLG, S_ID(IDS_MSG_STORESESS_EXPORTPROC_ERROR2), "xbuffer malloc failed.");
+                return;
+            }
+
             for(uint64_t i = 0; !_canceled && i < buf_sample_num; i+=usize){
-                if(buf_sample_num - i < usize)
+                if(buf_sample_num - i < usize){
                     size = buf_sample_num - i;
-                uint8_t *xbuf = (uint8_t *)malloc(size * unitsize);
-                if (xbuf == NULL) {
-                    _has_error = true;
-                    _error = L_S(STR_PAGE_DLG, S_ID(IDS_MSG_STORESESS_EXPORTPROC_ERROR2), "xbuffer malloc failed.");
-                    return;
-                }                
+                }
+
                 memset(xbuf, 0, size * unitsize);
 
                 for (uint64_t j = 0; j < size; j++) {
@@ -1084,10 +1106,13 @@ void StoreSession::export_exec(data::Snapshot *snapshot)
                     g_string_free(data_out,TRUE);
                 }
 
-                _units_stored += size;
-                if (xbuf)
-                    free(xbuf);
+                _units_stored += size;              
                 progress_updated();
+            }
+
+            if (xbuf){
+                free(xbuf);
+                xbuf = NULL;
             }
         }
     }
