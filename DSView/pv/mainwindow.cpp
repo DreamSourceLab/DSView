@@ -1274,20 +1274,32 @@ namespace pv
                 break;
 
             case Qt::Key_PageUp:
+#ifdef _WIN32
+            case 33:
+#endif
                 _view->set_scale_offset(_view->scale(),
                                         _view->offset() - _view->get_view_width());
                 break;
             case Qt::Key_PageDown:
+#ifdef _WIN32
+            case 34:
+#endif
                 _view->set_scale_offset(_view->scale(),
                                         _view->offset() + _view->get_view_width());
 
                 break;
 
             case Qt::Key_Left:
+#ifdef _WIN32
+            case 37:
+#endif
                 _view->zoom(1);
                 break;
 
             case Qt::Key_Right:
+#ifdef _WIN32
+            case 39:
+#endif
                 _view->zoom(-1);
                 break;
 
