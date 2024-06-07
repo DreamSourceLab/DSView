@@ -35,7 +35,8 @@
 #   severely limited in its number of input channels, and dramatically
 #   widening the parallel decoder may be undesirable.
 
-# update: 2022.9.8, the wait() function returns variables is error.
+##  2022/9/8 DreamSourceLab : the wait() function returns variables is error 
+##  2024/6/4 DreamSourceLab : Fixed the fifteenth bit of data being unable to decode when the total bit count is set to 16.
 
 from common.srdhelper import bitpack
 import json
@@ -124,7 +125,8 @@ class Decoder(srd.Decoder):
     options = (
         {'id': 'clkedge', 'desc': 'Clock edge', 'default': 'rising',
             'values': ('rising', 'falling', 'either'), 'idn':'dec_numbers_and_state_opt_clkedge'},
-        {'id': 'count', 'desc': 'Total bits count', 'default': 0, 'idn':'dec_numbers_and_state_opt_count'},
+        {'id': 'count', 'desc': 'Total bits count', 'default': 1,
+            'values': tuple(range(0,129,1)), 'idn':'dec_numbers_and_state_opt_count'},
         {'id': 'interp', 'desc': 'Interpretation', 'default': 'unsigned',
             'values': ('unsigned', 'signed', 'fixpoint', 'fixsigned', 'ieee754', 'enum'), 'idn':'dec_numbers_and_state_opt_interp'},
         {'id': 'fracbits', 'desc': 'Fraction bits count', 'default': 0, 'idn':'dec_numbers_and_state_opt_fracbits'},
@@ -328,43 +330,54 @@ class Decoder(srd.Decoder):
         return [self.format_string.format(value)]
 
     def decode(self):
-        channels = [ch for ch in range(_max_channels) if self.has_channel(ch)]
+        #channels
+        channels = []
+        for ch in range(1,_max_channels + 1):
+            if self.has_channel(ch):
+                channels.append(ch)
+
+        #clk
         have_clk = Pin.CLK in channels
         if have_clk:
             channels.remove(Pin.CLK)
         if not channels:
             raise ChannelError("Need at least one bit channel.")
+
+        #wait cond
         if have_clk:
-            clkedge = {
-                'rising': 'r',
-                'falling': 'f',
-                'either': 'e',
-            }.get(self.options['clkedge'])
+            clk = {'rising': 'r',
+                   'falling': 'f',
+                   'either': 'e',}
+            clkedge = clk.get(self.options['clkedge'])
             wait_cond = {Pin.CLK: clkedge}
         else:
-            wait_cond = [{ch: 'e'} for ch in channels]
+            wait_cond = []
+            for ch in channels:
+                wait_cond.append({ch: 'e'})
 
+        #bitcount 
         bitcount = self.options['count']
         if not bitcount:
-            bitcount = channels[-1] - Pin.BIT_0 + 1
+           bitcount = len(channels)
         self.bitcount = bitcount
 
-        self.interpreter = {
-            'unsigned': self.interp_unsigned,
-            'signed': self.interp_signed,
-            'fixpoint': self.interp_fixpoint,
-            'fixsigned': self.interp_fixpoint,
-            'ieee754': self.interp_ieee754,
-            'enum': self.interp_enum,
-        }.get(self.options['interp'])
+        #interpreter
+        interpreter = {'unsigned': self.interp_unsigned,
+                       'signed': self.interp_signed,
+                       'fixpoint': self.interp_fixpoint,
+                       'fixsigned': self.interp_fixpoint,
+                       'ieee754': self.interp_ieee754,
+                       'enum': self.interp_enum,}
+        self.interpreter = interpreter.get(self.options['interp'])
         self.interp_state = {}
-        self.formatter = {
-            '-': self.format_native,
-            'bin': self.format_bin,
-            'oct': self.format_oct,
-            'dec': self.format_dec,
-            'hex': self.format_hex,
-        }.get(self.options['format'])
+
+        formatter = {'-': self.format_native,
+                     'bin': self.format_bin,
+                     'oct': self.format_oct,
+                     'dec': self.format_dec,
+                     'hex': self.format_hex,}
+
+        self.formatter =formatter.get(self.options['format'])
         self.format_string = None
 
         bFirst = True
