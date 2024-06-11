@@ -2586,4 +2586,16 @@ namespace pv
         on_load_config_end();
     }
 
+    void SigSession::ProcessPowerEvent(bool bEnterSleep)
+    {
+        if (bEnterSleep){
+            if (_is_working && _device_agent.is_hardware()){
+                stop_capture();
+            }
+        }
+        else{
+            ds_reload_device_list();
+        }
+    }
+
 } // namespace pv

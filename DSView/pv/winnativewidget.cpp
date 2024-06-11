@@ -40,6 +40,7 @@
 #include "mainframe.h"
 #include "dsvdef.h"
 #include "appcontrol.h"
+#include "mainwindow.h"
 
 #define FIXED_WIDTH(widget) (widget->minimumWidth() >= widget->maximumWidth())
 #define FIXED_HEIGHT(widget) (widget->minimumHeight() >= widget->maximumHeight())
@@ -370,6 +371,28 @@ LRESULT CALLBACK WinNativeWidget::WndProc(HWND hWnd, UINT message, WPARAM wParam
             // If system not send this message to the focus window, the native window will be received it.
             if (self->_childWindow != NULL){
                 return SendMessage(self->_childWindow, message, wParam, lParam);
+            }
+            break;
+        }
+        case WM_POWERBROADCAST:
+        {
+            if (self->_childWidget != NULL)
+            {
+                dsv::MainFrame *frame = dynamic_cast<dsv::MainFrame*>(self->_childWidget);
+                dsv::MainWindow *mainWnd = dynamic_cast<dsv::MainWindow*>(frame->GetMainWindow());
+                switch (wParam)
+                {
+                case PBT_APMQUERYSUSPEND:
+                    dsv_info("Windows enters sleep.")
+                    mainWnd->OnWindowsPowerEvent(true);
+                    break;
+
+                case PBT_APMRESUMESUSPEND:
+                case PBT_APMRESUMECRITICAL:
+                    dsv_info("Windows be awaked.")
+                    mainWnd->OnWindowsPowerEvent(false);
+                    break;
+                }
             }
             break;
         }

@@ -2221,6 +2221,11 @@ namespace pv
     QWidget* MainWindow::GetBodyView()
     {
         return _view;
-    }   
+    }
+
+    void MainWindow::OnWindowsPowerEvent(bool bEnterSleep)
+    {
+        _session->ProcessPowerEvent(bEnterSleep);
+    }
   
 } // namespace pv

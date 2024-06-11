@@ -453,6 +453,8 @@ public:
 
     void apply_samplerate();
 
+    void ProcessPowerEvent(bool bEnterSleep);
+
 private:
     void set_cur_samplelimits(uint64_t samplelimits);
     void set_cur_snap_samplerate(uint64_t samplerate);

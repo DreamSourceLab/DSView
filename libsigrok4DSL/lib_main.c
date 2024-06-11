@@ -68,6 +68,7 @@ struct sr_lib_context
 	int transaction_id;
 	int transaction_command;
 	int last_error;
+	int is_reloading_list;
 };
 
 static void hotplug_event_listen_callback(struct libusb_context *ctx, struct libusb_device *dev, int event);
@@ -104,6 +105,7 @@ static struct sr_lib_context lib_ctx = {
 	.transaction_id = 0,
 	.transaction_command = DEV_TRANS_NONE,
 	.last_error = SR_OK,
+	.is_reloading_list = 0,
 };
 
 /**
@@ -1111,6 +1113,10 @@ SR_PRIV int sr_usb_device_is_exists(libusb_device *usb_dev)
 	struct sr_dev_inst *dev;
 	int bFind = 0;
 
+	if (lib_ctx.is_reloading_list){
+		return 0;
+	}
+
 	if (usb_dev == NULL)
 	{
 		sr_err("sr_usb_device_is_exists(), @usb_dev is null.");
@@ -1320,8 +1326,12 @@ static void process_attach_event(int isEvent)
 	struct sr_dev_driver **drivers;
 	GSList *dev_list;
 	GSList *l;
+	GSList *l_check;
 	struct sr_dev_driver *dr;
+	struct sr_dev_inst *sdi;
+	struct sr_dev_inst *new_sdi;
 	int num = 0;
+	int bFind;
 
 	if (isEvent){
 		sr_info("Process device attach event.");
@@ -1336,14 +1346,32 @@ static void process_attach_event(int isEvent)
 		if (dr->driver_type == DRIVER_TYPE_HARDWARE)
 		{
 			dev_list = dr->scan(NULL);
-			if (dev_list != NULL)
-			{
-				pthread_mutex_lock(&lib_ctx.mutext);
 
+			if (dev_list != NULL){
+				pthread_mutex_lock(&lib_ctx.mutext);
+				  
 				for (l = dev_list; l; l = l->next)
 				{
-					lib_ctx.device_list = g_slist_append(lib_ctx.device_list, l->data);
-					num++;
+					bFind = 0;
+					new_sdi = l->data;
+
+					for (l_check = lib_ctx.device_list; l_check; l_check = l_check->next)
+					{
+						sdi = l_check->data;
+						if (sdi->handle == new_sdi->handle){
+							bFind = 1;
+							break;
+						}
+					}
+
+					if (!bFind){
+						lib_ctx.device_list = g_slist_append(lib_ctx.device_list, l->data);
+						num++;
+					}
+					else{
+						sr_info("A device not appent to list, handle:%p", (void*)new_sdi->handle);
+						sr_dev_inst_free(new_sdi); //Not append to list, so free it.						
+					}					
 				}
 				pthread_mutex_unlock(&lib_ctx.mutext);
 				g_slist_free(dev_list);
@@ -1707,4 +1735,15 @@ SR_PRIV void ds_set_last_error(int error)
 SR_API int ds_get_last_error()
 {
 	return lib_ctx.last_error;
+}
+
+SR_API int ds_reload_device_list()
+{
+	sr_info("Reload device list.");
+
+	lib_ctx.is_reloading_list = 1;
+	process_attach_event(0);
+	lib_ctx.is_reloading_list = 0;
+
+	return SR_OK;
 }
