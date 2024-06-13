@@ -1369,7 +1369,6 @@ static void process_attach_event(int isEvent)
 						num++;
 					}
 					else{
-						sr_info("A device not appent to list, handle:%p", (void*)new_sdi->handle);
 						sr_dev_inst_free(new_sdi); //Not append to list, so free it.						
 					}					
 				}
@@ -1744,6 +1743,28 @@ SR_API int ds_reload_device_list()
 	lib_ctx.is_reloading_list = 1;
 	process_attach_event(0);
 	lib_ctx.is_reloading_list = 0;
+
+	return SR_OK;
+}
+
+SR_API int ds_close_all_device()
+{
+	sr_info("Close all device.");
+
+	GSList *l;
+	struct sr_dev_inst *dev;
+
+	pthread_mutex_lock(&lib_ctx.mutext);
+
+	for (l = lib_ctx.device_list; l; l = l->next)
+	{
+		dev = l->data;
+		if (dev->dev_type == DEV_TYPE_USB){
+			close_device_instance(dev);
+		}	
+	}
+
+	pthread_mutex_unlock(&lib_ctx.mutext);
 
 	return SR_OK;
 }

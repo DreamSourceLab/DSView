@@ -1480,6 +1480,8 @@ SR_API int ds_get_last_error();
 
 SR_API int ds_reload_device_list();
 
+SR_API int ds_close_all_device();
+
 /*---config -----------------------------------------------*/
 SR_API int ds_get_actived_device_config(const struct sr_channel *ch,
                          const struct sr_channel_group *cg,

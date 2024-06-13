@@ -2592,6 +2592,7 @@ namespace pv
             if (_is_working && _device_agent.is_hardware()){
                 stop_capture();
             }
+            ds_close_all_device();
         }
         else{
             ds_reload_device_list();

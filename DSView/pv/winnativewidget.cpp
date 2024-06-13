@@ -35,6 +35,7 @@
 #include <QtWidgets>
 #include <qmath.h>
 #include <string.h>
+#include <winuser.h> 
 
 #include "log.h"
 #include "mainframe.h"
@@ -50,11 +51,71 @@
 #define WINDOW_STATUS_NORMAL    2
 #define WINDOW_STATUS_MIN       3
 
+typedef HPOWERNOTIFY(WINAPI* PFN_REGISTER_SUSPEND_RESUME_NOTIFICATION)(HANDLE, DWORD);
+typedef BOOL(WINAPI* PFN_UNREGISTER_SUSPEND_RESUME_NOTIFICATION)(HPOWERNOTIFY);
+ 
 namespace pv {
 
 namespace
 {
     bool g_enable_ncclient = true;
+    HPOWERNOTIFY g_hPowerNotification = NULL;
+    HMODULE g_hUser32 = NULL;
+    PFN_REGISTER_SUSPEND_RESUME_NOTIFICATION fnRegisterSuspendResumeNotification = NULL;
+    PFN_UNREGISTER_SUSPEND_RESUME_NOTIFICATION fnUnregisterSuspendResumeNotification = NULL;
+}
+
+static bool InitCapturePowerEvent(HWND hWnd)
+{
+    g_hUser32 = LoadLibrary(L"user32.dll");
+    if (g_hUser32 == NULL) {
+        dsv_info("ERROR: Failed to load user32.dll");
+        return false;
+    }
+
+    fnRegisterSuspendResumeNotification = (PFN_REGISTER_SUSPEND_RESUME_NOTIFICATION)GetProcAddress(g_hUser32, 
+                    "RegisterSuspendResumeNotification");
+
+    if (fnRegisterSuspendResumeNotification == NULL){
+        dsv_info("ERROR: failed to get RegisterSuspendResumeNotification address");
+        FreeLibrary(g_hUser32);
+        g_hUser32 = NULL;
+        return false;
+    }
+
+    fnUnregisterSuspendResumeNotification = (PFN_UNREGISTER_SUSPEND_RESUME_NOTIFICATION)GetProcAddress(g_hUser32, 
+                "UnregisterSuspendResumeNotification");
+
+    if (fnUnregisterSuspendResumeNotification == NULL){
+        dsv_info("ERROR: failed to get UnregisterSuspendResumeNotification address");
+        FreeLibrary(g_hUser32);
+        g_hUser32 = NULL;
+        return false;
+    }
+
+    g_hPowerNotification = fnRegisterSuspendResumeNotification(hWnd, DEVICE_NOTIFY_WINDOW_HANDLE);
+
+    if (g_hPowerNotification == NULL){
+        dsv_info("ERROR: failed to call RegisterSuspendResumeNotification().");
+        FreeLibrary(g_hUser32);
+        g_hUser32 = NULL;
+        return false;
+    }
+
+    return true;
+}
+
+static void UninitCapturePowerEvent()
+{
+    if (g_hPowerNotification != NULL){
+        fnUnregisterSuspendResumeNotification(g_hPowerNotification);
+        g_hPowerNotification = NULL;
+    }
+
+    if (g_hUser32 != NULL){
+        FreeLibrary(g_hUser32);
+        g_hUser32 = NULL;
+    }
 }
 
 //-----------------------------WinNativeWidget 
@@ -118,6 +179,8 @@ WinNativeWidget::WinNativeWidget(const int x, const int y, const int width,
         _shadow->createWinId();
         _shadow->SetCallback(this);
     }
+
+    InitCapturePowerEvent(_hWnd);
 }
 
 WinNativeWidget::~WinNativeWidget()
@@ -139,6 +202,8 @@ void WinNativeWidget::SetChildWidget(MainFrame *w)
     else if (_shadow != NULL){
         _shadow->hideShadow();
         _shadow->close(); //Set null, the applictoin will exit.
+
+        UninitCapturePowerEvent();     
     }
 }
 
@@ -164,7 +229,7 @@ LRESULT CALLBACK WinNativeWidget::WndProc(HWND hWnd, UINT message, WPARAM wParam
     }
 
     switch (message)
-    {
+    { 
         case WM_SYSCOMMAND:
         {
             if (wParam == SC_KEYMENU)
@@ -375,25 +440,27 @@ LRESULT CALLBACK WinNativeWidget::WndProc(HWND hWnd, UINT message, WPARAM wParam
             break;
         }
         case WM_POWERBROADCAST:
-        {
+        { 
             if (self->_childWidget != NULL)
             {
-                dsv::MainFrame *frame = dynamic_cast<dsv::MainFrame*>(self->_childWidget);
-                dsv::MainWindow *mainWnd = dynamic_cast<dsv::MainWindow*>(frame->GetMainWindow());
+                pv::MainFrame *frame = dynamic_cast<pv::MainFrame*>(self->_childWidget);
+                pv::MainWindow *mainWnd = dynamic_cast<pv::MainWindow*>(frame->GetMainWindow());
+ 
                 switch (wParam)
                 {
-                case PBT_APMQUERYSUSPEND:
-                    dsv_info("Windows enters sleep.")
-                    mainWnd->OnWindowsPowerEvent(true);
-                    break;
-
-                case PBT_APMRESUMESUSPEND:
-                case PBT_APMRESUMECRITICAL:
-                    dsv_info("Windows be awaked.")
-                    mainWnd->OnWindowsPowerEvent(false);
-                    break;
+                    case PBT_APMSUSPEND:{
+                        dsv_info("WM_POWERBROADCAST: windows enters sleep.");
+                        mainWnd->OnWindowsPowerEvent(true);
+                        break;
+                    }
+                    case PBT_APMRESUMEAUTOMATIC:{
+                        dsv_info("WM_POWERBROADCAST: windows be awaked.");
+                        mainWnd->OnWindowsPowerEvent(false);
+                        break;
+                    }
                 }
             }
+            
             break;
         }
     }
