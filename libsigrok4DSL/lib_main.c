@@ -81,6 +81,7 @@ static void post_event_async(int event);
 static void send_event(int event);
 static void make_demo_device_to_list();
 static void process_attach_event(int isEvent);
+static void process_detach_event();
 static struct libusb_device* get_new_attached_usb_device();
 static struct libusb_device* get_new_detached_usb_device();
 
@@ -603,13 +604,17 @@ SR_API int ds_remove_device(ds_device_handle handle)
 	if (handle == NULL_HANDLE)
 		return SR_ERR_ARG;
 
-	if (lib_ctx.actived_device_instance != NULL && lib_ctx.actived_device_instance->handle == handle && ds_is_collecting())
+	if (lib_ctx.actived_device_instance != NULL 
+		&& lib_ctx.actived_device_instance->handle == handle 
+			&& ds_is_collecting())
 	{
 		sr_err("Device is collecting, can't remove it.");
 		return SR_ERR_CALL_STATUS;
 	}
 
-	if (lib_ctx.actived_device_instance != NULL && lib_ctx.is_delay_destory_actived_device && lib_ctx.actived_device_instance->handle == handle)
+	if (lib_ctx.actived_device_instance != NULL 
+		&& lib_ctx.is_delay_destory_actived_device 
+			&& lib_ctx.actived_device_instance->handle == handle)
 	{
 		sr_info("The current device is delayed for destruction, handle:%p", lib_ctx.actived_device_instance->handle);
 		destroy_device_instance(lib_ctx.actived_device_instance);
@@ -1741,6 +1746,9 @@ SR_API int ds_reload_device_list()
 	sr_info("Reload device list.");
 
 	lib_ctx.is_reloading_list = 1;
+	lib_ctx.is_delay_destory_actived_device = NULL;
+	lib_ctx.detach_device_handle = NULL;
+	lib_ctx.detach_event_flag = 0;
 	process_attach_event(0);
 	lib_ctx.is_reloading_list = 0;
 
