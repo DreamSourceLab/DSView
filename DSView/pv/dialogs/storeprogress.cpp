@@ -392,14 +392,14 @@ void StoreProgress::on_change_file()
 
     if (file != "")
     {
+        _fileLab->setText(file); 
+
 #ifdef _WIN32
         _file_path = file;
 
-        QTimer::singleShot(0, this, [this](){
+        QTimer::singleShot(300, this, [this](){
             _fileLab->setText(_file_path); 
-        });
-#else
-        _fileLab->setText(file); 
+        }); 
 #endif
 
         if (_ckOrigin != NULL){
