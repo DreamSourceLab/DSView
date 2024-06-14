@@ -1336,6 +1336,9 @@ namespace pv
                 break;
 
             case Qt::Key_Up: 
+#ifdef _WIN32
+            case 38:
+#endif
                 for (auto s : sigs)
                 {
                     if (s->signal_type() == SR_CHANNEL_DSO){
@@ -1351,6 +1354,9 @@ namespace pv
                 break;
 
             case Qt::Key_Down:
+#ifdef _WIN32
+            case 40:
+#endif
                 for (auto s : sigs)
                 {
                     if (s->signal_type() == SR_CHANNEL_DSO){
