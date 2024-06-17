@@ -53,6 +53,7 @@
 
 typedef HPOWERNOTIFY(WINAPI* PFN_REGISTER_SUSPEND_RESUME_NOTIFICATION)(HANDLE, DWORD);
 typedef BOOL(WINAPI* PFN_UNREGISTER_SUSPEND_RESUME_NOTIFICATION)(HPOWERNOTIFY);
+typedef HIMC (WINAPI* FN_ImmAssociateContext)(HWND,HIMC);
  
 namespace pv {
 
@@ -181,6 +182,17 @@ WinNativeWidget::WinNativeWidget(const int x, const int y, const int width,
     }
 
     InitCapturePowerEvent(_hWnd);
+
+    //Disabled the IMME.
+    HMODULE hImm32Dll = LoadLibraryW(L"imm32.dll");
+    if (hImm32Dll != NULL){
+        FN_ImmAssociateContext fnImm = (FN_ImmAssociateContext)GetProcAddress(hImm32Dll, "ImmAssociateContext");
+
+        if (fnImm){
+            fnImm(_hWnd, NULL);
+        }        
+        FreeLibrary(hImm32Dll);
+    }   
 }
 
 WinNativeWidget::~WinNativeWidget()
