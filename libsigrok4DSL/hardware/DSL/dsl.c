@@ -335,7 +335,11 @@ static int hw_dev_open(struct sr_dev_driver *di, struct sr_dev_inst *sdi)
     if (ret != LIBUSB_SUCCESS){
         sr_err("%s:%d, Failed to open device: %s, handle:%p",
                 __func__, __LINE__, libusb_error_name(ret), dev_handel);
-        ds_set_last_error(SR_ERR_DEVICE_IS_EXCLUSIVE);
+        
+        if (ret == LIBUSB_ERROR_NOT_SUPPORTED)
+            ds_set_last_error(SR_ERR_DEVICE_NO_DRIVER);
+        else
+            ds_set_last_error(SR_ERR_DEVICE_IS_EXCLUSIVE);
         return SR_ERR;
     }
     //sr_info("------------Open returns the libusb_device_handle: %p, struct:%p", usb->devhdl, usb);

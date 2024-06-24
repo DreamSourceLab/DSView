@@ -355,6 +355,10 @@
         "text": "设备被其它程序占用，切换失败!"
     },
     {
+        "id": "IDS_MSG_DEVICE_NO_DRIVER",
+        "text": "设备的驱动可能未安装!"
+    },
+    {
         "id": "IDS_MSG_NO_ENABLED_CHANNEL",
         "text": "未启用通道!"
     },

@@ -356,6 +356,10 @@
         "text": "The device is busy, switch failed!"
     },
     {
+        "id": "IDS_MSG_DEVICE_NO_DRIVER",
+        "text": "The device driver may not be installed!"
+    },
+    {
         "id": "IDS_MSG_NO_ENABLED_CHANNEL",
         "text": "No channels enabled!"
     },

@@ -257,42 +257,53 @@ namespace pv
         // The current device changed.
         _callback->trigger_message(DSV_MSG_CURRENT_DEVICE_CHANGED);
 
-        if (ds_get_last_error() == SR_ERR_DEVICE_FIRMWARE_VERSION_LOW)
-        {
-            QString strMsg = L_S(STR_PAGE_MSG, S_ID(IDS_MSG_TO_RECONNECT_FOR_FIRMWARE), 
-                    "Please reconnect the device!");
-            _callback->delay_prop_msg(strMsg);
-            return false;
-        }
+        int lastError = ds_get_last_error();
+        bool ret = true;
 
-        if (ds_get_last_error() == SR_ERR_FIRMWARE_NOT_EXIST)
+        switch (lastError)
         {
-            QString strMsg = L_S(STR_PAGE_MSG, S_ID(IDS_MSG_FIRMWARE_NOT_EXIST), 
-                    "Firmware not exist!");
-            _callback->delay_prop_msg(strMsg);
-            return false;
-        }
-
-        if (ds_get_last_error() == SR_ERR_DEVICE_USB_IO_ERROR)
-        {
-            QString strMsg = L_S(STR_PAGE_MSG, S_ID(IDS_MSG_DEVICE_USB_IO_ERROR), 
-                    "USB io error!");
-            _callback->delay_prop_msg(strMsg);
-            return false;
-        }
-
-        if (ds_get_last_error() == SR_ERR_DEVICE_IS_EXCLUSIVE)
-        {
-            QString strMsg = L_S(STR_PAGE_MSG, S_ID(IDS_MSG_DEVICE_BUSY_SWITCH_FAILED), 
-                        "Device is busy!");
-            if (old_dev != NULL_HANDLE)
-                MsgBox::Show(strMsg);
-            else
+            case SR_ERR_DEVICE_FIRMWARE_VERSION_LOW:{
+                QString strMsg = L_S(STR_PAGE_MSG, S_ID(IDS_MSG_TO_RECONNECT_FOR_FIRMWARE), 
+                        "Please reconnect the device!");
                 _callback->delay_prop_msg(strMsg);
-            return false;
+                ret = false;
+                break;
+            }
+            case SR_ERR_FIRMWARE_NOT_EXIST:{
+                QString strMsg = L_S(STR_PAGE_MSG, S_ID(IDS_MSG_FIRMWARE_NOT_EXIST), 
+                    "Firmware not exist!");
+                _callback->delay_prop_msg(strMsg);
+                ret = false;
+                break;
+            }
+            case SR_ERR_DEVICE_USB_IO_ERROR:{
+                QString strMsg = L_S(STR_PAGE_MSG, S_ID(IDS_MSG_DEVICE_USB_IO_ERROR), 
+                    "USB io error!");
+                _callback->delay_prop_msg(strMsg);
+                ret = false;
+                break;
+            }
+            case SR_ERR_DEVICE_IS_EXCLUSIVE:{
+                QString strMsg = L_S(STR_PAGE_MSG, S_ID(IDS_MSG_DEVICE_BUSY_SWITCH_FAILED), 
+                        "Device is busy!");
+                if (old_dev != NULL_HANDLE)
+                    MsgBox::Show(strMsg);
+                else
+                    _callback->delay_prop_msg(strMsg);
+                ret = false;
+                break;
+            }
+            case SR_ERR_DEVICE_NO_DRIVER:
+            {
+                QString strMsg = L_S(STR_PAGE_MSG, S_ID(IDS_MSG_DEVICE_NO_DRIVER), 
+                    "No driver!");
+                _callback->delay_prop_msg(strMsg);
+                ret = false;
+                break;
+            }
         }
 
-        return true;
+        return ret;
     }
 
     bool SigSession::set_file(QString name)
