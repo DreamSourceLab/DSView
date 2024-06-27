@@ -182,14 +182,20 @@ find_package(Qt5Core QUIET)
 if(Qt5Core_FOUND)
 	message("----- Qt5:")
 	message(STATUS "	 includes:" ${Qt5Core_INCLUDE_DIRS})
-	#find_package(Qt5WinExtras REQUIRED)
+	if (WIN32)
+		find_package(Qt5WinExtras REQUIRED)
+	endif ()
+	find_package(Qt5Svg REQUIRED)
 	find_package(Qt5Widgets REQUIRED)
 	find_package(Qt5Gui REQUIRED)
 	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${Qt5Widgets_EXECUTABLE_COMPILE_FLAGS}")
-	#set(QT_INCLUDE_DIRS ${Qt5Gui_INCLUDE_DIRS} ${Qt5Widgets_INCLUDE_DIRS} ${Qt5WinExtras_INCLUDE_DIRS})
-	#set(QT_LIBRARIES Qt5::Gui Qt5::Widgets Qt5::WinExtras)
-	set(QT_INCLUDE_DIRS ${Qt5Gui_INCLUDE_DIRS} ${Qt5Widgets_INCLUDE_DIRS})
-	set(QT_LIBRARIES Qt5::Gui Qt5::Widgets)
+	if (WIN32)
+		set(QT_INCLUDE_DIRS ${Qt5Gui_INCLUDE_DIRS} ${Qt5Widgets_INCLUDE_DIRS} ${Qt5WinExtras_INCLUDE_DIRS})
+		set(QT_LIBRARIES Qt5::Gui Qt5::Widgets Qt5::WinExtras Qt5::WinMain Qt5::Svg)
+	else ()
+		set(QT_INCLUDE_DIRS ${Qt5Gui_INCLUDE_DIRS} ${Qt5Widgets_INCLUDE_DIRS})
+		set(QT_LIBRARIES Qt5::Gui Qt5::Widgets Qt5::Svg)
+	endif ()
 	add_definitions(${Qt5Gui_DEFINITIONS} ${Qt5Widgets_DEFINITIONS})
 else()
 	find_package(Qt6Core QUIET)
@@ -353,6 +359,14 @@ set(DSView_SOURCES
     DSView/pv/ui/popupdlglist.cpp
 )
 
+# Windows-specific QT source files
+if(WIN32)
+	list(APPEND DSView_SOURCES
+		DSView/pv/winnativewidget.cpp
+		DSView/pv/winshadow.cpp
+	)
+endif ()
+
 set(DSView_HEADERS
     DSView/mystyle.h
     DSView/pv/log.h
@@ -447,6 +461,14 @@ set(DSView_HEADERS
     DSView/pv/ui/xtoolbutton.h
 )
  
+# Windows-specific QT headers
+if(WIN32)
+	list(APPEND DSView_HEADERS
+		DSView/pv/winnativewidget.h
+		DSView/pv/winshadow.h
+	)
+endif ()
+
 #===============================================================================
 #= libsigrok4DSL source
 #-------------------------------------------------------------------------------
@@ -552,6 +574,8 @@ if(WIN32)
 	enable_language(RC)
 	# app icon
         list(APPEND DSView_SOURCES applogo.rc)
+	# MinGW Unicode support
+	add_definitions(-municode)
 endif()
 
 if(Qt5Core_FOUND)
@@ -599,7 +623,6 @@ set(CMAKE_CXX_FLAGS "-Wall -Wextra")
 set(CMAKE_BUILD_TYPE Release)
 set(CMAKE_CXX_FLAGS_DEBUG "-g")
 set(CMAKE_CXX_FLAGS_RELEASE "-O3")
-add_compile_options(-O3)
 
 #===============================================================================
 #= Linker Configuration
