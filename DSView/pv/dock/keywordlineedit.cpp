@@ -25,6 +25,7 @@
 #include "../config/appconfig.h"
 #include "../ui/langresource.h"
 #include "../log.h"
+#include "../dsvdef.h"
 
 namespace{
     QTimer *move_timer = NULL;
@@ -120,7 +121,20 @@ void KeyLineEdit::wheelEvent(QWheelEvent *event)
             int v = new_text.toInt();
             int old_v = v;
 
-            if (event->delta() > 0){
+            int delta = 0;
+
+#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
+            int anglex = event->angleDelta().x();
+            int angley = event->angleDelta().y();
+
+            if (anglex == 0 || ABS_VAL(angley) >= ABS_VAL(anglex)){
+                delta = angley;
+            }
+#else
+            delta = event->delta();
+#endif
+
+            if (delta > 0){
                 v++;
             }
             else{

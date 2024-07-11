@@ -1746,7 +1746,7 @@ SR_API int ds_reload_device_list()
 	sr_info("Reload device list.");
 
 	lib_ctx.is_reloading_list = 1;
-	lib_ctx.is_delay_destory_actived_device = NULL;
+	lib_ctx.is_delay_destory_actived_device = 0;
 	lib_ctx.detach_device_handle = NULL;
 	lib_ctx.detach_event_flag = 0;
 	process_attach_event(0);

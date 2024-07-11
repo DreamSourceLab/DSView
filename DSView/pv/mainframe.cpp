@@ -1106,10 +1106,9 @@ QWidget* MainFrame::GetBodyView()
     return _mainWindow->GetBodyView();
 }
 
-bool MainFrame::nativeEvent(const QByteArray &eventType, void *message, long *result)
-{
 #ifdef _WIN32
-
+bool MainFrame::nativeEvent(const QByteArray &eventType, void *message, MESSAGE_RESULT_PTR result)
+{
     if (_parentNativeWidget != NULL)
     { 
         MSG *msg = static_cast<MSG*>(message);
@@ -1129,10 +1128,9 @@ bool MainFrame::nativeEvent(const QByteArray &eventType, void *message, long *re
             }           
         }
     } 
-    
-#endif
  
     return QWidget::nativeEvent(eventType, message, result);
 }
+#endif
 
 } // namespace pv
