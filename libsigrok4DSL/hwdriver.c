@@ -366,21 +366,8 @@ SR_PRIV int sr_status_get(const struct sr_dev_inst *sdi,
 
 /* Unnecessary level of indirection follows. */
 
-/** @private */
-SR_PRIV int sr_source_remove(int fd)
-{
-	return sr_session_source_remove(fd);
-}
-
-/** @private */
-SR_PRIV int sr_source_add(int fd, int events, int timeout,
-			  sr_receive_data_callback_t cb, void *cb_data)
-{
-    return sr_session_source_add(fd, events, timeout, cb, cb_data);
-}
-
 SR_PRIV int ds_scan_all_device_list(libusb_context *usb_ctx,struct libusb_device **list_buf, int size, int *count)
-{	
+{
 	libusb_device **devlist;
 	int i;
 	int wr;

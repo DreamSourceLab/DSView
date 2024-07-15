@@ -59,3 +59,7 @@ qtpro5
 win32x
 qrc_*
 install_manifest.txt
+
+# CLion-specific
+.idea/
+cmake-build*/

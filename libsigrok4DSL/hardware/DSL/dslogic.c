@@ -1312,16 +1312,6 @@ static int cleanup(void)
     return SR_OK;
 }
 
-static void remove_sources(struct DSL_context *devc)
-{
-    int i;
-    sr_info("%s: remove fds from polling", __func__);
-    /* Remove fds from polling. */
-    for (i = 0; devc->usbfd[i] != -1; i++)
-        sr_source_remove(devc->usbfd[i]);
-    g_free(devc->usbfd);
-}
-
 static void report_overflow(struct DSL_context *devc)
 {
     struct sr_datafeed_packet packet;
@@ -1396,7 +1386,7 @@ static int receive_data(int fd, int revents, const struct sr_dev_inst *sdi)
 
     if (devc->status == DSL_FINISH) {
         /* Remove polling */
-        remove_sources(devc);
+        sr_session_source_remove((gintptr) devc->channel);
     }
 
     devc->trf_completed = 0;
@@ -1409,9 +1399,6 @@ static int dev_acquisition_start(struct sr_dev_inst *sdi, void *cb_data)
 
     struct DSL_context *devc;
     struct sr_usb_dev_inst *usb;
-    struct drv_context *drvc;
-    const struct libusb_pollfd **lupfd;
-	unsigned int i;
     int ret;
     struct ctl_wr_cmd wr_cmd;
 
@@ -1420,7 +1407,6 @@ static int dev_acquisition_start(struct sr_dev_inst *sdi, void *cb_data)
         return SR_ERR_DEVICE_CLOSED;
     }
 
-    drvc = di->priv;
     devc = sdi->priv;
     usb = sdi->conn;
 
@@ -1485,22 +1471,8 @@ static int dev_acquisition_start(struct sr_dev_inst *sdi, void *cb_data)
         return ret;
     }
 
-    /* setup callback function for data transfer */
-    lupfd = libusb_get_pollfds(drvc->sr_ctx->libusb_ctx);
-    for (i = 0; lupfd[i]; i++);
-
-    if (!(devc->usbfd = malloc(sizeof(struct libusb_pollfd) * (i + 1)))){
-        sr_err("%s,ERROR:failed to alloc memory.", __func__);
-    	return SR_ERR;
-    }
-
-    for (i = 0; lupfd[i]; i++) {
-        sr_source_add(lupfd[i]->fd, lupfd[i]->events,
-                  dsl_get_timeout(sdi), receive_data, sdi);
-        devc->usbfd[i] = lupfd[i]->fd;
-    }
-    devc->usbfd[i] = -1;
-    free(lupfd);
+    sr_session_source_add ((gintptr) devc->channel, G_IO_IN | G_IO_ERR,
+                           (int) dsl_get_timeout(sdi), receive_data, sdi);
 
     wr_cmd.header.dest = DSL_CTL_START;
     wr_cmd.header.size = 0;
