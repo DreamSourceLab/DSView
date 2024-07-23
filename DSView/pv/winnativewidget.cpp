@@ -427,10 +427,12 @@ LRESULT CALLBACK WinNativeWidget::WndProc(HWND hWnd, UINT message, WPARAM wParam
                     QSize minimum = gw->minimumSize();
                     QSize sizeHint = gw->minimumSizeHint();
 
+                    bool bNormal = self->IsNormalsized();
+
                     MINMAXINFO *mmi = reinterpret_cast<MINMAXINFO*>(lParam);
                     mmi->ptMinTrackSize.x = qFloor(qMax(minimum.width(), sizeHint.width()) * k);
                     mmi->ptMinTrackSize.y = qFloor(qMax(minimum.height(), sizeHint.height()) * k);
-                    mmi->ptMaxTrackSize.x = maxWidth;
+                    mmi->ptMaxTrackSize.x = bNormal ? maxWidth * 5 : maxWidth;
                     mmi->ptMaxTrackSize.y = maxHeight;
                 }                
             } 
