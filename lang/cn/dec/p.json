@@ -112,8 +112,12 @@
         "text": "DIN数据线"
     },
     {
-        "id": "dec_rgb_led_ws281x_opt_colors",
-        "text": "颜色"
+        "id": "dec_rgb_led_ws281x_opt_default_color_order",
+        "text": "默认颜色顺序"
+    },
+    {
+        "id": "dec_rgb_led_ws281x_opt_view_color_order",
+        "text": "视图颜色顺序"
     },
     {
         "id": "dec_rgb_led_ws281x_opt_polarity",

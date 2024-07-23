@@ -26,7 +26,8 @@ from enum import Enum
 Data = namedtuple('Data', ['ss', 'es', 'val'])
 
 ##
-## 2023/4/8 DreamSourceLab : add flash module
+## 2024/4/8 DreamSourceLab : add flash module
+## 2024/7/5 DreamSourceLab : qpp text update
 ##
 
 # Key: (CPOL, CPHA). Value: SPI mode.
@@ -42,20 +43,22 @@ spi_mode = {
 class process_enum(Enum):
     COMMAND = 0
     WRITE_BYTE = 1
-    READ_BYTE = 2
-    READ_BYTE_CONTINUOUS = 3
-    CONTINUOUS_READ_MODE_BITS = 4
-    ADDRESS_BY_MODE = 5
-    ADDRESS_24BIT = 6
-    ADDRESS_32BIT = 7
-    DUMMY_BY_MODE = 8
-    DUMMY_8BIT = 9
-    DUMMY_32BIT = 10
-    DUMMY_40BIT = 11
+    WRITE_BYTE_CONTINUOUS = 2
+    READ_BYTE = 3
+    READ_BYTE_CONTINUOUS = 4
+    CONTINUOUS_READ_MODE_BITS = 5
+    ADDRESS_BY_MODE = 6
+    ADDRESS_24BIT = 7
+    ADDRESS_32BIT = 8
+    DUMMY_BY_MODE = 9
+    DUMMY_8BIT = 10
+    DUMMY_32BIT = 11
+    DUMMY_40BIT = 12
     
 process_text = {
     process_enum.COMMAND : ['Command' , 'CMD'] , 
     process_enum.WRITE_BYTE : ['Write Data' , 'WD'] , 
+    process_enum.WRITE_BYTE_CONTINUOUS : ['Write Data' , 'WD'] , 
     process_enum.READ_BYTE : ['Read Data' , 'RD'] , 
     process_enum.READ_BYTE_CONTINUOUS : ['Read Data' , 'RD'] , 
     process_enum.ADDRESS_24BIT : ['24-Bit Address' , 'AD'] , 
@@ -108,6 +111,7 @@ READ_MODE_BITS_QUAD = process_info(process_enum.CONTINUOUS_READ_MODE_BITS , proc
 
 #write (io0)
 WRITE_BYTE_SINGLE = process_info(process_enum.WRITE_BYTE , process_mode.SINGLE)
+WRITE_BYTE_QUAD_CONTINUOUS = process_info(process_enum.WRITE_BYTE_CONTINUOUS , process_mode.QUAD)
 
 #DUMMY
 DUMMY_CYCLE = process_info(process_enum.DUMMY_BY_MODE , process_mode.SINGLE)
@@ -142,8 +146,8 @@ command = {
    0x77 : ['Set Burst with Wrap' , 'SBWW' , [DUMMY_CYCLE_8BIT_QUAD , DUMMY_CYCLE_8BIT_QUAD , DUMMY_CYCLE_8BIT_QUAD , READ_BYTE_QUAD_CONTINUOUS]],
    0x02 : ['Page Program' , 'PP' , [READ_ADDRESS] + [WRITE_BYTE_SINGLE] * 256],
    0x12 : ['Page Program' , '4PP' , [READ_4B_ADDRESS] + [WRITE_BYTE_SINGLE] * 256],
-   0x32 : ['Quad Page Program' , 'QPP' , [READ_ADDRESS] + [READ_BYTE_QUAD_CONTINUOUS]],
-   0x34 : ['Quad Page Program' , '4QPP' , [READ_4B_ADDRESS] + [READ_BYTE_QUAD_CONTINUOUS]],
+   0x32 : ['Quad Page Program' , 'QPP' , [READ_ADDRESS] + [WRITE_BYTE_QUAD_CONTINUOUS]],
+   0x34 : ['Quad Page Program' , '4QPP' , [READ_4B_ADDRESS] + [WRITE_BYTE_QUAD_CONTINUOUS]],
    0x20 : ['Sector Erase' , 'SE' , [READ_ADDRESS]],
    0x21 : ['Sector Erase' , '4SE', [READ_4B_ADDRESS]],
    0x52 : ['32KB Block Erase' , 'BE32' , [READ_ADDRESS]],
@@ -345,14 +349,6 @@ class Decoder(srd.Decoder):
         else :
             spiMode='spi'
 
-        #self.putgse(ss,es,[7, ['%s' %spiMode.upper()]])
-        #self.put(ss, es, self.out_ann, [3, ['@%02X' % self.io0data]])
-        #if self.have_io1:
-        #    self.put(ss, es, self.out_ann, [4, ['@%02X' % self.io1data]])
-        #if self.have_io3:
-        #    self.put(ss, es, self.out_ann, [5, ['@%02X' % self.io2data]])
-        #    self.put(ss, es, self.out_ann, [6, ['@%02X' % self.io3data]])
-
         if spiMode == 'qspi' or spiMode == 'dspi':
 
             qdata = []
@@ -472,11 +468,13 @@ class Decoder(srd.Decoder):
                     elif cur_state.enum == process_enum.WRITE_BYTE or \
                         cur_state.enum == process_enum.READ_BYTE or \
                         cur_state.enum == process_enum.READ_BYTE_CONTINUOUS or \
+                        cur_state.enum == process_enum.WRITE_BYTE_CONTINUOUS or \
                         cur_state.enum == process_enum.CONTINUOUS_READ_MODE_BITS:
 
                         self.puttext(origin_data[1] , origin_data[2] , cur_state.enum , origin_data[0])
                         
-                        if cur_state.enum != process_enum.READ_BYTE_CONTINUOUS:
+                        if cur_state.enum != process_enum.READ_BYTE_CONTINUOUS and \
+                        cur_state.enum != process_enum.WRITE_BYTE_CONTINUOUS:
                             self.state_count += 1
 
                             if self.state_count < len(self.diagram):

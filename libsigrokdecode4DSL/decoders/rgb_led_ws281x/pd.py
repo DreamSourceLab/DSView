@@ -3,7 +3,7 @@
 ##
 ## Copyright (C) 2016 Vladimir Ermakov <vooon341@gmail.com>
 ## Copyright (C) 2021 Michael Miller <makuna@live.com>
-## Copyright (C) 2023 DreamSourceLab <support@dreamsourcelab.com>
+## Copyright (C) 2024 DreamSourceLab <support@dreamsourcelab.com>
 
 ##
 ## This program is free software; you can redistribute it and/or modify
@@ -18,6 +18,10 @@
 ##
 ## You should have received a copy of the GNU General Public License
 ## along with this program; if not, see <http://www.gnu.org/licenses/>.
+##
+
+##
+##  2024/7/8 DreamSourceLab : default color order update 
 ##
 
 import sigrokdecode as srd
@@ -40,9 +44,12 @@ class Decoder(srd.Decoder):
         {'id': 'din', 'name': 'DIN', 'desc': 'DIN data line', 'idn':'dec_rgb_led_ws281x_chan_din'},
     )
     options = (
-        {'id': 'colors', 'desc': 'Colors', 'default': 'GRB',
+    	{'id': 'default_color_order', 'desc': 'Default Color Order', 'default': 'GRB',
             'values': ( 'GRB', 'RGB', 'BRG', 'RBG', 'BGR', 'GRBW', 'RGBW', 'WRGB', 'LBGR', 'LGRB', 'LRGB', 'LRBG', 'LGBR', 'LBRG')
-            , 'idn':'dec_rgb_led_ws281x_opt_colors'},
+            , 'idn':'dec_rgb_led_ws281x_opt_default_color_order'},
+        {'id': 'view_color_order', 'desc': 'View Color Order', 'default': 'GRB',
+            'values': ( 'GRB', 'RGB', 'BRG', 'RBG', 'BGR', 'GRBW', 'RGBW', 'WRGB', 'LBGR', 'LGRB', 'LRGB', 'LRBG', 'LGBR', 'LBRG')
+            , 'idn':'dec_rgb_led_ws281x_opt_view_color_order'},
         {'id': 'polarity', 'desc': 'Polarity', 'default': 'normal',
             'values': ('normal', 'inverted'), 'idn':'dec_rgb_led_ws281x_opt_polarity'},
     )
@@ -79,79 +86,60 @@ class Decoder(srd.Decoder):
 
     def handle_bits(self, samplenum):
          if len(self.bits) == self.colorsize:
-             elems = reduce(lambda a, b: (a << 1) | b, self.bits)
-             if self.colorsize == 24:
-                if self.options['colors'] == 'GRB':
-                    rgb = (elems & 0xff0000) >> 8 | (elems & 0x00ff00) << 8 | (elems & 0x0000ff)
-                    self.put(self.ss_packet, samplenum, self.out_ann,
-                                [2, ['GRB#%06x' % rgb]])
-                elif self.options['colors'] == 'RGB':
-                    rgb = elems
-                    self.put(self.ss_packet, samplenum, self.out_ann,
-                                [2, ['RGB#%06x' % rgb]])
-                elif self.options['colors'] == 'BRG':
-                    rgb = (elems & 0xffff00) >> 8 | (elems & 0x0000ff) << 16
-                    self.put(self.ss_packet, samplenum, self.out_ann,
-                                [2, ['BRG#%06x' % rgb]])
-                elif self.options['colors'] == 'RBG':
-                    rgb = (elems & 0xff0000) | (elems & 0x00ff00) >> 8 | (elems & 0x0000ff) << 8
-                    self.put(self.ss_packet, samplenum, self.out_ann,
-                                [2, ['RBG#%06x' % rgb]])
-                elif self.options['colors'] == 'BGR':
-                    rgb = (elems & 0xff0000) >> 16 | (elems & 0x00ff00) | (elems & 0x0000ff) << 16
-                    self.put(self.ss_packet, samplenum, self.out_ann,
-                                [2, ['BGR#%06x' % rgb]])
 
-             else:
-                if self.options['colors'] == 'GRBW':
-                    rgb = (elems & 0xff000000) >> 16 | (elems & 0x00ff0000) | (elems & 0x0000ff00) >> 8
-                    w = (elems & 0x000000ff)
-                    self.put(self.ss_packet, samplenum, self.out_ann,
-                         [2, ['GRB#%06x W#%02x' % (rgb, w)]])
-                elif self.options['colors'] == 'RGBW':
-                    rgb = (elems & 0xffffff00) >> 8
-                    w = (elems & 0x000000ff)
-                    self.put(self.ss_packet, samplenum, self.out_ann,
-                         [2, ['RGB#%06x W#%02x' % (rgb, w)]])
-                elif self.options['colors'] == 'WRGB':
-                    rgb = (elems & 0xffffff00) >> 8
-                    w = (elems & 0x000000ff)
-                    self.put(self.ss_packet, samplenum, self.out_ann,
-                         [2, ['W#%02x RGB#%06x ' % (w, rgb)]])
-                elif self.options['colors'] == 'LBGR':
-                    rgb = (elems & 0x0000ff00) | (elems & 0x00ff0000) >> 16 | (elems & 0x000000ff) << 16
-                    w = (elems & 0xff000000) >> 24
-                    self.put(self.ss_packet, samplenum, self.out_ann,
-                         [2, ['L#%02x BGR#%06x ' % (w, rgb)]])
-                elif self.options['colors'] == 'LGRB':
-                    rgb = (elems & 0x000000ff) | (elems & 0x00ff0000) >> 8 | (elems & 0x0000ff00) << 8
-                    w = (elems & 0xff000000) >> 24
-                    self.put(self.ss_packet, samplenum, self.out_ann,
-                         [2, ['L#%02x GRB#%06x ' % (w, rgb)]])
-                elif self.options['colors'] == 'LRGB':
-                    rgb = (elems & 0x00ffffff)
-                    w = (elems & 0xff000000) >> 24
-                    self.put(self.ss_packet, samplenum, self.out_ann,
-                         [2, ['L#%02x RGB#%06x ' % (w, rgb)]])
-                elif self.options['colors'] == 'LRBG':
-                    rgb = (elems & 0x00ff0000) | (elems & 0x0000ff00) >> 8 | (elems & 0x000000ff) << 8
-                    w = (elems & 0xff000000) >> 24
-                    self.put(self.ss_packet, samplenum, self.out_ann,
-                         [2, ['L#%02x RBG#%06x ' % (w, rgb)]])
-                elif self.options['colors'] == 'LGBR':
-                    rgb = (elems & 0x00ff0000) >> 16 | (elems & 0x0000ffff) << 8
-                    w = (elems & 0xff000000) >> 24
-                    self.put(self.ss_packet, samplenum, self.out_ann,
-                         [2, ['L#%02x GRB#%06x ' % (w, rgb)]])
-                elif self.options['colors'] == 'LBRG':
-                    rgb = (elems & 0x00ffff00) >> 8 | (elems & 0x000000ff) << 16
-                    w = (elems & 0xff000000) >> 24
-                    self.put(self.ss_packet, samplenum, self.out_ann,
-                         [2, ['L#%02x BRG#%06x ' % (w, rgb)]])
-                
+            elems = reduce(lambda a, b: (a << 1) | b, self.bits)
 
-             self.bits = []
-             self.ss_packet = samplenum
+            default_val = 0
+            view_val = 0
+
+            if self.colorsize == 24:
+                for i in range(3):
+                    default_index = self.options['default_color_order'].find(self.options['view_color_order'][i])
+
+                    if default_index == 0:
+                        default_val = (elems & 0xff0000) >> 16
+                    elif default_index == 1:
+                        default_val = (elems & 0x00ff00) >> 8
+                    elif default_index == 2:
+                        default_val = (elems & 0x0000ff) 
+
+                    if i == 0:
+                        view_val = (default_val << 16) | view_val
+                    elif i == 1:
+                        view_val = (default_val << 8) | view_val
+                    elif i == 2:
+                        view_val = default_val | view_val
+                        
+                    self.put(self.ss_packet, samplenum, self.out_ann,[2, ['%s#%06x' % (self.options['view_color_order'] , view_val)]])
+
+            else:
+                for i in range(4):
+                    default_index = self.options['default_color_order'].find(self.options['view_color_order'][i])
+
+                    if default_index == 0:
+                        default_val = (elems & 0xff000000) >> 24
+                    elif default_index == 1:
+                        default_val = (elems & 0x00ff0000) >> 16
+                    elif default_index == 2:
+                        default_val = (elems & 0x0000ff00) >> 8
+                    elif default_index == 3:
+                        default_val = (elems & 0x000000ff) 
+
+                    if i == 0:
+                        view_val = (default_val << 24) | view_val
+                    elif i == 1:
+                        view_val = (default_val << 16) | view_val
+                    elif i == 2:
+                        view_val = (default_val << 8) | view_val
+                    elif i == 3:
+                        view_val = default_val | view_val
+                        
+                    self.put(self.ss_packet, samplenum, self.out_ann,[2, ['%s#%08x' % (self.options['view_color_order'] , view_val)]])
+
+
+
+            self.bits = []
+            self.ss_packet = samplenum
 
     def check_bit_(self, samplenum):
         period = samplenum - self.ss
@@ -175,8 +163,10 @@ class Decoder(srd.Decoder):
     def decode(self):
         if not self.samplerate:
             raise SamplerateError('Cannot decode without samplerate.')
-
-        if len(self.options['colors']) == 4:
+        if len(self.options['default_color_order']) != len(self.options['view_color_order']):
+            raise Exception('default color order len must equal to view color order len')
+        
+        if len(self.options['default_color_order']) == 4:
             self.colorsize = 32
         else:
             self.colorsize = 24
