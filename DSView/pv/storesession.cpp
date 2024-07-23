@@ -48,6 +48,7 @@
 #include <math.h>
 #include <QTextStream>
 #include <list>
+#include <string.h>
 
 #ifdef _WIN32
 #include <QTextCodec>
@@ -919,7 +920,10 @@ void StoreSession::export_exec(data::Snapshot *snapshot)
         return;
        }
     }
-
+  
+    QString sessionTime = _session->get_session_time().toString("yyyy-MM-dd HH:mm:ss");
+    strcpy(output.time_string, sessionTime.toStdString().c_str());
+    
     QFile file(_file_name);
     file.open(QIODevice::WriteOnly | QIODevice::Text);
     QTextStream out(&file); 

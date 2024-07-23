@@ -533,6 +533,8 @@ struct sr_output {
 	void *priv;
 
 	uint64_t start_sample_index;
+
+	char time_string[30];
 };
 
 /** Generic option struct used by various subsystems. */

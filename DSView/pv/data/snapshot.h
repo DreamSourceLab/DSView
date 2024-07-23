@@ -40,6 +40,7 @@ public:
     virtual void init() = 0;
 
 	uint64_t get_sample_count();
+    uint64_t get_total_sample_count();
     uint64_t get_ring_sample_count();
     uint64_t get_ring_start();
     uint64_t get_ring_end();

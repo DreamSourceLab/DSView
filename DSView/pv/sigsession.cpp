@@ -1474,6 +1474,14 @@ namespace pv
 
                 // Post a message to start all decode tasks.
                 if (mode == LOGIC){
+                    auto logic_data = _capture_data->get_logic();
+                    if (is_loop_mode() && logic_data->get_loop_offset() > 0){
+                        uint64_t milliseconds = logic_data->get_ring_sample_count() / 1000000;
+                        QDateTime sessionTime = QDateTime::currentDateTime();
+                        sessionTime = sessionTime.addMSecs(-milliseconds);
+                        set_session_time(sessionTime);
+                    }
+
                     _callback->trigger_message(DSV_MSG_REV_END_PACKET);
                 }
                 else{

@@ -71,6 +71,12 @@ uint64_t Snapshot::get_sample_count()
     return _sample_count;
 }
 
+uint64_t Snapshot::get_total_sample_count()
+{
+    std::lock_guard<std::mutex> lock(_mutex);
+    return _total_sample_count;
+}
+
 uint64_t Snapshot::get_ring_sample_count()
 {
     std::lock_guard<std::mutex> lock(_mutex);
