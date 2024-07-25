@@ -272,7 +272,7 @@ static gboolean parse_header(FILE *file, struct context *ctx)
 			else
 			{
 				sr_info("Probe %d is '%s' identified by '%s'.", ctx->probecount, parts[3], parts[2]);
-				probe = malloc(sizeof(struct probe));
+				probe = g_try_malloc0(sizeof(struct probe));
 				
 				if (probe != NULL){
 					probe->identifier = g_strdup(parts[2]);
@@ -331,7 +331,7 @@ static int init(struct sr_input *in, const char *filename)
 
 	(void)filename;
 
-	if (!(ctx = malloc(sizeof(struct context)))) {
+	if (!(ctx = g_try_malloc0(sizeof(struct context)))) {
 		sr_err("Input format context malloc failed.");
 		return SR_ERR_MALLOC;
 	}

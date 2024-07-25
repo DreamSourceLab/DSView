@@ -317,13 +317,12 @@ SR_PRIV int sr_init(struct sr_context **ctx)
 	}
 
 	/* + 1 to handle when struct sr_context has no members. */
-	context = malloc(sizeof(struct sr_context));
+	context = g_try_malloc0(sizeof(struct sr_context));
 	if (!context) {
 		sr_err("%s,ERROR:failed to alloc memory.", __func__);
 		ret = SR_ERR_MALLOC;
 		goto done;
 	}
-	memset(context, 0, sizeof(struct sr_context));
 
 	ret = libusb_init(&context->libusb_ctx);
 	

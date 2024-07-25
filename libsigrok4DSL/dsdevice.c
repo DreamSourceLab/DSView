@@ -47,12 +47,11 @@ SR_PRIV struct sr_channel *sr_channel_new(uint16_t index, int type, gboolean ena
 {
 	struct sr_channel *probe;
 
-	probe = malloc(sizeof(struct sr_channel));
+	probe = g_try_malloc0(sizeof(struct sr_channel));
 	if (probe == NULL) {
 		sr_err("%s,ERROR:failed to alloc memory.", __func__);
 		return NULL;
 	}
-	memset(probe, 0, sizeof(struct sr_channel));
 
 	probe->index = index;
 	probe->type = type;
@@ -184,7 +183,7 @@ SR_PRIV struct sr_dev_inst *sr_dev_inst_new(int mode, int status,
 		const char *vendor, const char *model, const char *version)
 {
 	struct sr_dev_inst *sdi;
-	if (!(sdi = malloc(sizeof(struct sr_dev_inst)))) {
+	if (!(sdi = g_try_malloc0(sizeof(struct sr_dev_inst)))) {
 		sr_err("%s,ERROR:failed to alloc memory.", __func__);
 		return NULL;
 	}
@@ -245,7 +244,7 @@ SR_PRIV void sr_dev_inst_free(struct sr_dev_inst *sdi)
 SR_PRIV struct sr_usb_dev_inst *sr_usb_dev_inst_new(uint8_t bus, uint8_t address)
 {
 	struct sr_usb_dev_inst *udi;
-	if (!(udi = malloc(sizeof(struct sr_usb_dev_inst)))) {
+	if (!(udi = g_try_malloc0(sizeof(struct sr_usb_dev_inst)))) {
 		sr_err("%s,ERROR:failed to alloc memory.", __func__);
 		return NULL;
 	}
@@ -291,7 +290,7 @@ SR_PRIV struct sr_serial_dev_inst *sr_serial_dev_inst_new(const char *port,
 		return NULL;
 	}
 
-	if (!(serial = malloc(sizeof(struct sr_serial_dev_inst)))) {
+	if (!(serial = g_try_malloc0(sizeof(struct sr_serial_dev_inst)))) {
 		sr_err("%s,ERROR:failed to alloc memory.", __func__);
 		return NULL;
 	}

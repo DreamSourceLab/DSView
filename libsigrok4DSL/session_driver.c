@@ -463,7 +463,7 @@ static int receive_data_logic_dso_v2(int fd, int revents, const struct sr_dev_in
     if (vdev->packet_buffer == NULL){
         vdev->cur_block = 0;
 
-        vdev->packet_buffer = malloc(sizeof(struct session_packet_buffer));
+        vdev->packet_buffer = g_try_malloc0(sizeof(struct session_packet_buffer));
         if (vdev->packet_buffer == NULL){
             sr_err("%s: vdev->packet_buffer malloc failed", __func__);
             return SR_ERR_MALLOC;
@@ -479,7 +479,7 @@ static int receive_data_logic_dso_v2(int fd, int revents, const struct sr_dev_in
         else
             vdev->packet_buffer->post_buf_len = chan_num * 10000;
 
-        vdev->packet_buffer->post_buf = malloc(vdev->packet_buffer->post_buf_len + 1);
+        vdev->packet_buffer->post_buf = g_try_malloc0(vdev->packet_buffer->post_buf_len + 1);
         if (vdev->packet_buffer->post_buf == NULL){
             sr_err("%s: vdev->packet_buffer->post_buf malloc failed", __func__);
             return SR_ERR_MALLOC;
@@ -567,11 +567,11 @@ static int receive_data_logic_dso_v2(int fd, int revents, const struct sr_dev_in
                         for (malloc_chan_index = 0; malloc_chan_index < chan_num; malloc_chan_index++){   
                             // Release the old buffer.
                             if (pack_buffer->block_bufs[malloc_chan_index] != NULL){
-                                free(pack_buffer->block_bufs[malloc_chan_index]);
+                                g_free(pack_buffer->block_bufs[malloc_chan_index]);
                                 pack_buffer->block_bufs[malloc_chan_index] = NULL;
                             }
 
-                            pack_buffer->block_bufs[malloc_chan_index] = malloc(pack_buffer->block_data_len + 1);
+                            pack_buffer->block_bufs[malloc_chan_index] = g_try_malloc(pack_buffer->block_data_len + 1);
                             if (pack_buffer->block_bufs[malloc_chan_index] == NULL){
                                 sr_err("%s: block buffer malloc failed", __func__);
                                 send_error_packet(sdi, vdev, &packet);
@@ -747,7 +747,7 @@ static int dev_open(struct sr_dev_inst *sdi)
 
     assert(sdi->priv == NULL);
 
-    vdev = malloc(sizeof(struct session_vdev));
+    vdev = g_try_malloc(sizeof(struct session_vdev));
     if (vdev == NULL)
     {
         sr_err("%s: sdi->priv malloc failed", __func__);
@@ -763,7 +763,7 @@ static int dev_open(struct sr_dev_inst *sdi)
     sdi->priv = vdev;
     sdi->status = SR_ST_ACTIVE;
 
-    vdev->buf = malloc(CHUNKSIZE + sizeof(uint64_t));
+    vdev->buf = g_try_malloc0(CHUNKSIZE + sizeof(uint64_t));
     if (vdev->buf == NULL){
         sr_err("%s: vdev->buf malloc failed", __func__);
         return SR_ERR_MALLOC;
@@ -794,7 +794,7 @@ static void free_temp_buffer(struct session_vdev *vdev)
 
         for (i = 0; i < SESSION_MAX_CHANNEL_COUNT; i++){
             if (pack_buf->block_bufs[i] != NULL){
-                free(pack_buf->block_bufs[i]);
+                g_free(pack_buf->block_bufs[i]);
                 pack_buf->block_bufs[i] = NULL;
             }
             else{
@@ -1127,7 +1127,7 @@ static int config_set(int id, GVariant *data, struct sr_dev_inst *sdi,
         {
             if (sdi->mode == LOGIC)
             {
-                if (!(vdev->logic_buf = malloc(CHUNKSIZE / 16 * vdev->num_probes)))
+                if (!(vdev->logic_buf = g_try_malloc0(CHUNKSIZE / 16 * vdev->num_probes)))
                 {
                     sr_err("%s: vdev->logic_buf malloc failed", __func__);
                 }
@@ -1512,7 +1512,7 @@ SR_PRIV int sr_new_virtual_device(const char *filename, struct sr_dev_inst **out
         return SR_ERR;
     }
 
-    if (!(metafile = malloc(fileInfo.uncompressed_size)))
+    if (!(metafile = g_try_malloc0(fileInfo.uncompressed_size)))
     {
         sr_err("%s: metafile malloc failed", __func__);
         return SR_ERR_MALLOC;
@@ -1629,7 +1629,7 @@ static int sr_load_virtual_device_session(struct sr_dev_inst *sdi)
         return SR_ERR;
     }
 
-    if (!(metafile = malloc(fileInfo.uncompressed_size)))
+    if (!(metafile = g_try_malloc0(fileInfo.uncompressed_size)))
     {
         sr_err("%s: metafile malloc failed", __func__);
         return SR_ERR_MALLOC;

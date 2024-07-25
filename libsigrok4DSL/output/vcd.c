@@ -65,7 +65,7 @@ static int init(struct sr_output *o, GHashTable *options)
 		return SR_ERR;
 	}
 
-	ctx = malloc(sizeof(struct context));
+	ctx = g_try_malloc0(sizeof(struct context));
 	if (ctx == NULL){
 		sr_err("%s,ERROR:failed to alloc memory.", __func__);
 		return SR_ERR;
@@ -74,7 +74,7 @@ static int init(struct sr_output *o, GHashTable *options)
 
 	o->priv = ctx;
 	ctx->num_enabled_channels = num_enabled_channels;
-	ctx->channel_index = malloc(sizeof(int) * ctx->num_enabled_channels);
+	ctx->channel_index = g_try_malloc0(sizeof(int) * ctx->num_enabled_channels);
 
 	if (ctx->channel_index == NULL){
 		sr_err("%s,ERROR:failed to alloc memory.", __func__);
@@ -211,7 +211,7 @@ static int receive(const struct sr_output *o, const struct sr_datafeed_packet *p
 
 		if (!ctx->prevsample) {
 			/* Can't allocate this until we know the stream's unitsize. */
-			ctx->prevsample = malloc(logic->unitsize);
+			ctx->prevsample = g_try_malloc0(logic->unitsize);
 
 			if (ctx->prevsample == NULL){
 				sr_err("%s,ERROR:failed to alloc memory.", __func__);

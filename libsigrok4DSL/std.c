@@ -48,7 +48,7 @@ SR_PRIV int std_hw_init(struct sr_context *sr_ctx, struct sr_dev_driver *di,
 		return SR_ERR_ARG;
 	}
 
-	if (!(drvc = malloc(sizeof(struct drv_context)))) {
+	if (!(drvc = g_try_malloc0(sizeof(struct drv_context)))) {
 		sr_err("%sDriver context malloc failed.", prefix);
 		return SR_ERR_MALLOC;
 	}

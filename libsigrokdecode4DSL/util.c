@@ -64,7 +64,7 @@ SRD_PRIV PyObject *py_import_by_name(const char *name)
  * @param[out] outstr ptr to char * storage to be filled in.
  *
  * @return SRD_OK upon success, a (negative) error code otherwise.
- *         The 'outstr' argument points to a malloc()ed string upon success.
+ *         The 'outstr' argument points to a g_try_malloc0()ed string upon success.
  *
  * @private
  */
@@ -108,7 +108,7 @@ err:
  * @param[out] outstrlist ptr to GSList of char * storage to be filled in.
  *
  * @return SRD_OK upon success, a (negative) error code otherwise.
- *         The 'outstrlist' argument points to a GSList of malloc()ed strings
+ *         The 'outstrlist' argument points to a GSList of g_try_malloc0()ed strings
  *         upon success.
  *
  * @private
@@ -170,7 +170,7 @@ err:
  * @param[out] outstr Pointer to char * storage to be filled in.
  *
  * @return SRD_OK upon success, a (negative) error code otherwise.
- *         The 'outstr' argument points to a malloc()ed string upon success.
+ *         The 'outstr' argument points to a g_try_malloc0()ed string upon success.
  *
  * @private
  */
@@ -245,7 +245,7 @@ err:
  * @param[out] outstr Pointer to char * storage to be filled in.
  *
  * @return SRD_OK upon success, a (negative) error code otherwise.
- *         The 'outstr' argument points to a malloc()ed string upon success.
+ *         The 'outstr' argument points to a g_try_malloc0()ed string upon success.
  *
  * @private
  */
@@ -286,7 +286,7 @@ err:
  * @param outstr Pointer to char * storage to be filled in.
  *
  * @return SRD_OK upon success, a (negative) error code otherwise.
- *         The 'outstr' argument points to a malloc()ed string upon success.
+ *         The 'outstr' argument points to a g_try_malloc0()ed string upon success.
  *
  * @private
  */
@@ -384,7 +384,7 @@ err:
  * @param[out] outstr ptr to char * storage to be filled in.
  *
  * @return SRD_OK upon success, a (negative) error code otherwise.
- *         The 'outstr' argument points to a malloc()ed string upon success.
+ *         The 'outstr' argument points to a g_try_malloc0()ed string upon success.
  *
  * @private
  */

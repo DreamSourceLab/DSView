@@ -227,7 +227,7 @@ static int get_channels(const struct srd_decoder *d, const char *attr,
 				"a list of dict elements.", d->name, attr);
 			goto err_out;
 		}
-		pdch = malloc(sizeof(struct srd_channel));
+		pdch = g_try_malloc0(sizeof(struct srd_channel));
 		if (pdch == NULL){
 			srd_err("%s,ERROR:failed to alloc memory.", __func__);
 			goto err_out;
@@ -312,7 +312,7 @@ static int get_options(struct srd_decoder *d)
 			goto err_out;
 		}
 
-		o = malloc(sizeof(struct srd_decoder_option));
+		o = g_try_malloc0(sizeof(struct srd_decoder_option));
 		if (o == NULL){
 			srd_err("%s,ERROR:failed to alloc memory.", __func__);
 			goto err_out;
@@ -522,7 +522,7 @@ static int get_annotation_rows(struct srd_decoder *dec)
 				dec->name);
 			goto err_out;
 		}
-		ann_row = malloc(sizeof(struct srd_decoder_annotation_row));
+		ann_row = g_try_malloc0(sizeof(struct srd_decoder_annotation_row));
 		if (ann_row == NULL){
 			srd_err("%s,ERROR:failed to alloc memory.", __func__);
 			goto err_out;
@@ -749,7 +749,7 @@ SRD_API int srd_decoder_load(const char *module_name)
 		return SRD_OK;
 	}
 
-	d = malloc(sizeof(struct srd_decoder));
+	d = g_try_malloc0(sizeof(struct srd_decoder));
 	if (d == NULL){
 		srd_err("%s,ERROR:failed to alloc memory.", __func__);
 		goto err_out;

@@ -205,7 +205,7 @@ namespace pv
         struct ds_device_base_info *dev = (array + count - 1);
         ds_device_handle dev_handle = dev->handle;
 
-        free(array);
+        g_free(array);
 
         if (set_device(dev_handle))
         {

@@ -337,7 +337,7 @@ static int convert_binary(struct srd_decoder_inst *di, PyObject *obj,
 	pdb = pdata->data;
 	pdb->bin_class = bin_class;
 	pdb->size = size;
-	if (!(pdb->data = malloc(pdb->size))){
+	if (!(pdb->data = g_try_malloc0(pdb->size))){
 		srd_err("%s,ERROR:failed to alloc memory.", __func__);
 		return SRD_ERR_MALLOC;
 	}
@@ -675,7 +675,7 @@ static PyObject *Decoder_register(PyObject *self, PyObject *args,
 		return py_new_output_id;
 	}
 
-	pdo = malloc(sizeof(struct srd_pd_output));
+	pdo = g_try_malloc0(sizeof(struct srd_pd_output));
 	if (pdo == NULL){
 		PyGILState_Release(gstate);
 		srd_err("%s,ERROR:failed to alloc memory.", __func__);
@@ -826,7 +826,7 @@ static int create_term_list(PyObject *py_dict, GSList **term_list, gboolean cur_
 				goto err;
 			} 
 
-			term = malloc(sizeof(struct srd_term));
+			term = g_try_malloc0(sizeof(struct srd_term));
 			if (term != NULL){
                 memset(term, 0, sizeof(struct srd_term));
 				term->type = get_term_type(term_str);
@@ -845,7 +845,7 @@ static int create_term_list(PyObject *py_dict, GSList **term_list, gboolean cur_
 				srd_err("Failed to get number of samples to skip.");
 				goto err;
 			}
-			term = malloc(sizeof(struct srd_term));
+			term = g_try_malloc0(sizeof(struct srd_term));
 			if (term != NULL){
                 memset(term, 0, sizeof(struct srd_term));
 				term->type = SRD_TERM_SKIP;
@@ -1016,7 +1016,7 @@ static int set_skip_condition(struct srd_decoder_inst *di, uint64_t count)
 
 	condition_list_free(di);
 
-	term = malloc(sizeof(struct srd_term));
+	term = g_try_malloc0(sizeof(struct srd_term));
 	if (term != NULL){
 		memset(term, 0, sizeof(struct srd_term));
 		term->type = SRD_TERM_SKIP;

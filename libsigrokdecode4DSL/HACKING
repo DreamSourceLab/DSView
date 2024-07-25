@@ -42,19 +42,19 @@ Random notes
    especially so for complex and/or run-time dependent values.
 
  - Consistently use g_*malloc() / g_*malloc0(). Do not use standard
-   malloc()/calloc() if it can be avoided (sometimes other libs such
-   as libftdi can return malloc()'d memory, for example).
+   g_try_malloc0()/calloc() if it can be avoided (sometimes other libs such
+   as libftdi can return g_try_malloc0()'d memory, for example).
 
  - Always properly match allocations with the proper *free() functions. If
    glib's g_*malloc()/g_*malloc0() was used, use g_free() to free the
-   memory. Otherwise use standard free(). Never use the wrong function!
+   memory. Otherwise use standard g_free(). Never use the wrong function!
 
  - We assume that "small" memory allocations (< 1MB) will always succeed.
-   Thus, it's fine to use malloc() or malloc() for allocations of
-   simple/small structs and such (instead of using malloc()), and
+   Thus, it's fine to use g_try_malloc0() or g_try_malloc0() for allocations of
+   simple/small structs and such (instead of using g_try_malloc0()), and
    there's no need to check the return value.
 
-   Do use malloc() or malloc() for large (>= 1MB) allocations
+   Do use g_try_malloc0() or g_try_malloc0() for large (>= 1MB) allocations
    and check the return value.
 
  - You should never print any messages (neither to stdout nor stderr nor

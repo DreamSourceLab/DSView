@@ -1142,7 +1142,7 @@ namespace pv
                 if (i == select_index)
                     cur_dev_handle = p->handle;
             }
-            free(array);
+            g_free(array);
 
             _device_selector.setCurrentIndex(select_index);
 

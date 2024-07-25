@@ -105,7 +105,7 @@ SR_PRIV void dsl_probe_init(struct sr_dev_inst *sdi)
             for (i = 0; devc->profile->dev_caps.vdivs[i]; i++){
             }
 
-            probe->vga_ptr = malloc((i+1)*sizeof(struct DSL_vga));
+            probe->vga_ptr = g_try_malloc0((i+1)*sizeof(struct DSL_vga));
             if (probe->vga_ptr == NULL){
                 sr_err("%s,ERROR:failed to alloc memory.", __func__);
                 return;
@@ -1324,7 +1324,7 @@ SR_PRIV int dsl_fpga_config(struct libusb_device_handle *hdl, const char *filena
 
     filesize = (uint64_t)f_stat.st_size;
 
-    if ((buf = malloc(filesize)) == NULL) {
+    if ((buf = g_try_malloc0(filesize)) == NULL) {
         sr_err("FPGA configure buf malloc failed.");
         fclose(fw);
         return SR_ERR;
@@ -1898,7 +1898,7 @@ SR_PRIV int dsl_dev_open(struct sr_dev_driver *di, struct sr_dev_inst *sdi, gboo
             char *fpga_bit;
             char *res_path = DS_RES_PATH;
 
-            if (!(fpga_bit = malloc(strlen(res_path)+strlen(devc->profile->fpga_bit33) + 5))) {
+            if (!(fpga_bit = g_try_malloc0(strlen(res_path)+strlen(devc->profile->fpga_bit33) + 5))) {
                 sr_err("fpag_bit path malloc error!");
                 return SR_ERR_MALLOC;
             }
@@ -2505,12 +2505,12 @@ SR_PRIV int dsl_start_transfers(const struct sr_dev_inst *sdi)
     size = get_buffer_size(sdi);
 
     /* trigger packet transfer */
-    if (!(trigger_pos = malloc(dsl_header_size(devc)))) {
+    if (!(trigger_pos = g_try_malloc0(dsl_header_size(devc)))) {
         sr_err("%s: USB trigger_pos buffer malloc failed.", __func__);
         return SR_ERR_MALLOC;
     }
 
-    devc->transfers = malloc(sizeof(*devc->transfers) * (num_transfers + 1));
+    devc->transfers = g_try_malloc0(sizeof(*devc->transfers) * (num_transfers + 1));
     if (!devc->transfers) {
         sr_err("%s: USB transfer malloc failed.", __func__);
         return SR_ERR_MALLOC;
@@ -2534,7 +2534,7 @@ SR_PRIV int dsl_start_transfers(const struct sr_dev_inst *sdi)
 
     /* data packet transfer */
     for (i = 1; i <= num_transfers; i++) {
-        if (!(buf = malloc(size))) {
+        if (!(buf = g_try_malloc0(size))) {
             sr_err("%s: USB transfer buffer malloc failed.", __func__);
             return SR_ERR_MALLOC;
         }

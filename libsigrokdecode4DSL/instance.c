@@ -251,7 +251,7 @@ SRD_API int srd_inst_channel_set_all(struct srd_decoder_inst *di,
 		return SRD_ERR_ARG;
 	}
 
-	new_channelmap = malloc(sizeof(int) * di->dec_num_channels);
+	new_channelmap = g_try_malloc0(sizeof(int) * di->dec_num_channels);
 	if (new_channelmap == NULL){
 		srd_err("%s,ERROR:failed to alloc memory.", __func__);
 		return SRD_ERR;
@@ -355,7 +355,7 @@ SRD_API struct srd_decoder_inst *srd_inst_new(struct srd_session *sess,
 		return NULL;
 	}
 
-	di = malloc(sizeof(struct srd_decoder_inst));
+	di = g_try_malloc0(sizeof(struct srd_decoder_inst));
 	if (di == NULL){
 		srd_err("%s,ERROR:failed to alloc memory.", __func__);
 		return NULL;
@@ -392,7 +392,7 @@ SRD_API struct srd_decoder_inst *srd_inst_new(struct srd_session *sess,
 			g_slist_length(di->decoder->opt_channels);
 			
 	if (di->dec_num_channels > 0) {
-		di->dec_channelmap = malloc(sizeof(int) * di->dec_num_channels);
+		di->dec_channelmap = g_try_malloc0(sizeof(int) * di->dec_num_channels);
 
 		if (di->dec_channelmap == NULL){
 			PyGILState_Release(gstate);

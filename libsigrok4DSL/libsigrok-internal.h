@@ -52,7 +52,7 @@
 #define USB_EV_HOTPLUG_ATTACH		1
 #define USB_EV_HOTPLUG_DETTACH		2
 
-#define safe_free(p) 			if((p)) free((p)); ((p)) = NULL;
+#define safe_free(p) 			if((p)) g_free((p)); ((p)) = NULL;
 #define g_safe_free_list(p) 	if((p)) g_slist_free((p)); ((p)) = NULL;
 
 #define DS_VENDOR_ID	0x2A0E

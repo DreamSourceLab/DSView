@@ -75,7 +75,7 @@ SR_PRIV struct sr_session *sr_session_new(void)
 		sr_session_destroy(); // Destory the old.
 	}
 
-	session = malloc(sizeof(struct sr_session));
+	session = g_try_malloc0(sizeof(struct sr_session));
 	if (session == NULL) {
 		sr_err("%s,ERROR:failed to alloc memory.", __func__);
 		return NULL;

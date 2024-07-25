@@ -1406,7 +1406,7 @@ SR_API void ds_set_user_data_dir(const char *dir);
 
 /**
  * Get the device list, if the field _handle is 0, the list visited to end.
- * User need call free() to release the buffer. If the list is empty, the out_list is null.
+ * User need call g_free() to release the buffer. If the list is empty, the out_list is null.
  */
 SR_API int ds_get_device_list(struct ds_device_base_info** out_list, int *out_count);
 

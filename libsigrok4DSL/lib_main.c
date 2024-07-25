@@ -281,10 +281,6 @@ SR_API void ds_set_datafeed_callback(ds_datafeed_callback_t cb)
 	lib_ctx.data_forward_callback = cb;
 }
 
-/**
- * Get the device list, if the field _handle is 0, the list visited to end.
- * User need call free() to release the buffer. If the list is empty, the out_list is null.
- */
 SR_API int ds_get_device_list(struct ds_device_base_info **out_list, int *out_count)
 {
 	int num;
@@ -308,7 +304,7 @@ SR_API int ds_get_device_list(struct ds_device_base_info **out_list, int *out_co
 		return SR_OK;
 	}
 
-	buf = malloc(sizeof(struct ds_device_base_info) * (num + 1));
+	buf = g_try_malloc0(sizeof(struct ds_device_base_info) * (num + 1));
 	if (buf == NULL)
 	{	
 		sr_err("%s,ERROR:failed to alloc memory.", __func__);

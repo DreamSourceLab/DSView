@@ -48,7 +48,7 @@ static int init(struct sr_output *o, GHashTable *options)
 {
 	struct out_context *outc;
 
-	outc = malloc(sizeof(struct out_context));
+	outc = g_try_malloc0(sizeof(struct out_context));
 	if (outc == NULL){
 		sr_err("%s,ERROR:failed to alloc memory.", __func__);
 		return SR_ERR;
