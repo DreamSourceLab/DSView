@@ -618,8 +618,9 @@ bool StoreSession::meta_gen(data::Snapshot *snapshot, std::string &str)
     }
 
     s = sr_samplerate_string(_session->cur_snap_samplerate());
-
     sprintf(meta, "samplerate = %s\n", s); str += meta;
+    g_free(s);
+    s = NULL;
 
     uint64_t tmp_u64;
     int tmp_u8;
