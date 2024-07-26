@@ -26,6 +26,7 @@
 #include "../config.h" /* Needed for PACKAGE_STRING and others. */
 #include "../log.h"
 #include <stdio.h>
+#include <float.h>
 
 #undef LOG_PREFIX
 #define LOG_PREFIX "csv: "
@@ -227,6 +228,21 @@ static int receive(const struct sr_output *o, const struct sr_datafeed_packet *p
     double tmpv;
     struct sr_channel *ch;
 
+    int bDotLetter = 0;
+    char tmp_buffer[50];
+    char *pFlagCheck = tmp_buffer;
+
+    sprintf(tmp_buffer, "%0.15g", DBL_MAX);
+    
+    while (*pFlagCheck)
+    {
+        if (*pFlagCheck == '.'){
+            bDotLetter = 1;
+            break;
+        }
+        pFlagCheck++;
+    }
+
 	*out = NULL;
 	if (!o || !o->sdi)
 		return SR_ERR_ARG;
@@ -266,7 +282,24 @@ static int receive(const struct sr_output *o, const struct sr_datafeed_packet *p
             } 
             
             tmpv = (double)(ctx->index-1) / (double)ctx->samplerate;
-            g_string_append_printf(*out, "%0.15g", tmpv); 
+
+            if (bDotLetter){
+                g_string_append_printf(*out, "%0.15g", tmpv); 
+            }
+            else{
+                sprintf(tmp_buffer, "%0.15g", tmpv);
+                pFlagCheck = tmp_buffer;
+
+                while (*pFlagCheck){
+                    if (*pFlagCheck == ','){
+                        *pFlagCheck = '.';
+                        break;
+                    }
+                    pFlagCheck++;
+                }
+
+                g_string_append_printf(*out, tmp_buffer);
+            }
 
             for (j = 0; j < ctx->num_enabled_channels; j++) {
                 idx = j;
