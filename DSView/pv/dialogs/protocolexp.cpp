@@ -44,6 +44,7 @@
 #include "../log.h"
 #include "../ui/langresource.h"
 #include "../ui/msgbox.h"
+ #include "../utility/formatting.h"
 
 #define EXPORT_DEC_ROW_COUNT_MAX 20
 
@@ -166,7 +167,9 @@ void ProtocolExp::onAccept()
     AppConfig &app = AppConfig::Instance();
     QString default_filter = _format_combobox->currentText();
     QString default_name = app.userHistory.protocolExportPath + "/" + "decoder-";
-    default_name += _session->get_session_time().toString("-yyMMdd-hhmmss");
+
+    QString dateTimeString = Formatting::DateTimeToString(_session->get_session_time(), TimeStrigFormatType::TIME_STR_FORMAT_SHORT2);
+    default_name += "-" + dateTimeString;
 
     QString file_name = QFileDialog::getSaveFileName(
         this,

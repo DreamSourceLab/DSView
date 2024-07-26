@@ -22,6 +22,7 @@
 #include "keywordlineedit.h"
 #include <QHBoxLayout>
 #include <QTimer>
+#include <QSpinBox>
 #include "../config/appconfig.h"
 #include "../ui/langresource.h"
 #include "../log.h"

@@ -28,7 +28,6 @@
 #include <QLabel>
 #include <QRadioButton>
 #include <QSlider>
-#include <QSpinBox>
 #include <QGroupBox>
 #include <QCheckBox>
 #include <QTableWidget>

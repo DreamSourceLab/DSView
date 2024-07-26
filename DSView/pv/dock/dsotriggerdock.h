@@ -24,7 +24,6 @@
 
 #include <QDockWidget>
 #include <QSlider>
-#include <QSpinBox>
 #include <QButtonGroup>
 #include <QScrollArea>
 #include <QLabel>

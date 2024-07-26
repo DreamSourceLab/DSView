@@ -23,8 +23,6 @@
 #include "deviceoptions.h"
  
 #include <QListWidget>
-#include <QSpinBox>
-#include <QDoubleSpinBox> 
 #include <QGuiApplication>
 #include <QScreen>
 #include <QScrollArea>

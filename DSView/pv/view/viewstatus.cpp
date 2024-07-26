@@ -40,6 +40,7 @@
 #include "../config/appconfig.h"
 #include "../appcontrol.h"
 #include "../ui/fn.h"
+#include "../utility/formatting.h"
 
 using namespace std;
 
@@ -188,9 +189,9 @@ void ViewStatus::repeat_unshow()
 }
 
 void ViewStatus::set_trig_time(QDateTime time)
-{
-    _trig_time = L_S(STR_PAGE_DLG, S_ID(IDS_DLG_TRIGGER_TIME), "Trigger Time: ") + time.toString("yyyy-MM-dd hh:mm:ss");
-   // assert(0);
+{   
+    QString dateTimeString = Formatting::DateTimeToString(time, TimeStrigFormatType::TIME_STR_FORMAT_ALL);
+    _trig_time = L_S(STR_PAGE_DLG, S_ID(IDS_DLG_TRIGGER_TIME), "Trigger Time: ") + dateTimeString;
 }
 
 void ViewStatus::set_rle_depth(uint64_t depth)

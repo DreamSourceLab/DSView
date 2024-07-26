@@ -20,10 +20,9 @@
  */
 
 #include "interval.h"
-
 #include <QGridLayout>
-
 #include "../ui/langresource.h"
+#include "../ui/xspinbox.h"
 
 namespace pv {
 namespace dialogs {
@@ -41,7 +40,7 @@ Interval::Interval(QWidget *parent) :
 
     setMinimumWidth(300);
     _interval_label = new QLabel(L_S(STR_PAGE_DLG, S_ID(IDS_DLG_INTERVAL_S), "Interval(s): "), this);
-    _interval_spinBox = new QDoubleSpinBox(this);
+    _interval_spinBox = new XDoubleSpinBox(this);
     _interval_spinBox->setRange(0.1, 10);
     _interval_spinBox->setDecimals(1);
     _interval_spinBox->setButtonSymbols(QAbstractSpinBox::NoButtons);

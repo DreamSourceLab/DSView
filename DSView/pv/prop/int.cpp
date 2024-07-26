@@ -20,13 +20,11 @@
  */
 
 
+#include "int.h"
 #include <stdint.h>
 #include <assert.h>
 #include <math.h>
-
-#include <QSpinBox>
-
-#include "int.h"
+#include "../ui/xspinbox.h"
 
 using boost::optional;
 using namespace std;
@@ -82,7 +80,7 @@ QWidget* Int::get_widget(QWidget *parent, bool auto_commit)
     if (!_value)
         return NULL;
 
-    _spin_box = new QSpinBox(parent);
+    _spin_box = new XSpinBox(parent);
     _spin_box->setSuffix(_suffix);
 
     const GVariantType *const type = g_variant_get_type(_value);

@@ -60,8 +60,8 @@
 #include "utility/encoding.h"
 #include "utility/path.h"
 #include "log.h" 
-
 #include "ui/langresource.h"
+ #include "utility/formatting.h"
 
 #define DEOCDER_CONFIG_VERSION  2
  
@@ -922,8 +922,8 @@ void StoreSession::export_exec(data::Snapshot *snapshot)
        }
     }
   
-    QString sessionTime = _session->get_session_time().toString("yyyy-MM-dd HH:mm:ss");
-    strcpy(output.time_string, sessionTime.toStdString().c_str());
+    QString dateTimeString = Formatting::DateTimeToString(_session->get_session_time(), TimeStrigFormatType::TIME_STR_FORMAT_ALL);
+    strcpy(output.time_string, dateTimeString.toStdString().c_str());
     
     QFile file(_file_name);
     file.open(QIODevice::WriteOnly | QIODevice::Text);
@@ -1649,7 +1649,8 @@ QString StoreSession::MakeSaveFile(bool bDlg)
         }
     }
 
-    default_name += _session->get_session_time().toString("-yyMMdd-hhmmss");
+    QString dateTimeString = Formatting::DateTimeToString(_session->get_session_time(), TimeStrigFormatType::TIME_STR_FORMAT_SHORT2);
+    default_name += "-" + dateTimeString;
 
     // Show the dialog
     if (bDlg)
@@ -1707,7 +1708,9 @@ QString StoreSession::MakeExportFile(bool bDlg)
             break;
         }
     }
-    default_name += _session->get_session_time().toString("-yyMMdd-hhmmss");
+
+    QString dateTimeString = Formatting::DateTimeToString(_session->get_session_time(), TimeStrigFormatType::TIME_STR_FORMAT_SHORT2);
+    default_name += "-" + dateTimeString;
 
     //ext name
     QList<QString> supportedFormats = getSuportedExportFormats();

@@ -43,6 +43,7 @@
 #include <QJsonValue>
 #include <QJsonArray>
 #include <functional>
+#include "utility/formatting.h"
 
 //include with qt5
 #if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
@@ -525,7 +526,8 @@ namespace pv
     void MainWindow::on_screenShot()
     {
         AppConfig &app = AppConfig::Instance();
-        QString default_name = app.userHistory.screenShotPath + "/" + APP_NAME + QDateTime::currentDateTime().toString("-yyMMdd-hhmmss");
+        QString dateTimeString = Formatting::DateTimeToString(QDateTime::currentDateTime(), TimeStrigFormatType::TIME_STR_FORMAT_SHORT2);
+        QString default_name = app.userHistory.screenShotPath + "/" + APP_NAME + "-" + dateTimeString;
 
         int x = parentWidget()->pos().x();
         int y = parentWidget()->pos().y();

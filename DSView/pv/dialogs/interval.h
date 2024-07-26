@@ -24,13 +24,14 @@
 #define DSVIEW_PV_INTERVAL_H
 
 #include <QLabel>
-#include <QDoubleSpinBox>
 #include <QSlider>
 #include <QDialogButtonBox>
 
 #include "../sigsession.h"
 #include "../toolbars/titlebar.h"
 #include "dsdialog.h"
+
+class QDoubleSpinBox;
 
 namespace pv {
 namespace dialogs {
