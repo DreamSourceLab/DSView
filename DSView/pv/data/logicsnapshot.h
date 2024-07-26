@@ -150,6 +150,10 @@ public:
         return _loop_offset;
     }
 
+    inline void cancel_search(){
+        _is_search_stop = true;
+    }
+
     int get_block_index_with_sample(uint64_t sample_index, uint64_t *out_offset);
 
 private:
@@ -257,6 +261,7 @@ private:
     std::vector<void*> _free_block_list;
     struct BlockIndex _cur_ref_block_indexs[CHANNEL_MAX_COUNT];
     int         _lst_free_block_index;
+    bool        _is_search_stop;
  
 	friend class LogicSnapshotTest::Pow2;
 	friend class LogicSnapshotTest::Basic;

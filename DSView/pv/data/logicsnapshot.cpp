@@ -59,6 +59,7 @@ LogicSnapshot::LogicSnapshot() :
     _is_loop = false;
     _loop_offset = 0;
     _able_free = true;
+    _is_search_stop = false;
 }
 
 LogicSnapshot::~LogicSnapshot()
@@ -1258,6 +1259,7 @@ bool LogicSnapshot::pattern_search(int64_t start, int64_t end, int64_t& index,
 {
     std::lock_guard<std::mutex> lock(_mutex);
     
+    _is_search_stop = false;
     start += _loop_offset;
     end += _loop_offset;
     index += _loop_offset;
@@ -1324,12 +1326,16 @@ bool LogicSnapshot::pattern_search_self(int64_t start, int64_t end, int64_t &ind
         index = end;
     }
 
-    while (index != to)
+    while (index != to && !_is_search_stop)
     {
         macthed = 0;
 
         for (int i = 0; i < count; i++)
         {
+            if (_is_search_stop){
+                break;
+            }
+
             val = (char)get_sample_self(index, chanIndexs[i]);
 
             if (flagList[i] == '0')

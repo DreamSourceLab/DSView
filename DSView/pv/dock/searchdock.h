@@ -81,6 +81,7 @@ public slots:
     void on_previous();
     void on_next();
     void on_set();
+    void on_progress_cancel();
 
 private:
     SigSession *_session;
@@ -91,6 +92,8 @@ private:
     QPushButton _nxt_button;
     widgets::FakeLineEdit* _search_value;
     QPushButton *_search_button;
+    bool         _is_busy;
+    bool         _is_cancel;
 };
 
 } // namespace dock
