@@ -19,30 +19,20 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
  */
 
-#ifndef XSPINBOX_H
-#define XSPINBOX_H
+#include "xprogressbar.h"
 
-#include <QSpinBox>
-#include <QWidget>
-
-class XSpinBox : public QSpinBox
+XProgressBar::XProgressBar(QWidget *parent)
+    :QProgressBar(parent)
 {
-public:
-    XSpinBox(QWidget *parent);
-    ~XSpinBox();
 
-protected:
-    QString textFromValue(int val) const override;
-};
+}
 
-class XDoubleSpinBox : public QDoubleSpinBox
+XProgressBar::~XProgressBar()
 {
-public:
-    XDoubleSpinBox(QWidget *parent);
-    ~XDoubleSpinBox();
 
-protected:
-    QString textFromValue(double val) const override;
-};
+}
 
-#endif
+QString XProgressBar::text() const
+{
+    return QString::number(value()) + "%";
+}

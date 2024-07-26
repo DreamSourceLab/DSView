@@ -37,6 +37,7 @@
 #include "../view/cursor.h"
 #include "../ui/langresource.h"
 #include "../ui/dscombobox.h"
+#include "../ui/xprogressbar.h"
 
 namespace pv {
 namespace dialogs {
@@ -48,12 +49,13 @@ StoreProgress::StoreProgress(SigSession *session, QWidget *parent) :
     _ckOrigin = NULL;
 
     _store_session = new StoreSession(session);
+    _progress = new XProgressBar(this);
 
     this->setMinimumSize(550, 220);
     this->setModal(true);
  
-    _progress.setValue(0);
-    _progress.setMaximum(100);
+    _progress->setValue(0);
+    _progress->setMaximum(100);
 
     _isExport = false;
     _is_done = false;
@@ -83,7 +85,7 @@ StoreProgress::StoreProgress(SigSession *session, QWidget *parent) :
     _space->setMinimumHeight(80);
     _space->setVisible(false);
 
-    grid->addWidget(&_progress, 0, 0, 1, 4);
+    grid->addWidget(_progress, 0, 0, 1, 4);
     grid->addWidget(_fileLab, 1, 0, 1, 3);
     grid->addWidget(_openButton, 1, 3, 1, 1);    
     grid->addWidget(_space);
@@ -102,7 +104,7 @@ StoreProgress::StoreProgress(SigSession *session, QWidget *parent) :
 
     connect(_openButton, SIGNAL(clicked()),this, SLOT(on_change_file()));
 
-    _progress.setVisible(false);
+    _progress->setVisible(false);
 
     connect(&m_timer, &QTimer::timeout, this, &StoreProgress::on_timeout);
     m_timer.setInterval(100);
@@ -222,7 +224,7 @@ void StoreProgress::accept()
         _store_session->SetDataRange(start_index, end_index);
     }
 
-    _progress.setVisible(true);
+    _progress->setVisible(true);
     _fileLab->setVisible(false);     
     _fileLab->setVisible(false);
     _openButton->setVisible(false);
@@ -370,10 +372,10 @@ void StoreProgress::on_progress_updated()
 
     if (writed < total){
         int percent = writed * 1.0 / total * 100.0;
-        _progress.setValue(percent);
+        _progress->setValue(percent);
     }
     else{
-        _progress.setValue(100);
+        _progress->setValue(100);
     }
 
     const QString err = _store_session->error();

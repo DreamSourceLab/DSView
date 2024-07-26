@@ -352,6 +352,7 @@ set(DSView_SOURCES
     DSView/pv/ui/uimanager.cpp
     DSView/pv/ui/popupdlglist.cpp
     DSView/pv/ui/xspinbox.cpp
+    DSView/pv/ui/xprogressbar.cpp
     DSView/pv/utility/formatting.cpp
 )
 

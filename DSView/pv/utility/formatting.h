@@ -19,6 +19,9 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
  */
 
+#ifndef FORMATTING_H
+#define FORMATTING_H
+
 class QDateTime;
 class QString;
 
@@ -34,3 +37,5 @@ class Formatting
 public:
     static QString DateTimeToString(QDateTime tm, TimeStrigFormatType format);
 };
+
+#endif
