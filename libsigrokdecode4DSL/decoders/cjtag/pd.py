@@ -4,6 +4,7 @@
 ## Copyright (C) 2012-2020 Uwe Hermann <uwe@hermann-uwe.de>
 ## Copyright (C) 2019 Zhiyuan Wan <dv.xw@qq.com>
 ## Copyright (C) 2019 Kongou Hikari <hikari@iloli.bid>
+## Copyright (C) 2024 DreamSourceLab <support@dreamsourcelab.com>
 ##
 ## This program is free software; you can redistribute it and/or modify
 ## it under the terms of the GNU General Public License as published by
@@ -17,6 +18,11 @@
 ##
 ## You should have received a copy of the GNU General Public License
 ## along with this program; if not, see <http://www.gnu.org/licenses/>.
+##
+
+##
+## 2024/8/7 DreamSourceLab : Display data when zooming out
+## 2024/8/16 DreamSourceLab : Added a filter to remove non-binary data 
 ##
 
 import sigrokdecode as srd
@@ -257,6 +263,7 @@ class Decoder(srd.Decoder):
 
             t = self.state.value[-2:] + ' TDI'
             b = ''.join(map(str, self.bits_tdi[1:]))
+            b = ''.join(filter(lambda x: x in '01', b))
             h = ' (0x%x' % int('0b0' + b, 2) + ')'
             s = t + ': ' + b + h + ', ' + str(len(self.bits_tdi[1:])) + ' bits'
             self.putx_bs([30, [s]])
@@ -266,6 +273,7 @@ class Decoder(srd.Decoder):
 
             t = self.state.value[-2:] + ' TDO'
             b = ''.join(map(str, self.bits_tdo[1:]))
+            b = ''.join(filter(lambda x: x in '01', b))
             h = ' (0x%x' % int('0b0' + b, 2) + ')'
             s = t + ': ' + b + h + ', ' + str(len(self.bits_tdo[1:])) + ' bits'
             self.putx_bs([31, [s]])
