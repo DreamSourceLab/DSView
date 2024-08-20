@@ -2,6 +2,7 @@
 ## This file is part of the libsigrokdecode project.
 ##
 ## Copyright (C) 2022 Gerhard Sittig <gerhard.sittig@gmx.net>
+## Copyright (C) 2024 DreamSourceLab <support@dreamsourcelab.com>
 ##
 ## This program is free software; you can redistribute it and/or modify
 ## it under the terms of the GNU General Public License as published by
@@ -15,6 +16,10 @@
 ##
 ## You should have received a copy of the GNU General Public License
 ## along with this program; if not, see <http://www.gnu.org/licenses/>.
+##
+
+##
+##  2024/7/5 DreamSourceLab : Fixing the issue of decoding only the first frame
 ##
 
 """
@@ -223,6 +228,7 @@ class Decoder(srd.Decoder):
         # spans all unprocessed data, and improves perception.
         if self.sent_fields >= upto:
             self.msg_complete = True
+            self.sent_fields = 0
         if self.msg_complete and self.bits_accum:
             self.failed = ['Excess data bits', 'Excess']
 
