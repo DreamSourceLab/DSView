@@ -17,6 +17,10 @@
 ## along with this program; if not, see <http://www.gnu.org/licenses/>.
 ##
 
+##  
+##  2024/7/30 DreamSourceLab : Allow adjustment of data structure and pulse width timing for high and low levels
+##
+
 import sigrokdecode as srd
 
 class SamplerateError(Exception):
@@ -60,11 +64,14 @@ timing = {
             True: 24.0,
         },
     },
+    #Frame
     'SLOT': {
+        #Frame End
         'min': {
             False: 60.0,
             True: 6.0,
         },
+        #Frame Mid
         'max': {
             False: 120.0,
             True: 16.0,
@@ -77,10 +84,12 @@ timing = {
         },
     },
     'LOWR': {
+        # if time < min , is too short
         'min': {
             False: 1.0,
             True: 1.0,
         },
+        # if time > max , bit = 1, else bit = 0 
         'max': {
             False: 15.0,
             True: 2.0,
@@ -104,6 +113,12 @@ class Decoder(srd.Decoder):
     options = (
         {'id': 'overdrive', 'desc': 'Start in overdrive speed',
             'default': 'no', 'values': ('yes', 'no'), 'idn':'dec_onewire_link_opt_overdrive'},
+        {'id': 'min height level pulse time', 'desc': 'min height level pulse time(us)',
+            'default': 2.0, 'idn':'dec_onewire_link_opt_min_height_level_pulse_time'},
+        {'id': 'min overdrive height level pulse time', 'desc': 'min overdrive height level pulse time(us)',
+            'default': 15.0, 'idn':'dec_onewire_link_opt_min_overdrive_height_level_pulse_time'},
+        {'id': 'data order', 'desc': 'data order',
+            'default': 'bit first', 'values': ('bit first', 'space first'),'idn':'dec_can_opt_data_order'},
     )
     annotations = (
         ('bit', 'Bit'),
@@ -129,6 +144,7 @@ class Decoder(srd.Decoder):
         self.bit_count = -1
         self.command = 0
         self.overdrive = False
+        self.bit_first = True
         self.fall = 0
         self.rise = 0
 
@@ -136,6 +152,10 @@ class Decoder(srd.Decoder):
         self.out_python = self.register(srd.OUTPUT_PYTHON)
         self.out_ann = self.register(srd.OUTPUT_ANN)
         self.overdrive = (self.options['overdrive'] == 'yes')
+        self.bit_first = (self.options['data order'] == 'bit first')
+        timing['LOWR']['max'][False] = float(self.options['min height level pulse time'])
+        timing['LOWR']['max'][True] = float(self.options['min overdrive height level pulse time'])
+
         self.fall = 0
         self.rise = 0
         self.bit_count = -1
@@ -188,6 +208,19 @@ class Decoder(srd.Decoder):
         samples_to_skip = samples_to_skip if (samples_to_skip > 0) else 0
         return self.wait([{0: 'f'}, {'skip': samples_to_skip}])
 
+    def MinBitTimeOutput(self, time):
+        if time < timing['LOWR']['min'][self.overdrive]:
+            self.putfr([1, ['Low signal not long enough',
+                'Low too short',
+                'LOW < ' + str(timing['LOWR']['min'][self.overdrive])]])
+
+    def GetBitValue(self, time):
+        if time > timing['LOWR']['max'][self.overdrive]:
+            self.bit = 1 #Long pulse is a 1 bit.  
+        else:
+            self.bit = 0 #Short pulse is a 0 bit.
+
+
     def decode(self):
         if not self.samplerate:
             raise SamplerateError('Cannot decode without samplerate.')
@@ -237,16 +270,13 @@ class Decoder(srd.Decoder):
                     # Overdrive reset pulse.
                     self.putfr([2, ['Reset', 'Rst', 'R']])
                     self.state = 'PRESENCE DETECT HIGH'
+                #Frame 
                 elif time < timing['SLOT']['max'][self.overdrive]:
-                    # Read/write time slot.
-                    if time < timing['LOWR']['min'][self.overdrive]:
-                        self.putfr([1, ['Low signal not long enough',
-                            'Low too short',
-                            'LOW < ' + str(timing['LOWR']['min'][self.overdrive])]])
-                    if time < timing['LOWR']['max'][self.overdrive]:
-                        self.bit = 1 # Short pulse is a 1 bit.
-                    else:
-                        self.bit = 0 # Long pulse is a 0 bit.
+                    if self.bit_first == True:
+                        # Read/write time slot.
+                        self.MinBitTimeOutput(time)
+                        self.GetBitValue(time)
+
                     # Wait for end of slot.
                     self.state = 'SLOT'
                 else:
@@ -305,6 +335,12 @@ class Decoder(srd.Decoder):
                     self.state = 'LOW'
                 else: # End of time slot.
                     # Output bit.
+                    if self.bit_first == False:
+                        time = ((self.samplenum - self.rise) / self.samplerate) * 1000000.0
+                        # Read/write time slot.
+                        self.MinBitTimeOutput(time)
+                        self.GetBitValue(time)
+
                     self.putfs([0, ['Bit: %d' % self.bit, '%d' % self.bit]])
                     self.putpfs(['BIT', self.bit])
                     # Save command bits.
