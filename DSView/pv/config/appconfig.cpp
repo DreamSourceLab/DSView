@@ -540,6 +540,7 @@ QString GetDecodeScriptDir()
     {
          return dir.absolutePath();        
     }
+    dsv_info("ERROR: the decoder directory is not exists! '../share/libsigrokdecode4DSL/decoders'");
     return "";
 }
 
