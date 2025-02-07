@@ -83,6 +83,8 @@ class Decoder(srd.Decoder):
     options = (
         {'id': 'address_format', 'desc': 'Displayed slave address format',
             'default': 'unshifted', 'values': ('shifted', 'unshifted'), 'idn':'dec_1i2c_opt_addr'},
+        {'id': 'glitch_filter', 'desc': 'Glitch Filter (ns)',
+            'default': 0, 'idn':'dec_1i2c_opt_gf'},
     )
     annotations = (
         ('7', 'start', 'Start condition'),
@@ -123,12 +125,17 @@ class Decoder(srd.Decoder):
         self.pdu_start = None
         self.pdu_bits = 0
         self.bits = []
+        self.glitch_ns_per_sample = 0
+        self.glitch_threshold = 0
+        self.glitch_scl_ss = 0
 
     def metadata(self, key, value):
         if key == srd.SRD_CONF_SAMPLERATE:
             self.samplerate = value
+            self.glitch_ns_per_sample = 1000000000 / value
 
     def start(self):
+        self.glitch_threshold = self.options['glitch_filter']
         self.out_python = self.register(srd.OUTPUT_PYTHON)
         self.out_ann = self.register(srd.OUTPUT_ANN)
         self.out_binary = self.register(srd.OUTPUT_BINARY)
@@ -156,6 +163,18 @@ class Decoder(srd.Decoder):
         self.is_repeat_start = 1
         self.wr = -1
         self.bits = []
+
+    def check_glitch_filter(self):
+        ret = True
+        if self.glitch_threshold != 0:
+            glitch_scl_sdiff = self.samplenum - self.glitch_scl_ss
+            glitch_scl_sdiff_ns = self.glitch_ns_per_sample * glitch_scl_sdiff
+
+            if glitch_scl_sdiff_ns <= self.glitch_threshold:
+                ret = False
+
+        self.glitch_scl_ss = self.samplenum
+        return ret
 
     # Gather 8 bits of data plus the ACK/NACK bit.
     def handle_address_or_data(self, scl, sda):
@@ -257,14 +276,22 @@ class Decoder(srd.Decoder):
             # State machine.
             if self.state == 'FIND START':
                 # Wait for a START condition (S): SCL = high, SDA = falling.
-                self.wait({0: 'h', 1: 'f'})
-                self.handle_start()
+                (scl, sda) = self.wait([{0: 'h', 1: 'f'}, {0: 'r'}, {0: 'f'}])
+
+                if self.check_glitch_filter() == False:
+                    continue
+
+                if (self.matched & (0b1 << 0)):
+                    self.handle_start()
             elif self.state == 'FIND ADDRESS':
                 # Wait for any of the following conditions (or combinations):
                 #  a) Data sampling of receiver: SCL = rising, and/or
                 #  b) START condition (S): SCL = high, SDA = falling, and/or
                 #  c) STOP condition (P): SCL = high, SDA = rising
-                (scl, sda) = self.wait([{0: 'r'}, {0: 'h', 1: 'f'}, {0: 'h', 1: 'r'}])
+                (scl, sda) = self.wait([{0: 'r'}, {0: 'h', 1: 'f'}, {0: 'h', 1: 'r'}, {0: 'f'}])
+
+                if self.check_glitch_filter() == False:
+                    continue
 
                 # Check which of the condition(s) matched and handle them.
                 if (self.matched & (0b1 << 0)):
@@ -278,7 +305,10 @@ class Decoder(srd.Decoder):
                 #  a) Data sampling of receiver: SCL = rising, and/or
                 #  b) START condition (S): SCL = high, SDA = falling, and/or
                 #  c) STOP condition (P): SCL = high, SDA = rising
-                (scl, sda) = self.wait([{0: 'r'}, {0: 'h', 1: 'f'}, {0: 'h', 1: 'r'}])
+                (scl, sda) = self.wait([{0: 'r'}, {0: 'h', 1: 'f'}, {0: 'h', 1: 'r'}, {0: 'f'}])
+
+                if self.check_glitch_filter() == False:
+                    continue
 
                 # Check which of the condition(s) matched and handle them.
                 if (self.matched & (0b1 << 0)):
@@ -291,7 +321,11 @@ class Decoder(srd.Decoder):
                 # Wait for any of the following conditions (or combinations):
                 #  a) a data/ack bit: SCL = rising.
                 #  b) STOP condition (P): SCL = high, SDA = rising
-                (scl, sda) = self.wait([{0: 'r'}, {0: 'h', 1: 'r'}])
+                (scl, sda) = self.wait([{0: 'r'}, {0: 'h', 1: 'r'}, {0: 'f'}])
+
+                if self.check_glitch_filter() == False:
+                    continue
+
                 if (self.matched & (0b1 << 0)):
                     self.get_ack(scl, sda)
                 elif (self.matched & (0b1 << 1)):
