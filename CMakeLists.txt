@@ -669,7 +669,7 @@ install(FILES DSView/icons/logo.svg DESTINATION share/icons/hicolor/scalable/app
 install(FILES DSView/icons/logo.svg DESTINATION share/pixmaps RENAME dsview.svg)
 
 if(CMAKE_SYSTEM_NAME MATCHES "Linux")	
-	install(FILES DSView/DSView.desktop DESTINATION /usr/share/applications RENAME dsview.desktop)
+	install(FILES DSView/DSView.desktop DESTINATION share/applications RENAME dsview.desktop)
 	
 	add_compile_definitions(_DEFAULT_SOURCE)
 

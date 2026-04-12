@@ -174,6 +174,7 @@ bool bHighScale = true;
     QApplication::setApplicationName("DSView");
     QApplication::setOrganizationName("DreamSourceLab");
     QApplication::setOrganizationDomain("www.DreamSourceLab.com");
+    QApplication::setDesktopFileName("dsview");
 
 	//----------------------init log
 	dsv_log_init(); // Don't call before QApplication be inited
