@@ -1,0 +1,9 @@
+# Python runtime dependencies for dsview_mcp.py
+# All stdlib modules (json, os, struct, subprocess, tempfile, pathlib) need no entry.
+
+# MCP SDK -- FastMCP is bundled inside mcp since v1.0; do NOT pip install fastmcp separately
+mcp>=1.8.1
+
+# TOON serializer -- compact token-efficient output for LLM context (optional but recommended)
+# Falls back to JSON if not installed.
+python-toon>=0.1.3

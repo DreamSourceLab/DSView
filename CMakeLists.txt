@@ -692,6 +692,11 @@ install(DIRECTORY libsigrokdecode4DSL/decoders DESTINATION share/libsigrokdecode
 install(DIRECTORY lang DESTINATION share/DSView)
 
 #===============================================================================
+#= dsview-cli (headless command-line tool)
+#-------------------------------------------------------------------------------
+add_subdirectory(cli)
+
+#===============================================================================
 #= Packaging (handled by CPack)
 #-------------------------------------------------------------------------------
 
@@ -704,6 +709,11 @@ set(CPACK_SOURCE_IGNORE_FILES ${CMAKE_CURRENT_BINARY_DIR} ".gitignore" ".git")
 set(CPACK_SOURCE_PACKAGE_FILE_NAME
 	"${CMAKE_PROJECT_NAME}-${DS_VERSION_MAJOR}.${DS_VERSION_MINOR}.${DS_VERSION_MICRO}")
 set(CPACK_SOURCE_GENERATOR "TGZ")
+
+
+SET(CPACK_GENERATOR "DEB")
+SET(CPACK_DEBIAN_PACKAGE_MAINTAINER "Nishanth Menon <nm@ti.com>")
+SET(CPACK_DEBIAN_PACKAGE_DEPENDS "git, gcc, g++, make, cmake, qtbase5-dev, qt5-qmake, libglib2.0-dev, zlib1g-dev, libusb-1.0-0-dev, libboost-dev, libfftw3-dev, python3-dev, libudev-dev, pkg-config")
 
 include(CPack)
 
