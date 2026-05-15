@@ -118,7 +118,9 @@ namespace pv
         _msg = NULL;
         _frame = parent; 
 
+#ifndef Q_OS_DARWIN
         assert(title_bar);
+#endif
         assert(_frame);
 
         _title_bar = title_bar;
@@ -2202,7 +2204,7 @@ namespace pv
             _lst_title_string = title;
 
             setWindowTitle(QApplication::translate("MainWindow", title.toLocal8Bit().data(), 0));
-            _title_bar->setTitle(this->windowTitle());
+            if (_title_bar) _title_bar->setTitle(this->windowTitle());
         }        
     }
 

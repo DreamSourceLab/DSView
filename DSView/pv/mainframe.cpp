@@ -94,7 +94,11 @@ MainFrame::MainFrame()
   
    bool isWin32 = false;
 
-#ifdef _WIN32
+#ifdef Q_OS_DARWIN
+    // macOS: use native window frame with standard decorations
+    setWindowFlags(Qt::Window);
+    _is_win32_parent_window = false;
+#elif defined(_WIN32)
     setWindowFlags(Qt::FramelessWindowHint);
     _is_win32_parent_window = true;
     _taskBtn = NULL;
@@ -120,7 +124,33 @@ MainFrame::MainFrame()
     icon.addFile(QString::fromUtf8(":/icons/logo.svg"), QSize(), QIcon::Normal, QIcon::Off);
     setWindowIcon(icon);
     
+    #ifdef Q_OS_DARWIN
+    // macOS: use native window; no custom titlebar or resize borders
+    _titleBar = NULL;
+    _mainWindow = new MainWindow(NULL, this);
+    _mainWindow->setWindowFlags(Qt::Widget);
+
+    _layout = new QGridLayout(this);
+    _layout->setSpacing(0);
+    _layout->setContentsMargins(0, 0, 0, 0);
+    _layout->addWidget(_mainWindow, 0, 0);
+#else
     _titleBar = new toolbars::TitleBar(true, this, this, false);
+    _mainWindow = new MainWindow(_titleBar, this);
+    _mainWindow->setWindowFlags(Qt::Widget);
+
+    QVBoxLayout *vbox = new QVBoxLayout();
+    vbox->setContentsMargins(0,0,0,0);
+    vbox->setSpacing(0);
+    vbox->addWidget(_titleBar);
+    vbox->addWidget(_mainWindow);
+
+    _layout = new QGridLayout(this);
+    _layout->setSpacing(0);
+    _layout->setContentsMargins(0,0,0,0);
+
+    if (!isWin32 || !_is_win32_parent_window)
+    {
     _mainWindow = new MainWindow(_titleBar, this);
     _mainWindow->setWindowFlags(Qt::Widget);
 
@@ -178,6 +208,7 @@ MainFrame::MainFrame()
         _layout->addLayout(vbox, 0, 0);
     }
 
+#endif // !Q_OS_DARWIN
 #ifdef _WIN32
     _taskBtn = new QWinTaskbarButton(this);
 	connect(_mainWindow, SIGNAL(prgRate(int)), this, SLOT(setTaskbarProgress(int)));
@@ -291,7 +322,7 @@ void MainFrame::resizeEvent(QResizeEvent *event)
         show_border();
     }
 
-    _titleBar->setRestoreButton(IsMaxsized());
+    if (_titleBar) _titleBar->setRestoreButton(IsMaxsized());
     _layout->update();
 }
 
@@ -859,7 +890,7 @@ bool MainFrame::IsNormalsized()
 
 bool MainFrame::IsMoving()
 {
-    return _titleBar->IsMoving();
+    return _titleBar ? _titleBar->IsMoving() : false;
 }
 
 void MainFrame::ReadSettings()
@@ -1014,7 +1045,7 @@ void MainFrame::ReadSettings()
 
     // restore dockwidgets
     _mainWindow->restore_dock();
-    _titleBar->setRestoreButton(app.frameOptions.isMax);
+    if (_titleBar) _titleBar->setRestoreButton(app.frameOptions.isMax);
     _initWndInfo.k = k;
 }
 
