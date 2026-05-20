@@ -708,6 +708,18 @@ set(CPACK_SOURCE_GENERATOR "TGZ")
 include(CPack)
 
 #===============================================================================
+#= macOS: Fix broken symlinks after macdeployqt
+#-------------------------------------------------------------------------------
+
+if(APPLE)
+	add_custom_target(fixup_bundle
+		COMMAND ${CMAKE_COMMAND} -E echo "Fixing broken symlinks in the app bundle..."
+		COMMAND bash -c "[ -d ${EXECUTABLE_OUTPUT_PATH}/DSView.app ] && find ${EXECUTABLE_OUTPUT_PATH}/DSView.app/Contents/Frameworks -type l | while read symlink; do [ ! -e \"$$symlink\" ] && echo \"  Fixing: $$symlink\" && rm \"$$symlink\" && mkdir -p \"$$symlink\"; done || echo '  DSView.app not found, skipping'"
+		COMMENT "Fix broken symlinks in macOS app bundle (run 'make fixup_bundle' after macdeployqt)"
+	)
+endif()
+
+#===============================================================================
 #= Tests
 #-------------------------------------------------------------------------------
 
