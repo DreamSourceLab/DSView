@@ -1305,6 +1305,19 @@ namespace pv
                 _view->zoom(-1);
                 break;
 
+            case Qt::Key_BracketRight:
+                _view->zoom(1);
+                break;
+
+            case Qt::Key_BracketLeft:
+                _view->zoom(-1);
+                break;
+
+            case Qt::Key_F:
+                _view->auto_set_max_scale();
+                _view->set_scale_offset(_view->scale(), 0);
+                break;
+
             case Qt::Key_0:
                 for (auto s : sigs)
                 {
