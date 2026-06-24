@@ -31,6 +31,7 @@
 #include <assert.h>
 #include <QTimer>
 #include <QGuiApplication>
+#include <QWindow>
 
 #include "../config/appconfig.h"
 #include "../appcontrol.h"
@@ -225,22 +226,29 @@ void TitleBar::mousePressEvent(QMouseEvent* event)
         bool bClick = (x >= 6 && y >= 5 && x <= width() - 6);  //top window need resize hit check
  
         if (!bTopWidow || bClick ){
-            _is_draging = true;             
+#ifndef _WIN32
+            if (window()->windowHandle()) {
+                window()->windowHandle()->startSystemMove();
+                event->accept();
+                return;
+            }
+#endif
+            _is_draging = true;
 
-            _clickPos = event->globalPos(); 
+            _clickPos = event->globalPos();
 
             if (_titleParent != NULL){
                 _oldPos = _titleParent->GetParentPos();
             }
             else{
-                _oldPos = _parent->pos(); 
+                _oldPos = _parent->pos();
             }
 
             _is_done_moved = false;
-                
+
             event->accept();
             return;
-        } 
+        }
     }  
     QWidget::mousePressEvent(event);
 }
