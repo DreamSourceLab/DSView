@@ -1,0 +1,57 @@
+name: Build DSView AppImage
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ master ]
+  pull_request:
+
+jobs:
+  build-appimage:
+    runs-on: ubuntu-24.04
+
+    steps:
+    - name: Install dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y \
+          git gcc g++ make cmake qtbase5-dev qt5-qmake qtbase5-dev-tools \
+          libglib2.0-dev zlib1g-dev libusb-1.0-0-dev libboost-dev \
+          libfftw3-dev python3-dev libudev-dev pkg-config patchelf wget file
+
+    - name: Clone DSView
+      run: |
+        git clone https://github.com/DreamSourceLab/DSView.git
+
+    - name: Build and install DSView
+      run: |
+        cd DSView
+        mkdir build && cd build
+        cmake .. -DCMAKE_INSTALL_PREFIX=/usr
+        make -j$(nproc)
+        make DESTDIR=$PWD/AppDir install
+
+    - name: Download linuxdeploy and plugins
+      run: |
+        mkdir -p $HOME/linuxdeploy
+        cd $HOME/linuxdeploy
+        wget -c https://github.com/linuxdeploy/linuxdeploy/releases/download/continuous/linuxdeploy-x86_64.AppImage
+        wget -c https://github.com/linuxdeploy/linuxdeploy-plugin-qt/releases/download/continuous/linuxdeploy-plugin-qt-x86_64.AppImage
+        chmod +x linuxdeploy-*.AppImage
+
+    - name: Build AppImage
+      run: |
+        cd DSView/build
+        export VERSION="$(git describe --tags --always)"
+        export APPIMAGE_EXTRACT_AND_RUN=1
+
+        $HOME/linuxdeploy/linuxdeploy-x86_64.AppImage --appdir AppDir \
+          --output appimage \
+          --plugin qt
+
+    - name: Upload AppImage artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: DSView-AppImage
+        path: DSView/build/*.AppImage
+
