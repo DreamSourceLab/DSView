@@ -501,7 +501,7 @@ namespace pv
 
             if (mode == LOGIC)
             {
-#if defined(__x86_64__) || defined(_M_X64)
+#if defined(__x86_64__) || defined(_M_X64) || defined(__aarch64__) || defined(__arm64__) || defined(_M_ARM64)
                 sw_depth = LogicMaxSWDepth64;
 #elif defined(__i386) || defined(_M_IX86)
                 int ch_num = _session->get_ch_num(SR_CHANNEL_LOGIC);

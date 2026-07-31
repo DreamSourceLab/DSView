@@ -191,6 +191,8 @@ SRD_API int srd_init(const char *path)
 	size_t i;
 	int ret;
 	const char *env_path;
+	PyObject *sys_module;
+	PyObject *dont_write_bytecode;
 
 	srd_log_init(); //init log
  	
@@ -205,7 +207,20 @@ SRD_API int srd_init(const char *path)
 	PyImport_AppendInittab("sigrokdecode", PyInit_sigrokdecode);
 
 	/* Initialize the Python interpreter. */
-    Py_InitializeEx(0); 
+	Py_InitializeEx(0);
+	sys_module = PyImport_ImportModule("sys");
+	dont_write_bytecode = PyBool_FromLong(1);
+	if (!sys_module || !dont_write_bytecode ||
+			PyObject_SetAttrString(sys_module, "dont_write_bytecode",
+				dont_write_bytecode) != 0) {
+		Py_XDECREF(dont_write_bytecode);
+		Py_XDECREF(sys_module);
+		srd_err("Failed to disable Python bytecode generation.");
+		Py_Finalize();
+		return SRD_ERR_PYTHON;
+	}
+	Py_DECREF(dont_write_bytecode);
+	Py_DECREF(sys_module);
 
 #ifdef DECODERS_DIR
 	/* Hardcoded decoders install location, if defined. */
