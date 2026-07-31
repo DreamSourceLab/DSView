@@ -53,4 +53,26 @@ if(UNRESOLVED_SYMLINKS)
 	)
 endif()
 
+set(DECODERS_PATH "${BUNDLE_PATH}/Contents/share/libsigrokdecode4DSL/decoders")
+if(IS_DIRECTORY "${DECODERS_PATH}")
+	execute_process(
+		COMMAND find "${DECODERS_PATH}" -type d -name __pycache__ -print
+		RESULT_VARIABLE CACHE_FIND_RESULT
+		OUTPUT_VARIABLE CACHE_OUTPUT
+		ERROR_VARIABLE CACHE_FIND_ERROR
+		OUTPUT_STRIP_TRAILING_WHITESPACE
+	)
+	if(NOT CACHE_FIND_RESULT EQUAL 0)
+		message(FATAL_ERROR "Could not inspect Python bytecode caches: ${CACHE_FIND_ERROR}")
+	endif()
+	if(NOT CACHE_OUTPUT STREQUAL "")
+		string(REPLACE "\n" ";" CACHE_DIRECTORIES "${CACHE_OUTPUT}")
+		foreach(CACHE_DIRECTORY IN LISTS CACHE_DIRECTORIES)
+			file(REMOVE_RECURSE "${CACHE_DIRECTORY}")
+		endforeach()
+		list(LENGTH CACHE_DIRECTORIES CACHE_COUNT)
+		message(STATUS "Removed ${CACHE_COUNT} Python bytecode cache directories")
+	endif()
+endif()
+
 message(STATUS "macOS bundle symlinks validated")
