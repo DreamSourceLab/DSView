@@ -770,6 +770,7 @@ include(CPack)
 
 if(APPLE)
 	set(FIX_MACOS_BUNDLE_SCRIPT "${CMAKE_CURRENT_SOURCE_DIR}/CMake/FixMacOSBundleSymlinks.cmake")
+	set(VALIDATE_MACOS_BUNDLE_SCRIPT "${CMAKE_CURRENT_SOURCE_DIR}/CMake/ValidateMacOSBundle.cmake")
 
 	add_custom_target(fixup_bundle
 		COMMAND ${CMAKE_COMMAND}
@@ -796,11 +797,22 @@ if(APPLE)
 			COMMAND "${MACDEPLOYQT_EXECUTABLE}"
 				"$<TARGET_BUNDLE_DIR:${PROJECT_NAME}>"
 				-always-overwrite
+				"-libpath=${QT_INSTALL_PREFIX}/lib"
+				-no-codesign
 			COMMAND ${CMAKE_COMMAND}
 				"-DBUNDLE_PATH=$<TARGET_BUNDLE_DIR:${PROJECT_NAME}>"
 				-P "${FIX_MACOS_BUNDLE_SCRIPT}"
+			COMMAND ${CMAKE_COMMAND}
+				"-DBUNDLE_PATH=$<TARGET_BUNDLE_DIR:${PROJECT_NAME}>"
+				-P "${VALIDATE_MACOS_BUNDLE_SCRIPT}"
+			COMMAND /usr/bin/codesign
+				--force --deep --sign -
+				"$<TARGET_BUNDLE_DIR:${PROJECT_NAME}>"
+			COMMAND /usr/bin/codesign
+				--verify --deep --strict --verbose=2
+				"$<TARGET_BUNDLE_DIR:${PROJECT_NAME}>"
 			DEPENDS stage_bundle_resources
-			COMMENT "Deploy Qt frameworks and validate the macOS app bundle"
+			COMMENT "Deploy dependencies and verify the macOS app bundle"
 			VERBATIM
 		)
 	else()
