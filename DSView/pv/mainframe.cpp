@@ -151,22 +151,6 @@ MainFrame::MainFrame()
 
     if (!isWin32 || !_is_win32_parent_window)
     {
-    _mainWindow = new MainWindow(_titleBar, this);
-    _mainWindow->setWindowFlags(Qt::Widget);
-
-    QVBoxLayout *vbox = new QVBoxLayout();
-    vbox->setContentsMargins(0,0,0,0);
-    vbox->setSpacing(0);
-    vbox->addWidget(_titleBar);
-    vbox->addWidget(_mainWindow);
-
-    _layout = new QGridLayout(this);
-    _layout->setSpacing(0);
-    _layout->setContentsMargins(0,0,0,0);
- 
-
-    if (!isWin32 || !_is_win32_parent_window)
-    {
         _top_left = new widgets::Border (TopLeft, this);
         _top_left->setFixedSize(Margin, Margin);
         _top_left->installEventFilter(this);
@@ -882,7 +866,7 @@ bool MainFrame::IsNormalsized()
     }
 #endif
 
-    if (!QFrame::isMaximized() && !QFrame::isMinimized()){
+    if (!QFrame::isMaximized() && !QFrame::isMinimized() && !QFrame::isFullScreen()){
         return true;
     }
     return false;

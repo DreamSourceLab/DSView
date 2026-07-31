@@ -2204,6 +2204,7 @@ namespace pv
             _lst_title_string = title;
 
             setWindowTitle(QApplication::translate("MainWindow", title.toLocal8Bit().data(), 0));
+            _frame->setWindowTitle(this->windowTitle());
             if (_title_bar) _title_bar->setTitle(this->windowTitle());
         }        
     }

@@ -19,7 +19,7 @@
 ## along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ##
 
-cmake_minimum_required(VERSION 2.8.6)
+cmake_minimum_required(VERSION 3.16)
 
 project(DSView)
 
@@ -631,7 +631,17 @@ else()
 	list(APPEND DSVIEW_LINK_LIBS ${PKGDEPS_LIBRARIES})
 endif()
 
-add_executable(${PROJECT_NAME}
+set(DSVIEW_EXECUTABLE_OPTIONS)
+
+if(APPLE)
+	list(APPEND DSVIEW_EXECUTABLE_OPTIONS MACOSX_BUNDLE)
+	set_source_files_properties(DSView.icns PROPERTIES
+		MACOSX_PACKAGE_LOCATION "Resources"
+	)
+	list(APPEND DSView_SOURCES DSView.icns)
+endif()
+
+add_executable(${PROJECT_NAME} ${DSVIEW_EXECUTABLE_OPTIONS}
 	${common_SOURCES}
 	${DSView_SOURCES}
 	${DSView_HEADERS_MOC}
@@ -642,6 +652,45 @@ add_executable(${PROJECT_NAME}
 )
 
 target_link_libraries(${PROJECT_NAME} ${DSVIEW_LINK_LIBS})
+
+if(APPLE)
+	set_target_properties(${PROJECT_NAME} PROPERTIES
+		MACOSX_BUNDLE_BUNDLE_NAME "DSView"
+		MACOSX_BUNDLE_GUI_IDENTIFIER "com.dreamsourcelab.DSView"
+		MACOSX_BUNDLE_ICON_FILE "DSView.icns"
+		MACOSX_BUNDLE_BUNDLE_VERSION "${DS_VERSION_STRING}"
+		MACOSX_BUNDLE_SHORT_VERSION_STRING "${DS_VERSION_STRING}"
+	)
+
+	set(DSVIEW_BUNDLE_SHARE_DIR "$<TARGET_BUNDLE_DIR:${PROJECT_NAME}>/Contents/share")
+	add_custom_target(stage_bundle_resources ALL
+		COMMAND ${CMAKE_COMMAND} -E make_directory
+			"${DSVIEW_BUNDLE_SHARE_DIR}/DSView"
+			"${DSVIEW_BUNDLE_SHARE_DIR}/libsigrokdecode4DSL"
+		COMMAND ${CMAKE_COMMAND} -E copy_directory
+			"${CMAKE_CURRENT_SOURCE_DIR}/DSView/res"
+			"${DSVIEW_BUNDLE_SHARE_DIR}/DSView/res"
+		COMMAND ${CMAKE_COMMAND} -E copy_directory
+			"${CMAKE_CURRENT_SOURCE_DIR}/DSView/demo"
+			"${DSVIEW_BUNDLE_SHARE_DIR}/DSView/demo"
+		COMMAND ${CMAKE_COMMAND} -E copy_directory
+			"${CMAKE_CURRENT_SOURCE_DIR}/lang"
+			"${DSVIEW_BUNDLE_SHARE_DIR}/DSView/lang"
+		COMMAND ${CMAKE_COMMAND} -E copy_directory
+			"${CMAKE_CURRENT_SOURCE_DIR}/libsigrokdecode4DSL/decoders"
+			"${DSVIEW_BUNDLE_SHARE_DIR}/libsigrokdecode4DSL/decoders"
+		COMMAND ${CMAKE_COMMAND} -E copy_if_different
+			"${CMAKE_CURRENT_SOURCE_DIR}/DSView/icons/logo.svg"
+			"${CMAKE_CURRENT_SOURCE_DIR}/NEWS25"
+			"${CMAKE_CURRENT_SOURCE_DIR}/NEWS31"
+			"${CMAKE_CURRENT_SOURCE_DIR}/ug25.pdf"
+			"${CMAKE_CURRENT_SOURCE_DIR}/ug31.pdf"
+			"${DSVIEW_BUNDLE_SHARE_DIR}/DSView"
+		DEPENDS ${PROJECT_NAME}
+		COMMENT "Stage DSView resources and protocol decoders in the app bundle"
+		VERBATIM
+	)
+endif()
 
 if(WIN32)
 # Pass -mwindows so that no "DOS box" will open when PulseView is started.
@@ -661,10 +710,18 @@ set(EXECUTABLE_OUTPUT_PATH "${CMAKE_CURRENT_SOURCE_DIR}/build.dir")
 #-------------------------------------------------------------------------------
 
 # Install the executable.
-install(TARGETS ${PROJECT_NAME} DESTINATION bin)
-install(DIRECTORY DSView/res DESTINATION share/DSView)
-install(DIRECTORY DSView/demo DESTINATION share/DSView)
-install(FILES DSView/icons/logo.svg DESTINATION share/DSView RENAME logo.svg)
+if(APPLE)
+	install(TARGETS ${PROJECT_NAME} BUNDLE DESTINATION .)
+	set(DSVIEW_DATA_DESTINATION "${PROJECT_NAME}.app/Contents/share/DSView")
+	set(DSVIEW_DECODER_DESTINATION "${PROJECT_NAME}.app/Contents/share/libsigrokdecode4DSL")
+else()
+	install(TARGETS ${PROJECT_NAME} DESTINATION bin)
+	set(DSVIEW_DATA_DESTINATION "share/DSView")
+	set(DSVIEW_DECODER_DESTINATION "share/libsigrokdecode4DSL")
+endif()
+install(DIRECTORY DSView/res DESTINATION "${DSVIEW_DATA_DESTINATION}")
+install(DIRECTORY DSView/demo DESTINATION "${DSVIEW_DATA_DESTINATION}")
+install(FILES DSView/icons/logo.svg DESTINATION "${DSVIEW_DATA_DESTINATION}" RENAME logo.svg)
 install(FILES DSView/icons/logo.svg DESTINATION share/icons/hicolor/scalable/apps RENAME dsview.svg)
 install(FILES DSView/icons/logo.svg DESTINATION share/pixmaps RENAME dsview.svg)
 
@@ -683,13 +740,13 @@ if(CMAKE_SYSTEM_NAME MATCHES "Linux")
 
 endif()
 
-install(FILES NEWS25 DESTINATION share/DSView RENAME NEWS25)
-install(FILES NEWS31 DESTINATION share/DSView RENAME NEWS31)
-install(FILES ug25.pdf DESTINATION share/DSView RENAME ug25.pdf)
-install(FILES ug31.pdf DESTINATION share/DSView RENAME ug31.pdf)
+install(FILES NEWS25 DESTINATION "${DSVIEW_DATA_DESTINATION}" RENAME NEWS25)
+install(FILES NEWS31 DESTINATION "${DSVIEW_DATA_DESTINATION}" RENAME NEWS31)
+install(FILES ug25.pdf DESTINATION "${DSVIEW_DATA_DESTINATION}" RENAME ug25.pdf)
+install(FILES ug31.pdf DESTINATION "${DSVIEW_DATA_DESTINATION}" RENAME ug31.pdf)
 
-install(DIRECTORY libsigrokdecode4DSL/decoders DESTINATION share/libsigrokdecode4DSL)
-install(DIRECTORY lang DESTINATION share/DSView)
+install(DIRECTORY libsigrokdecode4DSL/decoders DESTINATION "${DSVIEW_DECODER_DESTINATION}")
+install(DIRECTORY lang DESTINATION "${DSVIEW_DATA_DESTINATION}")
 
 #===============================================================================
 #= Packaging (handled by CPack)
@@ -712,11 +769,43 @@ include(CPack)
 #-------------------------------------------------------------------------------
 
 if(APPLE)
+	set(FIX_MACOS_BUNDLE_SCRIPT "${CMAKE_CURRENT_SOURCE_DIR}/CMake/FixMacOSBundleSymlinks.cmake")
+
 	add_custom_target(fixup_bundle
-		COMMAND ${CMAKE_COMMAND} -E echo "Fixing broken symlinks in the app bundle..."
-		COMMAND bash -c "[ -d ${EXECUTABLE_OUTPUT_PATH}/DSView.app ] && find ${EXECUTABLE_OUTPUT_PATH}/DSView.app/Contents/Frameworks -type l | while read symlink; do [ ! -e \"$$symlink\" ] && echo \"  Fixing: $$symlink\" && rm \"$$symlink\" && mkdir -p \"$$symlink\"; done || echo '  DSView.app not found, skipping'"
-		COMMENT "Fix broken symlinks in macOS app bundle (run 'make fixup_bundle' after macdeployqt)"
+		COMMAND ${CMAKE_COMMAND}
+			"-DBUNDLE_PATH=$<TARGET_BUNDLE_DIR:${PROJECT_NAME}>"
+			-P "${FIX_MACOS_BUNDLE_SCRIPT}"
+		DEPENDS stage_bundle_resources
+		COMMENT "Validate and fix known Homebrew Python symlinks in the app bundle"
+		VERBATIM
 	)
+
+	if(Qt6Core_FOUND)
+		get_filename_component(QT_INSTALL_PREFIX "${Qt6Core_DIR}/../../.." ABSOLUTE)
+	else()
+		get_filename_component(QT_INSTALL_PREFIX "${Qt5Core_DIR}/../../.." ABSOLUTE)
+	endif()
+
+	find_program(MACDEPLOYQT_EXECUTABLE
+		NAMES macdeployqt
+		HINTS "${QT_INSTALL_PREFIX}/bin"
+	)
+
+	if(MACDEPLOYQT_EXECUTABLE)
+		add_custom_target(deploy_bundle
+			COMMAND "${MACDEPLOYQT_EXECUTABLE}"
+				"$<TARGET_BUNDLE_DIR:${PROJECT_NAME}>"
+				-always-overwrite
+			COMMAND ${CMAKE_COMMAND}
+				"-DBUNDLE_PATH=$<TARGET_BUNDLE_DIR:${PROJECT_NAME}>"
+				-P "${FIX_MACOS_BUNDLE_SCRIPT}"
+			DEPENDS stage_bundle_resources
+			COMMENT "Deploy Qt frameworks and validate the macOS app bundle"
+			VERBATIM
+		)
+	else()
+		message(WARNING "macdeployqt was not found; the deploy_bundle target is unavailable")
+	endif()
 endif()
 
 #===============================================================================
@@ -728,5 +817,3 @@ if(ENABLE_TESTS)
 	enable_testing()
 	add_test(test ${CMAKE_CURRENT_BINARY_DIR}/DSView/test/DSView-test)
 endif(ENABLE_TESTS)
-
-
