@@ -46,6 +46,7 @@
 #include <QFont>
 #include <algorithm>
 #include <QWindow>
+#include <QTimer>
 
  #if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
  #include <QDesktopWidget>
@@ -99,10 +100,21 @@ MainFrame::MainFrame()
     _is_win32_parent_window = true;
     _taskBtn = NULL;
     isWin32 = true;
+#elif defined(__APPLE__)
+    // macOS: use the native window frame. The frameless window with a drawn
+    // title bar breaks the Window menu, the traffic-light buttons, and moving
+    // the window between displays.
+    setWindowFlags(Qt::Window);
+    _is_win32_parent_window = false;
 #else
     setWindowFlags(Qt::Window | Qt::FramelessWindowHint | Qt::WindowSystemMenuHint);
     setAttribute(Qt::WA_TranslucentBackground);
     _is_win32_parent_window = false;
+#endif
+
+    bool nativeFrame = false;
+#ifdef __APPLE__
+    nativeFrame = true;
 #endif
  
 #ifdef _WIN32
@@ -121,6 +133,11 @@ MainFrame::MainFrame()
     setWindowIcon(icon);
     
     _titleBar = new toolbars::TitleBar(true, this, this, false);
+    if (nativeFrame){
+        // The window title goes to the native title bar instead.
+        _titleBar->set_native();
+        _titleBar->setVisible(false);
+    }
     _mainWindow = new MainWindow(_titleBar, this);
     _mainWindow->setWindowFlags(Qt::Widget);
 
@@ -135,7 +152,7 @@ MainFrame::MainFrame()
     _layout->setContentsMargins(0,0,0,0);
  
 
-    if (!isWin32 || !_is_win32_parent_window)
+    if (!nativeFrame && (!isWin32 || !_is_win32_parent_window))
     {
         _top_left = new widgets::Border (TopLeft, this);
         _top_left->setFixedSize(Margin, Margin);
@@ -396,6 +413,20 @@ void MainFrame::changeEvent(QEvent *event)
     if (event->type() == QEvent::WindowStateChange && _is_resize_ready) {     
         //dsv_info("Window state changed.");
         QWindowStateChangeEvent *stateChangeEvent = static_cast<QWindowStateChangeEvent*>(event);
+#ifdef __APPLE__
+        if (!(stateChangeEvent->oldState() & (Qt::WindowMinimized | Qt::WindowMaximized | Qt::WindowFullScreen))
+                && (windowState() & (Qt::WindowMaximized | Qt::WindowFullScreen))) {
+            // Native zoom and fullscreen move and resize the window before the state
+            // changes, so the region saved from those events is wrong; use Qt's restore
+            // rectangle. normalGeometry() is client-relative; shift it to the frame
+            // position that restore passes to move(). Fullscreen hides the title bar,
+            // so use the offset recorded while the window was normal.
+            QRect ng = normalGeometry();
+            if (ng.isValid()){
+                saveNormalRegion(QRect(ng.topLeft() + _frameOffset, ng.size()));
+            }
+        }
+#endif
         if (stateChangeEvent->oldState() & Qt::WindowMaximized 
                 && !(windowState() & Qt::WindowMaximized)) {
             
@@ -407,6 +438,20 @@ void MainFrame::changeEvent(QEvent *event)
 bool MainFrame::eventFilter(QObject *object, QEvent *event)
 { 
     const QEvent::Type type = event->type();
+#ifdef __APPLE__
+    // Track only the normal window: maximized, fullscreen and minimized
+    // geometry must not replace the saved restore rectangle.
+    if (object == this && !(windowState() & (Qt::WindowMaximized | Qt::WindowFullScreen | Qt::WindowMinimized))){
+        // Remember the title bar size while it is visible; fullscreen hides it.
+        QMargins m = windowHandle() ? windowHandle()->frameMargins() : QMargins();
+        if (m.top() > 0){
+            _frameOffset = QPoint(-m.left(), -m.top());
+        }
+        if (type == QEvent::Move || type == QEvent::Resize){
+            saveNormalRegion();
+        }
+    }
+#endif
     const QMouseEvent *const mouse_event = (QMouseEvent*)event;
     int newWidth = 0;
     int newHeight = 0;
@@ -598,9 +643,9 @@ void MainFrame::saveNormalRegion()
         return;
     } 
 
-    AppConfig &app = AppConfig::Instance();  
-
 #ifdef _WIN32
+    AppConfig &app = AppConfig::Instance();
+
     if (_parentNativeWidget != NULL){
         RECT rc;
         int k = _parentNativeWidget->GetDevicePixelRatio();
@@ -616,14 +661,20 @@ void MainFrame::saveNormalRegion()
 #endif
 
     if (_parentNativeWidget == NULL){
-        QRect rc = geometry();
-        app.frameOptions.left = rc.left();
-        app.frameOptions.top = rc.top();
-        app.frameOptions.right = rc.right();
-        app.frameOptions.bottom = rc.bottom();
-        app.frameOptions.x = rc.left();
-        app.frameOptions.y = rc.top(); 
+        // Restore uses move() for the frame position and resize() for the client size.
+        saveNormalRegion(QRect(pos(), size()));
     }
+}
+
+void MainFrame::saveNormalRegion(const QRect &rc)
+{
+    AppConfig &app = AppConfig::Instance();
+    app.frameOptions.left = rc.left();
+    app.frameOptions.top = rc.top();
+    app.frameOptions.right = rc.right();
+    app.frameOptions.bottom = rc.bottom();
+    app.frameOptions.x = rc.left();
+    app.frameOptions.y = rc.top();
 }
 
 void MainFrame::writeSettings()
@@ -674,7 +725,18 @@ void MainFrame::ShowFormInit()
 #endif
 
     if (_initWndInfo.isMaxSize){
+#ifdef __APPLE__
+        // Show the window at the saved normal region, then zoom it once the native
+        // window exists: Cocoa only treats a window as zoomed, and only restores it
+        // to its normal frame, if it was zoomed after it was shown.
+        move(_normalRegion.x, _normalRegion.y);
+        resize(_normalRegion.w, _normalRegion.h);
+        QFrame::show();
+        QTimer::singleShot(0, this, [this](){ showMaximized(); });
+        return;
+#else
         move(x, y);
+#endif
         if (isWin32 &&_is_win32_parent_window){
             resize(w, h);
         }
@@ -848,6 +910,13 @@ bool MainFrame::IsNormalsized()
 #ifdef _WIN32
     if (_parentNativeWidget != NULL){
         return _parentNativeWidget->IsNormalsized();
+    }
+#endif
+
+#ifdef __APPLE__
+    // The native frame can go fullscreen; that geometry is not the normal region either.
+    if (QFrame::isFullScreen()){
+        return false;
     }
 #endif
 

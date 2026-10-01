@@ -139,6 +139,7 @@ public slots:
 private:
     void hide_border();
     void show_border();
+    void saveNormalRegion(const QRect &rc);
     void writeSettings();
     void ReadSettings();
     void AttachNativeWindow();
@@ -183,6 +184,9 @@ private:
     WinNativeWidget *_parentNativeWidget; 
     FormInitInfo    _initWndInfo;
     FormRegion      _normalRegion; 
+#ifdef __APPLE__
+    QPoint          _frameOffset; // frame position minus client position, with the title bar
+#endif
     QPoint          _clickPos;
     QRect           _dragStartRegion;
     QScreen         *_move_start_screen;
