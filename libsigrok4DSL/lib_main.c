@@ -251,6 +251,12 @@ SR_API int ds_lib_exit()
 SR_API void ds_set_firmware_resource_dir(const char *dir)
 {  
 	memset(DS_RES_PATH, 0, sizeof(DS_RES_PATH));
+	if (dir && strlen(dir) >= sizeof(DS_RES_PATH)) {
+		/* Refuse rather than overflow or truncate; firmware loading will report the missing path. */
+		sr_err("Firmware resource path is too long (%u bytes, limit %u).",
+			(unsigned)strlen(dir), (unsigned)(sizeof(DS_RES_PATH) - 1));
+		return;
+	}
 	if (dir)
 		strcpy(DS_RES_PATH, dir);
 }
@@ -261,6 +267,11 @@ SR_API void ds_set_firmware_resource_dir(const char *dir)
 SR_API void ds_set_user_data_dir(const char *dir)
 { 
 	memset(DS_USR_PATH, 0, sizeof(DS_USR_PATH));
+	if (dir && strlen(dir) >= sizeof(DS_USR_PATH)) {
+		sr_err("User data path is too long (%u bytes, limit %u).",
+			(unsigned)strlen(dir), (unsigned)(sizeof(DS_USR_PATH) - 1));
+		return;
+	}
 	if (dir)
 		strcpy(DS_USR_PATH, dir);
 }

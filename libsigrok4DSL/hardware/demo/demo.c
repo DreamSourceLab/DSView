@@ -412,11 +412,9 @@ static const char* get_pattern_name(uint8_t device_mode, int index)
 static int get_pattern_mode_from_file(const char *sub_dir, struct demo_mode_pattern* info, int max_count)
 {
     const gchar * filename = NULL;
-    char dir_path_buf[500];
     int str_len;
-    char *dir_path = dir_path_buf;
+    char *dir_path = NULL;
     const char *file_path = NULL;
-    char  short_name[50];
     int i;
     int num;
 
@@ -432,17 +430,18 @@ static int get_pattern_mode_from_file(const char *sub_dir, struct demo_mode_patt
     num = 1;
     info->count = num;
 
-    strcpy(dir_path, DS_USR_PATH); 
-    strcat(dir_path,"/demo/");
-    strcat(dir_path, sub_dir);
+    // Built on the heap: DS_USR_PATH can be up to 499 bytes long.
+    dir_path = g_strconcat(DS_USR_PATH, "/demo/", sub_dir, NULL);
  
     GDir *dir  = NULL;
     dir = g_dir_open(dir_path,0,NULL);
     if(dir == NULL)
     {  
         sr_err("Faild to open dir:%s", dir_path);
+        g_free(dir_path);
         return SR_ERR;
     }
+    g_free(dir_path);
 
     while ((filename = g_dir_read_name(dir)) != NULL)
     {    
@@ -453,9 +452,7 @@ static int get_pattern_mode_from_file(const char *sub_dir, struct demo_mode_patt
             if(strstr(file_path,".demo") != NULL)
             {       
                 str_len = strlen(file_path) - 5;
-                strncpy(short_name,file_path, sizeof(short_name)-1);
-                short_name[str_len] = 0;
-                info->patterns[num++] = g_strdup(short_name);
+                info->patterns[num++] = g_strndup(file_path, str_len);
 
                 if (num >= max_count){
                     break;
@@ -497,24 +494,17 @@ static void scan_dsl_file(struct sr_dev_inst *sdi)
 static int reset_dsl_path(struct sr_dev_inst *sdi, uint8_t pattern_mode)
 { 
     struct demo_mode_pattern *info = NULL;
-    char file_path[500];
 
     safe_free(sdi->path);
-
-    strcpy(file_path, DS_USR_PATH);
-    strcat(file_path,"/demo/");
 
     if (pattern_mode != PATTERN_RANDOM)
     {
         info = &demo_pattern_array[sdi->mode];
         assert(pattern_mode < info->count);
 
-        strcat(file_path, demo_mode_names[sdi->mode]);
-        strcat(file_path, "/");
-        strcat(file_path, info->patterns[pattern_mode]);
-        strcat(file_path,".demo");
-
-        sdi->path = g_strdup(file_path);
+        // Built on the heap: DS_USR_PATH can be up to 499 bytes long.
+        sdi->path = g_strconcat(DS_USR_PATH, "/demo/", demo_mode_names[sdi->mode], "/",
+                                info->patterns[pattern_mode], ".demo", NULL);
     }
     else{
         sdi->path = g_strdup("");
