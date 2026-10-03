@@ -88,7 +88,7 @@ bool AppControl::Init()
     qs = GetDecodeScriptDir();
     cs = pv::path::ToUnicodePath(qs);
     dsv_info("GetDecodeScriptDir:\"%s\"", cs.c_str());
-    //---------------end print directorys.
+    //---------------end print directories.
 
     _session->init();
 

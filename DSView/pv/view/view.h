@@ -251,7 +251,7 @@ public:
     void scroll_to_logic_last_data_time();
 
     /*
-     * horizental cursors
+     * horizontal cursors
      */
     inline bool xcursors_shown(){
         return _show_xcursors;
@@ -305,7 +305,7 @@ public:
     }
 
     /*
-     * untils
+     * utils
      */
     double index2pixel(uint64_t index, bool has_hoff = true);
     uint64_t pixel2index(double pixel);

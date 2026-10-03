@@ -437,7 +437,7 @@ double DsoSnapshot::cal_vrms(double zero_off, int index)
 {
     assert(index >= 0);
 
-    // root-meam-squart value
+    // root-mean-square value
     double vrms_pre = 0;
     double vrms = 0;
     double tmp;

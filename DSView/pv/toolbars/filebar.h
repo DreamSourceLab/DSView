@@ -36,7 +36,7 @@ namespace pv {
 namespace toolbars {
 
 //toolbar button,referenced by MainWindow
-//TODO: load session file, sorte session, load log data file, sorte data, export data
+//TODO: load session file, store session, load log data file, store data, export data
 class FileBar : public QToolBar, public IUiWindow
 {
     Q_OBJECT

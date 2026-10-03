@@ -54,7 +54,7 @@ void KeywordLineEdit::ResetText()
         return;         
     }
 
-    this->setText(L_S(STR_PAGE_DLG, S_ID(IDS_DLG_KEY_DECODER_SEARCH), "Decoder s_ann_search_editearch..."));
+    this->setText(L_S(STR_PAGE_DLG, S_ID(IDS_DLG_KEY_DECODER_SEARCH), "Decoder search..."));
 }
 
 void KeywordLineEdit::SetInputText(QString text)
@@ -102,7 +102,7 @@ void KeyLineEdit::keyPressEvent(QKeyEvent *event)
             }
 
             new_text = QString::number(v);
-            setText(new_text); //Maby need to restore the old value.
+            setText(new_text); //Maybe need to restore the old value.
 
             if (new_text != old_text){               
                 valueChanged(v);

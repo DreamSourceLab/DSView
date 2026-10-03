@@ -65,7 +65,7 @@ struct decode_task_status
     DecoderStack *_decoder;
 };
 
- //a torotocol have a DecoderStack, destroy by DecodeTrace
+ //a protocol has a DecoderStack, destroy by DecodeTrace
 class DecoderStack : public QObject, public SignalData
 {
 	Q_OBJECT

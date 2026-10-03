@@ -972,7 +972,7 @@ void TriggerDock::try_commit_trigger()
             dialogs::DSMessageBox msg(this);
             msg.mBox()->setText(L_S(STR_PAGE_MSG, S_ID(IDS_MSG_TRIGGER), "Trigger"));
             msg.mBox()->setInformativeText(L_S(STR_PAGE_MSG, S_ID(IDS_MSG_SET_TRI_MULTI_CHANNEL), 
-                                          "Trigger setted on multiple channels!\nCapture will Only triggered when all setted channels fullfill at one sample"));
+                                          "Trigger set on multiple channels!\nCapture will Only triggered when all set channels fulfill at one sample"));
             msg.mBox()->setIcon(QMessageBox::Information);
 
             QPushButton *noMoreButton = msg.mBox()->addButton(L_S(STR_PAGE_MSG, S_ID(IDS_MSG_NOT_SHOW_AGAIN), "Not Show Again"), QMessageBox::ActionRole);

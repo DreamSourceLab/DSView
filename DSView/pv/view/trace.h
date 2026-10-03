@@ -304,7 +304,7 @@ protected:
 	QColor get_text_colour();
 
     /**
-     * Paints optoins for different trace type.
+     * Paints options for different trace type.
      * @param p the QPainter to paint into.
      * @param right the x-coordinate of the right edge of the header
      * 	area.
@@ -315,7 +315,7 @@ protected:
 private:
 
     /**
-     * Computes an caches the size of the label text.
+     * Computes and caches the size of the label text.
      */
     void compute_text_size(QPainter &p);
 

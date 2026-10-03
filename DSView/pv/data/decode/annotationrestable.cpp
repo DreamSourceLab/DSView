@@ -272,7 +272,7 @@ const char* AnnotationResTable::format_numberic(const char *hex_str, int fmt)
 
 		  if ((c >= '0' && c <= '9') || (c >= 'A' && c <= 'F') || (c >= 'a' && c <= 'f')){
 			  if (sub_wr == sub_end){
-				  printf("conver error,sub string length is too long!\n");
+				  printf("convert error,sub string length is too long!\n");
 				  return hex_str;
 			  }
 

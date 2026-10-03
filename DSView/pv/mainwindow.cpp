@@ -243,7 +243,7 @@ namespace pv
         _measure_dock->installEventFilter(this);
         _search_dock->installEventFilter(this);
 
-        // defaut language
+        // default language
         AppConfig &app = AppConfig::Instance();
         switchLanguage(app.frameOptions.language);
         switchTheme(app.frameOptions.style);
@@ -735,7 +735,7 @@ namespace pv
                 else if (info->datatype == SR_T_LIST)
                     sessionVar[info->name] =  QJsonValue::fromVariant(g_variant_get_int16(gvar));
                 else{
-                    dsv_err("Unkown config info type:%d", info->datatype);
+                    dsv_err("Unknown config info type:%d", info->datatype);
                     assert(false);
                 }
                 g_variant_unref(gvar);                
@@ -1214,7 +1214,7 @@ namespace pv
             }
         }
 
-        // Resotre the dock pannel.
+        // Restore the dock panel.
         if (_device_agent->have_instance())
             _trig_bar->reload();
     }
@@ -1490,7 +1490,7 @@ namespace pv
 
     void MainWindow::receive_trigger(quint64 trigger_pos)
     {
-        _event.receive_trigger(trigger_pos); // save call
+        _event.receive_trigger(trigger_pos); // safe call
     }
 
     void MainWindow::on_receive_trigger(quint64 trigger_pos)
@@ -1500,7 +1500,7 @@ namespace pv
 
     void MainWindow::frame_ended()
     {
-        _event.frame_ended(); // save call
+        _event.frame_ended(); // safe call
     }
 
     void MainWindow::on_frame_ended()
@@ -1510,7 +1510,7 @@ namespace pv
 
     void MainWindow::frame_began()
     {
-        _event.frame_began(); // save call
+        _event.frame_began(); // safe call
     }
 
     void MainWindow::on_frame_began()
@@ -1999,13 +1999,13 @@ namespace pv
 
                 // The store confirm is not processed.
                 if (_is_save_confirm_msg){
-                    dsv_info("New device attached:Waitting for the confirm box be closed.");
+                    dsv_info("New device attached:Waiting for the confirm box be closed.");
                     _is_auto_switch_device = true; 
                     return;
                 }
 
                 if (_session->is_saving()){
-                    dsv_info("New device attached:Waitting for store the data. and will switch to new device.");
+                    dsv_info("New device attached:Waiting for store the data. and will switch to new device.");
                     _is_auto_switch_device = true;
                     return;
                 }
@@ -2044,7 +2044,7 @@ namespace pv
                 _view->hide_calibration();
 
                 if (_session->is_saving()){
-                    dsv_info("Device detached:Waitting for store the data. and will switch to new device.");
+                    dsv_info("Device detached:Waiting for store the data. and will switch to new device.");
                     _is_auto_switch_device = true;
                     return;
                 }

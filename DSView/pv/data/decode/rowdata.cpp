@@ -44,14 +44,14 @@ RowData::RowData() :
 
 RowData::~RowData()
 {
-    //stack object can not destory the sources
+    //stack object can not destroy the sources
 }
 
 void RowData::clear()
 {
     std::lock_guard<std::mutex> lock(_global_visitor_mutex);
 
-    //destroy objercts
+    //destroy objects
     for (Annotation *p : _annotations){
         delete p;
     }

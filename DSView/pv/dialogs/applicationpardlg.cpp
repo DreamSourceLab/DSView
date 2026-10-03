@@ -146,7 +146,7 @@ bool ApplicationParamDlg::ShowDlg(QWidget *parent)
     logicLay->addWidget(ck_quickScroll, 0, 1, Qt::AlignRight);
     logicLay->addWidget(new QLabel(L_S(STR_PAGE_DLG, S_ID(IDS_DLG_USE_ABORT_DATA_REPEAT), "Used abort data")), 1, 0, Qt::AlignLeft); 
     logicLay->addWidget(ck_abortData, 1, 1, Qt::AlignRight);
-    logicLay->addWidget(new QLabel(L_S(STR_PAGE_DLG, S_ID(IDS_DLG_AUTO_SCROLL_LATEAST_DATA), "Auto scoll latest")), 2, 0, Qt::AlignLeft); 
+    logicLay->addWidget(new QLabel(L_S(STR_PAGE_DLG, S_ID(IDS_DLG_AUTO_SCROLL_LATEAST_DATA), "Auto scroll latest")), 2, 0, Qt::AlignLeft); 
     logicLay->addWidget(ck_autoScrollLatestData, 2, 1, Qt::AlignRight);
     lay->addWidget(logicGroup);
 
@@ -156,7 +156,7 @@ bool ApplicationParamDlg::ShowDlg(QWidget *parent)
     dsoLay->setContentsMargins(10,15,15,10);
     dsoLay->setAlignment(Qt::AlignTop | Qt::AlignLeft);
     dsoGroup->setLayout(dsoLay);
-    dsoLay->addWidget(new QLabel(L_S(STR_PAGE_DLG, S_ID(IDS_DLG_TRIG_DISPLAY_MIDDLE), "Tig pos in middle")), 0, 0, Qt::AlignLeft);
+    dsoLay->addWidget(new QLabel(L_S(STR_PAGE_DLG, S_ID(IDS_DLG_TRIG_DISPLAY_MIDDLE), "Trig pos in middle")), 0, 0, Qt::AlignLeft);
     dsoLay->addWidget(ck_trigInMid, 0, 1, Qt::AlignRight);
     lay->addWidget(dsoGroup);
 

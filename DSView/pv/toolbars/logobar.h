@@ -49,7 +49,7 @@ public:
 
     void enable_toggle(bool enable);
 
-   //show the hardware device conneted status with logo picture
+   //show the hardware device connected status with logo picture
     void dsl_connected(bool conn);
 
     inline void set_mainform_callback(IMainForm *callback){

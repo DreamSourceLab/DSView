@@ -176,7 +176,7 @@ void LogicSnapshot::first_payload(const sr_datafeed_logic &logic, uint64_t total
         }
 
         if (_ch_index.size() == 0){
-            dsv_info("ERROR: all channels disalbed");
+            dsv_info("ERROR: all channels disabled");
             assert(0);
         }
     }
@@ -231,7 +231,7 @@ void LogicSnapshot::append_cross_payload(const sr_datafeed_logic &logic)
     uint64_t offset = 0;
     void *lbp = NULL;
 
-    // samples not accurate, lead to a larger _sampole_count
+    // samples not accurate, lead to a larger _sample_count
     // _sample_count should be fixed in the last packet
     // so _total_sample_count must be align to LeafBlock
     uint64_t samples = ceil(logic.length * 8.0 / _channel_num);

@@ -100,7 +100,7 @@ void DecoderOptionsDlg::load_options_view()
     form->setLabelAlignment(Qt::AlignLeft);
     dlg->layout()->addLayout(form);
     
-    //scroll pannel
+    //scroll panel
     QWidget *scroll_pannel  = new QWidget();
     QVBoxLayout *scroll_lay = new QVBoxLayout();
     scroll_lay->setContentsMargins(0, 0, 0, 0);

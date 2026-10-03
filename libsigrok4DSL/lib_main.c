@@ -565,7 +565,7 @@ SR_API int ds_device_from_file(const char *file_path)
 }
 
 /**
- * Get the decive supports work mode, mode list: LOGIC、ANALOG、DSO
+ * Get the work modes the device supports, mode list: LOGIC, ANALOG, DSO
  * return type see struct sr_dev_mode.
  */
 SR_API const GSList *ds_get_actived_device_mode_list()
@@ -576,7 +576,7 @@ SR_API const GSList *ds_get_actived_device_mode_list()
 
 	if (dev == NULL)
 	{
-		sr_err("Have no actived device.");
+		sr_err("Have no active device.");
 	}
 	if (dev->driver == NULL || dev->driver->dev_mode_list == NULL)
 	{
@@ -588,7 +588,7 @@ SR_API const GSList *ds_get_actived_device_mode_list()
 }
 
 /**
- * Remove one device from the list, and destory it.
+ * Remove one device from the list, and destroy it.
  * User need to call ds_get_device_list() to get the new list.
  */
 SR_API int ds_remove_device(ds_device_handle handle)
@@ -646,8 +646,8 @@ SR_API int ds_remove_device(ds_device_handle handle)
 }
 
 /**
- * Get the actived device info.
- * If the actived device is not exists, the handle filed will be set null.
+ * Get the active device info.
+ * If the active device does not exist, the handle field will be set null.
  */
 SR_API int ds_get_actived_device_info(struct ds_device_full_info *fill_info)
 {
@@ -699,7 +699,7 @@ SR_API int ds_get_actived_device_info(struct ds_device_full_info *fill_info)
 }
 
 /**
- * Get actived device work model. mode list:LOGIC、ANALOG、DSO
+ * Get the active device work mode. mode list: LOGIC, ANALOG, DSO
  */
 SR_API int ds_get_actived_device_mode()
 {
@@ -745,7 +745,7 @@ SR_API int ds_start_collect()
 	}
 	if (ds_channel_is_enabled() == 0)
 	{
-		sr_err("There have no useable channel, unable to collect.");
+		sr_err("There have no usable channel, unable to collect.");
 		return SR_ERR_CALL_STATUS;
 	}
 	if (lib_ctx.data_forward_callback == NULL)
@@ -882,13 +882,13 @@ SR_API int ds_release_actived_device()
 
 	if (lib_ctx.actived_device_instance->dev_type == DEV_TYPE_USB)
 	{
-		sr_info("Release current actived device. name:\"%s\", handle:%p", 
+		sr_info("Release current active device. name:\"%s\", handle:%p", 
 			lib_ctx.actived_device_instance->name,
 			lib_ctx.actived_device_instance->handle);
 	}
 	else
 	{
-		sr_info("Release current actived device. name:\"%s\"", 
+		sr_info("Release current active device. name:\"%s\"", 
 			lib_ctx.actived_device_instance->name);
 	}	
 
@@ -940,7 +940,7 @@ SR_API int ds_get_actived_device_config(const struct sr_channel *ch,
 {
 	if (lib_ctx.actived_device_instance == NULL)
 	{
-		sr_err("Have no actived device.");
+		sr_err("Have no active device.");
 		return SR_ERR_CALL_STATUS;
 	}
 
@@ -958,7 +958,7 @@ SR_API int ds_set_actived_device_config(const struct sr_channel *ch,
 {
 	if (lib_ctx.actived_device_instance == NULL)
 	{
-		sr_err("Have no actived device.");
+		sr_err("Have no active device.");
 		return SR_ERR_CALL_STATUS;
 	}
 
@@ -975,7 +975,7 @@ SR_API int ds_get_actived_device_config_list(const struct sr_channel_group *cg,
 {
 	if (lib_ctx.actived_device_instance == NULL)
 	{
-		sr_err("Have no actived device.");
+		sr_err("Have no active device.");
 		return SR_ERR_CALL_STATUS;
 	}
 
@@ -990,7 +990,7 @@ SR_API const struct sr_config_info *ds_get_actived_device_config_info(int key)
 {
 	if (lib_ctx.actived_device_instance == NULL)
 	{
-		sr_err("Have no actived device.");
+		sr_err("Have no active device.");
 		return NULL;
 	}
 
@@ -1001,7 +1001,7 @@ SR_API int ds_get_actived_device_status(struct sr_status *status, gboolean prg)
 {
 	if (lib_ctx.actived_device_instance == NULL)
 	{
-		sr_err("Have no actived device.");
+		sr_err("Have no active device.");
 		return SR_ERR_CALL_STATUS;
 	}
 
@@ -1267,7 +1267,7 @@ static void hotplug_event_listen_callback(struct libusb_context *ctx, struct lib
 
 			if (lib_ctx.detach_device_handle == NULL)
 			{
-				sr_err("The detached device handle is null, but the status is waitting for reconnect.");
+				sr_err("The detached device handle is null, but the status is waiting for reconnect.");
 			}
 			else
 			{
@@ -1285,7 +1285,7 @@ static void hotplug_event_listen_callback(struct libusb_context *ctx, struct lib
 		}
 		if (bDone == 0)
 		{
-			lib_ctx.attach_event_flag = 1; // Is a new device attched.
+			lib_ctx.attach_event_flag = 1; // Is a new device attached.
 			lib_ctx.attach_device_handle = dev;
 		}
 		lib_ctx.is_waitting_reconnect = 0;
@@ -1381,7 +1381,7 @@ static void process_attach_event(int isEvent)
 		drivers++;
 	}
 
-	// Tell user one new device attched, and the list is updated.
+	// Tell user one new device attached, and the list is updated.
 	if (num > 0 && isEvent){
 		post_event_async(DS_EV_NEW_DEVICE_ATTACH);
 	}
@@ -1496,7 +1496,7 @@ static gpointer usb_hotplug_process_proc(gpointer data)
 
 	if (lib_ctx.callback_thread_count > 0)
 	{
-		sr_info("%d callback thread is actived, waiting all ends...", lib_ctx.callback_thread_count);
+		sr_info("%d callback thread is active, waiting all ends...", lib_ctx.callback_thread_count);
 	}
 
 	// Wait all callback thread end.

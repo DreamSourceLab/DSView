@@ -121,7 +121,7 @@ const std::vector<QString>& Annotation::annotations() const
 	
      AnnotationSourceItem &resItem = *pobj;
 
-	//get origin data, is not a numberic value
+	//get origin data, is not a numeric value
      if (!resItem.is_numeric){
         return resItem.src_lines;
      }
@@ -170,7 +170,7 @@ const std::vector<QString>& Annotation::annotations() const
 				free(text_format_buf);
 		 }
 		 else{
-			 //have only numberic value
+			 //have only numeric value
 			 const char *num_str = _status->m_resTable.format_numberic(resItem.str_number_hex, resItem.cur_display_format);
 			 resItem.cvt_lines.push_back(QString(num_str));
 		 }

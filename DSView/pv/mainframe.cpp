@@ -777,7 +777,7 @@ void MainFrame::AttachNativeWindow()
     nativeWindow->SetBorderColor(QColor(0x80, 0x80, 0x80));
     _parentNativeWidget = nativeWindow;
 
-    //Make sure the shadow displayed at a right position fisrt time for windows 10.
+    //Make sure the shadow displayed at a right position first time for windows 10.
     QTimer::singleShot(100, this, [this](){
                 _parentNativeWidget->ResizeChild();
             });
@@ -1021,7 +1021,7 @@ void MainFrame::ReadSettings()
 #ifdef _WIN32
 void MainFrame::showEvent(QShowEvent *event)
 {
-    // Taskbar Progress Effert for Win7 and Above
+    // Taskbar Progress Effect for Win7 and Above
     if (_taskBtn && _taskBtn->window() == NULL) {
         _taskBtn->setWindow(windowHandle());
         _taskPrg = _taskBtn->progress();

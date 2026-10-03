@@ -239,7 +239,7 @@ void StoreSession::save_logic(pv::data::LogicSnapshot *logic_snapshot)
     int end_block = 0;
 
     if (start_index > logic_snapshot->get_ring_sample_count()){
-        dsv_err("ERROR:the start curosr is invalid!");
+        dsv_err("ERROR:the start cursor is invalid!");
         _units_stored = -1;
         progress_updated();
         return;
@@ -1003,7 +1003,7 @@ void StoreSession::export_exec(data::Snapshot *snapshot)
         uint64_t end_offset = 0;
 
         if (start_index > logic_snapshot->get_ring_sample_count()){
-            dsv_err("ERROR:the start curosr is invalid!");
+            dsv_err("ERROR:the start cursor is invalid!");
             _units_stored = -1;
             progress_updated();
             return;
@@ -1492,7 +1492,7 @@ bool StoreSession::load_decoders(dock::ProtocolDock *widget, QJsonArray &dec_arr
                     if (options_obj.contains(opt->id)) 
                     {
                         GVariant *new_value = NULL;
-                        // When the numberic value is a string, it got zero always,
+                        // When the numeric value is a string, it got zero always,
                         // so must convert from string.
                         QString vs = options_obj[opt->id].toString();
 

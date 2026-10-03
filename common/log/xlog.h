@@ -24,7 +24,7 @@
 *  	xlog_context *ctx = xlog_new();
 *	xlog_writer *wr = xlog_create_writer(ctx, "module name");
 *	xlog_err(wr, "count:%d", 100);
-*	xlog_free(ctx); //free the context, all writer will can't to use
+*	xlog_free(ctx); //free the context, all writers can no longer be used
 */
 
 #ifndef	_X_LOG_H_
@@ -77,7 +77,7 @@ XLOG_API xlog_context* xlog_new2(int bConsole);
 
 /**
  * 	free a log context, return 0 if success.
- * 	and all xlog_writer will be can't to use.
+ * 	and all xlog_writers can no longer be used.
  */
 XLOG_API void xlog_free(xlog_context* ctx);
 
@@ -88,7 +88,7 @@ XLOG_API int xlog_add_receiver(xlog_context* ctx, xlog_receive_callback rev, int
 
 /**
  * 	append a log data receiver, return 0 if success.
- * 	the log data will be writed to file.
+ * 	the log data will be written to file.
  */
 XLOG_API int xlog_add_receiver_from_file(xlog_context* ctx, const char *file_path, int *out_index, int bAppend);
 
@@ -142,7 +142,7 @@ XLOG_API int xlog_set_domain(xlog_writer* wr, const char *domain);
 //-------------------------------------------------print api
 
 /**
- * print a error message, return 0 if success.
+ * print an error message, return 0 if success.
  */
 XLOG_API int xlog_err(xlog_writer *wr, const char *format, ...);
 
@@ -152,7 +152,7 @@ XLOG_API int xlog_err(xlog_writer *wr, const char *format, ...);
 XLOG_API int xlog_warn(xlog_writer *wr, const char *format, ...);
 
 /**
- * print a informational message, return 0 if success.
+ * print an informational message, return 0 if success.
  */
 XLOG_API int xlog_info(xlog_writer *wr, const char *format, ...);
 

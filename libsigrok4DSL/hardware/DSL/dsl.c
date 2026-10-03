@@ -237,7 +237,7 @@ SR_PRIV int dsl_en_ch_num(const struct sr_dev_inst *sdi)
 }
 
 /**
- * Check the USB configuration to determine if this is an dsl device.
+ * Check the USB configuration to determine if this is a dsl device.
  *
  * @return TRUE if the device's configuration profile match dsl hardware
  *         configuration, FALSE otherwise.
@@ -265,7 +265,7 @@ SR_PRIV gboolean dsl_check_conf_profile(libusb_device *dev)
         if ((ret = libusb_open(dev, &hdl)) < 0){
             sr_err("%s:%d, Failed to open device: %s", 
 			    __func__, __LINE__, libusb_error_name(ret));
-            // Mybe the device is busy, add it to list.
+            // Maybe the device is busy, add it to list.
             return TRUE;
         }
 
@@ -289,7 +289,7 @@ SR_PRIV gboolean dsl_check_conf_profile(libusb_device *dev)
         if (strncmp((const char *)strdesc, "USB-based DSL Instrument v2", 27))
             break;
 
-        /* If we made it here, it must be an dsl device. */
+        /* If we made it here, it must be a dsl device. */
         bSucess = TRUE;
     }
 
@@ -1056,7 +1056,7 @@ SR_PRIV int dsl_fpga_arm(const struct sr_dev_inst *sdi)
 
     if (trigger == NULL)
     {
-        sr_err("Trigger have'nt inited.");
+        sr_err("Trigger hasn't been inited.");
         return SR_ERR_CALL_STATUS;
     }
 
@@ -1230,7 +1230,7 @@ SR_PRIV int dsl_fpga_arm(const struct sr_dev_inst *sdi)
         sr_err("Sent bulk write command of arm FPGA failed.");
         return SR_ERR;
     }
-    // check sys_clr dessert
+    // check sys_clr deassert
     rd_cmd.header.dest = DSL_CTL_HW_STATUS;
     rd_cmd.header.size = 1;
     rd_cmd_data = 0;
@@ -1253,7 +1253,7 @@ SR_PRIV int dsl_fpga_arm(const struct sr_dev_inst *sdi)
                 libusb_error_name(ret));
         return SR_ERR;
     } else if (transferred != sizeof(struct DSL_setting)) {
-        sr_err("Arm FPGA error: expacted transfer size %d; actually %d",
+        sr_err("Arm FPGA error: expected transfer size %d; actually %d",
                 sizeof(struct DSL_setting), transferred);
         return SR_ERR;
     }
@@ -1268,7 +1268,7 @@ SR_PRIV int dsl_fpga_arm(const struct sr_dev_inst *sdi)
                     libusb_error_name(ret));
             return SR_ERR;
         } else if (transferred != sizeof(struct DSL_setting_ext32)) {
-            sr_err("Arm FPGA(setting_ext32) error: expacted transfer size %d; actually %d",
+            sr_err("Arm FPGA(setting_ext32) error: expected transfer size %d; actually %d",
                     sizeof(struct DSL_setting_ext32), transferred);
             return SR_ERR;
         }
@@ -1352,7 +1352,7 @@ SR_PRIV int dsl_fpga_config(struct libusb_device_handle *hdl, const char *filena
 		return SR_ERR;
     }
 
-	// step2: assert PORG_B high
+	// step2: assert PROG_B high
     wr_cmd.header.dest = DSL_CTL_PROG_B;
     wr_cmd.header.size = 1;
     wr_cmd.data[0] = bmWR_PROG_B;
@@ -1432,7 +1432,7 @@ SR_PRIV int dsl_fpga_config(struct libusb_device_handle *hdl, const char *filena
                 libusb_error_name(ret));
 		return SR_ERR;
     } else if (transferred != chunksize) {
-        sr_err("Configure FPGA error: expacted transfer size %d; actually %d.",
+        sr_err("Configure FPGA error: expected transfer size %d; actually %d.",
                 chunksize, transferred);
 		return SR_ERR;
     }
@@ -1927,7 +1927,7 @@ SR_PRIV int dsl_dev_open(struct sr_dev_driver *di, struct sr_dev_inst *sdi, gboo
             }
         }
         else {
-            ret = dsl_wr_reg(sdi, CTR0_ADDR, bmNONE); // dessert clear
+            ret = dsl_wr_reg(sdi, CTR0_ADDR, bmNONE); // deassert clear
             /* Check HDL version */
             ret = dsl_hdl_version(sdi, &hw_info);
 
@@ -1940,7 +1940,7 @@ SR_PRIV int dsl_dev_open(struct sr_dev_driver *di, struct sr_dev_inst *sdi, gboo
             }
 
             if (hw_info != DSL_HDL_VERSION) {
-               sr_err("%s: HDL verison incompatible! device:%02X, target:%02X", __func__, 
+               sr_err("%s: HDL version incompatible! device:%02X, target:%02X", __func__, 
                             hw_info, DSL_HDL_VERSION);
                ds_set_last_error(SR_ERR_DEVICE_FIRMWARE_VERSION_LOW);
                sdi->status = SR_ST_INCOMPATIBLE;
@@ -1951,7 +1951,7 @@ SR_PRIV int dsl_dev_open(struct sr_dev_driver *di, struct sr_dev_inst *sdi, gboo
 
      // check security
     uint16_t encryption[SECU_STEPS];
-    ret = dsl_wr_reg(sdi, CTR0_ADDR, bmNONE); // dessert clear
+    ret = dsl_wr_reg(sdi, CTR0_ADDR, bmNONE); // deassert clear
     if (dsl_rd_nvm(sdi, (unsigned char *)encryption, SECU_EEP_ADDR, SECU_STEPS*2) != SR_OK) {
         sr_err("%s:%d, Read EEPROM content failed!",
             __func__, __LINE__);
@@ -2603,7 +2603,7 @@ SR_PRIV int sr_option_value_to_code(int config_id, const char *value, const stru
         p++;
     }
 
-    sr_err("Unkown lang text value:%s,config id:%d", value, config_id);
+    sr_err("Unknown lang text value:%s,config id:%d", value, config_id);
 
     return -1;
 }

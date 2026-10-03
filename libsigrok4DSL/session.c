@@ -72,7 +72,7 @@ SR_PRIV struct sr_session *sr_session_new(void)
 {
 	if (session != NULL){
 		sr_detail("Destroy the old session.");
-		sr_session_destroy(); // Destory the old.
+		sr_session_destroy(); // Destroy the old.
 	}
 
 	session = g_try_malloc0(sizeof(struct sr_session));

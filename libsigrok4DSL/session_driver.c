@@ -523,7 +523,7 @@ static int receive_data_logic_dso_v2(int fd, int revents, const struct sr_dev_in
 
     while (pack_buffer->post_write_len < pack_buffer->post_buf_len)
     { 
-        // The current block is readed end, or the buffer is empty.
+        // The current block has been fully read, or the buffer is empty.
         if (pack_buffer->block_read_len >= pack_buffer->block_data_len)
         { 
             // The block index to end.
@@ -1624,7 +1624,7 @@ static int sr_load_virtual_device_session(struct sr_dev_inst *sdi)
     }
     if (unzOpenCurrentFile(archive) != UNZ_OK)
     { 
-        sr_err("%s: Cant't open zip inner file.", __func__);
+        sr_err("%s: Can't open zip inner file.", __func__);
         unzClose(archive);
         return SR_ERR;
     }

@@ -40,7 +40,7 @@ class SpectrumStack;
 
 namespace view {
 
-//when device is oscillcopse mode, to draw signal trace
+//when device is oscilloscope mode, to draw signal trace
 //created by SigSession
 class SpectrumTrace : public Trace
 {

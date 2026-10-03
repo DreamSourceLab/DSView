@@ -1126,7 +1126,7 @@ namespace pv
 
             if (array == NULL)
             {
-                dsv_err("Get deivce list error!");
+                dsv_err("Get device list error!");
                 return;
             }
 

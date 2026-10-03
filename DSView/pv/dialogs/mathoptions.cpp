@@ -59,7 +59,7 @@ MathOptions::MathOptions(SigSession *session, QWidget *parent) :
     QRadioButton *add_radio = new QRadioButton(L_S(STR_PAGE_DLG, S_ID(IDS_DLG_ADD), "Add"), _math_group);
     add_radio->setProperty("type", data::MathStack::MATH_ADD);
     type_layout->addWidget(add_radio);
-    QRadioButton *sub_radio = new QRadioButton(L_S(STR_PAGE_DLG, S_ID(IDS_DLG_SUBSTRACT), "Substract"), _math_group);
+    QRadioButton *sub_radio = new QRadioButton(L_S(STR_PAGE_DLG, S_ID(IDS_DLG_SUBSTRACT), "Subtract"), _math_group);
     sub_radio->setProperty("type", data::MathStack::MATH_SUB);
     type_layout->addWidget(sub_radio);
     QRadioButton *mul_radio = new QRadioButton(L_S(STR_PAGE_DLG, S_ID(IDS_DLG_MULTIPLY), "Multiply"), _math_group);
@@ -172,7 +172,7 @@ void MathOptions::retranslateUi()
     _enable->setText(L_S(STR_PAGE_DLG, S_ID(IDS_DLG_ENABLE), "Enable"));
     _math_group->setTitle(L_S(STR_PAGE_DLG, S_ID(IDS_DLG_MATH_TYPE), "Math Type"));
     _src1_group->setTitle(L_S(STR_PAGE_DLG, S_ID(IDS_DLG_1ST_SOURCE), "1st Source"));
-    _src2_group->setTitle(L_S(STR_PAGE_DLG, S_ID(IDS_DLG_2ST_SOURCE), "2st Source"));
+    _src2_group->setTitle(L_S(STR_PAGE_DLG, S_ID(IDS_DLG_2ST_SOURCE), "2nd Source"));
     setTitle(L_S(STR_PAGE_DLG, S_ID(IDS_DLG_MATH_OPTIONS), "Math Options"));
 }
 

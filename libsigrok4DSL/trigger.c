@@ -104,7 +104,7 @@ SR_API int ds_trigger_stage_set_value(uint16_t stage, uint16_t probes, char *tri
     assert(probes <= MaxTriggerProbes);
 
     if (trigger == NULL){
-        sr_err("ds_trigger_stage_set_value() error, trigger have'nt be inited.");
+        sr_err("ds_trigger_stage_set_value() error, trigger hasn't been inited.");
         return SR_ERR_CALL_STATUS;
     }
 
@@ -125,7 +125,7 @@ SR_API int ds_trigger_stage_set_logic(uint16_t stage, uint16_t probes, unsigned 
     assert(probes <= MaxTriggerProbes);
 
     if (trigger == NULL){
-        sr_err("ds_trigger_stage_set_logic() error, trigger have'nt be inited.");
+        sr_err("ds_trigger_stage_set_logic() error, trigger hasn't been inited.");
         return SR_ERR_CALL_STATUS;
     }
 
@@ -141,7 +141,7 @@ SR_API int ds_trigger_stage_set_inv(uint16_t stage, uint16_t probes, unsigned ch
     assert(probes <= MaxTriggerProbes);
 
     if (trigger == NULL){
-        sr_err("ds_trigger_stage_set_inv() error, trigger have'nt be inited.");
+        sr_err("ds_trigger_stage_set_inv() error, trigger hasn't been inited.");
         return SR_ERR_CALL_STATUS;
     }
 
@@ -158,7 +158,7 @@ SR_API int ds_trigger_stage_set_count(uint16_t stage, uint16_t probes, uint32_t 
     assert(probes <= MaxTriggerProbes);
 
     if (trigger == NULL){
-        sr_err("ds_trigger_stage_set_count() error, trigger have'nt be inited.");
+        sr_err("ds_trigger_stage_set_count() error, trigger hasn't been inited.");
         return SR_ERR_CALL_STATUS;
     }
 
@@ -178,7 +178,7 @@ SR_API int ds_trigger_probe_set(uint16_t probe, unsigned char trigger0, unsigned
     assert(probe < MaxTriggerProbes);
 
     if (trigger == NULL){
-        sr_err("ds_trigger_probe_set() error, trigger have'nt be inited.");
+        sr_err("ds_trigger_probe_set() error, trigger hasn't been inited.");
         return SR_ERR_CALL_STATUS;
     }
 
@@ -198,7 +198,7 @@ SR_API int ds_trigger_set_stage(uint16_t stages)
     assert(stages <= TriggerStages);
 
     if (trigger == NULL){
-        sr_err("ds_trigger_set_stage() error, trigger have'nt be inited.");
+        sr_err("ds_trigger_set_stage() error, trigger hasn't been inited.");
         return SR_ERR_CALL_STATUS;
     }
 
@@ -217,7 +217,7 @@ SR_API int ds_trigger_set_pos(uint16_t position)
     assert(position <= 100);
 
     if (trigger == NULL){
-        sr_err("ds_trigger_set_pos() error, trigger have'nt be inited.");
+        sr_err("ds_trigger_set_pos() error, trigger hasn't been inited.");
         return SR_ERR_CALL_STATUS;
     }
 
@@ -234,7 +234,7 @@ SR_API int ds_trigger_set_pos(uint16_t position)
 SR_API uint16_t ds_trigger_get_pos()
 {
     if (trigger == NULL){
-        sr_err("ds_trigger_get_pos() error, trigger have'nt be inited.");
+        sr_err("ds_trigger_get_pos() error, trigger hasn't been inited.");
         return 0;
     }
 
@@ -249,7 +249,7 @@ SR_API uint16_t ds_trigger_get_pos()
 SR_API int ds_trigger_set_en(uint16_t enable)
 {
     if (trigger == NULL){
-        sr_err("ds_trigger_set_en() error, trigger have'nt be inited.");
+        sr_err("ds_trigger_set_en() error, trigger hasn't been inited.");
         return SR_ERR_CALL_STATUS;
     }
 
@@ -279,7 +279,7 @@ SR_API uint16_t ds_trigger_get_en()
 SR_API int ds_trigger_set_mode(uint16_t mode)
 {
     if (trigger == NULL){
-        sr_err("ds_trigger_set_en() error, trigger have'nt be inited.");
+        sr_err("ds_trigger_set_mode() error, trigger hasn't been inited.");
         return SR_ERR_CALL_STATUS;
     }
 
@@ -298,7 +298,7 @@ SR_PRIV uint16_t ds_trigger_get_mask0(uint16_t stage, uint16_t msc, uint16_t lsc
     assert(msc < MaxTriggerProbes);
 
     if (trigger == NULL){
-        sr_err("ds_trigger_get_mask0() error, trigger have'nt be inited.");
+        sr_err("ds_trigger_get_mask0() error, trigger hasn't been inited.");
         return SR_ERR_CALL_STATUS;
     }
 
@@ -330,7 +330,7 @@ SR_PRIV uint16_t ds_trigger_get_mask1(uint16_t stage, uint16_t msc, uint16_t lsc
     assert(msc < MaxTriggerProbes);
 
     if (trigger == NULL){
-        sr_err("ds_trigger_get_mask1() error, trigger have'nt be inited.");
+        sr_err("ds_trigger_get_mask1() error, trigger hasn't been inited.");
         return SR_ERR_CALL_STATUS;
     }
 
@@ -362,7 +362,7 @@ SR_PRIV uint16_t ds_trigger_get_value0(uint16_t stage, uint16_t msc, uint16_t ls
     assert(msc < MaxTriggerProbes);
 
     if (trigger == NULL){
-        sr_err("ds_trigger_get_value0() error, trigger have'nt be inited.");
+        sr_err("ds_trigger_get_value0() error, trigger hasn't been inited.");
         return SR_ERR_CALL_STATUS;
     }
 
@@ -399,7 +399,7 @@ SR_PRIV uint16_t ds_trigger_get_value1(uint16_t stage, uint16_t msc, uint16_t ls
     int i;
 
     if (trigger == NULL){
-        sr_err("ds_trigger_get_value1() error, trigger have'nt be inited.");
+        sr_err("ds_trigger_get_value1() error, trigger hasn't been inited.");
         return SR_ERR_CALL_STATUS;
     }
 
@@ -431,7 +431,7 @@ SR_PRIV uint16_t ds_trigger_get_edge0(uint16_t stage, uint16_t msc, uint16_t lsc
     int i;
 
     if (trigger == NULL){
-        sr_err("ds_trigger_get_edge0() error, trigger have'nt be inited.");
+        sr_err("ds_trigger_get_edge0() error, trigger hasn't been inited.");
         return SR_ERR_CALL_STATUS;
     }
 
@@ -464,7 +464,7 @@ SR_PRIV uint16_t ds_trigger_get_edge1(uint16_t stage, uint16_t msc, uint16_t lsc
     int i;
 
     if (trigger == NULL){
-        sr_err("ds_trigger_get_edge1() error, trigger have'nt be inited.");
+        sr_err("ds_trigger_get_edge1() error, trigger hasn't been inited.");
         return SR_ERR_CALL_STATUS;
     }
 

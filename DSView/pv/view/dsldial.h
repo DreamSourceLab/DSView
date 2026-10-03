@@ -29,7 +29,7 @@
 namespace pv {
 namespace view {
 
-//when device is oscilloscope model, to draw the dail on the left
+//when device is oscilloscope mode, to draw the dial on the left
 //created by DsoSignal
 class dslDial : public QObject
 {

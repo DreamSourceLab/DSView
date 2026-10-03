@@ -172,7 +172,7 @@ private:
     int     _hit_border;
     QTimer  _timer;
     bool    _freezing; 
-    // Taskbar Progress Effert for Win7 and Above
+    // Taskbar Progress Effect for Win7 and Above
 #ifdef _WIN32
     QWinTaskbarButton *_taskBtn;
     QWinTaskbarProgress *_taskPrg;

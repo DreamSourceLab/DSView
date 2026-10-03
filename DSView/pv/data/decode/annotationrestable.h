@@ -36,7 +36,7 @@ struct AnnotationSourceItem
 
     std::vector<QString> src_lines; //the origin source string lines
     std::vector<QString> cvt_lines; //the converted to bin/hex/oct format string lines
-    int     cur_display_format; //current format  as bin/ex/oct..., init with -1
+    int     cur_display_format; //current format  as bin/hex/oct..., init with -1
 };
  
 class AnnotationResTable

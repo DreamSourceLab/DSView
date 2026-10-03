@@ -109,7 +109,7 @@
     },
     {
         "id": "IDS_MSG_MAX_CHANNEL_COUNT_WARNING",
-        "text": "Current mode only suppport max {0} channels!"
+        "text": "Current mode only support max {0} channels!"
     },
     {
         "id": "IDS_MSG_TRI_SET_ISSUE",
@@ -177,7 +177,7 @@
     },
     {
         "id": "IDS_MSG_SET_TRI_MULTI_CHANNEL",
-        "text": "Trigger setted on multiple channels!\nCapture will Only triggered when all setted channels fullfill at one sample"
+        "text": "Trigger set on multiple channels!\nCapture will Only triggered when all set channels fulfill at one sample"
     },
     {
         "id": "IDS_MSG_NOT_SHOW_AGAIN",

@@ -179,7 +179,7 @@ private slots:
     void on_decode_done(); 
 
 public:
-	volatile bool _delete_flag; //destroy it when deocde task end
+	volatile bool _delete_flag; //destroy it when decode task end
 
 private:
 	pv::SigSession 			*_session;

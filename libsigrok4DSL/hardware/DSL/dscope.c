@@ -287,7 +287,7 @@ static GSList *scan(GSList *options)
 		if (prof == NULL){ 
               isProduct = 0;
 
-               //Mybe is a dslogic device.
+               //Maybe is a dslogic device.
               for (j = 0; supported_DSLogic[j].vid; j++) 
                 {
                     if (des.idVendor == supported_DSLogic[j].vid &&
@@ -377,7 +377,7 @@ static GSList *scan(GSList *options)
             libusb_unref_device(device_handle);
 #endif
 
-            sr_info("Waitting for device reconnect, name:\"%s\"", prof->model);            
+            sr_info("Waiting for device reconnect, name:\"%s\"", prof->model);            
 		}
 	}
 
@@ -1040,7 +1040,7 @@ static int dso_zero(const struct sr_dev_inst *sdi, gboolean reset)
                 probe->vdiv = vdiv_back[probe->index];
                 ret = dsl_wr_dso(sdi, dso_cmd_gen(sdi, probe, SR_CONF_PROBE_VDIV));
 
-                // vgain tunning
+                // vgain tuning
                 if (devc->profile->dev_caps.feature_caps & CAPS_FEATURE_AUTO_VGAIN) {
                     if (probe->vga_ptr != NULL) {
                         for (uint16_t i = 0; devc->profile->dev_caps.vdivs[i]; i++) {
@@ -1305,7 +1305,7 @@ static int config_set(int id, GVariant *data, struct sr_dev_inst *sdi,
             //devc->trigger_hpos = devc->trigger_hrate * dsl_en_ch_num(sdi) * devc->limit_samples / 200.0;
             /*
              * devc->trigger_hpos should be updated before each acquisition
-             * because the samplelimits may changed
+             * because the samplelimits may change
              */
             devc->trigger_hpos = devc->trigger_hrate * dsl_en_ch_num(sdi) * devc->limit_samples / 200.0;
             if ((ret = dsl_wr_dso(sdi, dso_cmd_gen(sdi, NULL, SR_CONF_HORIZ_TRIGGERPOS))) == SR_OK)
@@ -1595,7 +1595,7 @@ static int config_set(int id, GVariant *data, struct sr_dev_inst *sdi,
             struct sr_channel *probe = (struct sr_channel *)l->data;
             if (!dso_load_eep(sdi, probe, FALSE)) {
                 config_set(SR_CONF_ZERO, g_variant_new_boolean(TRUE), sdi, NULL, NULL);
-                sr_info("Zero have not been setted!");
+                sr_info("Zero has not been set!");
                 break;
             }
         }
@@ -1853,7 +1853,7 @@ static int dev_open(struct sr_dev_inst *sdi)
     struct DSL_context *devc = sdi->priv;
 
     if ((ret = dsl_dev_open(di, sdi, &fpga_done)) == SR_OK) {
-        // load zero informations
+        // load zero information
         for(l = sdi->channels; l; l = l->next) {
             struct sr_channel *probe = (struct sr_channel *)l->data;
             zeroed = dso_load_eep(sdi, probe, fpga_done);
@@ -1862,7 +1862,7 @@ static int dev_open(struct sr_dev_inst *sdi)
         }
         if (!zeroed) {
             config_set(SR_CONF_ZERO, g_variant_new_boolean(TRUE), sdi, NULL, NULL);
-            sr_info("Zero have not been setted!");
+            sr_info("Zero has not been set!");
         }
         if (!fpga_done) {
             if (devc->profile->dev_caps.feature_caps & CAPS_FEATURE_HMCAD1511) {

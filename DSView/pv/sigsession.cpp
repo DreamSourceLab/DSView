@@ -182,7 +182,7 @@ namespace pv
         assert(!_is_saving);
         
         if (_is_working){
-            dsv_info("SigSession::set_default_device()，The current device is working, now to stop it.");
+            dsv_info("SigSession::set_default_device(), The current device is working, now to stop it.");
             dsv_info("SigSession::set_default_device(), stop capture");
             stop_capture();
         }
@@ -339,7 +339,7 @@ namespace pv
 
         if (ds_remove_device(dev_handle) != SR_OK)
         {
-            dsv_err("Remove virtual deivice error!");
+            dsv_err("Remove virtual device error!");
         }
 
         if (isCurrent)
@@ -2289,7 +2289,7 @@ namespace pv
 
                     _trig_check_timer.Stop();
 
-                    //Switch the caputrued data buffer to view.
+                    //Switch the captured data buffer to view.
                     if (bSwapBuffer)
                     {
                         if (_view_data != _capture_data)
@@ -2333,7 +2333,7 @@ namespace pv
 
     void SigSession::DeviceConfigChanged()
     {
-        // Nonthing.
+        // Nothing.
     }
 
     bool SigSession::switch_work_mode(int mode)

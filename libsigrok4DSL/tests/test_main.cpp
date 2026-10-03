@@ -44,7 +44,7 @@ void ctrl()
         this_thread::sleep_for(chrono::milliseconds(2000));
     }
 
-   qDebug()<<"exit command waitting";
+   qDebug()<<"exit command waiting";
 }
 
 int main()

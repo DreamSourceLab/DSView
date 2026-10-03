@@ -216,7 +216,7 @@ void Header::mousePressEvent(QMouseEvent *event)
 
         for(auto t : traces){
             if (t->signal_type() == SR_CHANNEL_LOGIC && _view.session().is_working()){
-                // Disable set trigger from left pannel when capturing.
+                // Disable set trigger from left panel when capturing.
                 break;
             }
             if (t->mouse_press(width(), event->pos()))
@@ -415,7 +415,7 @@ void Header::mouseMoveEvent(QMouseEvent *event)
 	assert(event);
 
     if (_view.session().is_working() && _view.session().get_device()->get_work_mode() == LOGIC){
-        //Disable the hover status of trig button on left pannel.
+        //Disable the hover status of trig button on left panel.
         return;
     }
 

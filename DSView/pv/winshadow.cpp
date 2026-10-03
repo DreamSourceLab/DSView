@@ -180,7 +180,7 @@ void WinShadow::moveShadow()
 
 void WinShadow::paintEvent(QPaintEvent *event)
 {  
-    // The shandow is hiden.
+    // The shadow is hidden.
     if (!m_bActived){
         return;
     }

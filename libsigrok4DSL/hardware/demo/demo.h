@@ -96,7 +96,7 @@
 
 #define ANALOG_RETE(n) ((n/SR_HZ(10)))
 
-//defult value
+//default value
 #define LOGIC_DEFAULT_SAMPLERATE SR_MHZ(1)
 #define LOGIC_DEFAULT_TOTAL_SAMPLES SR_MHZ(1)
 #define LOGIC_DEFAULT_NUM_PROBE 16

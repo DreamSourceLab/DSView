@@ -440,7 +440,7 @@ static int get_pattern_mode_from_file(const char *sub_dir, struct demo_mode_patt
     dir = g_dir_open(dir_path,0,NULL);
     if(dir == NULL)
     {  
-        sr_err("Faild to open dir:%s", dir_path);
+        sr_err("Failed to open dir:%s", dir_path);
         return SR_ERR;
     }
 
@@ -2024,7 +2024,7 @@ static int receive_data_dso(int fd, int revents, const struct sr_dev_inst *sdi)
 
                             if (unzLocateFile(vdev->archive, file_name, 0) != UNZ_OK)
                             {
-                                sr_err("cant't locate zip inner file:\"%s\"", file_name);
+                                sr_err("can't locate zip inner file:\"%s\"", file_name);
                                 send_error_packet(sdi, vdev, &packet);
                                 return FALSE;
                             }
@@ -2074,7 +2074,7 @@ static int receive_data_dso(int fd, int revents, const struct sr_dev_inst *sdi)
                             // Read the data to buffer.
                             if (unzOpenCurrentFile(vdev->archive) != UNZ_OK)
                             {
-                                sr_err("cant't open zip inner file:\"%s\"", file_name);
+                                sr_err("can't open zip inner file:\"%s\"", file_name);
                                 send_error_packet(sdi, vdev, &packet);
                                 return FALSE;
                             }
@@ -2566,7 +2566,7 @@ static int load_virtual_device_session(struct sr_dev_inst *sdi)
             }
             if (unzOpenCurrentFile(archive) != UNZ_OK)
             {
-                sr_err("%s: Cant't open zip inner file.", __func__);
+                sr_err("%s: Can't open zip inner file.", __func__);
                 unzClose(archive);
                 return SR_ERR;
             }

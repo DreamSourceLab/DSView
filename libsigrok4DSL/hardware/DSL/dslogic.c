@@ -355,7 +355,7 @@ static GSList *scan(GSList *options)
             continue;
         }
 
-        /* Check manufactory id and product id, and speed type. */
+        /* Check manufacturer id and product id, and speed type. */
 		prof = NULL;
         for (j = 0; supported_DSLogic[j].vid; j++) 
         {
@@ -372,7 +372,7 @@ static GSList *scan(GSList *options)
 		if (prof == NULL){ 
               isProduct = 0;
 
-               //Mybe is a dscope device.
+               //Maybe is a dscope device.
               for (j = 0; supported_DSCope[j].vid; j++) 
                 {
                     if (des.idVendor == supported_DSCope[j].vid &&
@@ -462,7 +462,7 @@ static GSList *scan(GSList *options)
             libusb_unref_device(device_handle);
 #endif
 
-            sr_info("Waitting for device reconnect, name:\"%s\"", prof->model);
+            sr_info("Waiting for device reconnect, name:\"%s\"", prof->model);
 		}
 	}
 
@@ -843,7 +843,7 @@ static int config_set(int id, GVariant *data, struct sr_dev_inst *sdi,
             //devc->trigger_hpos = devc->trigger_hrate * dsl_en_ch_num(sdi) * devc->limit_samples / 200.0;
             /*
              * devc->trigger_hpos should be updated before each acquisition
-             * because the samplelimits may changed
+             * because the samplelimits may change
              */
             devc->trigger_hpos = devc->trigger_hrate * dsl_en_ch_num(sdi) * devc->limit_samples / 200.0;
             if ((ret = dsl_wr_dso(sdi, dso_cmd_gen(sdi, NULL, SR_CONF_HORIZ_TRIGGERPOS))) == SR_OK)
@@ -1567,7 +1567,7 @@ SR_PRIV int sr_dslogic_option_value_to_code(const struct sr_dev_inst *sdi, int c
                 }
             }
 
-        sr_err("Unkown text value:%s, config id:%d", value, config_id);
+        sr_err("Unknown text value:%s, config id:%d", value, config_id);
         return -1;
     }
 

@@ -38,7 +38,7 @@ class SigSession;
 
 namespace toolbars {
 
-//boolbar, referenced by MainWindow
+//toolbar, referenced by MainWindow
 //TODO:show the property panel about protocol\trigger
 class TrigBar : public QToolBar, public IUiWindow
 {

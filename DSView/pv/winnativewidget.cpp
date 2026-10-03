@@ -168,7 +168,7 @@ WinNativeWidget::WinNativeWidget(const int x, const int y, const int width,
 
     if (!_hWnd)
     {
-        dsv_info("ERROR: can't create naitive window");
+        dsv_info("ERROR: can't create native window");
         assert(false);
     }
     
@@ -213,7 +213,7 @@ void WinNativeWidget::SetChildWidget(MainFrame *w)
     }
     else if (_shadow != NULL){
         _shadow->hideShadow();
-        _shadow->close(); //Set null, the applictoin will exit.
+        _shadow->close(); //Set null, the application will exit.
 
         UninitCapturePowerEvent();     
     }
@@ -299,7 +299,7 @@ LRESULT CALLBACK WinNativeWidget::WndProc(HWND hWnd, UINT message, WPARAM wParam
         }
         case WM_NCACTIVATE:
         {   
-            // Is activing.
+            // Is activating.
             if (wParam){
                 return 0;
             }
@@ -312,7 +312,7 @@ LRESULT CALLBACK WinNativeWidget::WndProc(HWND hWnd, UINT message, WPARAM wParam
                 return 0;
             }
             
-            //Is the foreground window, but is not actived, maybe opening a child dialog.
+            //Is the foreground window, but is not active, maybe opening a child dialog.
             SetWindowRedraw(hWnd, FALSE);
             LRESULT result = DefWindowProc(hWnd, message, wParam, lParam);
             SetWindowRedraw(hWnd, TRUE);

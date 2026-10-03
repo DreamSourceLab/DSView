@@ -76,7 +76,7 @@ struct AppOptions
     std::vector<StringPair> m_protocolFormats;
 };
  
- // The dock pannel open status.
+ // The dock panel open status.
  struct DockOptions
  {
   bool        decodeDock;

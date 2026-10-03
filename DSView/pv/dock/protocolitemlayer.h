@@ -86,7 +86,7 @@ private:
     QPushButton *_del_button;
     DsComboBox  *_format_combox;
     IProtocolItemLayerCallback *m_callback;
-    QString     _protocolName; //the lable text
+    QString     _protocolName; //the label text
     bool        m_bSetting;
     bool        m_singleFlag; 
 };

@@ -397,7 +397,7 @@ SR_PRIV struct sr_session *sr_session_new(void);
 SR_PRIV int sr_session_destroy(void);
 
 /**
- * Create a virtual deivce from file.
+ * Create a virtual device from file.
  */
 SR_PRIV int sr_new_virtual_device(const char *filename, struct sr_dev_inst **out_di);
 

@@ -434,7 +434,7 @@ void ProtocolDock::del_all_protocol()
 
         for (auto it = _protocol_lay_items.begin(); it != _protocol_lay_items.end(); it++)
         {
-             DESTROY_QT_LATER((*it)); //destory control
+             DESTROY_QT_LATER((*it)); //destroy control
         }
 
         _protocol_lay_items.clear();

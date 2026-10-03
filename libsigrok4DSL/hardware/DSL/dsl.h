@@ -53,7 +53,7 @@
 #define CAPS_FEATURE_BUF (1 << 1)
 // pre offset control
 #define CAPS_FEATURE_PREOFF (1 << 2)
-// small startup eemprom
+// small startup eeprom
 #define CAPS_FEATURE_SEEP (1 << 3)
 // zero calibration ability
 #define CAPS_FEATURE_ZERO (1 << 4)
@@ -71,7 +71,7 @@
 #define CAPS_FEATURE_FLASH (1 << 10)
 // 32 channels
 #define CAPS_FEATURE_LA_CH32 (1 << 11)
-// auto tunning vgain
+// auto tuning vgain
 #define CAPS_FEATURE_AUTO_VGAIN (1 << 12)
 // max 2.5v fpga threshold
 #define CAPS_FEATURE_MAX25_VTH (1 << 13)
@@ -129,7 +129,7 @@
  * for DSCope device
  * trans: x << 8 + y
  * x = vpos(coarse), each step(1024 total) indicate x(mv) at 1/20 attenuation, and x/10(mv) at 1/2 attenuation
- * y = voff(fine), each step(1024 total) indicate y/100(mv) at 1/20 attenuation, adn y/1000(mv) at 1/2 attenuation
+ * y = voff(fine), each step(1024 total) indicate y/100(mv) at 1/20 attenuation, and y/1000(mv) at 1/2 attenuation
  * voff: x << 10 + y
  * x = vpos(coarse) default bias
  * y = voff(fine) default bias
@@ -505,7 +505,7 @@ static const struct DSL_profile supported_DSLogic[] = {
       SR_MHZ(400)}
     },
 
-    {DS_VENDOR_ID, 0x0020, LIBUSB_SPEED_HIGH, "DreamSourceLab", "DSLogic PLus", NULL,
+    {DS_VENDOR_ID, 0x0020, LIBUSB_SPEED_HIGH, "DreamSourceLab", "DSLogic Plus", NULL,
      "DSLogicPlus.fw",
      "DSLogicPlus.bin",
      "DSLogicPlus.bin",
@@ -721,7 +721,7 @@ static const struct DSL_profile supported_DSLogic[] = {
       SR_GHZ(1)}
     },
 
-    {0x2A0E, 0x0030, LIBUSB_SPEED_HIGH, "DreamSourceLab", "DSLogic PLus", NULL,
+    {0x2A0E, 0x0030, LIBUSB_SPEED_HIGH, "DreamSourceLab", "DSLogic Plus", NULL,
      "DSLogicPlus.fw",
      "DSLogicPlus-pgl12.bin",
      "DSLogicPlus-pgl12.bin",
@@ -775,7 +775,7 @@ static const struct DSL_profile supported_DSLogic[] = {
       SR_MHZ(400)}
     },
 
-    {0x2A0E, 0x0034, LIBUSB_SPEED_HIGH, "DreamSourceLab", "DSLogic PLus", NULL,
+    {0x2A0E, 0x0034, LIBUSB_SPEED_HIGH, "DreamSourceLab", "DSLogic Plus", NULL,
      "DSLogicPlus-pgl12-2.fw",
      "DSLogicPlus-pgl12-2.bin",
      "DSLogicPlus-pgl12-2.bin",

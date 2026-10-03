@@ -53,7 +53,7 @@ DSDialog::DSDialog(QWidget *parent, bool hasClose):
 
 DSDialog::DSDialog(QWidget *parent, bool hasClose, bool bBaseButton) :
 #ifdef Q_OS_LINUX
-    QDialog(NULL),  //enable the popup dialog draged.
+    QDialog(NULL),  //enable the popup dialog dragged.
 #else
     QDialog(parent),
 #endif
