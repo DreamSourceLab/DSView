@@ -1094,6 +1094,11 @@ enum sr_config_option_id
 	 * starts or stops the internal logging. */
 	SR_CONF_DATALOG = 50007,
 
+    /** Recorded acquisition limit and optional trigger timing for a file device.
+     *  GVariant type (tbxbt): limit, has timestamp, signed epoch milliseconds,
+     *  has position, trigger sample index. Older recordings can omit fields. */
+    SR_CONF_FILE_ACQUISITION = 50008,
+
 	SR_CONF_LOOP_MODE = 60001,
 };
 
