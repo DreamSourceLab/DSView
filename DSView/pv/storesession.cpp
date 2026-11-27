@@ -570,7 +570,26 @@ bool StoreSession::meta_gen(data::Snapshot *snapshot, std::string &str)
     }
  
     sprintf(meta, "capturefile = data\n"); str += meta;
-    sprintf(meta, "total samples = %" PRIu64 "\n", snapshot->get_sample_count()); str += meta;
+    uint64_t sample_limit = snapshot->get_sample_count();
+    qint64 trigger_time = _session->get_session_time().toMSecsSinceEpoch();
+    uint64_t trigger_pos = _session->get_trigger_pos();
+    if (mode == LOGIC && _session->get_device()->is_file() && _start_index == 0 && _end_index == 0) {
+        GVariant *acquisition = _session->get_device()->get_config(SR_CONF_FILE_ACQUISITION);
+        if (acquisition) {
+            guint64 limit, position;
+            gint64 timestamp;
+            gboolean has_time, has_position;
+            g_variant_get(acquisition, "(tbxbt)", &limit, &has_time, &timestamp, &has_position, &position);
+            g_variant_unref(acquisition);
+            if (limit >= sample_limit)
+                sample_limit = limit;
+            if (has_time)
+                trigger_time = timestamp;
+            if (has_position)
+                trigger_pos = position;
+        }
+    }
+    sprintf(meta, "total samples = %" PRIu64 "\n", sample_limit); str += meta;
 
     if (mode != LOGIC) {
         sprintf(meta, "total probes = %d\n", snapshot->get_channel_num()); str += meta;
@@ -652,7 +671,7 @@ bool StoreSession::meta_gen(data::Snapshot *snapshot, std::string &str)
         }
     }
     else if (mode == LOGIC) {
-        sprintf(meta, "trigger time = %lld\n", _session->get_session_time().toMSecsSinceEpoch()); str += meta;
+        sprintf(meta, "trigger time = %lld\n", trigger_time); str += meta;
     }
     else if (mode == ANALOG) {
         data::AnalogSnapshot *analog_snapshot = NULL;
@@ -669,7 +688,7 @@ bool StoreSession::meta_gen(data::Snapshot *snapshot, std::string &str)
             sprintf(meta, "ref max = %d\n", tmp_u32); str += meta;
         }
     }
-    sprintf(meta, "trigger pos = %" PRIu64 "\n", _session->get_trigger_pos()); str += meta;
+    sprintf(meta, "trigger pos = %" PRIu64 "\n", trigger_pos); str += meta;
 
     probecnt = 0; 
 

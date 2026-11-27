@@ -113,6 +113,8 @@ struct session_vdev
     uint64_t total_samples;
     int64_t trig_time;
     uint64_t trig_pos;
+    gboolean has_trig_time;
+    gboolean has_trig_pos;
     int num_probes;
     int enabled_probes;
     uint64_t timebase;
@@ -864,6 +866,12 @@ static int config_get(int id, GVariant **data, const struct sr_dev_inst *sdi,
         else
             return SR_ERR;
         break;
+    case SR_CONF_FILE_ACQUISITION:
+        vdev = sdi->priv;
+        *data = g_variant_new("(tbxbt)", (guint64)vdev->total_samples,
+                              vdev->has_trig_time, (gint64)vdev->trig_time,
+                              vdev->has_trig_pos, (guint64)vdev->trig_pos);
+        break;
     case SR_CONF_TRIGGER_TIME:
         if (sdi)
         {
@@ -1111,10 +1119,12 @@ static int config_set(int id, GVariant *data, struct sr_dev_inst *sdi,
         break;
     case SR_CONF_TRIGGER_TIME:
         vdev->trig_time = g_variant_get_int64(data);
+        vdev->has_trig_time = TRUE;
         sr_dbg("Setting trigger time to %llu.", (u64_t)vdev->trig_time);
         break;
     case SR_CONF_TRIGGER_POS:
         vdev->trig_pos = g_variant_get_uint64(data);
+        vdev->has_trig_pos = TRUE;
         sr_dbg("Setting trigger position to %llu.", (u64_t)vdev->trig_pos);
         break;
     case SR_CONF_NUM_BLOCKS:
